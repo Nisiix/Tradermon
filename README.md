@@ -33,12 +33,15 @@ Il gioco è una PWA: dal browser si può "installare" e giocare anche offline. L
 | Indietro | X, Esc | B |
 | Menu | M | MENU |
 
+All'inizio un mini tutorial fa provare i comandi, con la versione per tastiera o per touch a seconda del dispositivo. Si riapre da *Menu → Opzioni → Comandi*. Nelle finestre, le frecce spostano la selezione e Z/A conferma.
+
 1. All'inizio il Prof. Saldi ti chiede nome e aspetto. Poi fai un breve questionario sul profilo di rischio.
 2. Nel Laboratorio scegli una delle tre Valigette: Titoli (azioni), Indici (ETF) o Cripto. Parlando con il Prof puoi scegliere anche il Sentiero Misto.
-3. La Dott.ssa Ratio apre il tuo **Conto di Prova**. Scegli il capitale virtuale, il versamento mensile e l'allocazione obiettivo.
+3. La Dott.ssa Ratio apre il tuo **Conto di Prova**. Scegli il capitale virtuale e l'allocazione obiettivo. Il gioco non aggiunge né toglie mai denaro da solo: il conto cambia solo con le tue operazioni e con il mercato.
 4. Ogni Mentore si batte in due fasi: un duello di conoscenza e una missione nella **Macchina del Tempo**, un mercato simulato con ordini, costi, dividendi e notizie.
 5. Entra nelle case: ogni abitante (single, coppie, famiglie) ti insegna un concetto diverso, che resta annotato nell'Investidex.
-6. Nelle Cliniche del Portafoglio salvi, fai il check-up, la diagnosi e il ribilanciamento, e curi i bias.
+6. Nelle Cliniche del Portafoglio salvi, fai il check-up, la diagnosi e il ribilanciamento, e impari a riconoscere i bias.
+7. L'erba alta è solo decorativa: non ci sono incontri casuali né stati alterati.
 
 ## Conto reale Alpaca (facoltativo)
 

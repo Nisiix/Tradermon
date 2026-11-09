@@ -12,6 +12,7 @@ import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { setVolume } from '../systems/audio';
 import type { BiasId } from '../types';
 import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
+import { controlsTutorial } from './tutorial';
 
 export async function pauseMenu(onTravel: (id: string) => void) {
   for (;;) {
@@ -92,7 +93,7 @@ async function profile() {
         Livello di Conoscenza <b>${level()}</b> (${cur}/${need} XP)${bar((cur / need) * 100)}
         Fiducia ${S.stats.fiducia}/100 ${bar(S.stats.fiducia)}
         Disciplina ${S.stats.disciplina} · Pazienza ${S.stats.pazienza} · Reputazione ${S.stats.reputazione}<br>
-        Stato: ${S.bias ? `<span class="bad">${BIAS_INFO[S.bias].name}</span>` : 'nessun bias'} · Slot di portafoglio ${slots()}<br>
+        Slot di portafoglio ${slots()}<br>
         Serie della domanda del giorno: ${S.daily.streak} · Torre: piano ${S.tower.best}</div>
         <div><b>Licenza:</b> ${S.license === 'apprendista' ? 'Apprendista (bloccata: serve la 1ª Medaglia)' : S.license === 'esame' ? 'Esame di Abilitazione disponibile (Clinica → Conto Alpaca)' : '<span class="good">Licenza di Investitore</span>'}<br>
         ${S.license === 'investitore' ? `Limiti scelti: ${S.liveLimits.perOrder} $/ordine, ${S.liveLimits.perMonth} $/mese (massimi del livello ${L.order}/${L.month})<br>${S.liveLimits.pauseUntil > Date.now() ? `<span class="bad">Pausa di riflessione fino al ${new Date(S.liveLimits.pauseUntil).toLocaleString('it-IT')}</span><br>` : ''}` : ''}
@@ -134,6 +135,7 @@ async function options() {
     q<HTMLInputElement>('.vol').value = String(S.options.volume);
     q<HTMLInputElement>('.hc').checked = S.options.contrast;
     q<HTMLInputElement>('.sm').checked = S.options.studyMode;
+    button('Comandi', () => { close(); void controlsTutorial(); });
     button('Esporta salvataggio', () => download(`tradermon-${S.name}.json`, exportSave()));
     button('Applica', () => {
       S.options.textSpeed = Number(q<HTMLSelectElement>('.ts').value);
@@ -149,7 +151,7 @@ async function options() {
 }
 
 export function applyOptions() {
-  document.documentElement.style.setProperty('--fs', `${15 * S.options.fontScale}px`);
+  document.documentElement.style.setProperty('--fs-scale', String(S.options.fontScale));
   document.body.classList.toggle('contrast', S.options.contrast);
   setVolume(S.options.volume);
 }

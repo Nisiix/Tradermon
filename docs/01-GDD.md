@@ -23,7 +23,7 @@ Regole d'oro del progetto:
 | Lega | 1-2 h | Macro, analisi, regole, psicologia | Titolo di Campione, Nuova Partita+ |
 | Post-game | illimitato | Crisi storiche, Torre delle Sfide | Carte dorate, record |
 
-Il ciclo base, ripetuto in ogni città: **impara** (Biblioteca, allievi, cartelli) → **verifica** (allievi dell'Accademia, investitori sul percorso) → **applica** (eventi nelle Zone di Mercato, Macchina del Tempo) → **sfida il Mentore** (quiz + missione).
+Il ciclo base, ripetuto in ogni città: **impara** (Biblioteca, allievi, cartelli) → **verifica** (allievi dell'Accademia, investitori sul percorso) → **applica** (Macchina del Tempo, missioni di analisi) → **sfida il Mentore** (quiz + missione).
 
 ---
 
@@ -45,7 +45,7 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 | 8 | Nome del rivale | Default "Leo" (modificabile) | Dialoghi del rivale |
 | 9 | Risveglio in camera, si scende, si va al Laboratorio | — | Tutorial di movimento |
 | 10 | **La scelta delle Valigette** | Percorso: Titoli / ETF / Cripto (oppure Misto parlando col Professore) | Tutta la storia |
-| 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, versamento mensile simulato, allocazione obiettivo | Simulatore e Clinica |
+| 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, allocazione obiettivo | Simulatore e Clinica |
 | 12 | Licenza da Apprendista | Spiegazione dello sblocco del denaro reale | Indicatore "Licenza bloccata" nel menu |
 | 13 | Primo duello col rivale (3 domande facili) | — | Tutorial del quiz |
 | 14 | Primo acquisto guidato alla Clinica di Borgo Semina | La Valigetta diventa una posizione in portafoglio | Tutorial della Clinica |
@@ -91,13 +91,12 @@ Schermata guidata dalla Dott.ssa Ratio (arriva al Laboratorio per l'occasione):
 | Campo | Opzioni | Default | Note |
 |---|---|---|---|
 | Capitale virtuale | 1.000 / 10.000 / 50.000 Crediti | 10.000 | 1 Credito = 1 dollaro virtuale. Il capitale non dà vantaggi nei punteggi: tutto è misurato in percentuale |
-| Versamento mensile simulato | 0 / 100 / 250 / 500 | 0 | Ogni mese simulato aggiunge liquidità (usato dal Piano di Accumulo) |
 | Allocazione obiettivo | Preset per profilo, modificabile | vedi sotto | Usata dalla diagnosi e dal ribilanciamento |
 | Reinvestimento dividendi | Sì / No | Sì | Mostra la meccanica "Uova" |
 
 Preset di allocazione (azioni o asset rischiosi / difensivi / liquidità): Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10. Per il percorso Cripto "difensivo" significa stablecoin simulata e la liquidità resta in Crediti.
 
-**Ricarica del conto di prova.** Una volta per regione (cioè una volta per ogni Medaglia ottenuta), riporta il valore al capitale iniziale, costa il 10% del punteggio Reputazione. Serve a non bloccare chi ha perso tutto senza cancellare la lezione.
+**Nessun denaro aggiunto o tolto dal gioco.** Il conto di prova cambia solo con le operazioni del giocatore e con il mercato simulato (prezzi e dividendi). Non ci sono ricariche, penalità in Crediti o versamenti automatici: lo stesso vale per il conto reale.
 
 ### 2.5 La Licenza
 
@@ -130,11 +129,11 @@ Altopiano della Lega ─ P9 ─ Rocca Rischio ─ P8 ─ Mentelucida ─ P7 ─ 
 | Rocca Rischio | Clinica, Biblioteca, Accademia | 8. Rocco Rischio – Medaglia Scudo | Ultimo scontro con gli antagonisti |
 | Altopiano della Lega | Clinica, Lega, **Torre delle Sfide** (post-game) | 4 Superiori + Campione | Crisi leggendarie dopo la Lega |
 
-Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, almeno una **Zona di Mercato** (l'erba alta: tessere con il simbolo del grafico) dove partono gli eventi casuali, cartelli didattici, e all'uscita di ogni città una **Guardia della Borsa** che lascia passare solo con la Medaglia della città.
+Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta solo decorativa (nessun incontro casuale), cartelli didattici, e all'uscita di ogni città una **Guardia della Borsa** che lascia passare solo con la Medaglia della città.
 
 ### 3.2 Edifici ricorrenti
 
-- **Clinica del Portafoglio**: bancone della Dott.ssa Ratio, salvataggio, cura degli stati alterati, tutte le operazioni di portafoglio (sezione 7).
+- **Clinica del Portafoglio**: bancone della Dott.ssa Ratio, salvataggio, lezione sui bias, tutte le operazioni di portafoglio (sezione 7).
 - **Biblioteca**: ripasso delle lezioni sbloccate, Investidex, "Domanda del giorno" (streak), ripetizione delle domande sbagliate.
 - **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Non si può sfidare il Mentore prima di aver battuto almeno un allievo o letto le lezioni della Biblioteca locale.
 - **Case abitate**: ogni città ha 3-4 case visitabili (Borgo Semina una), 30 in tutto. Ogni casa ospita un nucleo: una persona sola, una coppia o una famiglia di tre persone. Gli interni sono arredati in modo diverso secondo il nucleo. Ogni abitante insegna un concetto diverso, per un totale di 62 argomenti, mai ripetuti tra un abitante e l'altro. Ogni consiglio cita una fonte. I temi seguono la città: basi a Borgo Semina e Ponte Cedola, ordini a Porto Ordini, diversificazione a Diversia, costi e interesse composto a Interessa, analisi a Bilancia, dividendi, obbligazioni e tassi a Valdividendo, bias a Mentelucida, gestione del rischio a Rocca Rischio. Si aggiungono temi di macroeconomia, fiscalità italiana e sicurezza. La prima volta che parli con un abitante ottieni +5 XP e il consiglio viene annotato nell'Investidex, dove puoi rileggerlo con il link alla fonte.
@@ -178,7 +177,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, almeno un
 | **Disciplina** (0-100) | Rifiutare truffe, rispettare limiti nelle missioni, curarsi alla Clinica | Cedere agli Speculatori, superare il drawdown limite | Moltiplicatore del punteggio missioni (0,8-1,2) |
 | **Diversificazione** (0-100) | Calcolata dal portafoglio simulato: 100 − indice di concentrazione | — | Statistica visibile e input della salute |
 | **Pazienza** (0-100) | Tenere posizioni nei cali senza vendere, pochi ordini nelle missioni | Troppi ordini (overtrading), vendite nel panico | Bonus nelle missioni lunghe |
-| **Reputazione** | Vittorie contro investitori (+20), Mentori (+200), missioni | Tilt, ricarica del conto | Il "denaro" del genere: solo punteggio e classifica, non compra nulla |
+| **Reputazione** | Vittorie contro investitori (+20), Mentori (+200), missioni | Tilt | Il "denaro" del genere: solo punteggio e classifica, non compra nulla |
 
 ### 5.2 Duelli (le lotte)
 
@@ -255,28 +254,22 @@ Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 
 
 Prima di "Ordine Limite" esistono solo ordini a mercato; prima di "Stop Loss" non esistono ordini stop. Vale anche per il conto reale.
 
-### 5.7 Stati alterati: i bias
+### 5.7 Bias (solo lezioni, nessuno stato alterato)
 
-| Bias | Causa tipica | Effetto nel duello | Cura |
-|---|---|---|---|
-| **FOMO** | Accettare la "soffiata" di uno Speculatore, evento euforico | Le risposte si rimescolano a metà timer | Riflessione alla Clinica (1 domanda sul bias) |
-| **Panico** | Evento di crollo, perdita di un duello | Timer dimezzato | Riflessione alla Clinica |
-| **Eccesso di fiducia** | 5 risposte giuste di fila senza spiegazioni lette | Le spiegazioni non vengono mostrate | Riflessione alla Clinica |
-| **Effetto gregge** | Evento "tutti comprano" | Compare una falsa percentuale "il 78% ha scelto…" su una risposta sbagliata | Riflessione alla Clinica |
+I bias si imparano, non si "subiscono". Non esistono stati alterati che cambiano il duello, il patrimonio o le regole: quando si userà denaro reale, il gioco non può modificare il conto, quindi nessuna meccanica lo fa nemmeno sul conto di prova.
 
-Un solo stato alla volta. Dopo il Mentore 7 la tecnica Mente Fredda dà il 50% di immunità. Gli stati incontrati sbloccano la voce nella sezione Bias dell'Investidex.
+| Bias | Dove si incontra | Cosa insegna |
+|---|---|---|
+| **FOMO** | Proposte degli Speculatori, Lezione sui bias in Clinica | La paura di restare fuori spinge a comprare tardi e caro |
+| **Panico** | Lezione sui bias in Clinica | Vendere durante un crollo trasforma una perdita temporanea in definitiva |
+| **Eccesso di fiducia** | Lezione sui bias in Clinica | Qualche successo non è una prova di abilità |
+| **Effetto gregge** | Proposte degli Speculatori, Lezione sui bias in Clinica | Seguire la folla non è un'analisi |
 
-### 5.8 Zone di Mercato (incontri casuali)
+Un bias riconosciuto (rispondendo bene alla domanda in Clinica, o rifiutando/accettando una proposta) viene annotato nella sezione Bias dell'Investidex.
 
-Ogni passo su una tessera di Zona di Mercato ha l'8% di probabilità di innescare un evento (12% con clima Tempesta). Tipi:
+### 5.8 Erba alta
 
-| Tipo | Peso | Esempio | Esito |
-|---|---|---|---|
-| Domanda lampo | 35% | Una domanda della banca, preferendo quelle sbagliate in passato (ripetizione dilazionata) | XP o −10 Fiducia |
-| Notizia | 25% | "Il titolo che possiedi perde il 15% dopo una notizia" con 3 scelte | Disciplina/Pazienza ±, spiegazione |
-| Evento di settore | 15% | "La banca centrale alza i tassi" | Applica la matrice al mercato simulato, mostra l'effetto sul portafoglio |
-| Tentazione | 15% | Uno Speculatore propone "un affare garantito al 20% al mese" | Rifiutare: Disciplina +5. Accettare: perdita simulata, bias, lezione |
-| Scoperta | 10% | Un passante parla di un asset della watchlist | +XP carta |
+L'erba alta dei percorsi è solo decorativa: camminarci non fa partire incontri, domande o stati. Le sfide sono sempre visibili (investitori con linea di vista, Mentori, Accademie).
 
 ### 5.9 Rivale
 
@@ -380,11 +373,11 @@ La Dott.ssa Ratio accoglie con: "Benvenuto alla Clinica del Portafoglio! Curiamo
 | Check-up | Posizioni, valore, P&L, allocazione per settore e classe, salute | Sì | Sì | Subito |
 | Compra / Vendi | Ordini guidati con riepilogo costo e rischio | Sì | Sì, con schermata seria | Subito (limite e stop con le tecniche) |
 | Ordini aperti | Vedi e annulla | Sì | Sì | Ordine Limite |
-| Deposita / Preleva | Ricarica di prova 1 volta per regione | Saldo | Apre il sito Alpaca | Subito |
+| Depositi e prelievi | Solo informazioni: il gioco non aggiunge denaro | Saldo | Apre il sito Alpaca | Subito |
 | Salva e riposa | Salva, Fiducia al massimo | — | — | Subito |
 | Diagnosi | Spiegazione in parole semplici e lezione collegata | Sì | Sì | Subito |
 | Cura (ribilanciamento) | Propone gli ordini, il giocatore conferma ognuno | Sì | Sì | Ribilanciamento |
-| Riflessione (cura bias) | Una domanda sul bias attivo | — | — | Subito |
+| Lezione sui bias | Una domanda sul bias scelto | — | — | Subito |
 | Uova dei dividendi | Stato dei dividendi in incubazione | — | — | Subito |
 | Cartella clinica | Storico ordini, rendimento nel tempo, export CSV | Sì | Sì | Subito |
 | Collega Alpaca | Inserimento chiavi Paper | — | Chiavi Live dopo la Licenza | Paper subito, Live dopo l'esame |

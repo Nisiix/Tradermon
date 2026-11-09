@@ -120,11 +120,10 @@ export function cardLevel(id: string): number {
 
 export function unlockCard(id: string) { card(id); }
 
-export function setBias(b: BiasId | null): boolean {
-  if (b && hasTech(TECH.COLD) && Math.random() < 0.5) return false;
-  S.bias = b;
-  if (b && !S.biasSeen.includes(b)) S.biasSeen.push(b);
-  return !!b;
+/** Segna un bias come conosciuto (Investidex). Non esistono più "stati alterati":
+ *  nulla nel gioco cambia il patrimonio o le regole fuori dalle scelte del giocatore. */
+export function learnBias(b: BiasId): void {
+  if (!S.biasSeen.includes(b)) S.biasSeen.push(b);
 }
 
 export function profileTimer(): number {
@@ -153,7 +152,6 @@ export function advanceDays(n: number): string[] {
         }
         card(p.id).xp += 2;
       }
-      if (pf.monthly > 0) { pf.cash += pf.monthly; pf.contributed += pf.monthly; }
     }
     for (const egg of pf.eggs.slice()) {
       if (S.market.day >= egg.hatchDay) {

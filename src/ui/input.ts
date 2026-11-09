@@ -31,9 +31,10 @@ export function press(k: Key, ev?: KeyboardEvent) {
 export function initInput() {
   window.addEventListener('keydown', (ev) => {
     const tgt = ev.target as HTMLElement | null;
-    const typing = tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.tagName === 'SELECT');
+    const toggle = tgt && tgt.tagName === 'INPUT' && ['checkbox', 'radio'].includes((tgt as HTMLInputElement).type);
+    const typing = tgt && !toggle && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.tagName === 'SELECT');
     if (typing && ev.code !== 'Escape') return;
-    const isBtn = tgt && tgt.tagName === 'BUTTON';
+    const isBtn = tgt && (tgt.tagName === 'BUTTON' || (toggle && ev.code === 'Space'));
     if (isBtn && (ev.code === 'Enter' || ev.code === 'Space')) return; // lascia il click nativo
     const k = MAP[ev.code];
     if (!k) return;
@@ -70,6 +71,10 @@ export function initTouch(root: HTMLElement) {
       <button data-k="a" style="margin-bottom:24px">A</button>
     </div>`;
   root.appendChild(wrap);
+  // Su telefono i pulsanti A/B coprirebbero quelli delle finestre: mentre una finestra è aperta
+  // si toccano direttamente i suoi pulsanti e i comandi touch diventano trasparenti.
+  const stageEl = document.getElementById('stage');
+  if (stageEl) new MutationObserver(() => document.body.classList.toggle('has-modal', !!stageEl.querySelector('.modal-wrap, .battle'))).observe(stageEl, { childList: true });
   wrap.querySelectorAll('button').forEach((b) => {
     const k = (b as HTMLElement).dataset.k as Key;
     const down = (e: Event) => {

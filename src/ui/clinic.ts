@@ -1,4 +1,5 @@
-import { S, save, slots, hasTech, TECH, classes, card, setBias, profileFromScore } from '../systems/state';
+import { S, save, slots, hasTech, TECH, classes, card, learnBias, profileFromScore } from '../systems/state';
+import type { BiasId } from '../types';
 import { unlockedAssets, ASSET_BY_ID, SECTOR_LABEL, SECTOR_COLOR } from '../data/assets';
 import { value, weights, health, diagnosis, rebalancePlan, marketBuy, marketSell, placeOrder, allocation, fmtMoney, fmtPx, fmtPct, fmtQty, FEE } from '../systems/portfolio';
 import { metrics, CLIMATE_LABEL } from '../systems/market';
@@ -24,10 +25,10 @@ export async function openClinic(townIdx: number) {
   await say(['Benvenuto alla Clinica del Portafoglio!', 'Qui curiamo le scelte, non i soldi persi. Come posso aiutarti?'], NURSE);
   for (;;) {
     const opts = [
-      'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Cura: ribilanciamento', 'Riflessione (cura dei bias)',
-      'Uova dei dividendi', 'Deposita / Ricarica di prova', 'Cartella clinica', 'Conto Alpaca (paper e reale)', 'Rifai il questionario', 'Arrivederci',
+      'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Cura: ribilanciamento', 'Lezione sui bias',
+      'Uova dei dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Conto Alpaca (paper e reale)', 'Rifai il questionario', 'Arrivederci',
     ];
-    const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Cura') && !hasTech(TECH.REBAL)) || (o.startsWith('Riflessione') && !S.bias));
+    const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Cura') && !hasTech(TECH.REBAL)));
     const c = await choose(opts, { cancel: true, title: 'CLINICA DEL PORTAFOGLIO', disabled: dis });
     if (c < 0 || c === opts.length - 1) { await say('Abbi cura del tuo portafoglio!', NURSE); return; }
     switch (opts[c]) {
@@ -36,7 +37,7 @@ export async function openClinic(townIdx: number) {
         S.lastClinic = { map: `clinic_${townIdx}`, x: 5, y: 4 };
         beep('heal');
         const ok = save();
-        await say([`La tua Fiducia è tornata al massimo.${ok ? ' Partita salvata.' : ' Attenzione: salvataggio non riuscito (spazio del browser?).'}`, S.bias ? `Vedo però un bias attivo: ${BIAS_INFO[S.bias].name}. Ti propongo una breve riflessione.` : 'Torna quando vuoi!'], NURSE);
+        await say([`La tua Fiducia è tornata al massimo.${ok ? ' Partita salvata.' : ' Attenzione: salvataggio non riuscito (spazio del browser?).'}`, 'Torna quando vuoi!'], NURSE);
         break;
       }
       case 'Check-up': await checkup(); break;
@@ -44,9 +45,9 @@ export async function openClinic(townIdx: number) {
       case 'Ordini aperti': await openOrders(); break;
       case 'Diagnosi': await diagnose(); break;
       case 'Cura: ribilanciamento': await rebalance(); break;
-      case 'Riflessione (cura dei bias)': await reflect(); break;
+      case 'Lezione sui bias': await reflect(); break;
       case 'Uova dei dividendi': await eggs(); break;
-      case 'Deposita / Ricarica di prova': await deposit(); break;
+      case 'Depositi e prelievi': await deposit(); break;
       case 'Cartella clinica': await records(); break;
       case 'Conto Alpaca (paper e reale)': await openAlpacaHub(); break;
       case 'Rifai il questionario': {
@@ -210,18 +211,21 @@ async function rebalance() {
 }
 
 async function reflect() {
-  if (!S.bias) return;
-  const b = S.bias;
+  // lezione facoltativa: nessuno "stato" da curare, solo una domanda per riconoscere il bias
+  const ids = Object.keys(BIAS_INFO) as BiasId[];
+  const c = await choose(ids.map((b) => BIAS_INFO[b].name + (S.biasSeen.includes(b) ? ' ✓' : '')), { cancel: true, prompt: 'Di quale bias vuoi parlare?', who: NURSE });
+  if (c < 0) return;
+  const b = ids[c];
   const [q, right, ...wrong] = BIAS_CURE_Q[b];
-  await say([`Il bias "${BIAS_INFO[b].name}" ti sta condizionando: ${BIAS_INFO[b].effect}`, 'Fermiamoci un momento a riflettere.'], NURSE);
+  await say([`${BIAS_INFO[b].name}: ${BIAS_INFO[b].effect}`, 'Vediamo se sai riconoscerlo.'], NURSE);
   const opts = shuffle([right, ...wrong]);
-  const c = await choose(opts, { prompt: q, who: NURSE });
-  if (opts[c] === right) {
-    setBias(null);
+  const k = await choose(opts, { prompt: q, who: NURSE });
+  if (opts[k] === right) {
+    learnBias(b);
     beep('heal');
-    await say(['Esatto. La consapevolezza è la cura migliore.', 'Il bias è sparito.'], NURSE);
+    await say(['Esatto. Riconoscere un bias è il primo passo per non farsi guidare da lui.', 'L\'ho annotato nel tuo Investidex.'], NURSE);
   } else {
-    await say('Non proprio. Riprova quando vuoi: non c\'è fretta.', NURSE);
+    await say(`Non proprio. La risposta migliore era: "${right}". Riprova quando vuoi.`, NURSE);
   }
 }
 
@@ -236,16 +240,8 @@ async function eggs() {
 async function deposit() {
   const pf = S.portfolio;
   const v = value(pf, S.market.prices);
-  const can = pf.refillsUsed < S.badges + 1 && v < pf.initial;
-  await say([`Valore attuale ${fmtMoney(v)}. Capitale iniziale ${fmtMoney(pf.initial)}.`, `Ricariche di prova usate: ${pf.refillsUsed}. Ne hai una per ogni regione (Medaglie + 1).`, 'I depositi e prelievi reali si fanno solo sul sito di Alpaca: dalla voce "Conto Alpaca" ti mostro il saldo e apro la pagina giusta.'], NURSE);
-  if (!can) { await say(v >= pf.initial ? 'Il portafoglio vale più del capitale iniziale: nessuna ricarica necessaria.' : 'Hai già usato la ricarica di questa regione.', NURSE); return; }
-  const ok = (await choose(['Sì, ricarica', 'No'], { prompt: 'Vuoi riportare il conto di prova al capitale iniziale? Costa il 10% della Reputazione.', who: NURSE })) === 0;
-  if (!ok) return;
-  pf.cash += pf.initial - v;
-  pf.contributed += pf.initial - v;
-  pf.refillsUsed++;
-  S.stats.reputazione = Math.round(S.stats.reputazione * 0.9);
-  await say('Fatto. Le perdite però restano una lezione: guardale nella Cartella clinica.', NURSE);
+  // Il gioco non aggiunge né toglie denaro: il patrimonio cambia solo con le tue operazioni e con il mercato.
+  await say([`Valore attuale ${fmtMoney(v)}. Capitale iniziale ${fmtMoney(pf.initial)}.`, 'Qui non si aggiunge né si toglie denaro: il patrimonio cambia solo con le tue operazioni e con il mercato, come in un conto vero.', 'I depositi e i prelievi reali si fanno solo sul sito di Alpaca. Dalla voce "Conto Alpaca" ti mostro il saldo e apro la pagina giusta.'], NURSE);
 }
 
 async function records() {

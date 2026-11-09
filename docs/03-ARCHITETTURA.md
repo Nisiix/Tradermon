@@ -8,7 +8,7 @@
 | Linguaggio e build | **TypeScript** in modalità strict + **Vite** | I tipi proteggono la logica di portafoglio e salvataggi. Vite fa build veloci e un proxy di sviluppo verso il server locale. |
 | Interfaccia | Livello **HTML/CSS** sopra il canvas | Il testo è nitido a ogni dimensione, accessibile e selezionabile. Moduli, tabelle e grafici sono facili da fare. Lo stile riproduce le finestre delle portatili anni 2000. |
 | Grafica | **Pixel art generata in codice** (`src/art/art.ts`) | È tutta originale e senza licenze di terzi. Molti tileset "in stile" in rete sono estratti da giochi commerciali, quindi non li usiamo. La grafica pesa zero byte di immagini. |
-| Caratteri | **@fontsource** (Press Start 2P, Pixelify Sans) | Sono inclusi nel pacchetto, quindi funzionano offline e nella PWA. |
+| Caratteri | **@fontsource** (DotGothic16 per i testi, Press Start 2P solo per il titolo) | DotGothic16 è un carattere a pixel molto leggibile anche piccolo. I font sono inclusi nel pacchetto, quindi funzionano offline e nella PWA. Le legature sono disattivate. |
 | Test | **Vitest** | Usa la stessa pipeline di Vite e fa girare i test in TypeScript senza configurazione. |
 | Server | **Node.js** senza dipendenze | Tiene le chiavi Alpaca fuori dal browser e risolve il CORS. È facile da controllare: un solo file. |
 
@@ -20,7 +20,7 @@ src/
   art/art.ts          tileset con bordi automatici, sprite 16×24, ritratti, fondale del titolo
   scenes/world.ts     scena Phaser: mappa, movimento a griglia, passaggi, NPC, animazioni, HUD
   world/maps.ts       costruzione delle mappe (città, percorsi, interni, Lega, Torre)
-  world/scripts.ts    storia ed eventi: Prof, Valigette, rivale, Mentori, Lega, Torre, incontri
+  world/scripts.ts    storia ed eventi: Prof, Valigette, rivale, Mentori, Lega, Torre
   ui/core.ts          dialoghi, menu di scelta, finestre modali, notifiche
   ui/input.ts         tastiera e controlli touch con pila di gestori
   ui/battle.ts        duelli di conoscenza
@@ -30,6 +30,7 @@ src/
   ui/live.ts          collegamento Alpaca, Licenza, limiti, ordini reali
   ui/menu.ts          menu di pausa, Investidex, opzioni
   ui/setup.ts         avvertenze, questionario, conto di prova, esame, titolo
+  ui/tutorial.ts      mini tutorial dei comandi (tastiera o touch)
   systems/            stato e salvataggi, mercato, portafoglio, quiz, audio, client Alpaca
   data/               asset di fantasia, quiz con fonti, lezioni, eventi, storia, missioni
 server/index.mjs      file statici + API /api verso Alpaca (paper e live)
@@ -38,7 +39,7 @@ server/index.mjs      file statici + API /api verso Alpaca (paper e live)
 ## Flusso dei dati
 
 - Lo stato di gioco è un unico oggetto `S` (`systems/state.ts`), salvato in `localStorage` ed esportabile in JSON. Non contiene mai chiavi.
-- Il mercato del mondo avanza di un giorno simulato ogni 60 passi sui percorsi e a ogni sfida. È un modello a fattori: beta × mercato + settore + componente propria + shock. Il clima (toro, orso, laterale, tempesta) cambia gli incontri e la tinta del mondo.
+- Il mercato del mondo avanza di un giorno simulato ogni 60 passi sui percorsi e a ogni sfida. È un modello a fattori: beta × mercato + settore + componente propria + shock. Il clima (toro, orso, laterale, tempesta) cambia la tinta del mondo. Il gioco non modifica mai il patrimonio fuori dalle operazioni del giocatore e dal mercato.
 - Le missioni generano uno scenario deterministico dal seme, così lo stesso codice sfida dà lo stesso mercato a due amici.
 - I tile logici (`TILE`) decidono collisioni ed eventi. La funzione `visualTiles` li traduce in tile grafici: sceglie i bordi automatici di sentieri, acqua e tetti, le varianti e il fotogramma di animazione.
 

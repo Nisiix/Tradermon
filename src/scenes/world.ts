@@ -1,19 +1,22 @@
 import Phaser from 'phaser';
 import { T, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex } from '../art/art';
 import { getMap, type MapDef, type NpcDef } from '../world/maps';
-import { interact, npcVisible, marketEncounter, onEnterTown, travelTo, type WorldApi } from '../world/scripts';
+import { interact, npcVisible, onEnterTown, travelTo, type WorldApi } from '../world/scripts';
 import { S, save, advanceDays, hasTech, TECH } from '../systems/state';
 import { held, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc } from '../ui/core';
 import { pauseMenu } from '../ui/menu';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { beep } from '../systems/audio';
-import { BIAS_INFO } from '../data/events';
 
 const DIRS: Record<string, [number, number, 0 | 1 | 2 | 3]> = { down: [0, 1, 0], up: [0, -1, 1], left: [-1, 0, 2], right: [1, 0, 3] };
 const DIR_NAME = ['down', 'up', 'left', 'right'] as const;
 
-interface NpcSprite { def: NpcDef; spr?: Phaser.GameObjects.Sprite; x: number; y: number; dir: number }
+interface NpcSprite { def: NpcDef; spr?: Phaser.GameObjects.Sprite; shadow?: Phaser.GameObjects.Image; x: number; y: number; dir: number; hx: number; hy: number; nextIdle: number; walking?: boolean; foot: number }
+
+/** Personaggi che passeggiano o si guardano intorno quando il giocatore non interagisce. */
+const WANDER_KINDS = new Set(['talk', 'resident', 'student', 'daily']);
+const STEP_MS = 180;
 
 export class WorldScene extends Phaser.Scene {
   map!: MapDef;
@@ -29,6 +32,11 @@ export class WorldScene extends Phaser.Scene {
   animFrame = 0;
   animCells: [number, number][] = [];
   walkFrame = 0;
+  turnLock = 0;
+  bumpLock = 0;
+  lastSignMap = '';
+  playerShadow?: Phaser.GameObjects.Image;
+  grassOver?: Phaser.GameObjects.Sprite;
 
   constructor() { super('world'); }
 
@@ -36,6 +44,18 @@ export class WorldScene extends Phaser.Scene {
     if (!this.textures.exists('tiles')) {
       this.textures.addSpriteSheet('tiles', drawTiles() as unknown as HTMLImageElement, { frameWidth: T, frameHeight: T });
       this.textures.addSpriteSheet('chars', drawCharacters() as unknown as HTMLImageElement, { frameWidth: CW, frameHeight: CH });
+      // ombra morbida sotto i personaggi
+      const sh = document.createElement('canvas'); sh.width = 14; sh.height = 5;
+      const g = sh.getContext('2d')!; g.fillStyle = 'rgba(0,0,0,.28)';
+      g.beginPath(); g.ellipse(7, 2.5, 6.5, 2.2, 0, 0, Math.PI * 2); g.fill();
+      this.textures.addCanvas('shadow', sh);
+      // fumetto "!" in pixel art
+      const bb = document.createElement('canvas'); bb.width = 12; bb.height = 14;
+      const b = bb.getContext('2d')!;
+      b.fillStyle = '#202020'; b.fillRect(1, 0, 10, 11); b.fillRect(0, 1, 12, 9); b.fillRect(4, 11, 4, 1); b.fillRect(5, 12, 2, 1);
+      b.fillStyle = '#ffffff'; b.fillRect(2, 1, 8, 9); b.fillRect(1, 2, 10, 7); b.fillRect(5, 10, 2, 1);
+      b.fillStyle = '#d83020'; b.fillRect(5, 2, 2, 5); b.fillRect(5, 8, 2, 1);
+      this.textures.addCanvas('bubble', bb);
     }
   }
 
@@ -46,6 +66,7 @@ export class WorldScene extends Phaser.Scene {
     this.loadMap(S.map, S.x, S.y, (DIR_NAME.indexOf(S.facing) as 0 | 1 | 2 | 3));
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.updateHud() });
     this.time.addEvent({ delay: 550, loop: true, callback: () => this.animateTiles() });
+    this.time.addEvent({ delay: 250, loop: true, callback: () => this.idleNpcs() });
     this.lastMs = performance.now();
   }
 
@@ -74,8 +95,12 @@ export class WorldScene extends Phaser.Scene {
     this.layer = this.tilemap.createLayer(0, ts, 0, 0)!;
     this.cameras.main.setBackgroundColor(this.map.interior ? '#1b1b24' : '#2e7d32');
     this.player = this.add.sprite(x * T + 8, y * T + 16, 'chars', S.avatar * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
-    this.npcs = this.map.npcs.map((d) => ({ def: d, x: d.x, y: d.y, dir: d.dir }));
-    this.refreshNpcs();
+    this.playerShadow = this.add.image(x * T + 8, y * T + 15, 'shadow').setDepth(4);
+    this.grassOver = undefined;
+    const now = this.time.now;
+    this.npcs = this.map.npcs.map((d) => ({ def: d, x: d.x, y: d.y, dir: d.dir, hx: d.x, hy: d.y, foot: 0, nextIdle: now + 1500 + Math.random() * 3000 }));
+    this.refreshNpcs(false);
+    this.updateGrass();
     const cam = this.cameras.main;
     const mw = this.map.w * T, mh = this.map.h * T;
     cam.stopFollow();
@@ -87,16 +112,81 @@ export class WorldScene extends Phaser.Scene {
     this.applyTint();
   }
 
-  refreshNpcs() {
+  /** Crea o rimuove gli sprite dei personaggi. Chi compare o sparisce a mappa già caricata lo fa con una dissolvenza. */
+  refreshNpcs(animate = true) {
     for (const n of this.npcs) {
       const vis = npcVisible(n.def);
-      if (!vis) { n.spr?.destroy(); n.spr = undefined; continue; }
+      if (!vis) {
+        const spr = n.spr, sh = n.shadow;
+        n.spr = undefined; n.shadow = undefined;
+        if (spr && animate) this.tweens.add({ targets: [spr, sh].filter(Boolean), alpha: 0, duration: 300, onComplete: () => { spr.destroy(); sh?.destroy(); } });
+        else { spr?.destroy(); sh?.destroy(); }
+        continue;
+      }
       if (n.def.kind === 'case') {
         if (!n.spr) { const col = ({ stocks: 'case_blue', etf: 'case_green', crypto: 'case_orange' } as Record<string, string>)[String(n.def.data?.cls)] ?? 'case_blue'; n.spr = this.add.sprite(n.x * T + 8, n.y * T + 16, 'tiles', tileIndex(col)).setOrigin(0.5, 1).setDepth(5); }
         continue;
       }
       if (n.def.hiddenSprite) continue;
-      if (!n.spr) n.spr = this.add.sprite(n.x * T + 8, n.y * T + 16, 'chars', this.palFor(n.def) * 12 + n.dir * 3).setOrigin(0.5, 1).setDepth(10 + n.y);
+      if (!n.spr) {
+        n.spr = this.add.sprite(n.x * T + 8, n.y * T + 16, 'chars', this.palFor(n.def) * 12 + n.dir * 3).setOrigin(0.5, 1).setDepth(10 + n.y);
+        n.shadow = this.add.image(n.x * T + 8, n.y * T + 15, 'shadow').setDepth(4);
+        if (animate) { n.spr.setAlpha(0); n.shadow.setAlpha(0); this.tweens.add({ targets: [n.spr, n.shadow], alpha: 1, duration: 300 }); }
+      }
+    }
+  }
+
+  /** Comportamento a riposo: chi abita il mondo si guarda intorno e fa qualche passo vicino a casa. */
+  idleNpcs() {
+    if (this.busy || uiActive()) return;
+    const now = this.time.now;
+    for (const n of this.npcs) {
+      if (!n.spr || n.walking || now < n.nextIdle || n.def.sight || !WANDER_KINDS.has(n.def.kind)) continue;
+      n.nextIdle = now + 1800 + Math.random() * 3500;
+      const behindCounter = [[0, 1], [0, -1], [1, 0], [-1, 0]].some(([dx, dy]) => [TILE.COUNTER, TILE.CASE_TABLE].includes(this.map.tiles[n.y + dy]?.[n.x + dx] as never));
+      const d = Math.floor(Math.random() * 4);
+      const [dx, dy] = Object.values(DIRS)[d];
+      const nx = n.x + dx, ny = n.y + dy;
+      const free = !behindCounter && Math.random() < 0.45 && Math.abs(nx - n.hx) <= 1 && Math.abs(ny - n.hy) <= 1
+        && !this.blocked(nx, ny) && !(nx === S.x && ny === S.y) && !this.map.warps.some((w) => w.x === nx && w.y === ny)
+        && this.map.tiles[ny]?.[nx] !== TILE.DOOR && !this.nearPlayer(nx, ny);
+      n.dir = d;
+      if (free) void this.stepNpc(n, nx, ny, d);
+      else n.spr.setFrame(this.palFor(n.def) * 12 + d * 3);
+    }
+  }
+
+  nearPlayer(x: number, y: number) { return Math.abs(x - S.x) + Math.abs(y - S.y) <= 1 || (this.moving && Math.abs(x - S.x) + Math.abs(y - S.y) <= 2); }
+
+  /** Un passo di un personaggio, con il piede che si alterna come il giocatore. */
+  stepNpc(n: NpcSprite, nx: number, ny: number, di: number, ms = STEP_MS + 60): Promise<void> {
+    if (!n.spr) { n.x = nx; n.y = ny; return Promise.resolve(); }
+    n.walking = true;
+    n.x = nx; n.y = ny; n.dir = di; // la casella è occupata subito, così nessuno ci entra
+    n.foot = 1 - n.foot;
+    const base = this.palFor(n.def) * 12 + di * 3;
+    const spr = n.spr, sh = n.shadow;
+    spr.setFrame(base + 1 + n.foot).setDepth(10 + ny);
+    return new Promise((r) => {
+      this.tweens.add({ targets: spr, x: nx * T + 8, y: ny * T + 16, duration: ms,
+        onUpdate: (tw) => { if (tw.progress > 0.5) spr.setFrame(base); sh?.setPosition(spr.x, spr.y - 1); },
+        onComplete: () => { spr.setFrame(base); n.walking = false; r(); } });
+    });
+  }
+
+  /** Erba alta sopra i piedi del giocatore, come nei classici. */
+  updateGrass() {
+    const t = this.map.tiles[S.y]?.[S.x];
+    if (t === TILE.MARKET) {
+      if (!this.grassOver) this.grassOver = this.add.sprite(0, 0, 'tiles', tileIndex('tall0')).setOrigin(0, 0);
+      this.grassOver.setPosition(S.x * T, S.y * T + 8).setCrop(0, 8, 16, 8).setDisplayOrigin(0, 8).setDepth(10.5 + S.y).setVisible(true);
+    } else this.grassOver?.setVisible(false);
+  }
+
+  rustle(x: number, y: number) {
+    for (let i = 0; i < 4; i++) {
+      const leaf = this.add.rectangle(x * T + 8, y * T + 12, 2, 2, i % 2 ? 0x58a838 : 0x88d058).setDepth(30 + y);
+      this.tweens.add({ targets: leaf, x: leaf.x + (i - 1.5) * 5, y: leaf.y - 5 - Math.random() * 4, alpha: 0, duration: 380, ease: 'Quad.easeOut', onComplete: () => leaf.destroy() });
     }
   }
 
@@ -124,6 +214,7 @@ export class WorldScene extends Phaser.Scene {
     S.playMs += now - this.lastMs;
     this.lastMs = now;
     if (this.busy || this.moving || uiActive()) return;
+    if (this.time.now < this.turnLock) return;
     const p = takeWorldPress();
     if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => travelTo(id, this.api())));
     if (p === 'a') return void this.interactFront();
@@ -139,22 +230,43 @@ export class WorldScene extends Phaser.Scene {
     this.player.setFrame(S.avatar * 12 + DIRS[d][2] * 3);
   }
 
+  /** Cammina contro un ostacolo: passo sul posto e suono, come nei classici (senza ripetere il suono a raffica). */
+  bump(di: number) {
+    const now = this.time.now;
+    if (now < this.bumpLock) return;
+    this.bumpLock = now + 380;
+    beep('bump');
+    this.moving = true;
+    this.walkFrame = (this.walkFrame + 1) % 2;
+    this.player.setFrame(S.avatar * 12 + di * 3 + 1 + this.walkFrame);
+    this.time.delayedCall(200, () => { this.player.setFrame(S.avatar * 12 + di * 3); this.moving = false; });
+  }
+
   tryMove(d: 'up' | 'down' | 'left' | 'right') {
     const [dx, dy, di] = DIRS[d];
     const turned = S.facing !== d;
     this.setFacing(d);
+    // un tocco breve gira il personaggio sul posto; tenendo premuto si cammina
+    if (turned && !this.moving) { this.turnLock = this.time.now + 70; }
     const nx = S.x + dx, ny = S.y + dy;
     const warp = this.map.warps.find((w) => w.x === nx && w.y === ny) ?? (this.map.tiles[ny]?.[nx] === TILE.DOOR ? undefined : undefined);
     if (warp && !this.blockedNpcOnly(nx, ny)) {
       if (warp.lock === 'archive' && S.badges < 5) { void this.runScript(() => say(['La porta dell\'Archivio è chiusa.', 'Una targa dice: "Si apre solo a chi sa leggere oltre la superficie" (Mentore 5).'], 'Archivio')); return; }
       if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione della Lega.'], 'Torre')); return; }
-      this.walkTo(nx, ny, di, () => { beep('door'); this.cameras.main.fadeOut(120); this.time.delayedCall(130, () => { this.loadMap(warp.to, warp.tx, warp.ty, warp.dir ?? (di as 0 | 1 | 2 | 3)); this.cameras.main.fadeIn(120); save(); }); });
+      this.moving = true;
+      this.walkTo(nx, ny, di, () => {
+        beep('door');
+        this.moving = true;
+        this.cameras.main.fadeOut(220, 0, 0, 0);
+        this.time.delayedCall(240, () => { this.loadMap(warp.to, warp.tx, warp.ty, warp.dir ?? (di as 0 | 1 | 2 | 3)); this.cameras.main.fadeIn(260, 0, 0, 0); this.moving = false; save(); });
+      });
       return;
     }
     if (this.blocked(nx, ny)) {
-      if (!turned) beep('bump');
+      if (!turned) this.bump(di);
       return;
     }
+    if (turned) return;
     this.walkTo(nx, ny, di, () => this.afterStep());
   }
 
@@ -163,11 +275,20 @@ export class WorldScene extends Phaser.Scene {
   walkTo(nx: number, ny: number, di: number, done: () => void) {
     this.moving = true;
     this.walkFrame = (this.walkFrame + 1) % 2;
-    this.player.setFrame(S.avatar * 12 + di * 3 + 1 + this.walkFrame);
+    const base = S.avatar * 12 + di * 3;
+    this.player.setFrame(base + 1 + this.walkFrame);
+    const intoGrass = this.map.tiles[ny]?.[nx] === TILE.MARKET;
     this.tweens.add({
-      targets: this.player, x: nx * T + 8, y: ny * T + 16, duration: 150,
+      targets: this.player, x: nx * T + 8, y: ny * T + 16, duration: STEP_MS,
       onStart: () => this.player.setDepth(10 + Math.max(ny, S.y)),
-      onComplete: () => { S.x = nx; S.y = ny; this.player.setFrame(S.avatar * 12 + di * 3); this.moving = false; done(); },
+      // primo mezzo passo con il piede avanti, secondo mezzo in piedi: l'andatura dei classici
+      onUpdate: (tw) => { if (tw.progress > 0.5) this.player.setFrame(base); this.playerShadow?.setPosition(this.player.x, this.player.y - 1); },
+      onComplete: () => {
+        S.x = nx; S.y = ny; this.player.setFrame(base); this.moving = false;
+        this.updateGrass();
+        if (intoGrass) this.rustle(nx, ny);
+        done();
+      },
     });
   }
 
@@ -186,11 +307,6 @@ export class WorldScene extends Phaser.Scene {
       S.stepCounter++;
       if (S.stepCounter % 60 === 0) { const msgs = advanceDays(1); msgs.forEach((m) => toast(m)); }
     }
-    const t = this.map.tiles[S.y][S.x];
-    if (t === TILE.MARKET) {
-      const rate = (S.market.climate === 'tempesta' ? 0.12 : 0.08);
-      if (Math.random() < rate) void this.runScript(() => marketEncounter(this.api()));
-    }
   }
 
   interactFront() {
@@ -200,7 +316,9 @@ export class WorldScene extends Phaser.Scene {
     // dietro al bancone
     if (!n && [TILE.COUNTER, TILE.CASE_TABLE, TILE.TABLE].includes(this.map.tiles[fy]?.[fx] as never)) n = this.npcAt(fx + dx, fy + dy) ?? n;
     if (n) {
+      if (n.walking) return; // aspetta che finisca il passo
       if (n.spr) { n.dir = [1, 0, 3, 2][DIRS[S.facing][2]]; n.spr.setFrame(this.palFor(n.def) * 12 + n.dir * 3); }
+      n.nextIdle = this.time.now + 4000;
       void this.runScript(() => interact(n!.def, this.api()));
       return;
     }
@@ -228,8 +346,9 @@ export class WorldScene extends Phaser.Scene {
     const n = this.npcs.find((x) => x.def.id === id);
     if (!n?.spr) return;
     beep('alert');
-    const t = this.add.text(n.spr.x, n.spr.y - 28, '!', { fontFamily: 'monospace', fontSize: '12px', color: '#ffffff', backgroundColor: '#c8463d', padding: { x: 3, y: 0 } }).setOrigin(0.5).setDepth(50);
-    await new Promise((r) => this.time.delayedCall(600, r));
+    const t = this.add.image(n.spr.x, n.spr.y - 24, 'bubble').setOrigin(0.5, 1).setDepth(50).setScale(0.2);
+    this.tweens.add({ targets: t, scale: 1, duration: 160, ease: 'Back.easeOut' });
+    await new Promise((r) => this.time.delayedCall(750, r));
     t.destroy();
   }
 
@@ -244,12 +363,7 @@ export class WorldScene extends Phaser.Scene {
       if (dx !== 0 && !this.blocked(n.x + dx, n.y)) { nx += dx; di = dx > 0 ? 3 : 2; }
       else if (dy !== 0 && !this.blocked(n.x, n.y + dy)) { ny += dy; di = dy > 0 ? 0 : 1; }
       else break;
-      n.x = nx; n.y = ny; n.dir = di;
-      if (n.spr) {
-        n.spr.setFrame(this.palFor(n.def) * 12 + di * 3 + 1);
-        n.spr?.setDepth(10 + ny);
-        await new Promise((r) => this.tweens.add({ targets: n.spr, x: nx * T + 8, y: ny * T + 16, duration: 160, onComplete: r }));
-      }
+      await this.stepNpc(n, nx, ny, di, STEP_MS + 20);
     }
     const fx = Math.sign(S.x - n.x), fy = Math.sign(S.y - n.y);
     n.dir = fy > 0 ? 0 : fy < 0 ? 1 : fx < 0 ? 2 : 3;
@@ -261,7 +375,11 @@ export class WorldScene extends Phaser.Scene {
   bumpBack() {
     const [dx, dy] = DIRS[S.facing];
     const bx = S.x - dx, by = S.y - dy;
-    if (!this.blocked(bx, by)) { S.x = bx; S.y = by; this.player.setPosition(bx * T + 8, by * T + 16).setDepth(10 + by); }
+    if (!this.blocked(bx, by)) {
+      S.x = bx; S.y = by;
+      this.player.setDepth(10 + by);
+      this.tweens.add({ targets: this.player, x: bx * T + 8, y: by * T + 16, duration: STEP_MS, onUpdate: () => this.playerShadow?.setPosition(this.player.x, this.player.y - 1), onComplete: () => this.updateGrass() });
+    }
   }
 
   animateTiles() {
@@ -288,7 +406,8 @@ export class WorldScene extends Phaser.Scene {
   updateHud(force = false) {
     if (!this.hud) return;
     const clk = marketClock();
-    if (force) {
+    if (force && this.lastSignMap !== this.map.id) {
+      this.lastSignMap = this.map.id;
       // cartello del luogo, come nei classici: entra dall'alto, resta qualche secondo ed esce
       getStage().querySelectorAll('.locsign').forEach((e) => e.remove());
       const sign = el('div', 'locsign' + (this.map.interior ? ' inside' : ''), esc(this.map.name));
@@ -297,7 +416,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.hud.innerHTML = `<span></span>
       <span class="pill">${clk.open ? '<i class="dot on"></i>' : '<i class="dot"></i>'}${clk.label} · ${CLIMATE_LABEL[S.market.climate]}</span>
-      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Medaglie <b>${S.badges}</b>${S.bias ? ` <span class="bias">${BIAS_INFO[S.bias].name}</span>` : ''}</span>`;
+      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Medaglie <b>${S.badges}</b></span>`;
     if (force) this.applyTint();
   }
 

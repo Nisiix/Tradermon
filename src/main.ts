@@ -2,12 +2,15 @@ import Phaser from 'phaser';
 import '@fontsource/press-start-2p/400.css';
 import '@fontsource/pixelify-sans/400.css';
 import '@fontsource/pixelify-sans/600.css';
+import '@fontsource/dotgothic16/latin-400.css';
+import '@fontsource/dotgothic16/latin-ext-400.css';
 import './style.css';
 import { WorldScene } from './scenes/world';
 import { initUI, el, toast } from './ui/core';
 import { initInput, initTouch } from './ui/input';
 import { titleScreen, onboarding } from './ui/setup';
 import { applyOptions } from './ui/menu';
+import { controlsTutorial, controlsSeen } from './ui/tutorial';
 import { newGame, load, hasSave, importSave } from './systems/state';
 
 function pickFile(): Promise<string | null> {
@@ -42,6 +45,7 @@ async function boot() {
     break;
   }
   applyOptions();
+  if (!controlsSeen()) await controlsTutorial();
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
@@ -64,4 +68,5 @@ void boot();
 // Accesso allo stato per i test automatici e il debug da console (solo in sviluppo o con ?debug).
 import * as state from './systems/state';
 import { QUESTIONS } from './data/quiz/build';
-if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) Object.defineProperty(window, 'tradermon', { get: () => ({ state: state.S, questions: QUESTIONS, scene: (window as unknown as { __game?: Phaser.Game }).__game?.scene.getScene('world') }) });
+import { allMapIds } from './world/maps';
+if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) Object.defineProperty(window, 'tradermon', { get: () => ({ state: state.S, questions: QUESTIONS, maps: allMapIds(), scene: (window as unknown as { __game?: Phaser.Game }).__game?.scene.getScene('world') }) });

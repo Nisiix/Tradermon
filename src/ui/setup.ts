@@ -4,6 +4,8 @@ import { pickQuestions } from '../systems/quiz';
 import { runDuel } from './battle';
 import { PAL, titleBackdrop, portrait } from '../art/art';
 import { getStage } from './core';
+import { controlsTutorial } from './tutorial';
+import { pushHandler, popHandler, type Key } from './input';
 import { newPortfolio } from '../systems/portfolio';
 
 export async function disclaimer(): Promise<void> {
@@ -40,6 +42,7 @@ export async function questionnaire(): Promise<number> {
 
 export async function onboarding(): Promise<void> {
   await disclaimer();
+  await controlsTutorial();
   // scena d'introduzione: il Professore su una pedana, come nei classici
   const intro = el('div', 'intro-stage', `<img class="sprite" src="${portrait(PAL.PROF)}" alt="Prof. Saldi">`);
   getStage().prepend(intro);
@@ -73,7 +76,7 @@ export async function portfolioSetup(): Promise<void> {
       <p class="small">Tutto in <b>Crediti</b> (1 Credito = 1 dollaro virtuale). I punteggi sono in percentuale: un capitale più grande non dà vantaggi.</p>
       <div class="grid2">
         <label>Capitale virtuale<select class="tx cap"><option>1000</option><option selected>10000</option><option>50000</option></select></label>
-        <label>Versamento mensile simulato<select class="tx mon"><option>0</option><option>100</option><option>250</option><option>500</option></select></label>
+        <p class="small muted" style="align-self:end">Il gioco non aggiunge né toglie denaro: il conto cambia solo con le tue operazioni e con il mercato.</p>
       </div>
       <p><b>Allocazione obiettivo</b> <span class="small muted">(preset per il profilo ${S.profile}; la somma deve fare 100)</span></p>
       <div class="grid2">
@@ -87,7 +90,7 @@ export async function portfolioSetup(): Promise<void> {
       const q = (s: string) => Number((body.querySelector(s) as HTMLInputElement).value);
       const r = q('.r'), d = q('.d'), c = q('.c');
       if (r + d + c !== 100 || [r, d, c].some((x) => x < 0)) { (body.querySelector('.msg') as HTMLElement).textContent = 'Le tre percentuali devono sommare a 100.'; return; }
-      close({ cap: q('.cap'), monthly: q('.mon'), drip: (body.querySelector('.drip') as HTMLInputElement).checked, risky: r, def: d, cash: c });
+      close({ cap: q('.cap'), monthly: 0, drip: (body.querySelector('.drip') as HTMLInputElement).checked, risky: r, def: d, cash: c });
     }, 'primary');
   }, { closable: false });
   const r = res!;
@@ -120,13 +123,21 @@ export function titleScreen(hasSave: boolean): Promise<'new' | 'continue' | 'imp
     const add = (label: string, v: 'new' | 'continue' | 'import') => {
       const b = el('button', 'btn' + (opts.children.length === 0 ? ' primary' : ''), esc(label));
       b.style.minWidth = '220px';
-      b.addEventListener('click', () => { t.remove(); resolve(v); });
+      b.addEventListener('click', () => { popHandler(h); t.remove(); resolve(v); });
       opts.appendChild(b);
     };
     if (hasSave) add('Continua', 'continue');
     add('Nuova partita', 'new');
     add('Importa salvataggio', 'import');
     stage.appendChild(t);
+    const list = () => [...opts.querySelectorAll('button')] as HTMLButtonElement[];
+    const h = (k: Key) => {
+      const bs = list(); const cur = bs.indexOf(document.activeElement as HTMLButtonElement);
+      if (k === 'a') { (bs[Math.max(0, cur)]).click(); return true; }
+      if (k === 'up' || k === 'down' || k === 'left' || k === 'right') { bs[(Math.max(0, cur) + (k === 'down' || k === 'right' ? 1 : bs.length - 1)) % bs.length].focus(); return true; }
+      return true;
+    };
+    pushHandler(h);
     setTimeout(() => (opts.querySelector('button') as HTMLButtonElement)?.focus(), 50);
   });
 }

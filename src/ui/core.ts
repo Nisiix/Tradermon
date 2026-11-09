@@ -132,8 +132,34 @@ export function modal<T = unknown>(title: string, build: (ctl: ModalCtl<T>) => v
     stage.appendChild(wrap);
     let closed = false;
     const close = (v?: T) => { if (closed) return; closed = true; popHandler(h); wrap.remove(); resolve(v); };
+    // Tastiera e pulsanti A/B anche nelle finestre: A conferma il pulsante evidenziato (o il principale),
+    // le frecce spostano l'evidenziazione tra i pulsanti in basso, B chiude.
     const h = (k: Key) => {
       if (k === 'b' && opts.closable !== false) { close(undefined); return true; }
+      const visible = (e: HTMLElement) => !(e as HTMLButtonElement).disabled && e.offsetParent !== null;
+      const btns = ([...foot.querySelectorAll('button')] as HTMLButtonElement[]).filter(visible);
+      const all = ([...body.querySelectorAll('button, input[type=checkbox], input[type=radio], [tabindex="0"]'), ...btns] as HTMLElement[]).filter(visible);
+      const act = document.activeElement as HTMLElement | null;
+      const inModal = !!act && m.contains(act) && act !== m;
+      if (k === 'a') {
+        if (inModal && all.includes(act!)) { act!.click(); return true; }
+        const prim = foot.querySelector('button.primary:not([disabled])') as HTMLButtonElement | null;
+        if (prim) { prim.click(); return true; }
+        // pulsante principale disattivato: di solito manca una spunta, quindi la mettiamo con A
+        const ck = body.querySelector('input[type=checkbox]:not(:checked)') as HTMLInputElement | null;
+        if (ck) { ck.click(); const p2 = foot.querySelector('button.primary:not([disabled])') as HTMLButtonElement | null; (p2 ?? ck).focus(); return true; }
+        if (btns.length) { btns[btns.length - 1].focus(); return true; }
+        return false;
+      }
+      if ((k === 'left' || k === 'right' || k === 'up' || k === 'down') && all.length) {
+        const list = k === 'left' || k === 'right' ? (btns.length ? btns : all) : all;
+        const cur = inModal ? list.indexOf(act!) : -1;
+        const fwd = k === 'right' || k === 'down';
+        const i = cur < 0 ? Math.max(0, list.findIndex((b) => b.classList.contains('primary'))) : (cur + (fwd ? 1 : list.length - 1)) % list.length;
+        list[i].focus();
+        list[i].scrollIntoView({ block: 'nearest' });
+        return true;
+      }
       return false;
     };
     const button = (label: string, fn: () => void, cls = '') => {

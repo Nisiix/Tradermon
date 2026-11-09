@@ -1,6 +1,6 @@
 import type { NpcDef } from './maps';
 import type { AssetClass, AssetDef, Question, Sector } from '../types';
-import { S, save, slots, addRep, card, setBias, clampStat, advanceDays, level, TECH, hasTech, classes, LIVE_LIMITS, newGamePlus } from '../systems/state';
+import { S, save, slots, addRep, card, learnBias, clampStat, advanceDays, level, TECH, hasTech, classes, LIVE_LIMITS, newGamePlus } from '../systems/state';
 import { say, choose, modal, toast, esc, wait } from '../ui/core';
 import { runDuel } from '../ui/battle';
 import { runSim } from '../ui/timemachine';
@@ -13,10 +13,9 @@ import { mentorTopics, trackTopics, LEAGUE_TOPICS, byTopic } from '../data/quiz/
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../data/story';
 import { mentorMission, leagueMission, LEGENDS, SANDBOX, type Mission } from '../data/missions';
 import { ASSETS, ASSET_BY_ID, starterFor, unlockedAssets, SECTOR_LABEL } from '../data/assets';
-import { NEWS_EVENTS, TEMPTATIONS, SECTOR_SHOCKS, BIAS_INFO } from '../data/events';
+import { TEMPTATIONS, BIAS_INFO } from '../data/events';
 import { lessonsFor } from '../data/lessons';
-import { value } from '../systems/portfolio';
-import { advanceWorldMarket, metrics, startPrice } from '../systems/market';
+import { metrics, startPrice } from '../systems/market';
 import { PAL } from '../art/art';
 import { beep } from '../systems/audio';
 import { pick, shuffle, mulberry32 } from '../systems/rng';
@@ -266,7 +265,6 @@ async function tiltCheck(w: WorldApi) {
   await say([`${S.name} ha perso tutta la Fiducia ed è andato in tilt!`, 'Torni di corsa all\'ultima Clinica visitata.'], 'Sistema');
   S.stats.reputazione = Math.round(S.stats.reputazione * 0.95);
   S.stats.fiducia = 100;
-  if (Math.random() < 0.5) setBias('panico');
   w.warp(S.lastClinic.map, S.lastClinic.x, S.lastClinic.y, 0);
 }
 
@@ -290,11 +288,10 @@ async function speculator(n: NpcDef, w: WorldApi) {
   const c = await choose(['Rifiuto', 'Accetto'], { prompt: 'Cosa fai?' });
   if (c === 0) { clampStat('disciplina', 5); await say(t.refuse, 'Tu'); }
   else {
-    const loss = S.portfolio.cash * t.loss;
-    S.portfolio.cash -= loss;
+    // nessuna perdita applicata al conto: è una lezione, non una penalità sul patrimonio
     clampStat('disciplina', -8);
-    setBias(t.bias);
-    await say([t.accept, `Perdi ${Math.round(loss)} Crediti simulati e ti ritrovi con lo stato: ${BIAS_INFO[t.bias].name}.`], 'Narratore');
+    learnBias(t.bias);
+    await say([t.accept, `Nella realtà avresti potuto perdere circa il ${Math.round(t.loss * 100)}% della liquidità. Questa trappola si chiama ${BIAS_INFO[t.bias].name}: ${BIAS_INFO[t.bias].effect}`], 'Narratore');
   }
   await say('Grr! Allora vediamo se sai anche rispondere!', 'Speculatore');
   const qs = pickQuestions(['regole', ...trackTopics(S.track, S.mixedClasses, S.badges)], 3);
@@ -612,67 +609,6 @@ async function legend() {
     Object.keys(S.cards).forEach((id) => (card(id).xp += 30));
     await say(['Eccellente. +200 punti Conoscenza e studio extra per tutte le tue carte.', 'Ricorda: la conoscenza è l\'unico vantaggio che nessuno può portarti via.'], 'Investitrice Leggendaria');
   } else await say('Non ancora. La conoscenza richiede tempo.', 'Investitrice Leggendaria');
-}
-
-// ---------------- Zone di Mercato ----------------
-
-export async function marketEncounter(w: WorldApi) {
-  const r = Math.random();
-  if (r < 0.35) return quickQuestion(w);
-  if (r < 0.6) return newsEvent();
-  if (r < 0.75) return sectorEvent();
-  if (r < 0.9) return temptation();
-  return discovery();
-}
-
-async function quickQuestion(w: WorldApi) {
-  beep('alert');
-  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), 1, { preferReview: true });
-  const r = await runDuel({ foeName: 'Domanda lampo!', foeTitle: 'Zona di Mercato', foePal: 16 + Math.floor(Math.random() * 4), questions: qs, need: 1, damage: 10 });
-  if (r.win) S.stats.xp += 5;
-  await tiltCheck(w);
-}
-
-async function newsEvent() {
-  const ev = pick(NEWS_EVENTS);
-  beep('alert');
-  const c = await choose(ev.choices.map((x) => x.label), { prompt: ev.text, who: ev.who });
-  const ch = ev.choices[c];
-  if (ch.stat) clampStat(ch.stat, ch.delta ?? 0);
-  if (ch.bias) setBias(ch.bias);
-  await say([ch.reply, ch.bias && S.bias === ch.bias ? `Stato alterato: ${BIAS_INFO[ch.bias].name}. ${BIAS_INFO[ch.bias].effect} Si cura alla Clinica.` : ''].filter(Boolean), ch.good ? 'Ottima scelta' : 'Attenzione');
-}
-
-async function sectorEvent() {
-  const sh = pick(SECTOR_SHOCKS);
-  const before = value(S.portfolio, S.market.prices);
-  advanceWorldMarket(S.market, { day: 0, sectors: sh.effects });
-  const after = value(S.portfolio, S.market.prices);
-  beep('alert');
-  const pos = S.portfolio.positions.map((p) => ASSET_BY_ID[p.id]);
-  const hit = pos.filter((a) => (sh.effects[a.sector] ?? 0) < 0).map((a) => a.ticker);
-  const helped = pos.filter((a) => (sh.effects[a.sector] ?? 0) > 0).map((a) => a.ticker);
-  await say([`📰 ${sh.title}! ${sh.text}`, `Effetto sul tuo portafoglio: ${((after / before - 1) * 100).toFixed(2)}%.`, hit.length || helped.length ? `${hit.length ? `Colpiti: ${hit.join(', ')}.` : ''} ${helped.length ? `Favoriti: ${helped.join(', ')}.` : ''}` : 'Nessuna tua posizione è nei settori coinvolti.', 'Settori diversi reagiscono in modo diverso: è per questo che si diversifica.'], 'Notiziario di Capitalia');
-}
-
-async function temptation() {
-  const t = pick(TEMPTATIONS);
-  beep('alert');
-  const c = await choose(['Rifiuto', 'Accetto'], { prompt: t.text, who: t.who });
-  if (c === 0) { clampStat('disciplina', 5); await say(t.refuse, 'Ottima scelta'); return; }
-  const loss = S.portfolio.cash * t.loss;
-  S.portfolio.cash -= loss;
-  clampStat('disciplina', -8);
-  setBias(t.bias);
-  await say([t.accept, `Perdi ${Math.round(loss)} Crediti simulati.`, S.bias ? `Stato alterato: ${BIAS_INFO[S.bias].name}.` : ''].filter(Boolean), 'Lezione');
-}
-
-async function discovery() {
-  const owned = Object.keys(S.cards);
-  if (!owned.length) return;
-  const id = pick(owned);
-  card(id).xp += 10;
-  await say([`Un passante ti racconta di ${ASSET_BY_ID[id].name}.`, `"${ASSET_BY_ID[id].facts[2] ?? ASSET_BY_ID[id].desc}"`, '+10 punti studio per questa carta.'], 'Passante');
 }
 
 export async function onEnterTown(id: string) {

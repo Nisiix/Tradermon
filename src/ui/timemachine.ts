@@ -4,7 +4,7 @@ import type { Scenario } from '../systems/market';
 import { generateScenario, metrics } from '../systems/market';
 import { ASSETS, SECTOR_LABEL, SECTOR_COLOR } from '../data/assets';
 import { type Book, marketBuy, marketSell, placeOrder, processOrders, value, weights, fmtPx, fmtMoney, fmtPct, fmtQty, FEE, spreadOf } from '../systems/portfolio';
-import { S, hasTech, TECH, classes } from '../systems/state';
+import { hasTech, TECH, classes } from '../systems/state';
 import { el, esc, modal, toast } from './core';
 import { beep } from '../systems/audio';
 
@@ -207,7 +207,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
         const p0 = series.prices[a.id][0];
         const p = px[a.id];
         const pos = book.positions.find((x) => x.id === a.id);
-        const row = el('div', 'a' + (a.id === selected ? ' sel' : ''), `<span><span class="sector" style="background:${SECTOR_COLOR[a.sector]};font-size:7px;padding:1px 3px;color:#fff;border-radius:2px">${SECTOR_LABEL[a.sector].slice(0, 4)}</span> ${esc(a.ticker)}${pos ? ' ●' : ''}</span><span>${fmtPx(p)} <span class="${p >= p0 ? 'good' : 'bad'} small">${fmtPct(p / p0 - 1, 0)}</span></span>`);
+        const row = el('div', 'a' + (a.id === selected ? ' sel' : ''), `<span><span class="sector" style="background:${SECTOR_COLOR[a.sector]};font-size:calc(var(--fs) * .8);padding:1px 3px;color:#fff;border-radius:2px">${SECTOR_LABEL[a.sector].slice(0, 4)}</span> ${esc(a.ticker)}${pos ? ' ●' : ''}</span><span>${fmtPx(p)} <span class="${p >= p0 ? 'good' : 'bad'} small">${fmtPct(p / p0 - 1, 0)}</span></span>`);
         row.addEventListener('click', () => { selected = a.id; draw(); });
         list.appendChild(row);
       }

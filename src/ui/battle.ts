@@ -1,13 +1,12 @@
 import type { Question } from '../types';
 import { el, esc, getStage, wait, bar } from './core';
 import { pushHandler, popHandler, type Key } from './input';
-import { S, profileTimer, setBias } from '../systems/state';
+import { S, profileTimer } from '../systems/state';
 import { recordAnswer } from '../systems/quiz';
 import { shuffle } from '../systems/rng';
 import { SOURCES } from '../data/sources';
 import { portrait, portraitBack } from '../art/art';
 import { beep } from '../systems/audio';
-import { BIAS_INFO } from '../data/events';
 
 export interface DuelOpts {
   foeName: string;
@@ -21,7 +20,19 @@ export interface DuelOpts {
 
 export interface DuelResult { win: boolean; correct: number; total: number; perfect: boolean; ids: string[] }
 
-export function runDuel(o: DuelOpts): Promise<DuelResult> {
+/** Transizione d'ingresso al duello: due lampi, poi bande nere che si chiudono da lati alterni. */
+export async function battleTransition(): Promise<void> {
+  const stage = getStage();
+  const t = el('div', 'bt-trans');
+  t.innerHTML = '<div class="fl"></div>' + Array.from({ length: 8 }, (_, i) => `<i style="top:${i * 12.5}%;animation-delay:${520 + i * 45}ms" class="${i % 2 ? 'r' : 'l'}"></i>`).join('');
+  stage.appendChild(t);
+  beep('alert');
+  await wait(1050);
+  return new Promise((r) => { setTimeout(() => t.remove(), 450); t.classList.add('out'); r(); });
+}
+
+export async function runDuel(o: DuelOpts): Promise<DuelResult> {
+  await battleTransition();
   return new Promise((resolve) => {
     const stage = getStage();
     const root = el('div', 'battle');
@@ -30,7 +41,7 @@ export function runDuel(o: DuelOpts): Promise<DuelResult> {
         <div class="box plate foe-p"><div class="nm">${esc(o.foeName)}${o.foeTitle ? ` <span class="muted">· ${esc(o.foeTitle)}</span>` : ''}</div><div class="small">Convinzione</div><div class="foebar">${bar(100)}</div></div>
         <div class="foe"><img class="sprite" src="${portrait(o.foePal)}" alt=""></div>
         <div class="me"><img class="sprite" src="${portraitBack(S.avatar)}" alt=""></div>
-        <div class="box plate me-p"><div class="nm">${esc(S.name)} ${S.bias ? `<span class="tag" style="background:#7a2a6a;color:#fff">${BIAS_INFO[S.bias].name}</span>` : ''}</div><div class="small">Fiducia <span class="fv">${S.stats.fiducia}</span>/100</div><div class="mebar">${bar(S.stats.fiducia)}</div></div>
+        <div class="box plate me-p"><div class="nm">${esc(S.name)}</div><div class="small">Fiducia <span class="fv">${S.stats.fiducia}</span>/100</div><div class="mebar">${bar(S.stats.fiducia)}</div></div>
       </div>
       <div class="box q"><div class="qhead row" style="justify-content:space-between"><span class="small muted qn"></span><span class="timer"></span></div><div class="qt"></div><div class="opts"></div><div class="exp"></div></div>`;
     stage.appendChild(root);
@@ -38,7 +49,6 @@ export function runDuel(o: DuelOpts): Promise<DuelResult> {
     let foe = 100;
     let correct = 0;
     let idx = 0;
-    let streakFast = 0;
     let perfect = true;
     const per = 100 / o.need;
     let handler: ((k: Key) => void) | null = null;
@@ -71,25 +81,19 @@ export function runDuel(o: DuelOpts): Promise<DuelResult> {
         optsEl.innerHTML = '';
         order.forEach((oi, i) => {
           const b = el('button', 'btn' + (i === sel ? ' sel' : ''), `${'ABCD'[i]}. ${esc(q.options[oi])}`);
-          if (S.bias === 'gregge' && oi === herdOpt) b.innerHTML += `<span class="herd">il 78% ha scelto questa</span>`;
           b.addEventListener('click', () => answer(i));
           optsEl.appendChild(b);
         });
       };
-      const herdOpt = 1 + Math.floor(Math.random() * 3);
       render();
-      let limit = profileTimer();
-      if (S.bias === 'panico' && limit) limit = Math.ceil(limit / 2);
+      const limit = profileTimer();
       let left = limit;
-      const t0 = Date.now();
       let answered = false;
-      let shuffled = false;
       const timerEl = $('.timer');
       timerEl.textContent = limit ? `⏱ ${left}s` : 'Modalità Studio';
       const iv = limit ? window.setInterval(() => {
         left--;
         timerEl.textContent = `⏱ ${left}s`;
-        if (S.bias === 'fomo' && !shuffled && left <= limit / 2) { shuffled = true; order.splice(0, 4, ...shuffle(order)); render(); }
         if (left <= 0) answer(-1);
       }, 1000) : 0;
 
@@ -107,10 +111,8 @@ export function runDuel(o: DuelOpts): Promise<DuelResult> {
           foe = Math.max(0, foe - per);
           beep('ok');
           ($('.foe') as HTMLElement).classList.add('shake');
-          if (Date.now() - t0 < 4000) streakFast++; else streakFast = 0;
         } else {
           perfect = false;
-          streakFast = 0;
           S.stats.fiducia = Math.max(0, S.stats.fiducia - o.damage);
           beep('bad');
           ($('.me') as HTMLElement).classList.add('shake');
@@ -121,9 +123,7 @@ export function runDuel(o: DuelOpts): Promise<DuelResult> {
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
         const src = SOURCES[q.source];
         const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(q.options[q.answer])}`;
-        if (S.bias === 'euforia') $('.exp').innerHTML = `<p>${verdict} <span class="muted small">(Eccesso di fiducia: spiegazione nascosta. Curati alla Clinica.)</span></p>`;
-        else $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}${src ? ` <span class="small muted">Fonte: <a href="${src.url}" target="_blank" rel="noopener">${esc(src.publisher)} – ${esc(src.title)}</a></span>` : ''}</p>`;
-        if (streakFast >= 5 && !S.bias) { if (setBias('euforia')) $('.exp').innerHTML += `<p class="bad small">Cinque risposte velocissime di fila... ti senti invincibile. Stato: Eccesso di fiducia!</p>`; streakFast = 0; }
+        $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}${src ? ` <span class="small muted">Fonte: <a href="${src.url}" target="_blank" rel="noopener">${esc(src.publisher)} – ${esc(src.title)}</a></span>` : ''}</p>`;
         const cont = el('button', 'btn primary', 'Continua ▶');
         cont.style.marginTop = '6px';
         $('.exp').appendChild(cont);
