@@ -44,7 +44,7 @@ server/index.mjs      file statici + API /api verso Alpaca (paper e live)
 
 ## Sicurezza del denaro reale
 
-1. Il browser parla solo con `127.0.0.1:8787`. Il server rifiuta altre origini.
+1. Il browser parla solo con `127.0.0.1:8888` (porta modificabile con `TRADERMON_PORT`). Il server rifiuta altre origini.
 2. Le chiavi vengono verificate presso Alpaca e salvate in `server/.secrets/keys.json`, con permessi 600 e fuori da git.
 3. Prima di inviare un ordine il server controlla:
    - il simbolo;

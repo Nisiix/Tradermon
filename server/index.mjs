@@ -21,7 +21,7 @@ const DIST = path.resolve(ROOT, '..', 'dist');
 const SECRETS = path.join(ROOT, '.secrets');
 const KEYS_FILE = path.join(SECRETS, 'keys.json');
 const AUDIT_FILE = path.join(SECRETS, 'audit.log');
-const PORT = Number(process.env.PORT || 8787);
+const PORT = Number(process.env.TRADERMON_PORT || process.env.PORT || 8888);
 const HOST = process.env.TRADERMON_HOST || '127.0.0.1';
 const LIVE_MAX_ORDER = Number(process.env.TRADERMON_LIVE_MAX_ORDER || 2500);
 

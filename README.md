@@ -10,15 +10,17 @@ Serve Node.js 20 o più recente.
 
 ```bash
 npm install
-npm run dev        # gioco su http://localhost:5173 + server locale Alpaca su 127.0.0.1:8787
+npm run dev        # gioco su http://localhost:5173 + server locale Alpaca su 127.0.0.1:8888
 ```
 
 Versione di produzione (un solo processo, nessuna dipendenza a runtime):
 
 ```bash
 npm run build
-npm start          # apri http://localhost:8787
+npm start          # apri http://localhost:8888
 ```
+
+La porta predefinita del server locale è **8888**. Per usarne un'altra imposta la variabile `TRADERMON_PORT`, ad esempio `TRADERMON_PORT=9000 npm start` (su Windows PowerShell: `$env:TRADERMON_PORT=9000; npm start`). Vale anche per `npm run dev`.
 
 Il gioco è una PWA: dal browser si può "installare" e giocare anche offline. Le funzioni Alpaca richiedono il server locale e la rete.
 
@@ -67,7 +69,7 @@ Vendite allo scoperto e margine non sono ammessi. Puoi abbassare il tetto massim
 |---|---|
 | `npm run dev` | Sviluppo con ricarica automatica |
 | `npm run build` | Controllo dei tipi e build in `dist/` |
-| `npm start` | Server di produzione su 127.0.0.1:8787 |
+| `npm start` | Server di produzione su 127.0.0.1:8888 |
 | `npm test` | Test di dati, mappe, portafoglio e server |
 | `npm run docs:content` | Rigenera il documento dei contenuti |
 

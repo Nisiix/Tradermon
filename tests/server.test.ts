@@ -6,7 +6,7 @@ const base = `http://127.0.0.1:${PORT}`;
 let srv: ChildProcess;
 
 beforeAll(async () => {
-  srv = spawn(process.execPath, ['server/index.mjs'], { env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
+  srv = spawn(process.execPath, ['server/index.mjs'], { env: { ...process.env, TRADERMON_PORT: String(PORT) }, stdio: 'ignore' });
   for (let i = 0; i < 50; i++) { try { await fetch(base + '/api/status'); return; } catch { await new Promise((r) => setTimeout(r, 100)); } }
 });
 afterAll(() => { srv?.kill(); });
