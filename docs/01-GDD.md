@@ -465,7 +465,7 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 ## 10. Interfaccia e controlli
 
 - Risoluzione logica 240×160 (quella delle console portatili dei primi anni 2000), tessere 16×16, personaggi 16×24, ingrandimento a pixel netti.
-- Stile grafico: pixel art originale disegnata in codice, con contorni scuri, rampe di 3-4 tonalità per materiale e luce dall'alto a sinistra. Bordi automatici per sentieri, acqua e tetti; acqua, fiori e Muro del Rumore animati; erba alta (Zone di Mercato) con riflessi dorati.
+- Stile grafico: pixel art originale disegnata in codice, ispirata alle portatili di metà anni 2000 (stile DS): rampe di 5 tonalità, contorni colorati invece che neri, ombre portate da alberi e facciate, ombre morbide sotto i personaggi, leggera vignettatura. Gli sprite delle sfide sono ingranditi con Scale2x per bordi più morbidi. Bordi automatici per sentieri, acqua e tetti; acqua, fiori e Muro del Rumore animati; erba alta (Zone di Mercato) con riflessi dorati.
 - Finestre nello stile classico: riquadro bianco a doppio bordo, freccia rossa lampeggiante, cursore a triangolo nei menu, cartello del luogo che scende all'ingresso di ogni zona.
 - Schermata di sfida: avversario in alto a destra su una pedana d'erba, giocatore di spalle in basso a sinistra, riquadri delle barre (Convinzione e Fiducia) verde/giallo/rosso, lampo d'ingresso e scorrimento dei personaggi.
 - Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.

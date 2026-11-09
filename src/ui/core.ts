@@ -187,6 +187,7 @@ export function ask(prompt: string, def = '', maxLen = 10): Promise<string | nul
     i.value = def;
     i.maxLength = maxLen;
     body.appendChild(i);
+    body.appendChild(el('p', 'small muted', 'Scrivi e premi Invio (o tocca OK).'));
     const ok = () => close(i.value.trim() || def);
     i.addEventListener('keydown', (e) => { if (e.key === 'Enter') ok(); });
     button('OK', ok, 'primary');
