@@ -153,6 +153,7 @@ export interface SaveData {
   biasSeen: BiasId[];
   cards: Record<string, CardState>;
   lessonsRead: string[];
+  tipsHeard: string[];
   defeated: string[];
   visited: string[];
   portfolio: Portfolio;

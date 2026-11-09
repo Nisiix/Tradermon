@@ -25,7 +25,7 @@ export function newGame(): SaveData {
   S = {
     version: 1, createdAt: Date.now(), name: 'Alex', avatar: 0, rival: 'Leo', profile: 'equilibrato', profileScore: 5,
     goal: '', horizon: '', track: 'stocks', mixedClasses: [], map: 'home', x: 4, y: 4, facing: 'down', flags: {}, badges: 0, techniques: [],
-    stats: { xp: 0, fiducia: 100, disciplina: 50, pazienza: 50, reputazione: 0 }, bias: null, biasSeen: [], cards: {}, lessonsRead: [], defeated: [], visited: ['t0'],
+    stats: { xp: 0, fiducia: 100, disciplina: 50, pazienza: 50, reputazione: 0 }, bias: null, biasSeen: [], cards: {}, lessonsRead: [], tipsHeard: [], defeated: [], visited: ['t0'],
     portfolio: newPortfolio(10000, 0, 'equilibrato'), market: createWorldMarket(seed), review: {}, answered: {}, daily: { lastDate: '', streak: 0 },
     tower: { best: 0 }, legends: [], stepCounter: 0, lastClinic: { map: 'home', x: 4, y: 4 }, license: 'apprendista', examLastFail: 0,
     liveLimits: { perOrder: 0, perMonth: 0, pauseUntil: 0, monthKey: '', spentThisMonth: 0 }, liveAudit: [], ngPlus: 0, playMs: 0,

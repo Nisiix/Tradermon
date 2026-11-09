@@ -35,7 +35,8 @@ Il gioco è una PWA: dal browser si può "installare" e giocare anche offline. L
 2. Nel Laboratorio scegli una delle tre Valigette: Titoli (azioni), Indici (ETF) o Cripto. Parlando con il Prof puoi scegliere anche il Sentiero Misto.
 3. La Dott.ssa Ratio apre il tuo **Conto di Prova**. Scegli il capitale virtuale, il versamento mensile e l'allocazione obiettivo.
 4. Ogni Mentore si batte in due fasi: un duello di conoscenza e una missione nella **Macchina del Tempo**, un mercato simulato con ordini, costi, dividendi e notizie.
-5. Nelle Cliniche del Portafoglio salvi, fai il check-up, la diagnosi e il ribilanciamento, e curi i bias.
+5. Entra nelle case: ogni abitante (single, coppie, famiglie) ti insegna un concetto diverso, che resta annotato nell'Investidex.
+6. Nelle Cliniche del Portafoglio salvi, fai il check-up, la diagnosi e il ribilanciamento, e curi i bias.
 
 ## Conto reale Alpaca (facoltativo)
 

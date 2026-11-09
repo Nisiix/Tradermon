@@ -466,6 +466,14 @@ export const PALETTES: CharPal[] = [
   { skin: '#f5c9a0', hair: '#e8c547', shirt: '#e5546b', pants: '#2a2a3a' }, // 21 allievo
   { skin: '#e8b48a', hair: '#5a3418', shirt: '#5fc9c9', pants: '#2a2a3a' }, // 22 allievo
   { skin: '#f0c0a0', hair: '#3a2a1a', shirt: '#6cc04a', pants: '#4a4a5a' }, // 23 bibliotecaria
+  { skin: '#f5c9a0', hair: '#b85a28', shirt: '#f0f0f0', pants: '#5878b8' }, // 24 abitante
+  { skin: '#c98e62', hair: '#2a2018', shirt: '#7890a8', pants: '#383848', extra: '#e8c547' }, // 25 abitante
+  { skin: '#e8b48a', hair: '#6a4a2a', shirt: '#b84848', pants: '#4a3a2a' }, // 26 abitante
+  { skin: '#f0c0a0', hair: '#d8a848', shirt: '#58a8a0', pants: '#f0f0f0' }, // 27 abitante
+  { skin: '#b5835a', hair: '#1f1f2a', shirt: '#e8a040', pants: '#2a3a5a' }, // 28 abitante
+  { skin: '#f5c9a0', hair: '#7a3a5a', shirt: '#c870a8', pants: '#3a2a4a' }, // 29 abitante
+  { skin: '#d9a77a', hair: '#4a3020', shirt: '#486848', pants: '#c8b890' }, // 30 abitante
+  { skin: '#f0c0a0', hair: '#e8e0d0', shirt: '#4858a0', pants: '#585868', extra: '#c84848' }, // 31 abitante
 ];
 
 export const PAL = { PROF: 3, NURSE: 4, RIVAL: 5, SPEC: 15, GUARD: 20, LIB: 23 };

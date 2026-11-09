@@ -11,6 +11,7 @@ import { mastery } from '../systems/quiz';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { setVolume } from '../systems/audio';
 import type { BiasId } from '../types';
+import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 
 export async function pauseMenu(onTravel: (id: string) => void) {
   for (;;) {
@@ -39,7 +40,7 @@ export async function openInvestidex() {
     const assets = ASSETS.filter((a) => cls.includes(a.cls));
     const unlocked = assets.filter((a) => S.cards[a.id]).length;
     const concepts = LESSONS.filter((l) => S.lessonsRead.includes(l.id)).length;
-    body.innerHTML = `<p>Asset: <b>${unlocked}/${assets.length}</b> · Concetti: <b>${concepts}/${lessonsFor(trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole'])).length}</b> · Bias incontrati: <b>${S.biasSeen.length}/4</b> · Padronanza quiz: <b>${Math.round(mastery() * 100)}%</b></p>`;
+    body.innerHTML = `<p>Asset: <b>${unlocked}/${assets.length}</b> · Concetti: <b>${concepts}/${lessonsFor(trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole'])).length}</b> · Bias incontrati: <b>${S.biasSeen.length}/4</b> · Consigli degli abitanti: <b>${S.tipsHeard.length}/${ALL_RESIDENTS.length}</b> · Padronanza quiz: <b>${Math.round(mastery() * 100)}%</b></p>`;
     const grid = el('div', 'cards');
     for (const a of assets) {
       const c = S.cards[a.id];
@@ -52,6 +53,13 @@ export async function openInvestidex() {
     }
     body.appendChild(grid);
     if (S.biasSeen.length) body.appendChild(el('div', '', `<h4>Bias</h4>${S.biasSeen.map((b: BiasId) => `<p class="small"><b>${BIAS_INFO[b].name}</b>: ${BIAS_INFO[b].effect} <a href="${SOURCES[BIAS_INFO[b].source].url}" target="_blank" rel="noopener">Approfondisci</a></p>`).join('')}`));
+    if (S.tipsHeard.length) {
+      const items = HOUSEHOLDS.flatMap((town, ti) => town.flatMap((h) => h.people.filter((r) => S.tipsHeard.includes(r.id)).map((r) => {
+        const src = SOURCES[r.source];
+        return `<p class="small"><b>${esc(r.name)}</b> <span class="muted">(${esc(h.name)}, ${esc(TOWNS[ti].name)})</span>: ${esc(r.lines.join(' '))}${src ? ` <a href="${src.url}" target="_blank" rel="noopener">Fonte</a>` : ''}</p>`;
+      })));
+      body.appendChild(el('div', '', `<h4>Consigli degli abitanti</h4>${items.join('')}`));
+    }
     if (S.flags.casinoLesson) body.appendChild(el('p', 'small', '<b>Azzardo vs investimento</b>: nel gioco d\'azzardo il banco ha un vantaggio strutturale (2,7% alla roulette europea); la martingala porta prima o poi alla rovina.'));
     body.appendChild(el('p', 'small muted', 'Livelli: 2 con la tecnica "Lettura del Ticker" (Mentore 1), 3-4 dalla Medaglia 5. Lo studio sale con quiz, missioni, possesso e Archivio.'));
     button('Chiudi', () => close(), 'primary');

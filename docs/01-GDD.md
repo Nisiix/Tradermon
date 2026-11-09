@@ -137,6 +137,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, almeno un
 - **Clinica del Portafoglio**: bancone della Dott.ssa Ratio, salvataggio, cura degli stati alterati, tutte le operazioni di portafoglio (sezione 7).
 - **Biblioteca**: ripasso delle lezioni sbloccate, Investidex, "Domanda del giorno" (streak), ripetizione delle domande sbagliate.
 - **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Non si può sfidare il Mentore prima di aver battuto almeno un allievo o letto le lezioni della Biblioteca locale.
+- **Case abitate**: ogni città ha 3-4 case visitabili (Borgo Semina una), 30 in tutto. Ogni casa ospita un nucleo: una persona sola, una coppia o una famiglia di tre persone. Gli interni sono arredati in modo diverso secondo il nucleo. Ogni abitante insegna un concetto diverso, per un totale di 62 argomenti, mai ripetuti tra un abitante e l'altro. Ogni consiglio cita una fonte. I temi seguono la città: basi a Borgo Semina e Ponte Cedola, ordini a Porto Ordini, diversificazione a Diversia, costi e interesse composto a Interessa, analisi a Bilancia, dividendi, obbligazioni e tassi a Valdividendo, bias a Mentelucida, gestione del rischio a Rocca Rischio. Si aggiungono temi di macroeconomia, fiscalità italiana e sicurezza. La prima volta che parli con un abitante ottieni +5 XP e il consiglio viene annotato nell'Investidex, dove puoi rileggerlo con il link alla fonte.
 
 ### 3.3 Mercato, orologio e clima
 

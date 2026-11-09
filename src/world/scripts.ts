@@ -21,6 +21,8 @@ import { PAL } from '../art/art';
 import { beep } from '../systems/audio';
 import { pick, shuffle, mulberry32 } from '../systems/rng';
 import * as A from '../systems/alpaca';
+import { RESIDENT_BY_ID, ALL_RESIDENTS } from '../data/residents';
+import { SOURCES } from '../data/sources';
 
 export interface WorldApi {
   warp(map: string, x: number, y: number, dir?: 0 | 1 | 2 | 3): void;
@@ -56,6 +58,7 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
   switch (n.kind) {
     case 'talk': return say(n.lines ?? ['...'], n.name);
     case 'mom': return mom();
+    case 'resident': return resident(n);
     case 'aide': return say(['Aspetta! Non puoi partire senza una Valigetta.', 'Il Professore ti aspetta al Laboratorio, l\'edificio viola.'], 'Assistente');
     case 'prof': return prof(w);
     case 'case': return chooseCase(n, w);
@@ -77,6 +80,19 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
     case 'towerop': return tower();
     case 'legend': return legend();
     case 'sage': return say([pick(TRAINER_TIPS), `Il tuo livello di Conoscenza è ${level()}. Continua così!`], n.name);
+  }
+}
+
+async function resident(n: NpcDef) {
+  const r = RESIDENT_BY_ID[String(n.data?.rid)];
+  if (!r) return say('...', n.name);
+  const first = !S.tipsHeard.includes(r.id);
+  await say(first ? r.lines : ['Ti ripeto volentieri quello che ti ho detto:', ...r.lines], `${r.name} · ${r.role}`);
+  if (first) {
+    S.tipsHeard.push(r.id);
+    S.stats.xp += 5;
+    const src = SOURCES[r.source];
+    toast(`Consiglio annotato nell'Investidex (${S.tipsHeard.length}/${ALL_RESIDENTS.length})${src ? ` · Fonte: ${src.publisher}` : ''}`);
   }
 }
 

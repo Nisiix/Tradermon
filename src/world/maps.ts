@@ -1,10 +1,11 @@
 import { TILE } from '../art/art';
 import { TOWNS, TRAINER_NAMES, TRAINER_LINES } from '../data/story';
 import { mulberry32 } from '../systems/rng';
+import { HOUSEHOLDS, type Household } from '../data/residents';
 
 export type NpcKind =
   | 'talk' | 'trainer' | 'mentor' | 'student' | 'guard' | 'nurse' | 'prof' | 'aide' | 'case' | 'rival'
-  | 'librarian' | 'daily' | 'pc' | 'station' | 'simop' | 'croupier' | 'archivist' | 'league' | 'towerop' | 'speculator' | 'legend' | 'mom' | 'sage';
+  | 'librarian' | 'daily' | 'pc' | 'station' | 'simop' | 'croupier' | 'archivist' | 'league' | 'towerop' | 'speculator' | 'legend' | 'mom' | 'sage' | 'resident';
 
 export interface NpcDef {
   id: string;
@@ -66,6 +67,41 @@ function interior(id: string, name: string, w: number, h: number, back: string, 
 
 const MAPS: Record<string, MapDef> = {};
 
+/** Interno di una casa abitata: arredo e posti in base al tipo di nucleo (single, coppia, famiglia). */
+function houseInterior(h: Household, back: string, bx: number, by: number): MapDef {
+  const size = { single: [9, 7], couple: [9, 8], family: [11, 8] }[h.kind];
+  const m = interior(h.id, h.name, size[0], size[1], back, bx, by);
+  const t = m.tiles;
+  const spots: [number, number, 0 | 1 | 2 | 3][] = [];
+  if (h.kind === 'single') {
+    t[2][1] = TILE.BED; t[2][3] = TILE.SHELF; t[2][7] = TILE.PLANT; t[4][5] = TILE.TABLE;
+    spots.push([2, 4, 3]);
+  } else if (h.kind === 'couple') {
+    t[2][1] = TILE.BED; t[2][2] = TILE.BED; t[2][4] = TILE.SHELF; t[2][5] = TILE.SHELF; t[2][7] = TILE.PLANT;
+    t[4][4] = TILE.TABLE; t[4][5] = TILE.TABLE; rect(t, 3, 5, 4, 1, TILE.RUG);
+    spots.push([2, 5, 3], [7, 4, 2]);
+  } else {
+    t[2][1] = TILE.BED; t[2][2] = TILE.BED; t[2][9] = TILE.BED; t[2][4] = TILE.SHELF; t[2][5] = TILE.SHELF; t[2][7] = TILE.PC;
+    t[4][5] = TILE.TABLE; t[4][6] = TILE.TABLE; t[6][9] = TILE.PLANT; rect(t, 4, 5, 4, 1, TILE.RUG);
+    spots.push([3, 4, 3], [8, 4, 2], [7, 6, 1]);
+  }
+  h.people.forEach((r, i) => {
+    const [x, y, dir] = spots[i];
+    m.npcs.push({ id: `res_${r.id}`, x, y, pal: r.pal, dir, name: r.name, kind: 'resident', data: { rid: r.id } });
+  });
+  return m;
+}
+
+/** Costruisce una casa nella mappa esterna e il suo interno. Restituisce il passaggio da aggiungere. */
+function addHouse(t: number[][], h: Household | undefined, x: number, y: number, w: number, back: string): Warp | null {
+  if (!h) return null;
+  const b = building(t, x, y, w, TILE.ROOF);
+  if (t[b.dy + 1]) t[b.dy + 1][b.dx] = TILE.PATH;
+  const inside = houseInterior(h, back, b.dx, b.dy);
+  MAPS[h.id] = inside;
+  return { x: b.dx, y: b.dy, to: h.id, tx: Math.floor(inside.w / 2), ty: inside.h - 2, dir: 1 };
+}
+
 export function getMap(id: string): MapDef {
   if (!MAPS[id]) buildAll();
   return MAPS[id];
@@ -96,12 +132,13 @@ function buildHomeTown() {
   rect(t, lab.dx, lab.dy + 1, 1, 9 - lab.dy - 1, TILE.PATH);
   t[clinic.dy + 1][clinic.dx] = TILE.PATH;
   rect(t, 15, 12, 5, 3, TILE.WATER);
-  [[2, 7], [10, 6], [11, 13], [20, 14], [2, 15], [21, 4]].forEach(([x, y]) => (t[y][x] = TILE.FLOWERS));
+  [[2, 7], [10, 6], [20, 14], [2, 15], [21, 4]].forEach(([x, y]) => (t[y][x] = TILE.FLOWERS));
+  const t0House = addHouse(t, HOUSEHOLDS[0][0], 9, 11, 4, 't0');
   t[8][11] = TILE.SIGN;
   const m: MapDef = { id: 't0', name: 'Borgo Semina', w, h, tiles: t, interior: false, town: 0, encounterRate: 0, bg: '#6cc04a',
     npcs: [
       { id: 't0_aide', x: w - 2, y: 9, pal: 22, dir: 2, name: 'Assistente', kind: 'aide' },
-      { id: 't0_kid', x: 9, y: 11, pal: 21, dir: 0, name: 'Bambina', kind: 'talk', lines: ['Il mio papà dice che i soldi sotto il materasso perdono valore. Si chiama inflazione!'] },
+      { id: 't0_kid', x: 13, y: 10, pal: 21, dir: 0, name: 'Bambina', kind: 'talk', lines: ['Il mio papà dice che i soldi sotto il materasso perdono valore. Si chiama inflazione!'] },
       { id: 't0_old', x: 17, y: 10, pal: 19, dir: 1, name: 'Nonno Elio', kind: 'talk', lines: ['Ai miei tempi si diceva: "Non mettere tutte le uova nello stesso paniere".', 'Vale ancora oggi, sai?'] },
     ],
     warps: [
@@ -109,6 +146,7 @@ function buildHomeTown() {
       { x: lab.dx, y: lab.dy, to: 'lab', tx: 6, ty: 8, dir: 1 },
       { x: clinic.dx, y: clinic.dy, to: 'clinic_0', tx: 5, ty: 7, dir: 1 },
       { x: w - 1, y: 9, to: 'r1', tx: 1, ty: 6, dir: 3 },
+      ...(t0House ? [t0House] : []),
     ],
     signs: [{ x: 11, y: 8, text: ['BORGO SEMINA', 'Dove ogni investitore pianta il primo seme.'] }],
   };
@@ -160,11 +198,14 @@ function buildTown(n: number) {
   const lib = building(t, 10, 4, 5, TILE.ROOF);
   const acad = building(t, 18, 3, 7, TILE.ROOF_ACADEMY);
   [clinic, lib, acad].forEach((b) => rect(t, b.dx, b.dy + 1, 1, 9 - b.dy - 1, TILE.PATH));
-  const special = def.special && def.special !== 'lab' ? building(t, 4, 12, 5, TILE.ROOF_SPECIAL) : null;
-  const house = building(t, 13, 12, 5, TILE.ROOF);
-  [special, house].forEach((b) => { if (b && t[b.dy + 1]) t[b.dy + 1][b.dx] = TILE.PATH; });
-  rect(t, 20, 13, 6, 3, TILE.PLAZA);
-  t[14][22] = TILE.WATER; t[14][23] = TILE.WATER;
+  const special = def.special && def.special !== 'lab' ? building(t, 2, 12, 5, TILE.ROOF_SPECIAL) : null;
+  if (special && t[special.dy + 1]) t[special.dy + 1][special.dx] = TILE.PATH;
+  const id0 = `t${n}`;
+  // case abitate: slot nell'ordine dei nuclei familiari della città
+  const slots: [number, number, number][] = [[13, 12, 5], [8, 12, 4], [19, 12, 4], ...(special ? [] : [[2, 12, 5] as [number, number, number]])];
+  const houseWarps = slots.map(([x, y, hw], i) => addHouse(t, HOUSEHOLDS[n]?.[i], x, y, hw, id0)).filter((x): x is Warp => !!x);
+  rect(t, 24, 13, 4, 3, TILE.PLAZA);
+  t[14][25] = TILE.WATER; t[14][26] = TILE.WATER;
   for (let i = 0; i < 8; i++) {
     const x = 1 + Math.floor(rng() * (w - 2));
     const y = 2 + Math.floor(rng() * (h - 4));
@@ -179,7 +220,7 @@ function buildTown(n: number) {
       { id: `${id}_guard2`, x: w - 2, y: 10, pal: 20, dir: 2, name: 'Guardia della Borsa', kind: 'guard', data: { badge: n } },
       { id: `${id}_station`, x: 26, y: 9, pal: 16, dir: 0, name: 'Capostazione', kind: 'station', hiddenSprite: true },
       { id: `${id}_npc1`, x: 8 + Math.floor(rng() * 4), y: 11, pal: 16 + (n % 4), dir: 0, name: 'Abitante', kind: 'talk', lines: [TOWN_TALK[(n * 2) % TOWN_TALK.length]] },
-      { id: `${id}_npc2`, x: 21, y: 12, pal: 17 + (n % 3), dir: 3, name: 'Abitante', kind: 'talk', lines: [TOWN_TALK[(n * 2 + 1) % TOWN_TALK.length]] },
+      { id: `${id}_npc2`, x: 18, y: 16, pal: 17 + (n % 3), dir: 3, name: 'Abitante', kind: 'talk', lines: [TOWN_TALK[(n * 2 + 1) % TOWN_TALK.length]] },
     ],
     warps: [
       { x: 0, y: 9, to: `r${n}`, tx: 42, ty: 6, dir: 2 },
@@ -187,7 +228,7 @@ function buildTown(n: number) {
       { x: clinic.dx, y: clinic.dy, to: `clinic_${n}`, tx: 5, ty: 7, dir: 1 },
       { x: lib.dx, y: lib.dy, to: `library_${n}`, tx: 5, ty: 7, dir: 1 },
       { x: acad.dx, y: acad.dy, to: `academy_${n}`, tx: 6, ty: 11, dir: 1 },
-      { x: house.dx, y: house.dy, to: `house_${n}`, tx: 4, ty: 6, dir: 1 },
+      ...houseWarps,
     ],
     signs: [{ x: 2, y: 8, text: [def.name.toUpperCase(), `Accademia di ${def.name}: Mentore n. ${n}.`] }],
   };
@@ -213,10 +254,6 @@ function buildTown(n: number) {
   );
   MAPS[ac.id] = ac;
 
-  const hs = interior(`house_${n}`, 'Casa', 9, 8, id, house.dx, house.dy);
-  hs.tiles[2][1] = TILE.SHELF; hs.tiles[2][7] = TILE.PLANT; hs.tiles[3][4] = TILE.TABLE;
-  hs.npcs.push({ id: `sage_${n}`, x: 2, y: 4, pal: 19, dir: 3, name: 'Saggio di quartiere', kind: 'sage', data: { n } });
-  MAPS[hs.id] = hs;
 
   if (special && def.special) {
     if (def.special === 'simzone') {
