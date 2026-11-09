@@ -1,0 +1,488 @@
+# Tradermon – Game Design Document (specifica estesa)
+
+Versione 1.0 · 9 novembre 2026 · deriva dal piano "Pokenomics 101 – Piano di implementazione".
+
+Tradermon è un RPG 2D top-down in stile palmare a 16 bit in cui il protagonista è un giovane investitore. Al posto delle lotte ci sono **sfide di conoscenza** (quiz) e **missioni di trading** (simulazione), al posto dei capipalestra ci sono **8 Mentori**, alla fine c'è la **Lega degli Investitori**. Il mondo, i personaggi, la mappa, i nomi, la grafica e la musica sono originali: il gioco riprende solo le meccaniche del genere, che non sono protette.
+
+Regole d'oro del progetto:
+
+1. **Si sblocca solo sapendo.** Nessun oggetto di cattura, nessuna pozione, nessun negozio. Asset, informazioni e tecniche si ottengono solo battendo Mentori e superando sfide.
+2. **Paper di default.** Tutto il gioco si completa con denaro finto. Il conto reale è opzionale, si sblocca dopo il 1° Mentore e un esame, con limiti che crescono con le Medaglie.
+3. **Nessun premio per il denaro reale.** XP, Medaglie, classifiche e carte si ottengono solo in simulazione o paper.
+4. **Educazione, non consulenza.** Il gioco non dice mai "compra X". Gli asset del mercato simulato sono di fantasia; nel conto reale il giocatore sceglie da solo.
+5. **Le chiavi non stanno nel codice.** Le chiavi Alpaca si inseriscono nel gioco e vengono custodite dal server locale, mai nel browser né nel repository.
+
+---
+
+## 1. Esperienza del giocatore in sintesi
+
+| Fase | Durata indicativa | Cosa impara | Cosa sblocca |
+|---|---|---|---|
+| Prologo e onboarding | 8-12 min | Paper trading, profilo di rischio, primo acquisto | Percorso, Valigetta iniziale, Licenza da Apprendista |
+| Regione (8 città) | 4-8 h | 8 moduli, uno per Mentore | 8 Medaglie, tecniche, slot di portafoglio, Asset Card |
+| Lega | 1-2 h | Macro, analisi, regole, psicologia | Titolo di Campione, Nuova Partita+ |
+| Post-game | illimitato | Crisi storiche, Torre delle Sfide | Carte dorate, record |
+
+Il ciclo base, ripetuto in ogni città: **impara** (Biblioteca, allievi, cartelli) → **verifica** (allievi dell'Accademia, investitori sul percorso) → **applica** (eventi nelle Zone di Mercato, Macchina del Tempo) → **sfida il Mentore** (quiz + missione).
+
+---
+
+## 2. Onboarding: le informazioni chieste all'inizio
+
+L'onboarding segue la struttura classica del genere (risveglio in camera, professore, scelta del compagno iniziale, rivale) ma ogni passo raccoglie un dato che serve al gioco. Tutti i dati restano nel salvataggio locale e si possono rivedere nel menu Profilo.
+
+### 2.1 Sequenza
+
+| # | Scena | Dato raccolto | Uso nel gioco |
+|---|---|---|---|
+| 1 | Schermata titolo | Nuova partita / Continua / Importa salvataggio | — |
+| 2 | Avviso iniziale (schermata seria) | Presa visione: "gioco educativo, non consulenza finanziaria" | Obbligatorio per proseguire |
+| 3 | Il Prof. Bruno Saldi si presenta | Nome dell'investitore (max 10 caratteri) | Dialoghi, salvataggio |
+| 4 | "Sei un ragazzo, una ragazza o preferisci non dirlo?" | Avatar (3 varianti di colore e capelli, nessuna implicazione di gameplay) | Sprite del protagonista |
+| 5 | Questionario del Professore (5 domande) | Profilo di rischio: Prudente / Equilibrato / Audace | Tono dei consigli, durata timer, difficoltà missioni |
+| 6 | "Quale obiettivo hai?" | Obiettivo: Imparare le basi / Costruire un piano di lungo periodo / Capire il trading | Testi del diario e messaggi motivazionali |
+| 7 | "Qual è il tuo orizzonte?" | Orizzonte: < 3 anni / 3-10 anni / > 10 anni | Spiegazioni personalizzate su rischio e orizzonte |
+| 8 | Nome del rivale | Default "Leo" (modificabile) | Dialoghi del rivale |
+| 9 | Risveglio in camera, si scende, si va al Laboratorio | — | Tutorial di movimento |
+| 10 | **La scelta delle Valigette** | Percorso: Titoli / ETF / Cripto (oppure Misto parlando col Professore) | Tutta la storia |
+| 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, versamento mensile simulato, allocazione obiettivo | Simulatore e Clinica |
+| 12 | Licenza da Apprendista | Spiegazione dello sblocco del denaro reale | Indicatore "Licenza bloccata" nel menu |
+| 13 | Primo duello col rivale (3 domande facili) | — | Tutorial del quiz |
+| 14 | Primo acquisto guidato alla Clinica di Borgo Semina | La Valigetta diventa una posizione in portafoglio | Tutorial della Clinica |
+
+Obiettivo di design dal piano: entro 3 minuti di gioco effettivo il giocatore ha già fatto la scelta e vinto un mini-quiz; entro 10 minuti ha fatto il primo acquisto simulato.
+
+### 2.2 Questionario del profilo di rischio
+
+Cinque domande ispirate ai questionari di adeguatezza (MiFID II), semplificate e senza valore legale. Ogni risposta vale 0, 1 o 2 punti.
+
+| Domanda | 0 punti | 1 punto | 2 punti |
+|---|---|---|---|
+| Il tuo portafoglio perde il 20% in un mese. Cosa fai? | Vendo tutto | Aspetto e ripasso il piano | Compro ancora |
+| Preferisci… | +3% quasi certo | +7% con oscillazioni | +15% o −15% |
+| Per quanto non ti servono questi soldi? | < 3 anni | 3-10 anni | > 10 anni |
+| Quanta esperienza hai? | Nessuna | Ho letto qualcosa | Ho già investito |
+| Una perdita del 30% per te sarebbe… | Inaccettabile | Dura ma gestibile | Parte del gioco |
+
+Totale 0-3 → **Prudente**, 4-6 → **Equilibrato**, 7-10 → **Audace**.
+
+Effetti: il timer delle domande è 30 s per Prudente, 25 s per Equilibrato, 20 s per Audace; le missioni dei Prudenti hanno soglie di drawdown più severe ma obiettivi di rendimento più bassi; i dialoghi del Professore e della Dott.ssa Ratio cambiano registro. Il Professore spiega sempre che il profilo **non è una raccomandazione** e che si può rifare il questionario alla Clinica.
+
+### 2.3 La scelta delle Valigette
+
+Nel Laboratorio ci sono tre Valigette sul tavolo, ognuna con un colore e un'etichetta:
+
+| Valigetta | Colore | Percorso | Asset Card iniziale (simulata) | Antagonisti | Lettera del Professore |
+|---|---|---|---|---|---|
+| Valigetta Blu | blu | Sentiero dei Titoli (solo azioni) | **Solaria Energia (SLR)**, settore Energia rinnovabile | Gli Speculatori (soffiate, FOMO) | "Possiedi un pezzo di un'azienda vera: impara a conoscerla." |
+| Valigetta Verde | verde | Sentiero degli Indici (solo ETF) | **Globo Mondo ETF (GLB)**, azionario globale | Il Venditore di Commissioni | "Mille aziende in una sola mossa: la pazienza è il tuo superpotere." |
+| Valigetta Arancione | arancione | Sentiero Cripto (solo cripto) | **Granito (GRN)**, cripto di riserva | Il Re dei Rug Pull | "Tecnologia nuova, rischio alto: prima la custodia, poi il resto." |
+
+Avvicinandosi a ogni Valigetta compare la scheda: cosa si investe, livello di rischio (1-5 stelle), volatilità storica indicativa della classe, esempio di caduta massima storica della classe, tono della storia. Si conferma con un secondo "Sì".
+
+**Percorso Misto.** Parlando col Professore invece che con una Valigetta, lui propone il "Sentiero Misto": il giocatore sceglie 2 o 3 classi. Riceve la Valigetta della prima classe scelta e la Asset Card iniziale delle altre si sblocca col 1° Mentore. I Mentori 5 e 6 parlano di asset allocation, l'antagonista è "l'Alleanza degli Speculatori".
+
+Dopo la scelta il rivale prende la Valigetta "opposta" al profilo del giocatore (se il giocatore è Prudente il rivale è Audace) e lancia il primo duello.
+
+### 2.4 Configurazione del Conto di Prova
+
+Schermata guidata dalla Dott.ssa Ratio (arriva al Laboratorio per l'occasione):
+
+| Campo | Opzioni | Default | Note |
+|---|---|---|---|
+| Capitale virtuale | 1.000 / 10.000 / 50.000 Crediti | 10.000 | 1 Credito = 1 dollaro virtuale. Il capitale non dà vantaggi nei punteggi: tutto è misurato in percentuale |
+| Versamento mensile simulato | 0 / 100 / 250 / 500 | 0 | Ogni mese simulato aggiunge liquidità (usato dal Piano di Accumulo) |
+| Allocazione obiettivo | Preset per profilo, modificabile | vedi sotto | Usata dalla diagnosi e dal ribilanciamento |
+| Reinvestimento dividendi | Sì / No | Sì | Mostra la meccanica "Uova" |
+
+Preset di allocazione (azioni o asset rischiosi / difensivi / liquidità): Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10. Per il percorso Cripto "difensivo" significa stablecoin simulata e la liquidità resta in Crediti.
+
+**Ricarica del conto di prova.** Una volta per regione (cioè una volta per ogni Medaglia ottenuta), riporta il valore al capitale iniziale, costa il 10% del punteggio Reputazione. Serve a non bloccare chi ha perso tutto senza cancellare la lezione.
+
+### 2.5 La Licenza
+
+Il Professore consegna la **Licenza da Apprendista** e spiega lo sblocco del denaro reale. Nel menu c'è la scheda Licenza con tre stati: Apprendista (bloccata) → Esame disponibile (dopo la 1ª Medaglia) → Licenza di Investitore (dopo l'esame, conto reale collegabile).
+
+---
+
+## 3. Mondo: la Regione di Capitalia
+
+### 3.1 Mappa
+
+Uno scheletro unico, lineare con deviazioni, condiviso da tutti i percorsi. Ogni percorso cambia il sottotitolo delle città, la palette e i dialoghi.
+
+```
+Borgo Semina ─ P1 ─ Ponte Cedola ─ P2 ─ Porto Ordini ─ P3 ─ Diversia ─ P4 ─ Interessa
+                                                                               │
+Altopiano della Lega ─ P9 ─ Rocca Rischio ─ P8 ─ Mentelucida ─ P7 ─ Valdividendo ─ P6 ─ Bilancia ─ P5
+```
+
+| Città | Edifici | Mentore e Medaglia | Particolarità |
+|---|---|---|---|
+| Borgo Semina | Casa, Laboratorio, Clinica | — | Scelta delle Valigette |
+| Ponte Cedola | Clinica, Biblioteca, Accademia | 1. Gaia Primo – Medaglia Seme | Esame di Abilitazione dopo la Medaglia |
+| Porto Ordini | Clinica, Biblioteca, Accademia | 2. Orazio Limite – Medaglia Ordine | Abbonamento al treno |
+| Diversia | Clinica, Biblioteca, Accademia, **Zona Simulazione** | 3. Vera Varia – Medaglia Mosaico | Sandbox Macchina del Tempo |
+| Interessa | Clinica, Biblioteca, Accademia, **Casinò dello Speculatore** | 4. Cosimo Composto – Medaglia Spirale | Mini-gioco sull'azzardo |
+| Bilancia | Clinica, Biblioteca, Accademia, **Archivio** (chiuso) | 5. Mentore specifico A – Medaglia Lente | L'Archivio si apre con "Lettura del Bilancio" |
+| Valdividendo | Clinica, Biblioteca, Accademia | 6. Mentore specifico B – Medaglia Raccolto | Viaggio rapido |
+| Mentelucida | Clinica, Biblioteca, Accademia | 7. Serena Bias – Medaglia Specchio | Muro del Rumore sul percorso 7 |
+| Rocca Rischio | Clinica, Biblioteca, Accademia | 8. Rocco Rischio – Medaglia Scudo | Ultimo scontro con gli antagonisti |
+| Altopiano della Lega | Clinica, Lega, **Torre delle Sfide** (post-game) | 4 Superiori + Campione | Crisi leggendarie dopo la Lega |
+
+Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, almeno una **Zona di Mercato** (l'erba alta: tessere con il simbolo del grafico) dove partono gli eventi casuali, cartelli didattici, e all'uscita di ogni città una **Guardia della Borsa** che lascia passare solo con la Medaglia della città.
+
+### 3.2 Edifici ricorrenti
+
+- **Clinica del Portafoglio**: bancone della Dott.ssa Ratio, salvataggio, cura degli stati alterati, tutte le operazioni di portafoglio (sezione 7).
+- **Biblioteca**: ripasso delle lezioni sbloccate, Investidex, "Domanda del giorno" (streak), ripetizione delle domande sbagliate.
+- **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Non si può sfidare il Mentore prima di aver battuto almeno un allievo o letto le lezioni della Biblioteca locale.
+
+### 3.3 Mercato, orologio e clima
+
+- **Orologio di mercato.** L'ora reale del dispositivo convertita in ora di New York: Borsa aperta 9:30-16:00 lun-ven (finestre fuori orario mostrate come "pre/after market"), cripto sempre aperte. Di notte la mappa si scurisce e alcuni NPC cambiano battuta. Nel simulatore interno il tempo di mercato avanza di 1 giorno ogni 60 passi sui percorsi e di 1 giorno a ogni sfida.
+- **Clima di mercato** (il "meteo"): calcolato sull'indice simulato "Capitalia 100" con media mobile a 50 giorni e volatilità a 20 giorni. Toro (sopra la media, vol bassa), Orso (sotto la media), Tempesta (volatilità > 1,5 volte la media), Laterale. Il clima cambia tinta e particelle della mappa, la frequenza degli eventi e quali eventi escono.
+
+---
+
+## 4. Personaggi
+
+| Ruolo | Nome | Descrizione |
+|---|---|---|
+| Professore | Prof. Bruno Saldi | Ex gestore di fondi, ironico, insegna che "la prima regola è non perdere la testa" |
+| Infermiera della Clinica | Dott.ssa Ratio | Sempre uguale in ogni città (come da tradizione del genere, è "una delle sorelle Ratio") |
+| Rivale | Leo (nome scelto) | Stile opposto al profilo del giocatore; 4 incontri: Laboratorio, Percorso 2, Diversia, Via della Lega |
+| Antagonisti | Gli Speculatori (capo: Max Leva) | Variante per percorso: Speculatori (Titoli), Venditori di Commissioni guidati da Carlo Provvigione (ETF), Banda del Rug Pull guidata dal Re Tappeto (Cripto), Alleanza (Misto) |
+| Mentore 1 | Gaia Primo | Fondamenta: cos'è l'asset del percorso, rischio e rendimento |
+| Mentore 2 | Orazio Limite | Ordini, spread, orari di mercato |
+| Mentore 3 | Vera Varia | Diversificazione e correlazione |
+| Mentore 4 | Cosimo Composto | Costi, interesse composto, piano di accumulo |
+| Mentore 5 | Bianca Bilanci / Ivo Indice / Nina Nodo / Alba Allocazione | Specifico A: bilanci (Titoli), replica e TER (ETF), blockchain e custodia (Cripto), asset allocation (Misto) |
+| Mentore 6 | Dario Dividendi / Olga Obbligazioni / Stella Stabile / Alba Allocazione bis → Teo Tassi | Specifico B: dividendi e valutazione, obbligazioni e tassi, stablecoin, DeFi e truffe |
+| Mentore 7 | Serena Bias | Finanza comportamentale |
+| Mentore 8 | Rocco Rischio | Gestione del rischio |
+| Superiori | Marta Macro, Tito Tecnico, Giulia Garante, Fabio Freddo | Macro; analisi tecnica e fondamentale; regole, truffe e tasse; psicologia e piano |
+| Campione | Aurelio Capitale | Prova finale trasversale |
+
+---
+
+## 5. Sistemi di gioco
+
+### 5.1 Statistiche del giocatore
+
+| Statistica | Come sale | Come scende | Effetto |
+|---|---|---|---|
+| **Conoscenza** (XP e livello) | Risposte giuste (5/10/15 XP per difficoltà 1/2/3), lezioni lette (+5), sfide vinte | — | Livello = soglia 50·n^1,5 XP. Ogni 5 livelli +5 s al timer e una spiegazione extra |
+| **Fiducia** (i "PV") | Clinica, vittorie | Risposte sbagliate (−10/−20 nei duelli col Mentore), eventi sbagliati | A 0 si "va in tilt": si torna all'ultima Clinica, si perde il 5% della Reputazione |
+| **Disciplina** (0-100) | Rifiutare truffe, rispettare limiti nelle missioni, curarsi alla Clinica | Cedere agli Speculatori, superare il drawdown limite | Moltiplicatore del punteggio missioni (0,8-1,2) |
+| **Diversificazione** (0-100) | Calcolata dal portafoglio simulato: 100 − indice di concentrazione | — | Statistica visibile e input della salute |
+| **Pazienza** (0-100) | Tenere posizioni nei cali senza vendere, pochi ordini nelle missioni | Troppi ordini (overtrading), vendite nel panico | Bonus nelle missioni lunghe |
+| **Reputazione** | Vittorie contro investitori (+20), Mentori (+200), missioni | Tilt, ricarica del conto | Il "denaro" del genere: solo punteggio e classifica, non compra nulla |
+
+### 5.2 Duelli (le lotte)
+
+Schermata a due lati, avversario in alto a destra, giocatore in basso a sinistra, ognuno con la sua barra.
+
+- Barra del giocatore: **Fiducia** (0-100).
+- Barra dell'avversario: **Convinzione** (100). Ogni risposta giusta la riduce di 100 / numero di risposte giuste necessarie.
+- Domande a scelta multipla con 4 opzioni, a tempo (timer dal profilo). Dopo ogni risposta compare la spiegazione con la fonte.
+- Si vince portando a 0 la Convinzione prima di finire le domande o prima che la Fiducia arrivi a 0.
+
+| Avversario | Domande | Giuste necessarie | Danno per errore |
+|---|---|---|---|
+| Investitore sul percorso | 3 | 2 | 10 |
+| Allievo dell'Accademia | 4 | 3 | 10 |
+| Rivale | 5 | 3-4 | 15 |
+| Mentore (fase 1) | 8 | 6 | 15 |
+| Superiore (fase 1) | 10 | 8 | 15 |
+| Campione (fase 1) | 12 | 10 | 15 |
+
+**Sfida del Mentore.** Fase 1 duello di quiz; fase 2 **missione pratica** nella Macchina del Tempo (sezione 6). Se si perde la fase 2 si ripete solo la fase 2. Vincere dà: Medaglia, Tecnica, Asset Card del Mentore, slot di portafoglio, sblocchi della Clinica, +200 Reputazione.
+
+**Investitori sul percorso.** Linea di vista di 4 tessere: quando il giocatore entra nella linea, il personaggio mostra "!", si avvicina e sfida. Una volta battuto non sfida più (ma si può riparlarci per un consiglio).
+
+### 5.3 Asset Card e Investidex
+
+Ogni asset del mercato simulato è una Asset Card con: nome, ticker, classe (azione, ETF, cripto), **tipo/settore**, rischio (1-5), descrizione, livello (1-4), flag dorata.
+
+Livelli ("evoluzione"): la carta guadagna XP quando si risponde a domande o si completano missioni in cui compare, oppure tenendola in portafoglio durante un mese simulato.
+
+| Livello | XP carta | Informazioni mostrate |
+|---|---|---|
+| 1 Base | 0 | Prezzo, settore, descrizione |
+| 2 Fondamentali | 30 | Rendimento atteso didattico, dividendi o TER, capitalizzazione |
+| 3 Indicatori | 80 | Volatilità, beta, max drawdown storico simulato |
+| 4 Storia | 150 | Grafico storico completo e "curiosità" della carta |
+
+**Carta dorata ("shiny").** Si ottiene superando tutte le sfide in cui compare la carta senza errori: solo cosmetica.
+
+**Investidex** ha tre sezioni: Asset, Concetti (sbloccati leggendo lezioni), Bias (sbloccati incontrandoli). Mostra percentuale di completamento.
+
+### 5.4 Tipi e debolezze: settori ed eventi
+
+Ogni asset ha un tipo. Gli eventi di mercato hanno una matrice di effetti per tipo (moltiplicatore sul rendimento del giorno dell'evento). Estratto:
+
+| Evento | Tech | Finanza | Energia | Salute | Consumi | Utility | Obblig. | Oro | Cripto |
+|---|---|---|---|---|---|---|---|---|---|
+| Banca centrale alza i tassi | −4% | +2% | 0 | −1% | −2% | −3% | −3% | −1% | −6% |
+| Banca centrale taglia i tassi | +4% | −1% | +1% | +1% | +2% | +2% | +2% | +1% | +6% |
+| Petrolio alle stelle | −2% | 0 | +6% | 0 | −3% | −1% | −1% | +2% | −2% |
+| Recessione annunciata | −5% | −6% | −4% | −1% | −4% | +1% | +3% | +4% | −8% |
+| Boom dell'intelligenza artificiale | +7% | +1% | +1% | +1% | 0 | 0 | 0 | 0 | +3% |
+| Hack di un exchange | 0 | 0 | 0 | 0 | 0 | 0 | 0 | +1% | −12% |
+| Pandemia | −3% | −5% | −8% | +5% | −4% | 0 | +3% | +3% | −5% |
+| Inflazione sopra le attese | −3% | +1% | +3% | −1% | −2% | −1% | −4% | +3% | −3% |
+
+La lezione: un portafoglio con tipi diversi soffre meno di uno con un solo tipo.
+
+### 5.5 Slot di portafoglio (la "squadra")
+
+Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 4 / 5 / 6 / 6 / 8 / 8 / 10 / 10 dopo le Medaglie 1-8. Le carte sbloccate ma non possedute stanno nella **Watchlist** (il "box"), consultabile dalla Clinica e dal menu.
+
+### 5.6 Tecniche (al posto degli strumenti)
+
+| Tecnica | Mentore | Effetto in gioco | Effetto sulla mappa |
+|---|---|---|---|
+| Lettura del Ticker | 1 | Investidex mostra il livello 2 delle carte | — |
+| Ordine Limite | 2 | Ordini limite nella Clinica e nella Macchina del Tempo | — |
+| Ribilanciamento | 3 | La Clinica propone gli ordini per tornare all'allocazione obiettivo | — |
+| Piano di Accumulo | 4 | Acquisti ricorrenti automatici nel simulatore | — |
+| Lettura del Bilancio (Titoli) / Analisi del Prospetto (ETF) / Custodia Sicura (Cripto) / Visione d'Insieme (Misto) | 5 | Livello 3 delle carte, domande con dati | Apre l'Archivio di Bilancia |
+| Reinvestimento | 6 | Uova dei dividendi più rapide | — |
+| Mente Fredda | 7 | 50% di probabilità di resistere ai bias | Attraversa il Muro del Rumore sul P7 |
+| Stop Loss | 8 | Ordini stop nella Clinica e nella Macchina del Tempo | — |
+
+Prima di "Ordine Limite" esistono solo ordini a mercato; prima di "Stop Loss" non esistono ordini stop. Vale anche per il conto reale.
+
+### 5.7 Stati alterati: i bias
+
+| Bias | Causa tipica | Effetto nel duello | Cura |
+|---|---|---|---|
+| **FOMO** | Accettare la "soffiata" di uno Speculatore, evento euforico | Le risposte si rimescolano a metà timer | Riflessione alla Clinica (1 domanda sul bias) |
+| **Panico** | Evento di crollo, perdita di un duello | Timer dimezzato | Riflessione alla Clinica |
+| **Eccesso di fiducia** | 5 risposte giuste di fila senza spiegazioni lette | Le spiegazioni non vengono mostrate | Riflessione alla Clinica |
+| **Effetto gregge** | Evento "tutti comprano" | Compare una falsa percentuale "il 78% ha scelto…" su una risposta sbagliata | Riflessione alla Clinica |
+
+Un solo stato alla volta. Dopo il Mentore 7 la tecnica Mente Fredda dà il 50% di immunità. Gli stati incontrati sbloccano la voce nella sezione Bias dell'Investidex.
+
+### 5.8 Zone di Mercato (incontri casuali)
+
+Ogni passo su una tessera di Zona di Mercato ha l'8% di probabilità di innescare un evento (12% con clima Tempesta). Tipi:
+
+| Tipo | Peso | Esempio | Esito |
+|---|---|---|---|
+| Domanda lampo | 35% | Una domanda della banca, preferendo quelle sbagliate in passato (ripetizione dilazionata) | XP o −10 Fiducia |
+| Notizia | 25% | "Il titolo che possiedi perde il 15% dopo una notizia" con 3 scelte | Disciplina/Pazienza ±, spiegazione |
+| Evento di settore | 15% | "La banca centrale alza i tassi" | Applica la matrice al mercato simulato, mostra l'effetto sul portafoglio |
+| Tentazione | 15% | Uno Speculatore propone "un affare garantito al 20% al mese" | Rifiutare: Disciplina +5. Accettare: perdita simulata, bias, lezione |
+| Scoperta | 10% | Un passante parla di un asset della watchlist | +XP carta |
+
+### 5.9 Rivale
+
+Il portafoglio del rivale è simulato con regole fisse (Audace: 2 asset ad alto rischio, cambia spesso; Prudente: molto liquido). A ogni incontro c'è prima un duello di quiz e poi il **confronto dei portafogli**: rendimento, volatilità, massimo drawdown e indice di Sharpe del giocatore contro quelli del rivale. Il dialogo commenta la differenza tra rendimento puro e rendimento corretto per il rischio.
+
+### 5.10 Viaggio: treno e viaggio rapido
+
+Dopo la Medaglia 2 l'**abbonamento al treno**: dalle stazioni nelle città si va alla città successiva già visitata. Dopo la Medaglia 6 il **viaggio rapido** dal menu verso qualsiasi città visitata.
+
+### 5.11 Zona Simulazione (sandbox)
+
+Edificio di Diversia: Macchina del Tempo libera, senza punteggio, con tutti gli scenari sbloccati fino a quel momento. Se è collegato Alpaca, si possono riprodurre le barre storiche reali di un simbolo scelto dal giocatore.
+
+### 5.12 Casinò dello Speculatore
+
+Edificio di Interessa. Una roulette con 37 caselle e fiches finte. Le probabilità e il margine del banco (2,7%) sono scritti sul tavolo. Il "Sistema Martingala" proposto dallo Speculatore porta prima o poi a perdere tutto in una simulazione accelerata di 200 giri. Nessun premio utile: solo una voce dell'Investidex ("Azzardo vs investimento").
+
+### 5.13 Duelli con codice (cavo link)
+
+Dal menu Profilo si genera un **codice sfida** (seed). Un amico che inserisce lo stesso codice gioca lo stesso scenario della Macchina del Tempo e lo stesso quiz; alla fine entrambi vedono un codice risultato da confrontare. Nessun server richiesto.
+
+### 5.14 Post-game: crisi leggendarie e Torre
+
+- **Crisi leggendarie**: 5 scenari ricostruiti (1929, 2000, 2008, 2020, 2022) con obiettivi difficili. Battendole si ottengono le carte "leggendarie" (cosmetiche).
+- **Torre delle Sfide**: piani infiniti, ogni piano 3 domande casuali di difficoltà crescente; record personale salvato.
+- **Nuova Partita+**: si ricomincia in un altro percorso conservando avatar, record e carte dorate.
+
+### 5.15 Uova dei dividendi
+
+Ogni mese simulato gli asset con dividendo pagano (rendimento annuo / 12). Con il reinvestimento attivo i dividendi diventano un "uovo" nella Clinica che si schiude dopo 3 giorni di mercato simulato in nuove quote dello stesso asset, con un'animazione e un contatore dell'effetto composto.
+
+### 5.16 Domanda del giorno e ripetizione
+
+La Biblioteca propone ogni giorno reale una domanda; rispondere ogni giorno aumenta la streak. Le domande sbagliate entrano in una coda di ripasso (algoritmo tipo Leitner a 3 scatole: sbagliata → scatola 1, giusta → scatola successiva); le Zone di Mercato pescano prima dalla scatola 1.
+
+### 5.17 Riepilogo delle 17 meccaniche adattate
+
+1. Tipi e debolezze → settori ed eventi. 2. Squadra di 6 → slot di portafoglio. 3. Box → watchlist. 4. Allenatori sul percorso → investitori con linea di vista. 5. Rivale → rivale con stile opposto e confronto dei portafogli. 6. MT/MN → tecniche dei Mentori che aprono la mappa. 7. Stati alterati → bias. 8. Evoluzione → livelli delle Asset Card. 9. Giorno/notte → orologio di mercato. 10. Meteo → clima di mercato. 11. Uova → dividendi reinvestiti. 12. Bici/Volo → treno e viaggio rapido. 13. Zona Safari → Zona Simulazione. 14. Casinò → Casinò dello Speculatore. 15. Cavo link → duelli con codice. 16. Leggendari e Torre Lotta → crisi leggendarie e Torre delle Sfide. 17. Shiny → carte dorate.
+
+Non portati, per scelta: oggetti di cattura, pozioni, negozi, loot box, scambi di asset tra giocatori.
+
+---
+
+## 6. Macchina del Tempo: le missioni di trading
+
+### 6.1 Motore
+
+Il simulatore genera prezzi giornalieri con un modello a fattori: rendimento del giorno = β · fattore di mercato + fattore di settore + rumore idiosincratico, con deriva e volatilità annue per asset, e shock programmati dello scenario (crolli, rimbalzi, eventi di settore). Il generatore è deterministico (seed), quindi le sfide sono ripetibili e confrontabili.
+
+Interfaccia: grafico del prezzo dell'asset selezionato e del valore del portafoglio, lista degli asset disponibili, pannello ordini (a mercato; limite e stop se la tecnica è sbloccata), velocità (pausa, 1×, 4×), pulsante "Acquisto mensile" se Piano di Accumulo è sbloccato, notifiche di notizie. Costi didattici: commissione fissa 1 Credito per ordine + spread dello 0,1% (cripto 0,5%).
+
+Metriche finali: rendimento totale, volatilità annualizzata, **indice di Sharpe** (tasso privo di rischio 0 per semplicità, dichiarato), **massimo drawdown**, numero di ordini, costi totali, peso massimo di una posizione, numero di settori.
+
+### 6.2 Missioni dei Mentori
+
+| Mentore | Scenario | Giorni | Obiettivo |
+|---|---|---|---|
+| 1 | Mercato normale | 60 | Avere investito almeno il 50% a fine periodo e non scendere sotto il 90% del capitale |
+| 2 | Mercato laterale con oscillazioni | 40 | Far eseguire almeno un ordine limite di acquisto |
+| 3 | Shock di settore a metà periodo | 80 | A fine periodo almeno 3 settori diversi e nessuna posizione sopra il 40% |
+| 4 | 24 mesi di accumulo | 500 | Almeno 10 acquisti mensili e costi totali sotto l'1,5% del versato |
+| 5 | Missione di analisi (non a tempo) | — | Titoli: scegliere l'azienda con i fondamentali più solidi tra 3. ETF: scegliere l'ETF più efficiente tra 3 sullo stesso indice. Cripto: riconoscere il progetto truffa tra 3. Misto: costruire un'allocazione entro il 5% dall'obiettivo |
+| 6 | Titoli: dividendi; ETF: tassi in salita; Cripto: perdita di aggancio di una stablecoin; Misto: tassi in salita | 120 | Titoli: quote aumentate del 3% grazie al reinvestimento. Altri: drawdown massimo sotto l'8% (Cripto 20%) |
+| 7 | Mercato con bolle e notizie euforiche | 90 | Al massimo 6 ordini e valore finale ≥ 95% del capitale |
+| 8 | Crollo improvviso | 90 | Drawdown massimo ≤ 12% (≤ 20% per Cripto) |
+
+Le soglie si adattano al profilo: Prudente −2 punti di drawdown consentito, Audace +2.
+
+### 6.3 Missioni della Lega
+
+| Avversario | Quiz | Missione | Obiettivo |
+|---|---|---|---|
+| Marta Macro | Macro, inflazione, tassi | 180 giorni con ciclo di tassi | Sharpe ≥ 0,3 |
+| Tito Tecnico | Analisi tecnica e fondamentale | 120 giorni di trend e inversioni | Rendimento > 0 e drawdown ≤ 15% |
+| Giulia Garante | Regole, truffe, tasse | Missione di analisi: riconoscere 3 truffe su 5 offerte | 3/3 truffe riconosciute, nessuna offerta onesta scartata per errore |
+| Fabio Freddo | Bias e psicologia | 120 giorni con notizie tentatrici | ≤ 8 ordini e Sharpe ≥ 0,2 |
+| Aurelio Capitale | Tutto | 250 giorni con un crollo e una ripresa | Sharpe ≥ 0,4, drawdown ≤ 18%, almeno 3 settori |
+
+Il punteggio non premia il rendimento puro ma il rendimento corretto per il rischio, per non premiare chi scommette tutto su un titolo fortunato.
+
+### 6.4 Scenari storici ricostruiti
+
+Ricostruzioni semplificate, con ampiezze vicine a quelle storiche, dichiarate come tali nel gioco:
+
+| Scenario | Caduta massima ricostruita | Riferimento storico |
+|---|---|---|
+| 1929 | −85% in 3 anni (compressi) | Dow Jones 1929-1932 circa −89% |
+| Bolla dot-com | Tech −75%, mercato −45% | Nasdaq 2000-2002 circa −78%, S&P 500 circa −49% |
+| Crisi 2008 | Mercato −55%, finanza −75% | S&P 500 ottobre 2007-marzo 2009 circa −57% |
+| Covid 2020 | −34% in 23 giorni, poi ripresa | S&P 500 febbraio-marzo 2020 circa −34% |
+| Inverno cripto 2022 | Cripto −75%, obbligazioni −15% | Bitcoin novembre 2021-novembre 2022 circa −77% |
+
+---
+
+## 7. La Clinica del Portafoglio
+
+La Dott.ssa Ratio accoglie con: "Benvenuto alla Clinica del Portafoglio! Curiamo le scelte, non i soldi persi." Menu:
+
+| Voce | Paper (simulato) | Alpaca Paper | Denaro reale | Sblocco |
+|---|---|---|---|---|
+| Check-up | Posizioni, valore, P&L, allocazione per settore e classe, salute | Sì | Sì | Subito |
+| Compra / Vendi | Ordini guidati con riepilogo costo e rischio | Sì | Sì, con schermata seria | Subito (limite e stop con le tecniche) |
+| Ordini aperti | Vedi e annulla | Sì | Sì | Ordine Limite |
+| Deposita / Preleva | Ricarica di prova 1 volta per regione | Saldo | Apre il sito Alpaca | Subito |
+| Salva e riposa | Salva, Fiducia al massimo | — | — | Subito |
+| Diagnosi | Spiegazione in parole semplici e lezione collegata | Sì | Sì | Subito |
+| Cura (ribilanciamento) | Propone gli ordini, il giocatore conferma ognuno | Sì | Sì | Ribilanciamento |
+| Riflessione (cura bias) | Una domanda sul bias attivo | — | — | Subito |
+| Uova dei dividendi | Stato dei dividendi in incubazione | — | — | Subito |
+| Cartella clinica | Storico ordini, rendimento nel tempo, export CSV | Sì | Sì | Subito |
+| Collega Alpaca | Inserimento chiavi Paper | — | Chiavi Live dopo la Licenza | Paper subito, Live dopo l'esame |
+| Limiti e pausa | — | — | Limiti per ordine e al mese, pausa ≥ 24 h, scollegamento | Licenza |
+| Rifai il questionario | Ricalcola il profilo | — | — | Subito |
+
+### 7.1 Salute del portafoglio
+
+Punteggio 0-100:
+
+- parte da 100;
+- concentrazione: −1,5 punti per ogni punto percentuale del peso massimo sopra il 25%;
+- drawdown dal massimo: −1 punto per ogni punto percentuale;
+- liquidità: −10 se sotto il 2%, −10 se sopra il 60% (dopo il primo acquisto);
+- scostamento dal piano: −0,5 punti per ogni punto di scostamento totale dall'allocazione obiettivo (somma dei valori assoluti / 2);
+- minimo 0.
+
+Stati: **Ottima** ≥ 80, **Buona** 60-79, **Ha la febbre** 40-59, **Affaticata** < 40. Le posizioni con perdita > 20% o peso > 40% sono segnate come "affaticate".
+
+### 7.2 Diagnosi
+
+Regole che producono frasi semplici, sempre generiche (mai "compra X"):
+
+- peso massimo > 40%: "Il {peso}% del portafoglio è in {asset}: se va male, va male quasi tutto." → lezione Diversificazione;
+- un solo settore: "Tutte le posizioni sono nello stesso settore: un evento di settore le colpirebbe insieme." → lezione Tipi;
+- drawdown > 15%: "Sei {dd}% sotto il massimo: ricordi il tuo piano?" → lezione Gestione del rischio;
+- liquidità > 60%: "Gran parte è ferma in liquidità: l'inflazione la erode nel tempo." → lezione Inflazione;
+- molti ordini nell'ultimo mese simulato (> 10): "Molti ordini significano più costi e spesso più emozioni." → lezione Costi e bias.
+
+---
+
+## 8. Il denaro reale
+
+### 8.1 Percorso di sblocco
+
+1. **Prologo**: il Professore annuncia lo sblocco; nel menu la Licenza è bloccata.
+2. **Prima regione**: cartelli e NPC ricordano l'obiettivo; uno Speculatore propone di "saltare la fila" con un falso link: se il giocatore accetta, scatta una lezione sul phishing.
+3. **Medaglia 1** → invito all'**Esame di Abilitazione**: 10 domande su rischio, perdite, costi, ordini, truffe; servono 9 risposte giuste; si può ripetere dopo 10 minuti reali.
+4. **Schermata seria** (nessuno stile di gioco, testo semplice): dichiarazioni da spuntare una per una — maggiore età; capisco che posso perdere tutto il capitale; questo è un gioco educativo e non consulenza; gli ordini sono eseguiti da Alpaca sul mio conto, che ho aperto io; nessun premio di gioco è legato al denaro reale; ho letto i limiti.
+5. **Collegamento**: inserimento delle chiavi Live di Alpaca (vedi 8.4).
+6. **Limiti**: il giocatore sceglie limiti uguali o inferiori al massimo del suo livello.
+
+Il giocatore può restare in paper per sempre: storia e Medaglie non cambiano.
+
+### 8.2 Limiti per Medaglia (dollari)
+
+| Medaglie | Max per ordine | Max al mese | Cripto (per ordine / mese) | Tipi di ordine |
+|---|---|---|---|---|
+| 1 | 100 | 300 | 50 / 150 | Mercato |
+| 2 | 200 | 600 | 100 / 300 | + Limite |
+| 3 | 300 | 1.000 | 150 / 500 | + Limite |
+| 4 | 500 | 1.500 | 250 / 750 | + Limite |
+| 5 | 750 | 2.500 | 350 / 1.200 | + Limite |
+| 6 | 1.000 | 4.000 | 500 / 2.000 | + Limite |
+| 7 | 1.500 | 6.000 | 750 / 3.000 | + Limite |
+| 8 | 2.500 | 10.000 | 1.000 / 5.000 | + Stop |
+
+Inoltre: solo le classi di asset del percorso (Titoli ed ETF: `us_equity`; Cripto: `crypto`; Misto: le classi scelte), niente vendite allo scoperto, niente margine (ordini solo entro la liquidità disponibile), ordini in importo (notional) o quantità.
+
+### 8.3 Sicurezza di ogni ordine reale
+
+- Riepilogo: simbolo, lato, importo, tipo, stima dei costi, quota del mese già usata.
+- Conferma digitando la parola **CONFERMO**.
+- Controllo dei limiti nel client e di nuovo nel server locale (tetto rigido configurabile).
+- `client_order_id` unico per idempotenza; log di audit locale di ogni ordine.
+- **Pausa di riflessione**: blocca il live per 24 h, 7 giorni o 30 giorni; non si può annullare prima della scadenza.
+- Nessuna XP, Reputazione o carta dai trade reali.
+
+### 8.4 Chiavi Alpaca
+
+- Il giocatore le crea su alpaca.markets (account Paper gratuito; Live dopo il KYC fatto da Alpaca).
+- Le inserisce nella Clinica ("Collega Alpaca"). Il browser le invia una sola volta al **server locale** di Tradermon, che le salva in `server/.secrets/keys.json` (escluso da Git, permessi 600) e non le restituisce mai al browser.
+- Ambienti separati: Paper (`paper-api.alpaca.markets`) e Live (`api.alpaca.markets`). Dati di mercato da `data.alpaca.markets`.
+- "Scollega" cancella le chiavi dal server.
+- Depositi e prelievi reali si fanno solo sul sito di Alpaca: la Clinica mostra il saldo e apre la pagina.
+
+---
+
+## 9. Contenuti didattici
+
+Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per ciascun percorso, ciascuno con lezioni brevi, una banca di domande con spiegazione e fonte, e una missione. Fonti: SEC Investor.gov, Investopedia, CFA Institute, Consob, Banca d'Italia (L'economia per tutti), ESMA.
+
+---
+
+## 10. Interfaccia e controlli
+
+- Risoluzione logica 240×160 (quella delle console portatili dei primi anni 2000), tessere 16×16, personaggi 16×24, ingrandimento a pixel netti.
+- Stile grafico: pixel art originale disegnata in codice, con contorni scuri, rampe di 3-4 tonalità per materiale e luce dall'alto a sinistra. Bordi automatici per sentieri, acqua e tetti; acqua, fiori e Muro del Rumore animati; erba alta (Zone di Mercato) con riflessi dorati.
+- Finestre nello stile classico: riquadro bianco a doppio bordo, freccia rossa lampeggiante, cursore a triangolo nei menu, cartello del luogo che scende all'ingresso di ogni zona.
+- Schermata di sfida: avversario in alto a destra su una pedana d'erba, giocatore di spalle in basso a sinistra, riquadri delle barre (Convinzione e Fiducia) verde/giallo/rosso, lampo d'ingresso e scorrimento dei personaggi.
+- Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.
+- Touch: croce direzionale e pulsanti A, B, Menu sullo schermo.
+- Menu di pausa: Investidex, Portafoglio, Profilo e Licenza, Medaglie, Tecniche, Viaggio rapido, Salva, Opzioni (volume, velocità del testo, scala dei caratteri, contrasto alto).
+- Accessibilità: testo ingrandibile, nessuna informazione solo a colori, timer disattivabile in modalità "Studio" (in cambio dimezza la Reputazione dei duelli).
+
+## 11. Salvataggio
+
+Salvataggio automatico alla Clinica e manuale dal menu, in `localStorage`. Esporta/Importa come file JSON. Il salvataggio contiene: profilo, percorso, posizione, flag della storia, statistiche, Medaglie, tecniche, carte e livelli, portafoglio simulato, stato del mercato simulato, coda di ripasso, record. Non contiene mai le chiavi.
+
+## 12. Fuori dall'ambito della versione 1.0
+
+Classifiche online, account utente, OAuth di Alpaca per app di terzi (servirebbe un backend pubblico e un parere legale), app desktop Tauri, musica completa. La struttura dei dati è pronta per aggiungerli.

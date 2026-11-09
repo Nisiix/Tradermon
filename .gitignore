@@ -1,0 +1,8 @@
+node_modules/
+dist/
+server/.secrets/
+*.log
+.DS_Store
+.env
+.preview/
+scripts/.cr.mjs

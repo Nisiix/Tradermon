@@ -1,0 +1,79 @@
+import type { Question, QuizTopic, Track, AssetClass } from '../../types';
+import * as C from './core';
+import * as T from './tracks';
+
+export type QRow = [1 | 2 | 3, string, string, string, string, string, string, string];
+
+function build(topic: QuizTopic, rows: QRow[]): Question[] {
+  return rows.map((r, i) => ({
+    id: `${topic}_${i + 1}`,
+    topic,
+    diff: r[0],
+    q: r[1],
+    options: [r[2], r[3], r[4], r[5]],
+    answer: 0,
+    explain: r[6],
+    source: r[7],
+  }));
+}
+
+const TABLE: Record<QuizTopic, QRow[]> = {
+  rischio: C.RISCHIO,
+  ordini: C.ORDINI,
+  diversificazione: C.DIVERSIFICAZIONE,
+  costi: C.COSTI,
+  bias: C.BIAS,
+  gestione: C.GESTIONE,
+  macro: C.MACRO,
+  analisi: C.ANALISI,
+  regole: C.REGOLE,
+  esame: C.ESAME,
+  stocks_base: T.STOCKS_BASE,
+  stocks_bilanci: T.STOCKS_BILANCI,
+  stocks_dividendi: T.STOCKS_DIVIDENDI,
+  etf_base: T.ETF_BASE,
+  etf_replica: T.ETF_REPLICA,
+  etf_obbligazioni: T.ETF_OBBLIGAZIONI,
+  crypto_base: T.CRYPTO_BASE,
+  crypto_custodia: T.CRYPTO_CUSTODIA,
+  crypto_stable: T.CRYPTO_STABLE,
+  mixed_base: T.MIXED_BASE,
+  mixed_allocazione: T.MIXED_ALLOCAZIONE,
+};
+
+export const QUESTIONS: Question[] = (Object.keys(TABLE) as QuizTopic[]).flatMap((t) => build(t, TABLE[t]));
+export const BY_ID: Record<string, Question> = Object.fromEntries(QUESTIONS.map((q) => [q.id, q]));
+
+export function byTopic(topic: QuizTopic): Question[] {
+  return QUESTIONS.filter((q) => q.topic === topic);
+}
+
+const A_TOPIC: Record<AssetClass, QuizTopic> = { stocks: 'stocks_bilanci', etf: 'etf_replica', crypto: 'crypto_custodia' };
+const B_TOPIC: Record<AssetClass, QuizTopic> = { stocks: 'stocks_dividendi', etf: 'etf_obbligazioni', crypto: 'crypto_stable' };
+const BASE_TOPIC: Record<AssetClass, QuizTopic> = { stocks: 'stocks_base', etf: 'etf_base', crypto: 'crypto_base' };
+
+/** Argomenti di ciascun Mentore (1..8) in base al percorso. */
+export function mentorTopics(n: number, track: Track, mixed: AssetClass[]): QuizTopic[] {
+  const classes: AssetClass[] = track === 'mixed' ? mixed : [track];
+  switch (n) {
+    case 1: return track === 'mixed' ? ['mixed_base', 'rischio'] : [BASE_TOPIC[track], 'rischio'];
+    case 2: return ['ordini'];
+    case 3: return ['diversificazione'];
+    case 4: return ['costi'];
+    case 5: return track === 'mixed' ? ['mixed_allocazione'] : [A_TOPIC[track]];
+    case 6: return classes.map((c) => B_TOPIC[c]).concat(track === 'mixed' ? classes.map((c) => A_TOPIC[c]) : []);
+    case 7: return ['bias'];
+    case 8: return ['gestione'];
+    default: return ['rischio'];
+  }
+}
+
+/** Argomenti accessibili al giocatore (domande lampo, Torre, ripasso). */
+export function trackTopics(track: Track, mixed: AssetClass[], badges: number): QuizTopic[] {
+  const out = new Set<QuizTopic>();
+  for (let i = 1; i <= Math.max(1, Math.min(8, badges + 1)); i++) mentorTopics(i, track, mixed).forEach((t) => out.add(t));
+  if (badges >= 8) ['macro', 'analisi', 'regole'].forEach((t) => out.add(t as QuizTopic));
+  return [...out];
+}
+
+export const LEAGUE_TOPICS: QuizTopic[][] = [['macro'], ['analisi'], ['regole'], ['bias', 'gestione']];
