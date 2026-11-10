@@ -305,6 +305,25 @@ Ogni mese simulato gli asset con dividendo pagano (rendimento annuo / 12). Con i
 
 La Biblioteca propone ogni giorno reale una domanda; rispondere ogni giorno aumenta la streak. Le domande sbagliate entrano in una coda di ripasso (algoritmo tipo Leitner a 3 scatole: sbagliata → scatola 1, giusta → scatola successiva); le Zone di Mercato pescano prima dalla scatola 1.
 
+### 5.16b Agenda, traguardi, titoli e rivincite
+
+- **Agenda**: ogni giorno reale tre missioni (lezione, duelli, check-up, consigli, domanda del giorno, passi, Diario, minigioco, ripasso) e ogni settimana ISO una missione più lunga. Le missioni sono estratte con un seme dalla data e dal nome, così sono uguali per tutti i giocatori con lo stesso nome. Ricompensa: solo punti Conoscenza (+25 extra se si completa tutta l'agenda del giorno).
+- **Traguardi**: circa 40 obiettivi (duelli, Medaglie, consigli, lezioni, serie, Diario, minigiochi, storie, passi, Torre...). Alcuni danno un **titolo** (scelto dal Profilo, mostrato sulla targhetta dei duelli) e un **oggetto per la casa**.
+- **Rivincite**: tre giorni dopo averlo battuto, un investitore del percorso chiede la rivincita con domande di difficoltà 2-3 pescando dalle sbagliate; vincere dà Reputazione e conta per agenda e traguardi.
+- **Dialoghi che ricordano**: gli abitanti contano le visite e commentano Medaglie nuove, titolo e serie della domanda del giorno.
+- **Storie a tappe** (`src/world/quests.ts`): sei abitanti, alla seconda visita, chiedono un favore in 2-3 tappe (parlare con un altro abitante, leggere una lezione, fare un check-up, giocare un minigioco, avere N Medaglie, superare una piccola prova). Ricompensa: Conoscenza e un oggetto (radio, acquario, quadro).
+- **Casa arredabile**: gli oggetti sbloccati compaiono nella casa di Borgo Semina (bacheca, calendario, cornici sui muri; trofei, scrivania, cabinato, mappamondo, pianta, libreria, radio, acquario a terra).
+- **Orari**: di notte (orologio di New York) bambini e ragazzi non sono in giro, le finestre delle case si accendono e compaiono le lucciole.
+- **Meteo di mercato**: pioggia con il clima orso, temporale con lampi con la tempesta, scintille con il toro, foglie negli altri casi.
+
+### 5.16c Diario, minigiochi, scenari storici, Osservatorio e sfida della settimana
+
+- **Diario dell'investitore**: dopo ogni operazione (conto di prova, Paper o reale) chiede il motivo da una lista e una nota; la Dott.ssa Ratio commenta (i motivi emotivi, come FOMO o "taglio la perdita perché fa male", vengono segnalati). Dopo 30 giorni di mercato (o 30 giorni reali per Alpaca) la riga torna da rileggere con il prezzo attuale e la domanda "rifaresti la stessa scelta?". Il Diario non tocca mai il conto.
+- **Minigiochi** (Biblioteca e Zona Simulazione): Indovina il grafico (volatilità, trend, drawdown), Corsa dell'interesse composto, Carrello diversificato, Bilancio in ordine (P/E, D/E, margine). Punteggio 0-100 e record, nessun effetto sul conto.
+- **Scenari storici**: per ognuna delle cinque crisi leggendarie una scheda con quando, cosa successe e la lezione, poi la possibilità di riviverla in sandbox.
+- **Osservatorio Alpaca** (Clinica): conto, posizioni, ordini aperti e prezzo di un simbolo in sola lettura, con accanto l'ultimo motivo scritto nel Diario per ogni posizione. Nessun pulsante d'ordine.
+- **Sfida della settimana**: otto domande uguali per tutti (seme dalla settimana ISO), un tentativo, punteggio da risposte e tempo. Il risultato è un codice `TS-2026W46-NOME-85-XXX` con controllo, da scambiare con gli amici: chi lo inserisce vede nome e punti nella propria classifica locale. Nessun server né dati del conto nel codice.
+
 ### 5.17 Riepilogo delle 17 meccaniche adattate
 
 1. Tipi e debolezze → settori ed eventi. 2. Squadra di 6 → slot di portafoglio. 3. Box → watchlist. 4. Allenatori sul percorso → investitori con linea di vista. 5. Rivale → rivale con stile opposto e confronto dei portafogli. 6. MT/MN → tecniche dei Mentori che aprono la mappa. 7. Stati alterati → bias. 8. Evoluzione → livelli delle Asset Card. 9. Giorno/notte → orologio di mercato. 10. Meteo → clima di mercato. 11. Uova → dividendi reinvestiti. 12. Bici/Volo → treno e viaggio rapido. 13. Zona Safari → Zona Simulazione. 14. Casinò → Casinò dello Speculatore. 15. Cavo link → duelli con codice. 16. Leggendari e Torre Lotta → crisi leggendarie e Torre delle Sfide. 17. Shiny → carte dorate.
@@ -470,12 +489,14 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 - Schermata di sfida: avversario in alto a destra su una pedana d'erba, giocatore di spalle in basso a sinistra, riquadri delle barre (Convinzione e Fiducia) verde/giallo/rosso, lampo d'ingresso e scorrimento dei personaggi.
 - Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.
 - Touch: croce direzionale e pulsanti A, B, Menu sullo schermo.
-- Menu di pausa: Investidex, Portafoglio, Profilo e Licenza, Medaglie, Tecniche, Viaggio rapido, Salva, Opzioni (volume, velocità del testo, scala dei caratteri, contrasto alto).
+- Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo e Licenza (con scelta del titolo), Medaglie, Tecniche, Viaggio rapido, Salva, Opzioni (effetti, musica, velocità del testo, scala dei caratteri, contrasto alto, Comandi).
+- Resa: la griglia 240×160 è disegnata a risoluzione interna 720×480 (Scale3x per tile e sprite) e adattata allo schermo con filtro lineare; la camera aggiunge vignettatura e una leggera saturazione. Niente sfocatura né scalini.
+- Musica: chiptune originale generata in codice, un brano per tipo di luogo, uno per i duelli e uno per la notte; con il clima orso o tempesta i brani maggiori passano in minore e rallentano, con il toro accelerano. Brevi motivi per vittorie, Medaglie e missioni completate. Volume separato dagli effetti nelle Opzioni.
 - Accessibilità: testo ingrandibile, nessuna informazione solo a colori, timer disattivabile in modalità "Studio" (in cambio dimezza la Reputazione dei duelli).
 
 ## 11. Salvataggio
 
-Salvataggio automatico alla Clinica e manuale dal menu, in `localStorage`. Esporta/Importa come file JSON. Il salvataggio contiene: profilo, percorso, posizione, flag della storia, statistiche, Medaglie, tecniche, carte e livelli, portafoglio simulato, stato del mercato simulato, coda di ripasso, record. Non contiene mai le chiavi.
+Salvataggio automatico alla Clinica e manuale dal menu, in `localStorage`. Esporta/Importa come file JSON. Il salvataggio contiene: profilo, percorso, posizione, flag della storia, statistiche, Medaglie, tecniche, carte e livelli, portafoglio simulato, stato del mercato simulato, coda di ripasso, record, contatori ed agenda, traguardi e titolo, oggetti della casa, rivincite programmate, storie, Diario, record dei minigiochi, sfide e classifica, memoria dei dialoghi. Non contiene mai le chiavi.
 
 ## 12. Fuori dall'ambito della versione 1.0
 

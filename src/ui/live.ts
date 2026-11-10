@@ -2,6 +2,8 @@ import * as A from '../systems/alpaca';
 import { S, save, LIVE_LIMITS, hasTech, TECH, classes } from '../systems/state';
 import { say, choose, modal, el, esc, toast } from './core';
 import { runExam } from './setup';
+import { journalPrompt } from './journal';
+import { fmtPx } from '../systems/portfolio';
 
 const NURSE = 'Dott.ssa Ratio';
 
@@ -48,6 +50,47 @@ export async function openAlpacaHub() {
       ], NURSE);
     }
   }
+}
+
+/** Osservatorio: conto, posizioni e prezzi Alpaca in sola lettura. Nessun pulsante d'ordine: qui si guarda, non si opera. */
+export async function openObservatory() {
+  const st = await A.serverStatus();
+  if (!st) return say(['Per l\'Osservatorio serve il server locale di Tradermon (npm run dev oppure npm start).', 'Senza server il gioco funziona lo stesso con il mercato simulato.'], NURSE);
+  const envs: A.Env[] = [];
+  if (st.paper.configured) envs.push('paper');
+  if (st.live.configured && S.license === 'investitore') envs.push('live');
+  if (!envs.length) return say(['Nessun conto Alpaca collegato.', 'Collega almeno il conto Paper dalla voce "Conto Alpaca": l\'Osservatorio mostra conto e prezzi senza mai inviare ordini.'], NURSE);
+  let env: A.Env = envs[0];
+  if (envs.length > 1) { const c = await choose(['Conto Paper', 'Conto reale', 'Annulla'], { cancel: true, prompt: 'Quale conto vuoi osservare?', who: NURSE }); if (c < 0 || c === 2) return; env = c === 0 ? 'paper' : 'live'; }
+  await modal(`Osservatorio Alpaca · ${env === 'live' ? 'conto reale' : 'conto Paper'} (sola lettura)`, ({ body, button, close }) => {
+    const load = async () => {
+      body.innerHTML = '<p>Caricamento...</p>';
+      try {
+        const [acc, pos, ord, clk] = await Promise.all([A.account(env), A.positions(env), A.openOrders(env), A.clock(env).catch(() => null)]);
+        const mine = S.journal.filter((j) => j.account === (env === 'live' ? 'reale' : 'paper'));
+        body.innerHTML = `
+          <p class="small muted">Qui si osserva soltanto: nessun ordine può partire da questa schermata.</p>
+          <p><b>Valore:</b> ${Number(acc.portfolio_value).toFixed(2)} ${acc.currency} · <b>Liquidità:</b> ${Number(acc.cash).toFixed(2)} · <b>Stato:</b> ${esc(acc.status)} · ${clk ? (clk.is_open ? '<span class="good">Mercato aperto</span>' : `Mercato chiuso${clk.next_open ? ` · riapre ${new Date(clk.next_open).toLocaleString('it-IT')}` : ''}`) : ''}</p>
+          ${pos.length ? `<table class="t"><tr><th>Simbolo</th><th class="n">Quantità</th><th class="n">Prezzo medio</th><th class="n">Prezzo attuale</th><th class="n">Valore</th><th class="n">P&amp;L</th><th>Diario</th></tr>${pos.map((p) => { const j = mine.filter((x) => x.asset === p.symbol); return `<tr><td><b>${esc(p.symbol)}</b></td><td class="n">${p.qty}</td><td class="n">${Number(p.avg_entry_price).toFixed(2)}</td><td class="n">${Number(p.current_price).toFixed(2)}</td><td class="n">${Number(p.market_value).toFixed(2)}</td><td class="n ${Number(p.unrealized_pl) >= 0 ? 'good' : 'bad'}">${(Number(p.unrealized_plpc) * 100).toFixed(2)}%</td><td class="small">${j.length ? esc(j[j.length - 1].reason) : '<span class="muted">—</span>'}</td></tr>`; }).join('')}</table>` : '<p class="muted">Nessuna posizione.</p>'}
+          <h4>Ordini aperti</h4>${ord.length ? `<ul class="small" style="margin:0 0 0 16px">${ord.map((o) => `<li>${esc(o.side)} ${esc(o.type)} ${esc(o.symbol)} ${o.notional ? o.notional + ' $' : o.qty} · ${esc(o.status)}</li>`).join('')}</ul>` : '<span class="muted">Nessuno</span>'}
+          <h4>Prezzo di un simbolo</h4>
+          <div class="row"><input class="tx sym" placeholder="es. un ticker USA o BTC/USD" spellcheck="false" style="flex:1"><button class="btn look">Guarda</button></div>
+          <p class="msg small"></p>
+          <p class="small muted">Dati forniti da Alpaca per il tuo conto. Nessun consiglio: l\'Osservatorio serve a confrontare ciò che hai scritto nel Diario con quello che è successo.</p>`;
+        const look = body.querySelector('.look') as HTMLButtonElement, msg = body.querySelector('.msg') as HTMLElement, inp = body.querySelector('.sym') as HTMLInputElement;
+        look.addEventListener('click', async () => {
+          const sym = inp.value.trim().toUpperCase();
+          if (!sym) return;
+          msg.textContent = '...';
+          try { const r = await A.latest(sym, sym.includes('/') ? 'crypto' : 'stocks'); msg.innerHTML = `<b>${esc(sym)}</b>: ${fmtPx(r.price)} $`; }
+          catch (e) { msg.innerHTML = `<span class="bad">${esc((e as Error).message)}</span>`; }
+        });
+      } catch (e) { body.innerHTML = `<p class="bad">${esc((e as Error).message)}</p>`; }
+    };
+    void load();
+    button('Aggiorna', () => void load());
+    button('Chiudi', () => close(), 'primary');
+  }, { wide: true });
 }
 
 async function keysForm(env: A.Env): Promise<boolean> {
@@ -223,6 +266,8 @@ function button2(body: HTMLElement, env: A.Env, reload: () => Promise<void>) {
       if (type === 'limit') order.limit_price = String(pr);
       if (type === 'stop') order.stop_price = String(pr);
       const out = await A.submitOrder(env, order, confirmWord);
+      let refPx = pr;
+      if (!refPx) { try { refPx = (await A.latest(sym, isCrypto ? 'crypto' : 'stocks')).price; } catch { refPx = 0; } }
       if (env === 'live') {
         if (side === 'buy') S.liveLimits.spentThisMonth += amt;
         S.liveAudit.push({ t: Date.now(), symbol: sym, side, notional: amt, status: out.status, id: out.id });
@@ -230,6 +275,7 @@ function button2(body: HTMLElement, env: A.Env, reload: () => Promise<void>) {
       }
       msg.innerHTML = `<span class="good">Ordine inviato: stato ${esc(out.status)}.</span>`;
       setTimeout(() => void reload(), 1200);
+      await journalPrompt({ asset: sym, side, amount: amt, price: refPx, account: env === 'live' ? 'reale' : 'paper' });
     } catch (e) { msg.innerHTML = `<span class="bad">${esc((e as Error).message)}</span>`; }
   });
 }

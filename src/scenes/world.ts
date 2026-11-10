@@ -1,5 +1,8 @@
+import { play, setMood, trackForMap } from '../systems/music';
+import { track } from '../systems/progress';
+import { decorateHome } from '../world/decor';
 import Phaser from 'phaser';
-import { T, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex } from '../art/art';
+import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex } from '../art/art';
 import { getMap, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, type WorldApi } from '../world/scripts';
 import { S, save, advanceDays, hasTech, TECH } from '../systems/state';
@@ -27,10 +30,15 @@ export class WorldScene extends Phaser.Scene {
   moving = false;
   busy = false;
   overlay!: Phaser.GameObjects.Rectangle;
+  weather!: Phaser.GameObjects.Graphics;
+  drops: { x: number; y: number; vx: number; vy: number; s: number; a: number; k: number }[] = [];
+  weatherKind = '';
+  nextBolt = 0;
   hud!: HTMLElement;
   lastMs = 0;
   animFrame = 0;
   animCells: [number, number][] = [];
+  night = false;
   walkFrame = 0;
   turnLock = 0;
   bumpLock = 0;
@@ -42,12 +50,14 @@ export class WorldScene extends Phaser.Scene {
 
   preload() {
     if (!this.textures.exists('tiles')) {
-      this.textures.addSpriteSheet('tiles', drawTiles() as unknown as HTMLImageElement, { frameWidth: T, frameHeight: T });
-      this.textures.addSpriteSheet('chars', drawCharacters() as unknown as HTMLImageElement, { frameWidth: CW, frameHeight: CH });
+      this.textures.addSpriteSheet('tiles', drawTiles() as unknown as HTMLImageElement, { frameWidth: P, frameHeight: P });
+      this.textures.addSpriteSheet('chars', drawCharacters() as unknown as HTMLImageElement, { frameWidth: CW * RS, frameHeight: CH * RS });
       // ombra morbida sotto i personaggi
-      const sh = document.createElement('canvas'); sh.width = 14; sh.height = 5;
-      const g = sh.getContext('2d')!; g.fillStyle = 'rgba(0,0,0,.28)';
-      g.beginPath(); g.ellipse(7, 2.5, 6.5, 2.2, 0, 0, Math.PI * 2); g.fill();
+      const sh = document.createElement('canvas'); sh.width = 14 * RS; sh.height = 5 * RS;
+      const g = sh.getContext('2d')!;
+      const grad = g.createRadialGradient(7 * RS, 2.5 * RS, 0, 7 * RS, 2.5 * RS, 7 * RS);
+      grad.addColorStop(0, 'rgba(0,0,0,.34)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = grad; g.beginPath(); g.ellipse(7 * RS, 2.5 * RS, 7 * RS, 2.4 * RS, 0, 0, Math.PI * 2); g.fill();
       this.textures.addCanvas('shadow', sh);
       // fumetto "!" in pixel art
       const bb = document.createElement('canvas'); bb.width = 12; bb.height = 14;
@@ -55,7 +65,7 @@ export class WorldScene extends Phaser.Scene {
       b.fillStyle = '#202020'; b.fillRect(1, 0, 10, 11); b.fillRect(0, 1, 12, 9); b.fillRect(4, 11, 4, 1); b.fillRect(5, 12, 2, 1);
       b.fillStyle = '#ffffff'; b.fillRect(2, 1, 8, 9); b.fillRect(1, 2, 10, 7); b.fillRect(5, 10, 2, 1);
       b.fillStyle = '#d83020'; b.fillRect(5, 2, 2, 5); b.fillRect(5, 8, 2, 1);
-      this.textures.addCanvas('bubble', bb);
+      this.textures.addCanvas('bubble', RS === 3 ? scale3x(bb) : bb);
     }
   }
 
@@ -63,6 +73,14 @@ export class WorldScene extends Phaser.Scene {
     this.hud = el('div', 'hud');
     getStage().appendChild(this.hud);
     this.overlay = this.add.rectangle(0, 0, 10, 10, 0x000000, 0).setOrigin(0).setScrollFactor(0).setDepth(100);
+    this.weather = this.add.graphics().setScrollFactor(0).setDepth(99);
+    // post-processing della camera (filtri nativi di Phaser 4, solo WebGL): vignetta morbida e colori un po' più vivi
+    try {
+      const cam = this.cameras.main;
+      cam.filters.internal.addVignette(0.5, 0.5, 0.95, 0.32, 0x0a1020);
+      const cm = cam.filters.internal.addColorMatrix();
+      cm.colorMatrix.saturate(0.12).contrast(0.05);
+    } catch { /* renderer Canvas: nessun filtro */ }
     this.loadMap(S.map, S.x, S.y, (DIR_NAME.indexOf(S.facing) as 0 | 1 | 2 | 3));
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.updateHud() });
     this.time.addEvent({ delay: 550, loop: true, callback: () => this.animateTiles() });
@@ -84,30 +102,35 @@ export class WorldScene extends Phaser.Scene {
 
   loadMap(id: string, x: number, y: number, dir: 0 | 1 | 2 | 3) {
     this.map = getMap(id);
+    if (id === 'home') this.map = decorateHome(this.map);
     S.map = id; S.x = x; S.y = y; S.facing = DIR_NAME[dir];
-    this.children.list.filter((c) => c !== this.overlay).forEach((c) => c.destroy());
+    this.children.list.filter((c) => c !== this.overlay && c !== this.weather).forEach((c) => c.destroy());
     this.tilemap?.destroy();
     this.animFrame = 0;
-    this.tilemap = this.make.tilemap({ data: visualTiles(this.map.tiles, 0), tileWidth: T, tileHeight: T });
+    this.night = marketClock().night;
+    this.tilemap = this.make.tilemap({ data: visualTiles(this.map.tiles, 0, this.night), tileWidth: P, tileHeight: P });
     this.animCells = [];
     this.map.tiles.forEach((row, yy) => row.forEach((t, xx) => { if (ANIMATED.has(t)) this.animCells.push([xx, yy]); }));
-    const ts = this.tilemap.addTilesetImage('tiles', 'tiles', T, T, 0, 0, 0)!;
+    const ts = this.tilemap.addTilesetImage('tiles', 'tiles', P, P, 0, 0, 0)!;
     this.layer = this.tilemap.createLayer(0, ts, 0, 0)!;
     this.cameras.main.setBackgroundColor(this.map.interior ? '#1b1b24' : '#2e7d32');
-    this.player = this.add.sprite(x * T + 8, y * T + 16, 'chars', S.avatar * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
-    this.playerShadow = this.add.image(x * T + 8, y * T + 15, 'shadow').setDepth(4);
+    this.player = this.add.sprite(x * P + P / 2, y * P + P, 'chars', S.avatar * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
+    this.playerShadow = this.add.image(x * P + P / 2, y * P + P - RS, 'shadow').setDepth(4);
     this.grassOver = undefined;
     const now = this.time.now;
     this.npcs = this.map.npcs.map((d) => ({ def: d, x: d.x, y: d.y, dir: d.dir, hx: d.x, hy: d.y, foot: 0, nextIdle: now + 1500 + Math.random() * 3000 }));
     this.refreshNpcs(false);
     this.updateGrass();
     const cam = this.cameras.main;
-    const mw = this.map.w * T, mh = this.map.h * T;
+    const mw = this.map.w * P, mh = this.map.h * P;
     cam.stopFollow();
     const vw = cam.width, vh = cam.height;
     if (mw <= vw && mh <= vh) { cam.removeBounds(); cam.centerOn(mw / 2, mh / 2); }
     else { cam.setBounds(Math.min(0, (mw - vw) / 2), Math.min(0, (mh - vh) / 2), Math.max(mw, vw), Math.max(mh, vh)); cam.startFollow(this.player, true, 1, 1); }
     if (this.map.town !== undefined && !this.map.interior) void onEnterTown(this.map.id);
+    setMood(S.market.climate);
+    play(trackForMap(id, this.map.interior, marketClock().night));
+    if (/^h\d+_/.test(id) && !S.flags[`visited_${id}`]) { S.flags[`visited_${id}`] = true; track('house_unique'); }
     this.updateHud(true);
     this.applyTint();
   }
@@ -124,13 +147,13 @@ export class WorldScene extends Phaser.Scene {
         continue;
       }
       if (n.def.kind === 'case') {
-        if (!n.spr) { const col = ({ stocks: 'case_blue', etf: 'case_green', crypto: 'case_orange' } as Record<string, string>)[String(n.def.data?.cls)] ?? 'case_blue'; n.spr = this.add.sprite(n.x * T + 8, n.y * T + 16, 'tiles', tileIndex(col)).setOrigin(0.5, 1).setDepth(5); }
+        if (!n.spr) { const col = ({ stocks: 'case_blue', etf: 'case_green', crypto: 'case_orange' } as Record<string, string>)[String(n.def.data?.cls)] ?? 'case_blue'; n.spr = this.add.sprite(n.x * P + P / 2, n.y * P + P, 'tiles', tileIndex(col)).setOrigin(0.5, 1).setDepth(5); }
         continue;
       }
       if (n.def.hiddenSprite) continue;
       if (!n.spr) {
-        n.spr = this.add.sprite(n.x * T + 8, n.y * T + 16, 'chars', this.palFor(n.def) * 12 + n.dir * 3).setOrigin(0.5, 1).setDepth(10 + n.y);
-        n.shadow = this.add.image(n.x * T + 8, n.y * T + 15, 'shadow').setDepth(4);
+        n.spr = this.add.sprite(n.x * P + P / 2, n.y * P + P, 'chars', this.palFor(n.def) * 12 + n.dir * 3).setOrigin(0.5, 1).setDepth(10 + n.y);
+        n.shadow = this.add.image(n.x * P + P / 2, n.y * P + P - RS, 'shadow').setDepth(4);
         if (animate) { n.spr.setAlpha(0); n.shadow.setAlpha(0); this.tweens.add({ targets: [n.spr, n.shadow], alpha: 1, duration: 300 }); }
       }
     }
@@ -168,8 +191,8 @@ export class WorldScene extends Phaser.Scene {
     const spr = n.spr, sh = n.shadow;
     spr.setFrame(base + 1 + n.foot).setDepth(10 + ny);
     return new Promise((r) => {
-      this.tweens.add({ targets: spr, x: nx * T + 8, y: ny * T + 16, duration: ms,
-        onUpdate: (tw) => { if (tw.progress > 0.5) spr.setFrame(base); sh?.setPosition(spr.x, spr.y - 1); },
+      this.tweens.add({ targets: spr, x: nx * P + P / 2, y: ny * P + P, duration: ms,
+        onUpdate: (tw) => { if (tw.progress > 0.5) spr.setFrame(base); sh?.setPosition(spr.x, spr.y - RS); },
         onComplete: () => { spr.setFrame(base); n.walking = false; r(); } });
     });
   }
@@ -179,14 +202,14 @@ export class WorldScene extends Phaser.Scene {
     const t = this.map.tiles[S.y]?.[S.x];
     if (t === TILE.MARKET) {
       if (!this.grassOver) this.grassOver = this.add.sprite(0, 0, 'tiles', tileIndex('tall0')).setOrigin(0, 0);
-      this.grassOver.setPosition(S.x * T, S.y * T + 8).setCrop(0, 8, 16, 8).setDisplayOrigin(0, 8).setDepth(10.5 + S.y).setVisible(true);
+      this.grassOver.setPosition(S.x * P, S.y * P + P / 2).setCrop(0, P / 2, P, P / 2).setDisplayOrigin(0, P / 2).setDepth(10.5 + S.y).setVisible(true);
     } else this.grassOver?.setVisible(false);
   }
 
   rustle(x: number, y: number) {
     for (let i = 0; i < 4; i++) {
-      const leaf = this.add.rectangle(x * T + 8, y * T + 12, 2, 2, i % 2 ? 0x58a838 : 0x88d058).setDepth(30 + y);
-      this.tweens.add({ targets: leaf, x: leaf.x + (i - 1.5) * 5, y: leaf.y - 5 - Math.random() * 4, alpha: 0, duration: 380, ease: 'Quad.easeOut', onComplete: () => leaf.destroy() });
+      const leaf = this.add.rectangle(x * P + P / 2, y * P + P * 0.75, 2 * RS, 2 * RS, i % 2 ? 0x58a838 : 0x88d058).setDepth(30 + y);
+      this.tweens.add({ targets: leaf, x: leaf.x + (i - 1.5) * 5 * RS, y: leaf.y - (5 + Math.random() * 4) * RS, alpha: 0, duration: 380, ease: 'Quad.easeOut', onComplete: () => leaf.destroy() });
     }
   }
 
@@ -209,10 +232,11 @@ export class WorldScene extends Phaser.Scene {
     return !!this.npcAt(x, y);
   }
 
-  update(time: number) {
+  update(time: number, delta: number) {
     const now = performance.now();
     S.playMs += now - this.lastMs;
     this.lastMs = now;
+    this.updateWeather(delta);
     if (this.busy || this.moving || uiActive()) return;
     if (this.time.now < this.turnLock) return;
     const p = takeWorldPress();
@@ -279,10 +303,10 @@ export class WorldScene extends Phaser.Scene {
     this.player.setFrame(base + 1 + this.walkFrame);
     const intoGrass = this.map.tiles[ny]?.[nx] === TILE.MARKET;
     this.tweens.add({
-      targets: this.player, x: nx * T + 8, y: ny * T + 16, duration: STEP_MS,
+      targets: this.player, x: nx * P + P / 2, y: ny * P + P, duration: STEP_MS,
       onStart: () => this.player.setDepth(10 + Math.max(ny, S.y)),
       // primo mezzo passo con il piede avanti, secondo mezzo in piedi: l'andatura dei classici
-      onUpdate: (tw) => { if (tw.progress > 0.5) this.player.setFrame(base); this.playerShadow?.setPosition(this.player.x, this.player.y - 1); },
+      onUpdate: (tw) => { if (tw.progress > 0.5) this.player.setFrame(base); this.playerShadow?.setPosition(this.player.x, this.player.y - RS); },
       onComplete: () => {
         S.x = nx; S.y = ny; this.player.setFrame(base); this.moving = false;
         this.updateGrass();
@@ -305,6 +329,7 @@ export class WorldScene extends Phaser.Scene {
     }
     if (this.map.route) {
       S.stepCounter++;
+      track('steps');
       if (S.stepCounter % 60 === 0) { const msgs = advanceDays(1); msgs.forEach((m) => toast(m)); }
     }
   }
@@ -346,7 +371,7 @@ export class WorldScene extends Phaser.Scene {
     const n = this.npcs.find((x) => x.def.id === id);
     if (!n?.spr) return;
     beep('alert');
-    const t = this.add.image(n.spr.x, n.spr.y - 24, 'bubble').setOrigin(0.5, 1).setDepth(50).setScale(0.2);
+    const t = this.add.image(n.spr.x, n.spr.y - 24 * RS, 'bubble').setOrigin(0.5, 1).setDepth(50).setScale(0.2);
     this.tweens.add({ targets: t, scale: 1, duration: 160, ease: 'Back.easeOut' });
     await new Promise((r) => this.time.delayedCall(750, r));
     t.destroy();
@@ -378,14 +403,68 @@ export class WorldScene extends Phaser.Scene {
     if (!this.blocked(bx, by)) {
       S.x = bx; S.y = by;
       this.player.setDepth(10 + by);
-      this.tweens.add({ targets: this.player, x: bx * T + 8, y: by * T + 16, duration: STEP_MS, onUpdate: () => this.playerShadow?.setPosition(this.player.x, this.player.y - 1), onComplete: () => this.updateGrass() });
+      this.tweens.add({ targets: this.player, x: bx * P + P / 2, y: by * P + P, duration: STEP_MS, onUpdate: () => this.playerShadow?.setPosition(this.player.x, this.player.y - RS), onComplete: () => this.updateGrass() });
+    }
+  }
+
+  /** Meteo legato al clima di mercato: pioggia con l'orso, temporale con lampi nella tempesta, scintille con il toro, foglie e lucciole altrimenti. */
+  updateWeather(delta: number) {
+    const clk = marketClock();
+    const kind = this.map.interior ? '' : S.market.climate + (clk.night ? '_n' : '');
+    const cam = this.cameras.main;
+    const W = cam.width, H = cam.height;
+    if (kind !== this.weatherKind) {
+      this.weatherKind = kind;
+      this.drops = [];
+      if (clk.night !== this.night) { this.night = clk.night; this.refreshNpcs(); this.animateTiles(); }
+      const n = kind.startsWith('orso') ? 90 : kind.startsWith('tempesta') ? 160 : kind.startsWith('toro') ? 28 : kind ? 10 : 0;
+      for (let i = 0; i < n; i++) this.drops.push({ x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, s: 1 + Math.random(), a: Math.random(), k: Math.random() });
+      if (clk.night && kind) for (let i = 0; i < 14; i++) this.drops.push({ x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, s: 0.4 + Math.random() * 0.5, a: Math.random(), k: 2 + Math.random() });
+    }
+    const g = this.weather;
+    g.clear();
+    if (!kind) return;
+    const dt = Math.min(50, delta) / 16.7;
+    const climate = S.market.climate;
+    for (const d of this.drops) {
+      if (d.k >= 2) {
+        // lucciole: vagano lente e pulsano
+        d.a += 0.03 * dt; d.x += Math.sin(d.a * 1.7 + d.k) * 0.6 * dt; d.y += Math.cos(d.a * 1.3 + d.k) * 0.4 * dt;
+        const al = 0.35 + 0.65 * Math.abs(Math.sin(d.a));
+        g.fillStyle(0xe8ff90, al); g.fillRect(d.x, d.y, RS, RS);
+        g.fillStyle(0xe8ff90, al * 0.25); g.fillRect(d.x - RS, d.y - RS, RS * 3, RS * 3);
+      } else if (climate === 'orso' || climate === 'tempesta') {
+        const storm = climate === 'tempesta';
+        d.x -= (storm ? 3 : 1) * d.s * dt; d.y += (storm ? 11 : 8) * d.s * dt;
+        g.lineStyle(RS * 0.6, storm ? 0xb8c8e8 : 0xa8c0f0, 0.35 + 0.3 * d.s);
+        g.lineBetween(d.x, d.y, d.x - (storm ? 3 : 1) * RS * 0.5, d.y + 4 * RS * 0.7);
+      } else if (climate === 'toro') {
+        // scintille dorate che salgono piano e brillano
+        d.a += 0.05 * dt; d.y -= 0.35 * d.s * dt; d.x += Math.sin(d.a) * 0.3 * dt;
+        const al = 0.2 + 0.6 * Math.abs(Math.sin(d.a));
+        g.fillStyle(0xfff0a0, al); g.fillRect(d.x, d.y, RS, RS);
+        g.fillStyle(0xfff0a0, al * 0.5); g.fillRect(d.x - RS, d.y, RS * 3, RS); g.fillRect(d.x, d.y - RS, RS, RS * 3);
+      } else {
+        // foglie che scendono dondolando
+        d.a += 0.04 * dt; d.y += 0.8 * d.s * dt; d.x += (0.5 + Math.sin(d.a) * 1.2) * dt;
+        g.fillStyle(d.k > 0.5 ? 0x8cc850 : 0xd8a040, 0.8); g.fillRect(d.x, d.y, RS * 1.5, RS);
+      }
+      if (d.y > H + 8) { d.y = -8; d.x = Math.random() * W; }
+      if (d.y < -8) { d.y = H + 8; d.x = Math.random() * W; }
+      if (d.x < -8) d.x = W + 8; else if (d.x > W + 8) d.x = -8;
+    }
+    if (climate === 'tempesta') {
+      if (this.time.now > this.nextBolt) {
+        this.nextBolt = this.time.now + 4000 + Math.random() * 6000;
+        cam.flash(140, 230, 235, 255);
+      }
     }
   }
 
   animateTiles() {
     if (!this.layer || !this.animCells.length) return;
     this.animFrame = 1 - this.animFrame;
-    const vis = visualTiles(this.map.tiles, this.animFrame);
+    const vis = visualTiles(this.map.tiles, this.animFrame, this.night);
     for (const [x, y] of this.animCells) this.layer.putTileAt(vis[y][x], x, y);
   }
 

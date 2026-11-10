@@ -11,16 +11,21 @@ import { openInvestidex, openLessons } from '../ui/menu';
 import { pickQuestions, dailyQuestion, todayKey, reviewQueue } from '../systems/quiz';
 import { mentorTopics, trackTopics, LEAGUE_TOPICS, byTopic } from '../data/quiz/build';
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../data/story';
-import { mentorMission, leagueMission, LEGENDS, SANDBOX, type Mission } from '../data/missions';
+import { mentorMission, leagueMission, LEGENDS, SANDBOX, HISTORY, type Mission } from '../data/missions';
+import { weeklyChallenge } from '../ui/challenge';
 import { ASSETS, ASSET_BY_ID, starterFor, unlockedAssets, SECTOR_LABEL } from '../data/assets';
 import { TEMPTATIONS, BIAS_INFO } from '../data/events';
 import { lessonsFor } from '../data/lessons';
-import { metrics, startPrice } from '../systems/market';
+import { metrics, startPrice, marketClock } from '../systems/market';
 import { PAL } from '../art/art';
 import { beep } from '../systems/audio';
 import { pick, shuffle, mulberry32 } from '../systems/rng';
 import * as A from '../systems/alpaca';
 import { RESIDENT_BY_ID, ALL_RESIDENTS } from '../data/residents';
+import { track, rematchReady, scheduleRematch } from '../systems/progress';
+import { questTalk } from './quests';
+import { playMinigame } from '../ui/minigames';
+import { jingle } from '../systems/music';
 import { SOURCES } from '../data/sources';
 
 export interface WorldApi {
@@ -36,7 +41,12 @@ export interface WorldApi {
 const TRACK_LABEL: Record<string, string> = { stocks: 'Sentiero dei Titoli', etf: 'Sentiero degli Indici', crypto: 'Sentiero Cripto', mixed: 'Sentiero Misto' };
 
 /** NPC visibile? (es. guardie sparite dopo la Medaglia, avversari già battuti) */
+const KID_ROLES = new Set(['bambino', 'bambina', 'ragazzo', 'ragazza', 'studente']);
 export function npcVisible(n: NpcDef): boolean {
+  const night = marketClock().night;
+  // orari della giornata: di notte i bambini dormono e i piccoli della piazza sono a casa
+  if (night && n.kind === 'resident' && KID_ROLES.has(RESIDENT_BY_ID[String(n.data?.rid)]?.role ?? '')) return false;
+  if (night && n.kind === 'talk' && /^Bambin|^Ragazz/.test(n.name)) return false;
   switch (n.kind) {
     case 'guard': return S.badges < (n.data?.badge as number);
     case 'aide': return !S.flags.starter;
@@ -85,14 +95,35 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
 async function resident(n: NpcDef) {
   const r = RESIDENT_BY_ID[String(n.data?.rid)];
   if (!r) return say('...', n.name);
+  const who = `${r.name} · ${r.role}`;
   const first = !S.tipsHeard.includes(r.id);
-  await say(first ? r.lines : ['Ti ripeto volentieri quello che ti ho detto:', ...r.lines], `${r.name} · ${r.role}`);
+  const visits = S.npcMemory[r.id] ?? 0;
+  S.npcMemory[r.id] = visits + 1;
+  // storie a tappe: se l'abitante ha una richiesta in corso, viene prima del consiglio
+  if (await questTalk(r.id, who)) return;
   if (first) {
+    await say(r.lines, who);
     S.tipsHeard.push(r.id);
     S.stats.xp += 5;
     const src = SOURCES[r.source];
     toast(`Consiglio annotato nell'Investidex (${S.tipsHeard.length}/${ALL_RESIDENTS.length})${src ? ` · Fonte: ${src.publisher}` : ''}`);
+    track('tip');
+    return;
   }
+  // dialoghi che ricordano: la seconda volta ripete, dalla terza commenta i tuoi progressi
+  const extra = memoryLine(r.id, visits);
+  await say(extra ? [extra, 'Comunque, te lo ripeto volentieri:', ...r.lines] : ['Ti ripeto volentieri quello che ti ho detto:', ...r.lines], who);
+}
+
+/** Una frase che dipende da quante volte ci siamo parlati e da cosa è successo nel frattempo. */
+function memoryLine(id: string, visits: number): string {
+  const seen = S.npcMemory[`${id}_b`] ?? 0;
+  if (S.badges > seen) { S.npcMemory[`${id}_b`] = S.badges; if (visits > 0) return S.badges === 1 ? 'Ho saputo della tua prima Medaglia. Complimenti!' : `Ho saputo che hai già ${S.badges} Medaglie. Che strada hai fatto!`; }
+  if (visits === 1) return 'Di nuovo tu! Sei tornato a trovarmi.';
+  if (S.title && visits % 3 === 2) return `Dicono che ora ti chiamano «${S.title}».`;
+  if (S.daily.streak >= 3 && visits % 3 === 0) return `Ho sentito che rispondi alla domanda del giorno da ${S.daily.streak} giorni di fila. Bravo!`;
+  if (visits >= 4) return `Ci siamo già parlati ${visits} volte, non te lo dimenticare!`;
+  return '';
 }
 
 async function mom() {
@@ -239,10 +270,22 @@ async function comparePortfolios() {
 // ---------------- Avversari ----------------
 
 async function trainer(n: NpcDef, w: WorldApi) {
-  if (S.defeated.includes(n.id)) return say(pick(TRAINER_TIPS), n.name);
+  if (S.defeated.includes(n.id)) {
+    if (!rematchReady(n.id)) return say(pick(TRAINER_TIPS), n.name);
+    // rivincita: domande più difficili, anche quelle che hai sbagliato
+    await say(['Rieccoti! Ho studiato dall\'ultima volta.', 'Rivincita: stavolta le domande sono più toste!'], n.name);
+    const rq = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), 3, { preferReview: true, minDiff: 2, maxDiff: 3 });
+    const rr = await runDuel({ foeName: n.name, foeTitle: 'Rivincita', foePal: n.pal, questions: rq, need: 2, damage: 12 });
+    advanceDays(1);
+    if (rr.win) { addRep(15); S.stats.xp += 20; track('rematch'); scheduleRematch(n.id); await say(['Battuto di nuovo! Ci rivediamo tra qualche giorno.', pick(TRAINER_TIPS)], n.name); }
+    else { await say('Stavolta ho vinto io! Torna quando vuoi.', n.name); scheduleRematch(n.id); await tiltCheck(w); }
+    w.refresh();
+    return;
+  }
   await say(n.lines ?? ['Sfida!'], n.name);
   const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), 3, { preferReview: true, maxDiff: Math.min(3, 1 + Math.floor((n.data?.r as number ?? 1) / 3)) });
   const r = await runDuel({ foeName: n.name, foePal: n.pal, questions: qs, need: 2, damage: 10 });
+  if (r.win) scheduleRematch(n.id);
   await afterDuel(r.win, n.id, 20, w, n.name);
 }
 
@@ -338,6 +381,7 @@ async function mentorBattle(m: number, w: WorldApi) {
   const res = await runMission(mission);
   if (!res) return say('Missione interrotta. Torna quando vuoi.', md.name);
   if (!res.ok) return say(['La missione non è riuscita: ' + res.detail, 'Riprova quando vuoi: ripeterai solo la missione.'], md.name);
+  track('mission');
   await winBadge(m, w);
 }
 
@@ -345,6 +389,7 @@ async function runMission(m: Mission): Promise<{ ok: boolean; detail: string } |
   if (m.kind === 'pick') return runPick(m);
   await say(['Benvenuto nella Macchina del Tempo!', 'Usa il pulsante ▶ per far scorrere i giorni, compra e vendi quando vuoi. Gli asset sono quelli didattici della missione.'], 'Macchina del Tempo');
   const r = await runSim({ mission: m });
+  if (r?.ok && r.lossSales === 0 && r.orders > 0) S.flags.missionNoLossSale = true;
   return r ? { ok: r.ok, detail: r.detail } : null;
 }
 
@@ -366,6 +411,8 @@ async function winBadge(m: number, w: WorldApi) {
     await say(`I tuoi limiti massimi per il conto reale salgono a ${L.order} $ per ordine e ${L.month} $ al mese. I tuoi limiti attuali restano quelli che hai scelto: puoi alzarli dalla Clinica.`, 'Dott.ssa Ratio');
   }
   beep('badge');
+  jingle('badge');
+  track('badge');
   await say([md.win, `Hai ottenuto la ${md.badge}!`, `Nuova Tecnica: ${md.technique}. ${md.techDesc}`, `Slot di portafoglio: ${slots()}.`, newCards.length ? `Nuove Asset Card: ${newCards.map((a) => a.name).join(', ')}.` : ''].filter(Boolean), md.name);
   const extra: string[] = [];
   if (m === 1) extra.push('Ora puoi sostenere l\'Esame di Abilitazione per il conto reale, dalla Clinica (voce "Conto Alpaca"). È facoltativo.');
@@ -388,8 +435,10 @@ async function guard(n: NpcDef, w: WorldApi) {
 // ---------------- Edifici ----------------
 
 async function librarian() {
-  const c = await choose(['Lezioni', 'Ripasso delle domande sbagliate', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenuto in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
+  const c = await choose(['Lezioni', 'Ripasso delle domande sbagliate', 'Minigiochi didattici', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenuto in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
   if (c === 0) return openLessons();
+  if (c === 2) return playMinigame('Bibliotecaria');
+  if (c === 3) return openInvestidex();
   if (c === 1) {
     const q = reviewQueue();
     if (!q.length) return say('Non hai domande da ripassare. Ottimo lavoro!', 'Bibliotecaria');
@@ -397,9 +446,9 @@ async function librarian() {
     const prevFid = S.stats.fiducia;
     await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0 });
     S.stats.fiducia = prevFid;
+    track('review');
     return say('Il ripasso dilazionato è il modo migliore per ricordare.', 'Bibliotecaria');
   }
-  if (c === 2) return openInvestidex();
 }
 
 async function daily() {
@@ -413,7 +462,7 @@ async function daily() {
   const y = new Date(); y.setDate(y.getDate() - 1);
   S.daily.streak = r.win ? (S.daily.lastDate === todayKey(y) ? S.daily.streak + 1 : 1) : 0;
   S.daily.lastDate = today;
-  if (r.win) S.stats.xp += 10 + Math.min(50, S.daily.streak * 5);
+  if (r.win) { S.stats.xp += 10 + Math.min(50, S.daily.streak * 5); track('daily_q'); }
   await say(r.win ? `Serie di ${S.daily.streak} giorni! Bonus di esperienza.` : 'La serie riparte da zero. Domani andrà meglio!', 'Professoressa del giorno');
   save();
 }
@@ -437,13 +486,32 @@ export function travelTo(id: string, w: WorldApi) {
 
 async function simzone() {
   const legendsBeaten = LEGENDS.filter((l) => S.legends.includes(l.id));
-  const opts = [...SANDBOX.map((s) => s.name), ...legendsBeaten.map((l) => `Leggenda: ${l.title}`), 'Dati reali Alpaca (un simbolo)', 'Duello con codice (cavo link)', 'Esci'];
+  const opts = [...SANDBOX.map((s) => s.name), ...legendsBeaten.map((l) => `Leggenda: ${l.title}`), 'Scenari storici (cosa successe davvero)', 'Minigiochi didattici', 'Sfida della settimana', 'Dati reali Alpaca (un simbolo)', 'Duello con codice (cavo link)', 'Esci'];
   const c = await choose(opts, { cancel: true, prompt: 'Zona Simulazione: sperimenta senza punteggio. Quale scenario?', who: 'Operatrice' });
   if (c < 0 || c === opts.length - 1) return;
   if (c < SANDBOX.length) { await runSim({ scenario: SANDBOX[c], sandbox: true }); return; }
   if (c < SANDBOX.length + legendsBeaten.length) { await runSim({ scenario: legendsBeaten[c - SANDBOX.length].scenario, sandbox: true }); return; }
+  if (opts[c].startsWith('Scenari storici')) return historical();
+  if (opts[c].startsWith('Minigiochi')) return playMinigame('Operatrice');
+  if (opts[c].startsWith('Sfida della settimana')) return weeklyChallenge();
   if (opts[c].startsWith('Dati reali')) return realReplay();
   return linkDuel();
+}
+
+/** Scenari storici: cosa successe davvero e perché, poi la possibilità di riviverli senza punteggio. */
+async function historical() {
+  for (;;) {
+    const c = await choose([...LEGENDS.map((l) => l.title), 'Esci'], { cancel: true, prompt: 'Quale crisi vuoi capire?', who: 'Operatrice' });
+    if (c < 0 || c === LEGENDS.length) return;
+    const l = LEGENDS[c];
+    const h = HISTORY[l.id];
+    const go = await modal<boolean>(l.title, ({ body, button, close }) => {
+      body.innerHTML = `<p class="small muted">${esc(h.when)} · ${esc(l.scenario.historical ?? '')}</p><h4 style="margin:6px 0 2px">Cosa successe</h4><p>${esc(h.cause)}</p><h4 style="margin:6px 0 2px">La lezione</h4><p class="good">${esc(h.lesson)}</p><p class="small muted">Ricostruzione semplificata a scopo didattico: le cifre sono arrotondate e lo scenario nel gioco è una simulazione, non i prezzi reali.</p>`;
+      button('Rivivi lo scenario', () => close(true), 'primary');
+      button('Indietro', () => close(false));
+    }, { wide: true });
+    if (go) { S.flags[`hist_${l.id}`] = true; await runSim({ scenario: l.scenario, sandbox: true }); }
+  }
 }
 
 async function realReplay() {
@@ -583,7 +651,7 @@ async function tower() {
   if (c <= LEGENDS.length) {
     const l = LEGENDS[c - 1];
     const r = await runSim({ mission: l });
-    if (r?.ok && !S.legends.includes(l.id)) { S.legends.push(l.id); addRep(250); beep('badge'); await say(`Hai superato ${l.title}! Carta leggendaria ottenuta (cosmetica).`, 'Custode della Torre'); save(); }
+    if (r?.ok && !S.legends.includes(l.id)) { S.legends.push(l.id); addRep(250); track('legend'); beep('badge'); await say(`Hai superato ${l.title}! Carta leggendaria ottenuta (cosmetica).`, 'Custode della Torre'); save(); }
     return;
   }
   if (opts[c] === 'Nuova Partita+') {

@@ -12,6 +12,7 @@ export interface SimResult {
   monthlyBuys: number;
   fees: number;
   contributed: number;
+  lossSales: number;
   sectors: number;
   maxW: number;
   investedW: number;
@@ -188,6 +189,15 @@ export const LEGENDS: SimMission[] = [
     scenario: { id: 'leg2022', name: '2022', desc: '', days: 250, historical: 'Bitcoin nov. 2021 - nov. 2022: circa −77%', phases: [{ until: 999, drift: -0.2, vol: 0.25 }], shocks: [{ day: 60, sectors: { crypto: -0.3 }, news: 'Una stablecoin algoritmica crolla.' }, { day: 180, sectors: { crypto: -0.25 }, news: 'Fallisce un grande exchange.' }, { day: 30, sectors: { bond: -0.04 } }, { day: 90, sectors: { bond: -0.04 } }, { day: 150, sectors: { bond: -0.04 } }] },
     check: (r) => ({ ok: r.finalValue >= r.startValue * 0.8, detail: `Valore finale ${pct(r.finalValue / r.startValue)} (min 80%)` }) },
 ];
+
+/** Cosa successe davvero: cause e lezione di ogni crisi leggendaria (ricostruzioni semplificate per scopo didattico). */
+export const HISTORY: Record<string, { when: string; cause: string; lesson: string }> = {
+  leg1929: { when: 'Ottobre 1929 - 1932, Stati Uniti', cause: 'Dopo anni di rialzi molti compravano azioni a debito ("a margine"), con il broker che prestava gran parte del prezzo. Quando i prezzi iniziarono a scendere, le richieste di rientro dai prestiti costrinsero a vendere, e le vendite spinsero i prezzi ancora più giù. Il Dow Jones perse circa l\'89% dal massimo al minimo e la crisi bancaria trasformò il crollo nella Grande Depressione.', lesson: 'La leva trasforma un ribasso in una rovina. Chi aveva comprato senza debito e ha potuto aspettare ha visto i mercati recuperare; chi era a margine è stato liquidato lungo la strada.' },
+  leg2000: { when: 'Marzo 2000 - ottobre 2002', cause: 'Le aziende internet venivano valutate in base ai clic e alle promesse, non agli utili: molte non avevano un modello per guadagnare. Quando i finanziamenti si fermarono, le società senza profitti chiusero e il Nasdaq perse circa il 78%. Le aziende solide sopravvissero, ma anche i loro prezzi scesero molto.', lesson: 'Una tecnologia può cambiare il mondo e allo stesso tempo essere un pessimo investimento se la paghi troppo. Un prezzo senza utili è una scommessa, non un\'analisi.' },
+  leg2008: { when: 'Ottobre 2007 - marzo 2009', cause: 'Mutui concessi a chi non poteva ripagarli ("subprime") erano stati impacchettati in titoli complessi e venduti in tutto il mondo con rating alti. Quando i prezzi delle case scesero, nessuno sapeva chi avesse le perdite: le banche smisero di fidarsi tra loro, il 15 settembre 2008 fallì Lehman Brothers e l\'S&P 500 perse circa il 57%.', lesson: 'La diversificazione tra settori conta: le banche persero molto più del mercato. E un prodotto che non capisci non diventa sicuro perché ha un\'etichetta rassicurante.' },
+  leg2020: { when: 'Febbraio - marzo 2020', cause: 'La pandemia di COVID-19 fermò l\'economia mondiale in poche settimane: l\'S&P 500 perse circa il 34% in 23 giorni di borsa, il ribasso più rapido della storia. Banche centrali e governi risposero con misure enormi e il mercato recuperò i massimi entro pochi mesi.', lesson: 'Chi ha venduto in preda al panico ha venduto quasi sul minimo. Restare investiti con un piano, e magari continuare ad accumulare, ha funzionato meglio di ogni previsione.' },
+  leg2022: { when: 'Novembre 2021 - novembre 2022', cause: 'Con l\'inflazione le banche centrali alzarono i tassi in fretta: le obbligazioni persero valore (circa il 15% quelle a lunga scadenza) e gli asset più speculativi crollarono. Nel mondo cripto saltò una stablecoin algoritmica (Terra/Luna, maggio) e a novembre fallì un grande exchange (FTX): Bitcoin perse circa il 77% dal massimo.', lesson: 'Le stablecoin non sono tutte uguali e tenere le cripto su un exchange significa fidarsi di chi lo gestisce. E anche le obbligazioni "sicure" scendono quando i tassi salgono.' },
+};
 
 export const SANDBOX: Scenario[] = [
   { id: 'sb_normal', name: 'Mercato normale (1 anno)', desc: 'Crescita moderata con oscillazioni normali.', days: 250, phases: [{ until: 999, drift: 0.07, vol: 0.16 }], shocks: [] },

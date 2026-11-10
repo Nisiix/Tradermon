@@ -30,7 +30,7 @@ export function weights(b: Book, prices: Record<string, number>): { id: string; 
   return b.positions.map((p) => ({ id: p.id, v: p.qty * prices[p.id], w: tot > 0 ? (p.qty * prices[p.id]) / tot : 0 }));
 }
 
-export interface TradeResult { ok: boolean; msg: string; qty?: number; price?: number; fee?: number }
+export interface TradeResult { ok: boolean; msg: string; qty?: number; price?: number; fee?: number; atLoss?: boolean }
 
 export function marketBuy(b: Book, id: string, amount: number, prices: Record<string, number>, day: number, maxSlots: number, type = 'mercato'): TradeResult {
   const a = ASSET_BY_ID[id];
@@ -55,12 +55,13 @@ export function marketSell(b: Book, id: string, qty: number, prices: Record<stri
   if (qty <= 0) return { ok: false, msg: 'Quantità non valida.' };
   const px = prices[id] * (1 - spreadOf(a) / 2);
   const proceeds = qty * px - FEE;
+  const atLoss = px < pos.cost / pos.qty;
   pos.cost *= 1 - qty / pos.qty;
   pos.qty -= qty;
   if (pos.qty < 1e-9) b.positions = b.positions.filter((p) => p !== pos);
   b.cash += Math.max(0, proceeds);
   b.log.push({ day, asset: id, side: 'sell', qty, price: px, fee: FEE + qty * px * spreadOf(a) / 2, type });
-  return { ok: true, msg: `Vendute ${fmtQty(qty)} ${a.ticker} a ${fmtPx(px)}.`, qty, price: px, fee: FEE };
+  return { ok: true, msg: `Vendute ${fmtQty(qty)} ${a.ticker} a ${fmtPx(px)}.`, qty, price: px, fee: FEE, atLoss };
 }
 
 export function placeOrder(b: Book, o: Omit<OpenOrder, 'id'>): OpenOrder {

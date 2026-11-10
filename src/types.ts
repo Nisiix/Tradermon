@@ -171,5 +171,33 @@ export interface SaveData {
   liveAudit: { t: number; symbol: string; side: string; notional: number; status: string; id: string }[];
   ngPlus: number;
   playMs: number;
-  options: { textSpeed: number; fontScale: number; contrast: boolean; studyMode: boolean; volume: number };
+  options: { textSpeed: number; fontScale: number; contrast: boolean; studyMode: boolean; volume: number; music: number };
+  // ---- novità: agenda, traguardi, casa, storie, diario, minigiochi, sfide ----
+  counters: Record<string, number>;
+  agenda: { day: string; week: string; daily: AgendaTask[]; weekly: AgendaTask[]; dailyDone: number };
+  achievements: string[];
+  title: string;
+  decor: string[];
+  rematch: Record<string, string>;
+  quests: Record<string, number>;
+  journal: JournalEntry[];
+  minigames: Record<string, number>;
+  challenges: { code: string; score: number; date: string; label: string }[];
+  npcMemory: Record<string, number>;
+}
+
+export interface AgendaTask { id: string; ev: string; need: number; got: number; done: boolean }
+
+export interface JournalEntry {
+  id: string;
+  day: number;
+  date: string;
+  asset: string;
+  side: 'buy' | 'sell';
+  amount: number;
+  price: number;
+  reason: string;
+  note: string;
+  account: 'prova' | 'paper' | 'reale';
+  reviewed: boolean;
 }

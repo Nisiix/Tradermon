@@ -39,6 +39,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
   sc.shocks.forEach((s) => s.news && newsMap.set(s.day, s.news));
 
   const book: Book = { cash: capital, positions: [], orders: [], log: [] };
+  let lossSales = 0;
   let day = 0;
   let contributed = capital;
   let monthsBought = new Set<number>();
@@ -157,6 +158,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
       const pos = book.positions.find((x) => x.id === selected);
       if (!pos) return toast('Non possiedi questo asset.');
       const r = marketSell(book, selected, pos.qty * f, prices(), day);
+      if (r.ok && r.atLoss) lossSales++;
       toast(r.msg);
       draw();
     };
@@ -246,7 +248,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
       const ws = weights(book, px);
       const fees = book.log.reduce((s, l) => s + l.fee, 0);
       const res: SimResult = {
-        values, ret: m.ret, vol: m.vol, sharpe: m.sharpe, mdd: m.mdd, orders: book.log.length, limitFills, monthlyBuys: monthsBought.size, fees, contributed,
+        values, ret: m.ret, vol: m.vol, sharpe: m.sharpe, mdd: m.mdd, orders: book.log.length, limitFills, monthlyBuys: monthsBought.size, fees, contributed, lossSales,
         sectors: new Set(book.positions.map((p) => assets.find((a) => a.id === p.id)!.sector)).size, maxW: ws.reduce((x, y) => Math.max(x, y.w), 0),
         investedW: fv > 0 ? 1 - book.cash / fv : 0, finalValue: fv, startValue: contributed, dripShareGrowth: boughtShares > 0 ? dripShares / boughtShares : 0,
       };

@@ -1,3 +1,4 @@
+import { track } from '../systems/progress';
 import { S, save, slots, hasTech, TECH, classes, card, learnBias, profileFromScore } from '../systems/state';
 import type { BiasId } from '../types';
 import { unlockedAssets, ASSET_BY_ID, SECTOR_LABEL, SECTOR_COLOR } from '../data/assets';
@@ -7,7 +8,8 @@ import { say, choose, modal, el, esc, toast, bar } from './core';
 import { LESSONS } from '../data/lessons';
 import { BIAS_CURE_Q, BIAS_INFO } from '../data/events';
 import { beep } from '../systems/audio';
-import { openAlpacaHub } from './live';
+import { openAlpacaHub, openObservatory } from './live';
+import { journalPrompt } from './journal';
 import { questionnaire } from './setup';
 import { shuffle } from '../systems/rng';
 
@@ -26,7 +28,7 @@ export async function openClinic(townIdx: number) {
   for (;;) {
     const opts = [
       'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Cura: ribilanciamento', 'Lezione sui bias',
-      'Uova dei dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Conto Alpaca (paper e reale)', 'Rifai il questionario', 'Arrivederci',
+      'Uova dei dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Conto Alpaca (paper e reale)', 'Osservatorio Alpaca (sola lettura)', 'Rifai il questionario', 'Arrivederci',
     ];
     const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Cura') && !hasTech(TECH.REBAL)));
     const c = await choose(opts, { cancel: true, title: 'CLINICA DEL PORTAFOGLIO', disabled: dis });
@@ -50,6 +52,7 @@ export async function openClinic(townIdx: number) {
       case 'Depositi e prelievi': await deposit(); break;
       case 'Cartella clinica': await records(); break;
       case 'Conto Alpaca (paper e reale)': await openAlpacaHub(); break;
+      case 'Osservatorio Alpaca (sola lettura)': await openObservatory(); break;
       case 'Rifai il questionario': {
         const sc = await questionnaire();
         S.profileScore = sc;
@@ -90,6 +93,7 @@ export function checkupHtml(): string {
 }
 
 async function checkup() {
+  track('checkup');
   await modal('Check-up del portafoglio', ({ body, button, close }) => {
     body.innerHTML = checkupHtml();
     button('Chiudi', () => close(), 'primary');
@@ -123,6 +127,7 @@ export async function trade(guided = false) {
           const r = marketBuy(S.portfolio, a.id, amt, px, S.market.day, slots());
           if (r.ok) { card(a.id).xp += 3; beep('coin'); S.flags.firstBuy = true; }
           render(r.ok ? r.msg : '!' + r.msg);
+          if (r.ok) void journalPrompt({ asset: a.id, side: 'buy', amount: amt, price: r.price ?? px[a.id], account: 'prova' });
         });
         td.append(inp, b);
         if (pos) {
@@ -132,6 +137,7 @@ export async function trade(guided = false) {
             const qty = amt > 0 ? Math.min(pos.qty, amt / px[a.id]) : pos.qty;
             const r = marketSell(S.portfolio, a.id, qty, px, S.market.day);
             render(r.ok ? r.msg : '!' + r.msg);
+            if (r.ok) void journalPrompt({ asset: a.id, side: 'sell', amount: qty * (r.price ?? px[a.id]), price: r.price ?? px[a.id], account: 'prova' });
           });
           td.append(s);
           if (hasTech(TECH.STOP)) {
@@ -207,6 +213,7 @@ async function rebalance() {
     const r = p.side === 'buy' ? marketBuy(S.portfolio, p.id, Math.min(p.amount, S.portfolio.cash), px, S.market.day, slots(), 'ribilanciamento') : marketSell(S.portfolio, p.id, p.amount / px[p.id], px, S.market.day, 'ribilanciamento');
     toast(r.msg);
   }
+  track('rebalance');
   S.stats.disciplina = Math.min(100, S.stats.disciplina + 3);
 }
 

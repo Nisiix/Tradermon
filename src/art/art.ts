@@ -1,15 +1,24 @@
 // Tutta la grafica di Tradermon è generata in codice (pixel art originale, nessun asset esterno).
 
 export const T = 16;
+/** Scala di resa: ogni pixel logico diventa RS×RS pixel reali, con le diagonali smussate (Scale3x). */
+export const RS = 3;
+export const P = T * RS;
 
 export const TILE = {
   GRASS: 0, FLOWERS: 1, PATH: 2, TREE: 3, WATER: 4, MARKET: 5, FENCE: 6, SIGN: 7, ROOF: 8, WALL: 9, DOOR: 10,
   WINDOW: 11, FLOOR: 12, IWALL: 13, COUNTER: 14, SHELF: 15, TABLE: 16, PC: 17, MAT: 18, GATE: 19, NOISE: 20,
   ROOF_CLINIC: 21, ROOF_ACADEMY: 22, ROOF_SPECIAL: 23, PLAZA: 24, ROULETTE: 25, RUG: 26, CASE_TABLE: 27, STATION: 28, BED: 29, PLANT: 30, LEDGE: 31,
+  // arredi sbloccabili per la casa (traguardi e storie degli abitanti)
+  TROPHY_S: 32, TROPHY_G: 33, TROPHY_L: 34, POSTER: 35, CALENDAR: 36, DESK: 37, ARCADE: 38, FRAME: 39, GLOBE: 40, PAINTING: 41, RADIO: 42, AQUARIUM: 43,
 } as const;
-export const TILE_COUNT = 32;
+export const TILE_COUNT = 44;
+/** Nome del tile di arredo per ogni oggetto sbloccabile. */
+export const DECOR_TILE: Record<string, number> = { plant: TILE.PLANT, shelf: TILE.SHELF, trophy_silver: TILE.TROPHY_S, trophy_gold: TILE.TROPHY_G, trophy_league: TILE.TROPHY_L, poster: TILE.POSTER, calendar: TILE.CALENDAR, desk: TILE.DESK, arcade: TILE.ARCADE, frame: TILE.FRAME, globe: TILE.GLOBE, painting: TILE.PAINTING, radio: TILE.RADIO, aquarium: TILE.AQUARIUM };
+/** Arredi da parete (sostituiscono un pezzo di muro interno) e da pavimento. */
+export const WALL_DECOR = new Set<number>([TILE.POSTER, TILE.CALENDAR, TILE.FRAME, TILE.PAINTING]);
 
-export const SOLID = new Set<number>([TILE.TREE, TILE.WATER, TILE.FENCE, TILE.SIGN, TILE.ROOF, TILE.WALL, TILE.WINDOW, TILE.IWALL, TILE.COUNTER, TILE.SHELF, TILE.TABLE, TILE.PC, TILE.GATE, TILE.NOISE, TILE.ROOF_CLINIC, TILE.ROOF_ACADEMY, TILE.ROOF_SPECIAL, TILE.ROULETTE, TILE.CASE_TABLE, TILE.STATION, TILE.BED, TILE.PLANT]);
+export const SOLID = new Set<number>([TILE.TREE, TILE.WATER, TILE.FENCE, TILE.SIGN, TILE.ROOF, TILE.WALL, TILE.WINDOW, TILE.IWALL, TILE.COUNTER, TILE.SHELF, TILE.TABLE, TILE.PC, TILE.GATE, TILE.NOISE, TILE.ROOF_CLINIC, TILE.ROOF_ACADEMY, TILE.ROOF_SPECIAL, TILE.ROULETTE, TILE.CASE_TABLE, TILE.STATION, TILE.BED, TILE.PLANT, TILE.TROPHY_S, TILE.TROPHY_G, TILE.TROPHY_L, TILE.POSTER, TILE.CALENDAR, TILE.DESK, TILE.ARCADE, TILE.FRAME, TILE.GLOBE, TILE.PAINTING, TILE.RADIO, TILE.AQUARIUM]);
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -399,6 +408,95 @@ reg('plant', (c, o) => {
   const leaf = (x: number, y: number) => { px(c, o.x + x, o.y + y, 3, 2, C.leaf); px(c, o.x + x, o.y + y, 2, 1, C.leafL); px(c, o.x + x + 2, o.y + y + 1, 1, 1, C.leafD); };
   px(c, o.x + 3, o.y + 2, 10, 8, C.leafO); px(c, o.x + 4, o.y + 3, 8, 6, C.leafDD); leaf(4, 3); leaf(8, 2); leaf(6, 5); leaf(9, 6); leaf(4, 7);
 });
+reg('window_night', (c, o) => {
+  wallBase(c, o, false, false);
+  // di notte la finestra è illuminata dall'interno: vetro caldo e alone sul muro
+  px(c, o.x + 1, o.y + 2, 14, 12, 'rgba(255,220,140,.25)');
+  px(c, o.x + 2, o.y + 3, 12, 10, C.wallO); px(c, o.x + 3, o.y + 4, 10, 8, '#ffe9a0');
+  px(c, o.x + 4, o.y + 5, 8, 6, '#ffd060'); px(c, o.x + 4, o.y + 5, 8, 2, '#fff0b8'); px(c, o.x + 4, o.y + 10, 8, 1, '#e8a830');
+  px(c, o.x + 4, o.y + 5, 1, 4, '#f0a0a8'); px(c, o.x + 11, o.y + 5, 1, 4, '#f0a0a8');
+  px(c, o.x + 8, o.y + 5, 1, 6, '#fff8e0');
+  px(c, o.x + 1, o.y + 12, 14, 2, C.wallO); px(c, o.x + 2, o.y + 12, 12, 1, C.wallL);
+});
+const iwallBase = (c: Ctx, o: { x: number; y: number }) => REG[IDX.iwall].draw(c, o);
+function trophy(c: Ctx, o: { x: number; y: number }, col: string, light: string, dark: string, tall: number) {
+  floorBase(c, o);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(o.x + 4, o.y + 14, 9, 2);
+  px(c, o.x + 4, o.y + 12, 8, 3, C.woodO); px(c, o.x + 5, o.y + 12, 6, 2, C.woodD); px(c, o.x + 5, o.y + 12, 6, 1, C.woodL);
+  px(c, o.x + 7, o.y + 10 - tall, 2, 2 + tall, dark);
+  px(c, o.x + 4, o.y + 4 - tall, 8, 6, dark); px(c, o.x + 5, o.y + 4 - tall, 6, 5, col); px(c, o.x + 5, o.y + 4 - tall, 2, 3, light);
+  px(c, o.x + 3, o.y + 5 - tall, 1, 3, dark); px(c, o.x + 12, o.y + 5 - tall, 1, 3, dark);
+  px(c, o.x + 6, o.y + 2 - tall, 4, 2, col); px(c, o.x + 6, o.y + 2 - tall, 2, 1, light);
+}
+reg('trophy_silver', (c, o) => trophy(c, o, '#c8ccd8', '#f4f6ff', '#6a7088', 0));
+reg('trophy_gold', (c, o) => trophy(c, o, '#f0c030', '#fff0a0', '#9a7010', 1));
+reg('trophy_league', (c, o) => { trophy(c, o, '#f0c030', '#fff0a0', '#9a7010', 2); px(c, o.x + 7, o.y + 1, 2, 1, '#e04848'); px(c, o.x + 6, o.y + 0, 4, 1, '#f06060'); });
+reg('poster', (c, o) => {
+  iwallBase(c, o);
+  px(c, o.x + 2, o.y + 1, 12, 9, '#3a3450'); px(c, o.x + 3, o.y + 2, 10, 7, '#fff4d0');
+  // otto medaglie in due file
+  const cols = ['#e04848', '#f0a030', '#f0d040', '#48b060', '#4890e0', '#8060c8', '#e070b0', '#80d0d0'];
+  cols.forEach((k, i) => px(c, o.x + 4 + (i % 4) * 2, o.y + 3 + Math.floor(i / 4) * 3, 1, 1, k));
+  px(c, o.x + 4, o.y + 7, 8, 1, '#8a8070');
+});
+reg('calendar', (c, o) => {
+  iwallBase(c, o);
+  px(c, o.x + 4, o.y + 1, 8, 9, '#3a3450'); px(c, o.x + 5, o.y + 2, 6, 7, '#ffffff'); px(c, o.x + 5, o.y + 2, 6, 2, '#e04848');
+  for (let y = 5; y < 9; y += 2) for (let x = 5; x < 11; x += 2) px(c, o.x + x, o.y + y, 1, 1, '#9a9aa8');
+  px(c, o.x + 7, o.y + 7, 1, 1, '#e04848');
+});
+reg('frame', (c, o) => {
+  iwallBase(c, o);
+  px(c, o.x + 3, o.y + 1, 10, 8, '#8a6a30'); px(c, o.x + 4, o.y + 2, 8, 6, '#f0c040'); px(c, o.x + 5, o.y + 3, 6, 4, '#fff8e0');
+  px(c, o.x + 6, o.y + 4, 4, 1, '#6a6a7a'); px(c, o.x + 6, o.y + 6, 3, 1, '#6a6a7a'); px(c, o.x + 9, o.y + 5, 1, 1, '#e04848');
+});
+reg('painting', (c, o) => {
+  iwallBase(c, o);
+  px(c, o.x + 2, o.y + 1, 12, 8, '#6a4a28'); px(c, o.x + 3, o.y + 2, 10, 6, '#8ac8f0');
+  px(c, o.x + 3, o.y + 6, 10, 2, '#58a048'); px(c, o.x + 6, o.y + 3, 4, 3, '#48a060'); px(c, o.x + 7, o.y + 2, 2, 2, '#a0e080');
+  px(c, o.x + 10, o.y + 3, 2, 1, '#fff4a0');
+});
+reg('desk', (c, o) => {
+  floorBase(c, o);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(o.x + 1, o.y + 13, 14, 2);
+  px(c, o.x + 1, o.y + 5, 14, 9, C.woodO); px(c, o.x + 2, o.y + 6, 12, 7, C.wood); px(c, o.x + 2, o.y + 6, 12, 1, C.woodL);
+  px(c, o.x + 2, o.y + 11, 2, 2, C.woodD); px(c, o.x + 12, o.y + 11, 2, 2, C.woodD);
+  // diario aperto e penna
+  px(c, o.x + 4, o.y + 7, 7, 4, '#ffffff'); px(c, o.x + 7, o.y + 7, 1, 4, '#c8c8d8'); px(c, o.x + 5, o.y + 8, 2, 1, '#9a9ab0'); px(c, o.x + 8, o.y + 8, 2, 1, '#9a9ab0');
+  px(c, o.x + 11, o.y + 7, 1, 4, '#3858c8');
+});
+reg('arcade', (c, o) => {
+  floorBase(c, o);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(o.x + 3, o.y + 14, 11, 2);
+  px(c, o.x + 3, o.y + 1, 10, 14, '#2a2a48'); px(c, o.x + 4, o.y + 2, 8, 12, '#4848a0');
+  px(c, o.x + 5, o.y + 3, 6, 5, '#101828'); px(c, o.x + 6, o.y + 4, 1, 1, '#50f080'); px(c, o.x + 8, o.y + 5, 2, 1, '#f0e050'); px(c, o.x + 7, o.y + 6, 1, 1, '#f05050');
+  px(c, o.x + 4, o.y + 9, 8, 2, '#6868c0'); px(c, o.x + 6, o.y + 9, 1, 1, '#f04040'); px(c, o.x + 9, o.y + 9, 1, 1, '#f0d040');
+  px(c, o.x + 4, o.y + 2, 8, 1, '#f0c040');
+});
+reg('globe', (c, o) => {
+  floorBase(c, o);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(o.x + 4, o.y + 14, 9, 2);
+  px(c, o.x + 5, o.y + 12, 6, 3, C.woodO); px(c, o.x + 6, o.y + 12, 4, 2, C.woodD); px(c, o.x + 7, o.y + 9, 2, 3, C.woodO);
+  px(c, o.x + 4, o.y + 3, 8, 7, '#1a4a90'); px(c, o.x + 5, o.y + 2, 6, 9, '#2868c8'); px(c, o.x + 3, o.y + 4, 10, 5, '#2868c8');
+  px(c, o.x + 5, o.y + 4, 3, 2, '#58b058'); px(c, o.x + 9, o.y + 5, 2, 3, '#58b058'); px(c, o.x + 6, o.y + 8, 2, 1, '#58b058');
+  px(c, o.x + 5, o.y + 3, 2, 1, '#88b8f0'); px(c, o.x + 12, o.y + 2, 1, 9, '#c8a040');
+});
+reg('radio', (c, o) => {
+  floorBase(c, o);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(o.x + 2, o.y + 14, 12, 2);
+  px(c, o.x + 2, o.y + 6, 12, 8, C.woodO); px(c, o.x + 3, o.y + 7, 10, 6, '#b06a3a'); px(c, o.x + 3, o.y + 7, 10, 1, '#d08a58');
+  px(c, o.x + 4, o.y + 8, 4, 4, '#4a3a2a'); for (let y = 8; y < 12; y++) px(c, o.x + 4 + (y % 2), o.y + y, 3, 1, '#2a1a10');
+  px(c, o.x + 9, o.y + 8, 3, 2, '#f0e8c0'); px(c, o.x + 10, o.y + 8, 1, 1, '#e04848'); px(c, o.x + 9, o.y + 11, 1, 1, '#f0d040'); px(c, o.x + 11, o.y + 11, 1, 1, '#f0d040');
+  px(c, o.x + 11, o.y + 2, 1, 4, '#9a9aa8');
+});
+reg('aquarium', (c, o) => {
+  floorBase(c, o);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(o.x + 1, o.y + 14, 14, 2);
+  px(c, o.x + 1, o.y + 10, 14, 4, C.woodO); px(c, o.x + 2, o.y + 11, 12, 2, C.woodD);
+  px(c, o.x + 1, o.y + 2, 14, 8, '#2a3a50'); px(c, o.x + 2, o.y + 3, 12, 6, '#58b0f0'); px(c, o.x + 2, o.y + 3, 12, 1, '#a8e0ff');
+  px(c, o.x + 2, o.y + 8, 12, 1, '#d8c070'); px(c, o.x + 4, o.y + 6, 1, 2, '#48b060'); px(c, o.x + 11, o.y + 5, 1, 3, '#48b060');
+  px(c, o.x + 6, o.y + 5, 2, 1, '#f0a030'); px(c, o.x + 8, o.y + 5, 1, 1, '#f0a030'); px(c, o.x + 9, o.y + 7, 2, 1, '#f06060'); px(c, o.x + 5, o.y + 4, 1, 1, '#ffffff');
+});
 reg('ledge', (c, o) => {
   grassBase(c, o, 0);
   px(c, o.x, o.y + 8, 16, 1, C.grassO); px(c, o.x, o.y + 9, 16, 4, C.sandD); px(c, o.x, o.y + 9, 16, 1, C.sandL); px(c, o.x, o.y + 12, 16, 1, C.sandDD);
@@ -419,7 +517,21 @@ export function drawTiles(): HTMLCanvasElement {
   cv.height = T * rows;
   const c = cv.getContext('2d')!;
   REG.forEach((r, i) => r.draw(c, { x: (i % COLS) * T, y: Math.floor(i / COLS) * T }));
-  return cv;
+  return upscale(cv);
+}
+
+/** Porta un atlante alla scala di resa (RS). Ogni tile viene smussato da solo, così i bordi tra tile non sbavano. */
+function upscale(cv: HTMLCanvasElement, cellW = T, cellH = T): HTMLCanvasElement {
+  const out = document.createElement('canvas'); out.width = cv.width * RS; out.height = cv.height * RS;
+  const oc = out.getContext('2d')!; oc.imageSmoothingEnabled = false;
+  const cell = document.createElement('canvas'); cell.width = cellW; cell.height = cellH;
+  const cc = cell.getContext('2d')!;
+  for (let y = 0; y < cv.height; y += cellH) for (let x = 0; x < cv.width; x += cellW) {
+    cc.clearRect(0, 0, cellW, cellH); cc.drawImage(cv, x, y, cellW, cellH, 0, 0, cellW, cellH);
+    const big = RS === 3 ? scale3x(cell) : RS === 2 ? scale2x(cell) : cell;
+    oc.drawImage(big, 0, 0, big.width, big.height, x * RS, y * RS, cellW * RS, cellH * RS);
+  }
+  return out;
 }
 
 const PATHLIKE = new Set<number>([TILE.PATH, TILE.PLAZA, TILE.STATION, TILE.SIGN, TILE.DOOR, TILE.GATE]);
@@ -432,7 +544,9 @@ function casts(t: number) { return CASTERS.has(t); }
 function hash(x: number, y: number) { return ((x * 73856093) ^ (y * 19349663)) >>> 0; }
 
 /** Converte la mappa logica nei tile visivi (bordi automatici, varianti e fotogramma di animazione). */
-export function visualTiles(tiles: number[][], frame = 0): number[][] {
+const DECOR_NAME: Record<number, string> = { [TILE.TROPHY_S]: 'trophy_silver', [TILE.TROPHY_G]: 'trophy_gold', [TILE.TROPHY_L]: 'trophy_league', [TILE.POSTER]: 'poster', [TILE.CALENDAR]: 'calendar', [TILE.DESK]: 'desk', [TILE.ARCADE]: 'arcade', [TILE.FRAME]: 'frame', [TILE.GLOBE]: 'globe', [TILE.PAINTING]: 'painting', [TILE.RADIO]: 'radio', [TILE.AQUARIUM]: 'aquarium' };
+
+export function visualTiles(tiles: number[][], frame = 0, night = false): number[][] {
   const h = tiles.length, w = tiles[0].length;
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? -1 : tiles[y][x]);
   const mask = (x: number, y: number, same: (t: number) => boolean) =>
@@ -459,7 +573,7 @@ export function visualTiles(tiles: number[][], frame = 0): number[][] {
         const isW = (n: number) => n === TILE.WALL || n === TILE.WINDOW || n === TILE.DOOR;
         return IDX[`wall${(isW(at(x - 1, y)) ? 0 : 1) | (isW(at(x + 1, y)) ? 0 : 2)}`];
       }
-      case TILE.WINDOW: return IDX.window;
+      case TILE.WINDOW: return night ? IDX.window_night : IDX.window;
       case TILE.DOOR: return IDX.door;
       case TILE.FLOOR: return IDX.floor;
       case TILE.IWALL: return at(x, y + 1) === TILE.IWALL ? IDX.iwall_top : IDX.iwall;
@@ -477,7 +591,7 @@ export function visualTiles(tiles: number[][], frame = 0): number[][] {
       case TILE.BED: return IDX.bed;
       case TILE.PLANT: return IDX.plant;
       case TILE.LEDGE: return IDX.ledge;
-      default: return IDX.grass0;
+      default: return DECOR_NAME[t] ? IDX[DECOR_NAME[t]] : IDX.grass0;
     }
   }));
 }
@@ -662,7 +776,39 @@ export function drawCharacters(): HTMLCanvasElement {
   PALETTES.forEach((p, row) => {
     for (let dir = 0; dir < 4; dir++) for (let f = 0; f < 3; f++) drawChar(c, (dir * 3 + f) * CW, row * CH, p, dir, f);
   });
-  return cv;
+  return upscale(cv, CW, CH);
+}
+
+/** Scale3x: triplica la risoluzione smussando le diagonali senza sfocare (variante dell'algoritmo EPX). */
+export function scale3x(src: HTMLCanvasElement): HTMLCanvasElement {
+  const w = src.width, h = src.height;
+  const s = src.getContext('2d')!.getImageData(0, 0, w, h).data;
+  const out = document.createElement('canvas'); out.width = w * 3; out.height = h * 3;
+  const oc = out.getContext('2d')!; const im = oc.createImageData(w * 3, h * 3); const d = im.data;
+  const px32 = (x: number, y: number) => { x = Math.max(0, Math.min(w - 1, x)); y = Math.max(0, Math.min(h - 1, y)); const i = (y * w + x) * 4; return (s[i] << 24 | s[i + 1] << 16 | s[i + 2] << 8 | s[i + 3]) >>> 0; };
+  const put = (x: number, y: number, v: number) => { const i = (y * w * 3 + x) * 4; d[i] = v >>> 24; d[i + 1] = (v >>> 16) & 255; d[i + 2] = (v >>> 8) & 255; d[i + 3] = v & 255; };
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const A = px32(x - 1, y - 1), B = px32(x, y - 1), C = px32(x + 1, y - 1);
+    const D = px32(x - 1, y), E = px32(x, y), F = px32(x + 1, y);
+    const G = px32(x - 1, y + 1), H = px32(x, y + 1), I = px32(x + 1, y + 1);
+    let e0 = E, e1 = E, e2 = E, e3 = E, e5 = E, e6 = E, e7 = E, e8 = E;
+    if (B !== H && D !== F) {
+      e0 = D === B ? D : E;
+      e1 = (D === B && E !== C) || (B === F && E !== A) ? B : E;
+      e2 = B === F ? F : E;
+      e3 = (D === B && E !== G) || (D === H && E !== A) ? D : E;
+      e5 = (B === F && E !== I) || (H === F && E !== C) ? F : E;
+      e6 = D === H ? D : E;
+      e7 = (D === H && E !== I) || (H === F && E !== G) ? H : E;
+      e8 = H === F ? F : E;
+    }
+    const X = 3 * x, Y = 3 * y;
+    put(X, Y, e0); put(X + 1, Y, e1); put(X + 2, Y, e2);
+    put(X, Y + 1, e3); put(X + 1, Y + 1, E); put(X + 2, Y + 1, e5);
+    put(X, Y + 2, e6); put(X + 1, Y + 2, e7); put(X + 2, Y + 2, e8);
+  }
+  oc.putImageData(im, 0, 0);
+  return out;
 }
 
 /** Scale2x (EPX): raddoppia la risoluzione arrotondando le diagonali, per sprite di sfida più definiti. */

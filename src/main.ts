@@ -6,9 +6,12 @@ import '@fontsource/dotgothic16/latin-400.css';
 import '@fontsource/dotgothic16/latin-ext-400.css';
 import './style.css';
 import { WorldScene } from './scenes/world';
+import { RS } from './art/art';
 import { initUI, el, toast } from './ui/core';
 import { initInput, initTouch } from './ui/input';
 import { titleScreen, onboarding } from './ui/setup';
+import { play, unlock } from './systems/music';
+import { refreshAgenda } from './systems/progress';
 import { applyOptions } from './ui/menu';
 import { controlsTutorial, controlsSeen } from './ui/tutorial';
 import { newGame, load, hasSave, importSave } from './systems/state';
@@ -30,6 +33,8 @@ async function boot() {
   initUI();
   initInput();
   initTouch(document.getElementById('app')!);
+  unlock();
+  play('title');
   for (;;) {
     const choice = await titleScreen(hasSave());
     if (choice === 'continue') { if (load()) break; toast('Salvataggio non leggibile.'); continue; }
@@ -45,13 +50,18 @@ async function boot() {
     break;
   }
   applyOptions();
+  refreshAgenda();
   if (!controlsSeen()) await controlsTutorial();
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
-    width: 240,
-    height: 160,
-    pixelArt: true,
+    // risoluzione interna 720×480 (tre volte la griglia logica 240×160): i pixel art vengono
+    // smussati in fase di disegno (Scale3x) e il canvas è poi adattato allo schermo con filtro lineare
+    width: 240 * RS,
+    height: 160 * RS,
+    pixelArt: false,
+    antialias: true,
+    roundPixels: true,
     backgroundColor: '#101018',
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [WorldScene],

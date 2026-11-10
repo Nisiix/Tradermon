@@ -10,28 +10,36 @@ import { checkupHtml, download } from './clinic';
 import { mastery } from '../systems/quiz';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { setVolume } from '../systems/audio';
+import { setMusicVolume } from '../systems/music';
+import { availableTitles, track } from '../systems/progress';
+import { openAgenda } from './agenda';
+import { openJournal } from './journal';
 import type { BiasId } from '../types';
 import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 import { controlsTutorial } from './tutorial';
 
 export async function pauseMenu(onTravel: (id: string) => void) {
   for (;;) {
-    const opts = ['Investidex', 'Portafoglio', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Lezioni', 'Viaggio rapido', 'Salva', 'Opzioni', 'Chiudi'];
+    const pending = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length;
+    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Lezioni', 'Viaggio rapido', 'Salva', 'Opzioni', 'Chiudi'];
     const dis = opts.map((o) => o === 'Viaggio rapido' && S.badges < 6);
     const c = await choose(opts, { cancel: true, title: 'MENU', disabled: dis });
-    if (c < 0 || c === 8) return;
-    if (c === 0) await openInvestidex();
-    if (c === 1) await modal('Portafoglio', ({ body, button, close }) => { body.innerHTML = checkupHtml(); button('Chiudi', () => close(), 'primary'); }, { wide: true });
-    if (c === 2) await profile();
-    if (c === 3) await badges();
-    if (c === 4) await openLessons();
-    if (c === 5) {
+    if (c < 0 || c === opts.length - 1) return;
+    const o = opts[c];
+    if (o === 'Investidex') await openInvestidex();
+    else if (o === 'Portafoglio') await modal('Portafoglio', ({ body, button, close }) => { body.innerHTML = checkupHtml(); button('Chiudi', () => close(), 'primary'); }, { wide: true });
+    else if (o.startsWith('Agenda')) await openAgenda();
+    else if (o === 'Diario') await openJournal();
+    else if (o === 'Profilo e Licenza') await profile();
+    else if (o === 'Medaglie e Tecniche') await badges();
+    else if (o === 'Lezioni') await openLessons();
+    else if (o === 'Viaggio rapido') {
       const d = TOWNS.filter((t) => S.visited.includes(t.id));
       const k = await choose([...d.map((t) => t.name), 'Annulla'], { cancel: true, title: 'VIAGGIO RAPIDO' });
       if (k >= 0 && k < d.length) { onTravel(d[k].id); return; }
     }
-    if (c === 6) { toast(save() ? 'Partita salvata.' : 'Salvataggio non riuscito.'); }
-    if (c === 7) await options();
+    else if (o === 'Salva') { toast(save() ? 'Partita salvata.' : 'Salvataggio non riuscito.'); }
+    else if (o === 'Opzioni') await options();
   }
 }
 
@@ -77,7 +85,7 @@ export async function openLessons() {
     await say(l.body, l.title);
     const src = SOURCES[l.source];
     if (src) toast(`Fonte: ${src.publisher} – ${src.title}`);
-    if (!S.lessonsRead.includes(l.id)) { S.lessonsRead.push(l.id); S.stats.xp += 5; }
+    if (!S.lessonsRead.includes(l.id)) { S.lessonsRead.push(l.id); S.stats.xp += 5; track('lesson'); }
   }
 }
 
@@ -85,10 +93,10 @@ async function profile() {
   const { cur, need } = xpToNext();
   const clk = marketClock();
   const L = LIVE_LIMITS[Math.min(8, S.badges)];
-  await modal('Profilo e Licenza', ({ body, button, close }) => {
+  const r = await modal<string>('Profilo e Licenza', ({ body, button, close }) => {
     body.innerHTML = `
       <div class="grid2">
-        <div><b>${esc(S.name)}</b> · ${({ stocks: 'Sentiero dei Titoli', etf: 'Sentiero degli Indici', crypto: 'Sentiero Cripto', mixed: 'Sentiero Misto' } as Record<string, string>)[S.track]}${S.ngPlus ? ` · Nuova Partita+ ${S.ngPlus}` : ''}<br>
+        <div><b>${esc(S.name)}</b>${S.title ? ` <span class="muted">«${esc(S.title)}»</span>` : ''} · ${({ stocks: 'Sentiero dei Titoli', etf: 'Sentiero degli Indici', crypto: 'Sentiero Cripto', mixed: 'Sentiero Misto' } as Record<string, string>)[S.track]}${S.ngPlus ? ` · Nuova Partita+ ${S.ngPlus}` : ''}<br>
         Profilo di rischio: <b>${S.profile}</b> · Orizzonte: ${esc(S.horizon || '—')}<br>
         Livello di Conoscenza <b>${level()}</b> (${cur}/${need} XP)${bar((cur / need) * 100)}
         Fiducia ${S.stats.fiducia}/100 ${bar(S.stats.fiducia)}
@@ -98,10 +106,23 @@ async function profile() {
         <div><b>Licenza:</b> ${S.license === 'apprendista' ? 'Apprendista (bloccata: serve la 1ª Medaglia)' : S.license === 'esame' ? 'Esame di Abilitazione disponibile (Clinica → Conto Alpaca)' : '<span class="good">Licenza di Investitore</span>'}<br>
         ${S.license === 'investitore' ? `Limiti scelti: ${S.liveLimits.perOrder} $/ordine, ${S.liveLimits.perMonth} $/mese (massimi del livello ${L.order}/${L.month})<br>${S.liveLimits.pauseUntil > Date.now() ? `<span class="bad">Pausa di riflessione fino al ${new Date(S.liveLimits.pauseUntil).toLocaleString('it-IT')}</span><br>` : ''}` : ''}
         <b>Orologio di mercato:</b> ${clk.label}<br><b>Clima di Capitalia:</b> ${CLIMATE_LABEL[S.market.climate]}<br>
-        <b>Giorno di mercato simulato:</b> ${S.market.day}</div>
+        <b>Giorno di mercato simulato:</b> ${S.market.day}<br>
+        <b>Traguardi:</b> ${S.achievements.length} · <b>Titoli sbloccati:</b> ${availableTitles().length}</div>
       </div>`;
+    if (availableTitles().length) button('Scegli titolo', () => close('title'));
     button('Chiudi', () => close(), 'primary');
   });
+  if (r === 'title') await pickTitle();
+}
+
+/** Il titolo compare nel profilo e sulla targhetta dei duelli. */
+async function pickTitle() {
+  const ts = availableTitles();
+  const c = await choose([...ts.map((t) => `${S.title === t ? '✓ ' : ''}${t}`), 'Nessun titolo', 'Annulla'], { cancel: true, title: 'TITOLO' });
+  if (c < 0 || c === ts.length + 1) return;
+  S.title = c < ts.length ? ts[c] : '';
+  save();
+  toast(S.title ? `Titolo scelto: ${S.title}` : 'Nessun titolo.');
 }
 
 async function badges() {
@@ -125,7 +146,8 @@ async function options() {
     body.innerHTML = `
       <label>Velocità del testo <select class="tx ts"><option value="0">Lenta</option><option value="1">Normale</option><option value="2">Veloce</option><option value="3">Istantanea</option></select></label>
       <label style="display:block;margin-top:6px">Dimensione del testo <select class="tx fs"><option value="0.9">Piccola</option><option value="1">Normale</option><option value="1.2">Grande</option><option value="1.4">Molto grande</option></select></label>
-      <label style="display:block;margin-top:6px">Volume <input class="vol" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
+      <label style="display:block;margin-top:6px">Effetti sonori <input class="vol" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
+      <label style="display:block;margin-top:6px">Musica <input class="mus" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="hc"> Contrasto alto</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="sm"> Modalità Studio (nessun timer nei quiz, Reputazione dimezzata nei duelli)</label>
       <p class="small muted">Il salvataggio è nel browser. Esportalo per sicurezza o per spostarlo su un altro dispositivo. Le chiavi Alpaca non sono mai nel salvataggio.</p>`;
@@ -133,6 +155,7 @@ async function options() {
     q<HTMLSelectElement>('.ts').value = String(S.options.textSpeed);
     q<HTMLSelectElement>('.fs').value = String(S.options.fontScale);
     q<HTMLInputElement>('.vol').value = String(S.options.volume);
+    q<HTMLInputElement>('.mus').value = String(S.options.music);
     q<HTMLInputElement>('.hc').checked = S.options.contrast;
     q<HTMLInputElement>('.sm').checked = S.options.studyMode;
     button('Comandi', () => { close(); void controlsTutorial(); });
@@ -141,6 +164,7 @@ async function options() {
       S.options.textSpeed = Number(q<HTMLSelectElement>('.ts').value);
       S.options.fontScale = Number(q<HTMLSelectElement>('.fs').value);
       S.options.volume = Number(q<HTMLInputElement>('.vol').value);
+      S.options.music = Number(q<HTMLInputElement>('.mus').value);
       S.options.contrast = q<HTMLInputElement>('.hc').checked;
       S.options.studyMode = q<HTMLInputElement>('.sm').checked;
       applyOptions();
@@ -154,4 +178,5 @@ export function applyOptions() {
   document.documentElement.style.setProperty('--fs-scale', String(S.options.fontScale));
   document.body.classList.toggle('contrast', S.options.contrast);
   setVolume(S.options.volume);
+  setMusicVolume(S.options.music);
 }

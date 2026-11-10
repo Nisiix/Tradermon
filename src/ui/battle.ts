@@ -1,3 +1,5 @@
+import { play, stop, currentTrack, jingle } from '../systems/music';
+import { track } from '../systems/progress';
 import type { Question } from '../types';
 import { el, esc, getStage, wait, bar } from './core';
 import { pushHandler, popHandler, type Key } from './input';
@@ -32,6 +34,8 @@ export async function battleTransition(): Promise<void> {
 }
 
 export async function runDuel(o: DuelOpts): Promise<DuelResult> {
+  const prevTrack = currentTrack();
+  play('battle');
   await battleTransition();
   return new Promise((resolve) => {
     const stage = getStage();
@@ -41,7 +45,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         <div class="box plate foe-p"><div class="nm">${esc(o.foeName)}${o.foeTitle ? ` <span class="muted">· ${esc(o.foeTitle)}</span>` : ''}</div><div class="small">Convinzione</div><div class="foebar">${bar(100)}</div></div>
         <div class="foe"><img class="sprite" src="${portrait(o.foePal)}" alt=""></div>
         <div class="me"><img class="sprite" src="${portraitBack(S.avatar)}" alt=""></div>
-        <div class="box plate me-p"><div class="nm">${esc(S.name)}</div><div class="small">Fiducia <span class="fv">${S.stats.fiducia}</span>/100</div><div class="mebar">${bar(S.stats.fiducia)}</div></div>
+        <div class="box plate me-p"><div class="nm">${esc(S.name)}${S.title ? ` <span class="muted">· ${esc(S.title)}</span>` : ''}</div><div class="small">Fiducia <span class="fv">${S.stats.fiducia}</span>/100</div><div class="mebar">${bar(S.stats.fiducia)}</div></div>
       </div>
       <div class="box q"><div class="qhead row" style="justify-content:space-between"><span class="small muted qn"></span><span class="timer"></span></div><div class="qt"></div><div class="opts"></div><div class="exp"></div></div>`;
     stage.appendChild(root);
@@ -62,6 +66,8 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       setHandler(null);
       await wait(400);
       root.remove();
+      if (prevTrack) play(prevTrack); else stop();
+      if (win && o.damage > 0) { track('duel_win'); if (perfect) track('duel_perfect'); jingle('win'); }
       resolve({ win, correct, total: idx, perfect: perfect && win, ids: o.questions.slice(0, idx).map((q) => q.id) });
     };
 

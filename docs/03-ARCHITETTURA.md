@@ -8,6 +8,8 @@
 | Linguaggio e build | **TypeScript** in modalità strict + **Vite** | I tipi proteggono la logica di portafoglio e salvataggi. Vite fa build veloci e un proxy di sviluppo verso il server locale. |
 | Interfaccia | Livello **HTML/CSS** sopra il canvas | Il testo è nitido a ogni dimensione, accessibile e selezionabile. Moduli, tabelle e grafici sono facili da fare. Lo stile riproduce le finestre delle portatili anni 2000. |
 | Grafica | **Pixel art generata in codice** (`src/art/art.ts`) | È tutta originale e senza licenze di terzi. Molti tileset "in stile" in rete sono estratti da giochi commerciali, quindi non li usiamo. La grafica pesa zero byte di immagini. |
+| Resa | **Risoluzione interna ×3 con Scale3x** e filtri della camera | La griglia logica resta 240×160, ma ogni tile e sprite viene ingrandito tre volte con un filtro Scale3x (scritto in casa: la libreria `hqx` è LGPL e dipende da canvas nativo) e il canvas è poi adattato allo schermo con interpolazione lineare. Così niente sfocatura né pixel "a scalini" a dimensioni non intere. Phaser 4 aggiunge vignettatura e una leggera saturazione (`camera.filters`). |
+| Musica | **Chiptune generata in codice** (`src/systems/music.ts`) | Web Audio, oscillatori quadra/triangolo e rumore: nessun file audio, nessuna licenza. Otto brani (titolo, città, percorso, interni, Accademia, duello, Lega, notte) con tempo e modo che cambiano con il clima di mercato. |
 | Caratteri | **@fontsource** (DotGothic16 per i testi, Press Start 2P solo per il titolo) | DotGothic16 è un carattere a pixel molto leggibile anche piccolo. I font sono inclusi nel pacchetto, quindi funzionano offline e nella PWA. Le legature sono disattivate. |
 | Test | **Vitest** | Usa la stessa pipeline di Vite e fa girare i test in TypeScript senza configurazione. |
 | Server | **Node.js** senza dipendenze | Tiene le chiavi Alpaca fuori dal browser e risolve il CORS. È facile da controllare: un solo file. |
@@ -31,6 +33,14 @@ src/
   ui/menu.ts          menu di pausa, Investidex, opzioni
   ui/setup.ts         avvertenze, questionario, conto di prova, esame, titolo
   ui/tutorial.ts      mini tutorial dei comandi (tastiera o touch)
+  ui/agenda.ts        Agenda del giorno e della settimana, storie in corso, rivincite, traguardi e oggetti
+  ui/journal.ts       Diario dell'investitore: motivo dopo ogni operazione, rilettura dopo 30 giorni
+  ui/minigames.ts     i quattro minigiochi didattici con punteggio 0-100
+  ui/challenge.ts     sfida della settimana: quiz con seme ISO, classifica locale, codici con controllo
+  world/quests.ts     storie a tappe degli abitanti (sei), con bersagli, lezioni ed eventi
+  world/decor.ts      arredo della casa di Borgo Semina in base agli oggetti sbloccati
+  systems/progress.ts eventi di gioco (track), agenda, rivincite, traguardi, titoli
+  systems/music.ts    motore chiptune e scelta del brano per mappa
   systems/            stato e salvataggi, mercato, portafoglio, quiz, audio, client Alpaca
   data/               asset di fantasia, quiz con fonti, lezioni, eventi, storia, missioni
 server/index.mjs      file statici + API /api verso Alpaca (paper e live)

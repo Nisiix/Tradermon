@@ -42,6 +42,10 @@ All'inizio un mini tutorial fa provare i comandi, con la versione per tastiera o
 5. Entra nelle case: ogni abitante (single, coppie, famiglie) ti insegna un concetto diverso, che resta annotato nell'Investidex.
 6. Nelle Cliniche del Portafoglio salvi, fai il check-up, la diagnosi e il ribilanciamento, e impari a riconoscere i bias.
 7. L'erba alta è solo decorativa: non ci sono incontri casuali né stati alterati.
+8. Dal menu, l'**Agenda** propone tre missioni al giorno e una alla settimana (leggere, vincere duelli, fare il check-up, camminare...). Completarle dà solo punti Conoscenza. I **traguardi** sbloccano titoli (da mostrare nel profilo e nei duelli) e oggetti con cui si arreda la casa a Borgo Semina.
+9. Gli investitori battuti chiedono la **rivincita** dopo tre giorni, con domande più difficili. Alcuni abitanti, alla seconda visita, raccontano una **storia a tappe** (sei in tutto) che porta a parlare con altri, leggere una lezione o superare una prova.
+10. Dopo ogni acquisto o vendita il **Diario dell'investitore** chiede il perché; dopo 30 giorni propone di rileggerlo con il senno di poi. In Biblioteca e in Zona Simulazione ci sono quattro **minigiochi** (grafici, interesse composto, diversificazione, bilanci), gli **scenari storici** spiegati e la **sfida della settimana** con classifica locale e codice da scambiare con gli amici.
+11. Il clima di mercato si vede anche nel cielo: pioggia con l'orso, temporale con lampi nella tempesta, scintille con il toro, lucciole e finestre accese di notte. La musica è chiptune originale, generata in codice, e cambia con il luogo, la notte, i duelli e il clima.
 
 ## Conto reale Alpaca (facoltativo)
 
@@ -73,7 +77,7 @@ Vendite allo scoperto e margine non sono ammessi. Puoi abbassare il tetto massim
 | `npm run dev` | Sviluppo con ricarica automatica |
 | `npm run build` | Controllo dei tipi e build in `dist/` |
 | `npm start` | Server di produzione su 127.0.0.1:8888 |
-| `npm test` | Test di dati, mappe, portafoglio e server |
+| `npm test` | Test di dati, mappe, portafoglio, server, agenda, storie e sfide |
 | `npm run docs:content` | Rigenera il documento dei contenuti |
 
 ## Fonti didattiche
