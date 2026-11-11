@@ -33,15 +33,19 @@ Deno.serve(async (req) => {
   if (e1) return reply(500, { error: 'Servizio non disponibile, riprova tra poco.' });
   if (!free) return reply(409, { error: 'Questo nome è già usato da un altro giocatore.' });
 
-  const { data, error } = await admin.auth.admin.createUser({
-    email: nameEmail(name), password, email_confirm: true,
-    user_metadata: { name },
-  });
+  const email = nameEmail(name);
+  const create = () => admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { name } });
+  let { data, error } = await create();
+  if (error && /already|registered|exists/i.test(error.message)) {
+    // l'indirizzo è occupato da un'iscrizione pubblica mai confermata (nessun profilo, nome libero): la si toglie
+    const { data: stale } = await admin.rpc('tm_unconfirmed_user', { e: email });
+    if (stale) { await admin.auth.admin.deleteUser(String(stale)); ({ data, error } = await create()); }
+  }
   if (error) {
     console.error('createUser', error.status, error.code, error.message);
     // corsa fra due registrazioni con lo stesso nome: l'indice univoco blocca la seconda
     const taken = /already|registered|exists|duplicate/i.test(error.message);
-    return reply(taken ? 409 : 500, { error: taken ? 'Questo nome è già usato da un altro giocatore.' : 'Registrazione non riuscita, riprova tra poco.', code: error.code ?? null });
+    return reply(taken ? 409 : 500, { error: taken ? 'Questo nome è già usato da un altro giocatore.' : 'Registrazione non riuscita, riprova tra poco.' });
   }
   return reply(200, { ok: true, id: data.user?.id });
 });
