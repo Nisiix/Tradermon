@@ -135,7 +135,8 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 
 - **Clinica del Portafoglio**: bancone della Dott.ssa Ratio, salvataggio, lezione sui bias, tutte le operazioni di portafoglio (sezione 7).
 - **Biblioteca**: ripasso delle lezioni sbloccate, Investidex, "Domanda del giorno" (streak), ripetizione delle domande sbagliate.
-- **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Non si può sfidare il Mentore prima di aver battuto almeno un allievo o letto le lezioni della Biblioteca locale.
+- **Insegne**: gli edifici pubblici hanno un'insegna sul muro sopra la porta (CLINICA, PALESTRA per l'Accademia, BIBLIOTECA, LABORATORIO, SIMULAZIONE, CASINÒ, ARCHIVIO, LEGA, TORRE). Le case non ne hanno.
+- **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Il duello col Mentore (e quelli della Lega) ha sempre lo stesso numero di domande, anche nei tentativi successivi a una sconfitta: si risponde a tutte, anche a Fiducia esaurita, e si vince con il numero minimo di risposte giuste. Non si può sfidare il Mentore prima di aver battuto almeno un allievo o letto le lezioni della Biblioteca locale.
 - **Case abitate**: ogni città ha 3-4 case visitabili (Borgo Semina una), 30 in tutto. Ogni casa ospita un nucleo: una persona sola, una coppia o una famiglia di tre persone. Gli interni sono arredati in modo diverso secondo il nucleo. Ogni abitante insegna un concetto diverso, per un totale di 62 argomenti, mai ripetuti tra un abitante e l'altro. Ogni consiglio cita una fonte. I temi seguono la città: basi a Borgo Semina e Ponte Cedola, ordini a Porto Ordini, diversificazione a Diversia, costi e interesse composto a Interessa, analisi a Bilancia, dividendi, obbligazioni e tassi a Valdividendo, bias a Mentelucida, gestione del rischio a Rocca Rischio. Si aggiungono temi di macroeconomia, fiscalità italiana e sicurezza. La prima volta che parli con un abitante ottieni +5 XP e il consiglio viene annotato nell'Investidex, dove puoi rileggerlo con il link alla fonte.
 
 ### 3.3 Mercato, orologio e clima
@@ -173,7 +174,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 | Statistica | Come sale | Come scende | Effetto |
 |---|---|---|---|
 | **Conoscenza** (XP e livello) | Risposte giuste (5/10/15 XP per difficoltà 1/2/3), lezioni lette (+5), sfide vinte | — | Livello = soglia 50·n^1,5 XP. Ogni 5 livelli +5 s al timer e una spiegazione extra |
-| **Fiducia** (i "PV") | Clinica, vittorie | Risposte sbagliate (−10/−20 nei duelli col Mentore), eventi sbagliati | A 0 si "va in tilt": si torna all'ultima Clinica, si perde il 5% della Reputazione |
+| **Fiducia** (i "PV") | Clinica, vittorie | Risposte sbagliate (−10/−20 nei duelli col Mentore), eventi sbagliati | A 0 si "va in tilt" e si perde il 5% della Reputazione. Dopo ogni sconfitta in un duello (tilt o risposte giuste insufficienti) si rinasce nella Clinica della città in cui ci si trova (sui Percorsi nell'ultima Clinica visitata) con la Fiducia al massimo |
 | **Disciplina** (0-100) | Rifiutare truffe, rispettare limiti nelle missioni, curarsi alla Clinica | Cedere agli Speculatori, superare il drawdown limite | Moltiplicatore del punteggio missioni (0,8-1,2) |
 | **Diversificazione** (0-100) | Calcolata dal portafoglio simulato: 100 − indice di concentrazione | — | Statistica visibile e input della salute |
 | **Pazienza** (0-100) | Tenere posizioni nei cali senza vendere, pochi ordini nelle missioni | Troppi ordini (overtrading), vendite nel panico | Bonus nelle missioni lunghe |

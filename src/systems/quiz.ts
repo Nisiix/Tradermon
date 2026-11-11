@@ -7,6 +7,8 @@ export function pickQuestions(topics: QuizTopic[], n: number, opts: { minDiff?: 
   const rng = opts.rng ?? Math.random;
   let pool = topics.flatMap((t) => byTopic(t)).filter((q) => q.diff >= (opts.minDiff ?? 1) && q.diff <= (opts.maxDiff ?? 3));
   if (pool.length < n) pool = topics.flatMap((t) => byTopic(t));
+  // se gli argomenti non bastano, completa con altre domande: il numero richiesto è sempre rispettato
+  if (pool.length < n) pool = [...pool, ...QUESTIONS.filter((q) => !pool.includes(q))];
   const review = opts.preferReview ? shuffle(pool.filter((q) => S.review[q.id] === 1), rng) : [];
   // preferisci le domande mai viste o viste meno spesso
   const rest = shuffle(pool.filter((q) => !review.includes(q)), rng).sort((a, b) => (S.answered[a.id] ?? 0) - (S.answered[b.id] ?? 0));

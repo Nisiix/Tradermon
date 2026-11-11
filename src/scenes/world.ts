@@ -2,6 +2,7 @@ import { play, setMood, trackForMap } from '../systems/music';
 import { track } from '../systems/progress';
 import { decorateHome } from '../world/decor';
 import Phaser from 'phaser';
+import { drawPlaque } from '../art/plaque';
 import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex } from '../art/art';
 import { getMap, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, type WorldApi } from '../world/scripts';
@@ -114,6 +115,8 @@ export class WorldScene extends Phaser.Scene {
     this.map = getMap(id);
     if (id === 'home') this.map = decorateHome(this.map);
     S.map = id; S.x = x; S.y = y; S.facing = DIR_NAME[dir];
+    // l'ultima Clinica in cui sei entrato è quella in cui rinasci dopo una sconfitta
+    if (/^clinic_\d+$/.test(id)) S.lastClinic = { map: id, x: 5, y: 4 };
     this.walk = undefined;
     this.children.list.filter((c) => c !== this.overlay && c !== this.weather).forEach((c) => c.destroy());
     this.tilemap?.destroy();
@@ -124,6 +127,12 @@ export class WorldScene extends Phaser.Scene {
     this.map.tiles.forEach((row, yy) => row.forEach((t, xx) => { if (ANIMATED.has(t)) this.animCells.push([xx, yy]); }));
     const ts = this.tilemap.addTilesetImage('tiles', 'tiles', P, P, 0, 0, 0)!;
     this.layer = this.tilemap.createLayer(0, ts, 0, 0)!;
+    // insegne sul muro frontale degli edifici speciali (Clinica, Palestra, ...): le case normali non ne hanno
+    for (const pl of this.map.plaques ?? []) {
+      const key = `plaque_${pl.kind}_${pl.text}`;
+      if (!this.textures.exists(key)) this.textures.addCanvas(key, drawPlaque(pl.text, pl.kind));
+      this.add.image((pl.x + 0.5) * P, pl.y * P - 2 * RS, key).setOrigin(0.5, 0).setDepth(2);
+    }
     this.cameras.main.setBackgroundColor(this.map.interior ? '#1b1b24' : '#2e7d32');
     this.player = this.add.sprite(x * P + P / 2, y * P + P, 'chars', S.avatar * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
     this.playerShadow = this.add.image(x * P + P / 2, y * P + P - RS, 'shadow').setDepth(4);

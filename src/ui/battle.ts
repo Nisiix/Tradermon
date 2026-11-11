@@ -18,6 +18,8 @@ export interface DuelOpts {
   need: number;
   damage: number;
   intro?: string;
+  /** Sfida a numero fisso di domande (Mentori e Lega): si rispondono sempre tutte, anche a Fiducia esaurita. */
+  fixed?: boolean;
 }
 
 export interface DuelResult { win: boolean; correct: number; total: number; perfect: boolean; ids: string[] }
@@ -72,8 +74,8 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
     };
 
     const ask = async () => {
-      if (foe <= 0.01) return finish(true);
-      if (S.stats.fiducia <= 0) return finish(false);
+      if (!o.fixed && foe <= 0.01) return finish(true);
+      if (!o.fixed && S.stats.fiducia <= 0) return finish(false);
       if (idx >= o.questions.length) return finish(correct >= o.need);
       const q = o.questions[idx];
       idx++;
