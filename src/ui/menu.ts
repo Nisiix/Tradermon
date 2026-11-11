@@ -61,12 +61,10 @@ export async function openInvestidex() {
       grid.appendChild(d);
     }
     body.appendChild(grid);
-    if (S.biasSeen.length) body.appendChild(el('div', '', `<h4>Bias</h4>${S.biasSeen.map((b: BiasId) => `<p class="small"><b>${BIAS_INFO[b].name}</b>: ${BIAS_INFO[b].effect} <a href="${SOURCES[BIAS_INFO[b].source].url}" target="_blank" rel="noopener">Approfondisci</a></p>`).join('')}`));
+    if (S.biasSeen.length) body.appendChild(el('div', '', `<h4>Bias</h4>${S.biasSeen.map((b: BiasId) => `<p class="small"><b>${BIAS_INFO[b].name}</b>: ${BIAS_INFO[b].effect}</p>`).join('')}`));
     if (S.tipsHeard.length) {
-      const items = HOUSEHOLDS.flatMap((town, ti) => town.flatMap((h) => h.people.filter((r) => S.tipsHeard.includes(r.id)).map((r) => {
-        const src = SOURCES[r.source];
-        return `<p class="small"><b>${esc(r.name)}</b> <span class="muted">(${esc(h.name)}, ${esc(TOWNS[ti].name)})</span>: ${esc(r.lines.join(' '))}${src ? ` <a href="${src.url}" target="_blank" rel="noopener">Fonte</a>` : ''}</p>`;
-      })));
+      const items = HOUSEHOLDS.flatMap((town, ti) => town.flatMap((h) => h.people.filter((r) => S.tipsHeard.includes(r.id)).map((r) =>
+        `<p class="small"><b>${esc(r.name)}</b> <span class="muted">(${esc(h.name)}, ${esc(TOWNS[ti].name)})</span>: ${esc(r.lines.join(' '))}</p>`)));
       body.appendChild(el('div', '', `<h4>Consigli degli abitanti</h4>${items.join('')}`));
     }
     if (S.flags.casinoLesson) body.appendChild(el('p', 'small', '<b>Azzardo vs investimento</b>: nel gioco d\'azzardo il banco ha un vantaggio strutturale (2,7% alla roulette europea); la martingala porta prima o poi alla rovina.'));
@@ -83,8 +81,6 @@ export async function openLessons() {
     if (c < 0 || c >= ls.length) return;
     const l = ls[c];
     await say(l.body, l.title);
-    const src = SOURCES[l.source];
-    if (src) toast(`Fonte: ${src.publisher} – ${src.title}`);
     if (!S.lessonsRead.includes(l.id)) { S.lessonsRead.push(l.id); S.stats.xp += 5; track('lesson'); }
   }
 }
@@ -159,6 +155,7 @@ async function options() {
     q<HTMLInputElement>('.hc').checked = S.options.contrast;
     q<HTMLInputElement>('.sm').checked = S.options.studyMode;
     button('Comandi', () => { close(); void controlsTutorial(); });
+    button('Crediti e fonti', () => { close(); void credits(); });
     button('Esporta salvataggio', () => download(`tradermon-${S.name}.json`, exportSave()));
     button('Applica', () => {
       S.options.textSpeed = Number(q<HTMLSelectElement>('.ts').value);
@@ -172,6 +169,27 @@ async function options() {
       close();
     }, 'primary');
   });
+}
+
+/** Crediti: le fonti didattiche non compaiono durante il gioco, ma restano tutte elencate qui (e in docs/02-CONTENUTI-E-FONTI.md). */
+async function credits() {
+  const byPublisher = new Map<string, { title: string; url: string }[]>();
+  for (const s of Object.values(SOURCES)) {
+    if (!byPublisher.has(s.publisher)) byPublisher.set(s.publisher, []);
+    byPublisher.get(s.publisher)!.push(s);
+  }
+  await modal('Crediti e fonti', ({ body, button, close }) => {
+    body.innerHTML = `
+      <p class="small">Tradermon è un gioco originale. Quiz, lezioni e consigli sono scritti con parole nostre e si basano su materiale pubblico di educazione finanziaria. Le fonti non vengono mostrate durante il gioco per non interrompere il ritmo, ma sono tutte qui sotto.</p>
+      <h4>Fonti didattiche</h4>
+      ${[...byPublisher].map(([pub, list]) => `<p class="small"><b>${esc(pub)}</b>: ${list.map((s) => `<a href="${s.url}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join(', ')}</p>`).join('')}
+      <h4>Dati di mercato</h4>
+      <p class="small">Il mercato del gioco è simulato; gli scenari storici sono ricostruzioni semplificate. Conto, posizioni e prezzi dell'Osservatorio e del conto collegato sono forniti da Alpaca solo per il tuo uso personale e non vengono ridistribuiti.</p>
+      <h4>Software e caratteri</h4>
+      <p class="small">Motore Phaser (licenza MIT). Caratteri Press Start 2P, Pixelify Sans e DotGothic16 (SIL Open Font License 1.1) tramite Fontsource. Grafica e musica generate dal gioco.</p>
+      <p class="small muted">Contenuti a scopo educativo, non sono consulenza finanziaria.</p>`;
+    button('Chiudi', () => close(), 'primary');
+  }, { wide: true });
 }
 
 export function applyOptions() {
