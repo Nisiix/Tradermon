@@ -134,7 +134,7 @@ async function badges() {
       h += `<div class="card ${got ? 'gold' : 'locked'}"><b>${got ? '🏅' : '○'} ${esc(m.badge)}</b><br><span class="small">${esc(m.name)} · ${TOWNS[i].name}</span><br><span class="small">${got ? `Tecnica: <b>${esc(m.technique)}</b>. ${esc(m.techDesc)}` : 'Non ancora ottenuta'}</span></div>`;
     }
     h += '</div>';
-    const ab = [{ a: ABILITY.swim, ok: canSwim() }, { a: ABILITY.transfer, ok: canTransfer() }, { a: ABILITY.cold, ok: S.badges >= 7 }];
+    const ab = [{ a: ABILITY.swim, ok: canSwim() }, { a: ABILITY.cut, ok: S.badges >= ABILITY.cut.badge }, { a: ABILITY.transfer, ok: canTransfer() }, { a: ABILITY.dark, ok: S.badges >= ABILITY.dark.badge }, { a: ABILITY.cold, ok: S.badges >= 7 }];
     h += `<h4>Abilità di esplorazione</h4>${ab.map(({ a, ok }) => `<p class="small" style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b> (Medaglia ${a.badge}): ${ok ? esc(a.desc) : 'non ancora ottenuta.'}</p>`).join('')}`;
     if (S.flags.champion) h += '<p class="good"><b>Campione della Lega degli Investitori</b></p>';
     if (S.legends.length) h += `<p>Crisi leggendarie superate: ${S.legends.length}/5</p>`;

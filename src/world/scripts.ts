@@ -422,6 +422,8 @@ async function winBadge(m: number, w: WorldApi) {
   if (m === 2) extra.push('Con l\'abbonamento al treno puoi viaggiare tra le città visitate dalle stazioni.');
   if (m === 5) extra.push('L\'Archivio di Bilancia ora è aperto.');
   if (m === SWIM_BADGE) extra.push(`Nuova abilità: ${ABILITY.swim.name}. Cammina verso l'acqua e la attraverserai su una zattera. Sui Percorsi 3, 5 e 7 ci sono isole da raggiungere.`);
+  if (m === ABILITY.cut.badge) extra.push(`Nuova abilità: ${ABILITY.cut.name}. Ora puoi frantumare i Massi delle Commissioni: prova la Galleria del Dark Pool sul Percorso 2.`);
+  if (m === ABILITY.dark.badge) extra.push(`Nuova abilità: ${ABILITY.dark.name}. Le grotte buie non ti fermano più: la Miniera dei Lingotti sul Percorso 5 porta dritta a Valdividendo.`);
   if (m === TRANSFER_BADGE) extra.push(`Nuova abilità: ${ABILITY.transfer.name}. Apri il menu, scegli "Mappa della Regione" e trasferisciti in una città già visitata.`);
   if (m === 8) extra.push('La Guardia della Lega ora ti lascerà passare. L\'Altopiano è oltre il Percorso 9.');
   if (extra.length) await say(extra, 'Prof. Saldi (messaggio)');
@@ -668,26 +670,28 @@ async function tower() {
   }
 }
 
-const HERMIT_LINES: Record<number, { intro: string[]; win: string; again: string }> = {
-  3: { intro: ['Sei arrivato fin qui sull\'acqua? Allora la liquidità la sai usare.', 'Io compro e tengo per decenni. Vediamo se reggi le mie domande.'], win: 'Hai la pazienza del cassettista. Tieni questo studio extra, ti servirà.', again: 'Compra bene e dimentica di guardare ogni giorno. Funziona anche con le isole.' },
-  5: { intro: ['Un prezzo diverso per la stessa cosa in due posti? Mi sveglio per questo.', 'Ma le occasioni vere sono rare e veloci. Rispondi in fretta e bene!'], win: 'Preciso come un arbitraggio. Ti lascio i miei appunti.', again: 'Quando un guadagno sembra senza rischio, cerca il rischio che non vedi.' },
-  7: { intro: ['Custodisco le riserve: la liquidità che non si tocca quando il mercato urla.', 'Solo chi ha mente fredda e liquidità arriva fin qui. Dimostralo.'], win: 'Riserve al sicuro, mente lucida. Sei pronto per la Lega.', again: 'Un fondo di emergenza vale più di qualsiasi previsione.' },
+const HERMIT_LINES: Record<string, { intro: string[]; win: string; again: string }> = {
+  r3: { intro: ['Sei arrivato fin qui sull\'acqua? Allora la liquidità la sai usare.', 'Io compro e tengo per decenni. Vediamo se reggi le mie domande.'], win: 'Hai la pazienza del cassettista. Tieni questo studio extra, ti servirà.', again: 'Compra bene e dimentica di guardare ogni giorno. Funziona anche con le isole.' },
+  r5: { intro: ['Un prezzo diverso per la stessa cosa in due posti? Mi sveglio per questo.', 'Ma le occasioni vere sono rare e veloci. Rispondi in fretta e bene!'], win: 'Preciso come un arbitraggio. Ti lascio i miei appunti.', again: 'Quando un guadagno sembra senza rischio, cerca il rischio che non vedi.' },
+  r7: { intro: ['Custodisco le riserve: la liquidità che non si tocca quando il mercato urla.', 'Solo chi ha mente fredda e liquidità arriva fin qui. Dimostralo.'], win: 'Riserve al sicuro, mente lucida. Sei pronto per la Lega.', again: 'Un fondo di emergenza vale più di qualsiasi previsione.' },
+  faro: { intro: ['Il faro non dice alle navi dove andare: mostra solo dove sono gli scogli.', 'Un buon piano d\'investimento fa lo stesso. Vediamo se sai leggere la luce.'], win: 'Rotta sicura. Ricorda: gli scogli sono i costi, la leva e le promesse troppo belle.', again: 'Di notte gli scogli non si spostano. Sono le onde a farti credere di sì.' },
+  perle: { intro: ['Le perle migliori stanno dove nessuno ha voglia di cercare, al buio.', 'Ma chi si tuffa senza conoscere il fondale non torna su. Dimostrami che lo conosci.'], win: 'Hai occhio per il valore nascosto. Questa è la perla più rara: la pazienza.', again: 'Prima di comprare, scendi sul fondo: leggi i conti, non solo il prezzo.' },
 };
 
 /** Abitante di un'Isola della Liquidità: un duello difficile una volta sola, senza perdere Fiducia. */
 async function hermit(n: NpcDef) {
-  const r = Number(n.data?.r);
-  const h = HERMIT_LINES[r];
-  const who = HERMITS[r]?.name ?? n.name;
+  const key = String(n.data?.key ?? '');
+  const h = HERMIT_LINES[key];
+  const who = HERMITS[key.replace(/^r/, '')]?.name ?? n.name;
   if (!h) return say('...', who);
-  if (S.flags[`islet_r${r}`]) return say(h.again, who);
+  if (S.flags[`islet_${key}`]) return say(h.again, who);
   await say(h.intro, who);
   const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, Math.max(3, S.badges)), 5, { minDiff: 2 });
   const prevFid = S.stats.fiducia;
   const res = await runDuel({ foeName: who, foePal: n.pal, questions: qs, need: 4, damage: 0 });
   S.stats.fiducia = prevFid;
   if (!res.win) return say('Non ancora. Torna quando vuoi: l\'isola non si muove.', who);
-  S.flags[`islet_r${r}`] = true;
+  S.flags[`islet_${key}`] = true;
   S.stats.xp += 120;
   Object.keys(S.cards).forEach((id) => (card(id).xp += 20));
   track('islet');

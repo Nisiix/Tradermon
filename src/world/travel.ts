@@ -12,13 +12,20 @@ export const SWIM_BADGE = 3;
 export const TRANSFER_BADGE = 4;
 
 export const ABILITY = {
-  swim: { name: 'Flusso di Liquidità', badge: SWIM_BADGE, desc: 'Attraversi l\'acqua su una zattera: la liquidità scorre dove serve. Apre le Isole della Liquidità sui Percorsi 3, 5 e 7.' },
+  swim: { name: 'Flusso di Liquidità', badge: SWIM_BADGE, desc: 'Attraversi l\'acqua su una zattera: la liquidità scorre dove serve. Apre le Isole della Liquidità sui Percorsi 3, 5 e 7 e, dal molo di Porto Ordini, il Mare della Liquidità.' },
   transfer: { name: 'Trasferimento di Capitale', badge: TRANSFER_BADGE, desc: 'Dalla Mappa della Regione sposti il tuo capitale (e te stesso) in una città già visitata. Il regolamento è T+1: passa un giorno di mercato.' },
+  cut: { name: 'Taglio dei Costi', badge: 4, desc: 'Frantumi i Massi delle Commissioni che bloccano sentieri e grotte, come la Galleria del Dark Pool sul Percorso 2.' },
+  dark: { name: 'Lanterna della Due Diligence', badge: 5, desc: 'Illumini le grotte buie: la Miniera dei Lingotti (Percorso 5 ↔ Valdividendo) e la Grotta delle Perle nel Mare della Liquidità.' },
   cold: { name: 'Mente Fredda', badge: 7, desc: 'Le notizie urlate non ti smuovono: attraversi il Muro del Rumore sul Percorso 7.' },
 } as const;
 
 export function canSwim(): boolean { return S.badges >= SWIM_BADGE; }
 export function canTransfer(): boolean { return S.badges >= TRANSFER_BADGE; }
+export function canCut(): boolean { return S.badges >= ABILITY.cut.badge; }
+export function canSeeDark(): boolean { return S.badges >= ABILITY.dark.badge; }
+
+/** Chiave del salvataggio per un Masso delle Commissioni già frantumato. */
+export function boulderFlag(map: string, x: number, y: number) { return `boulder_${map}_${x}_${y}`; }
 
 /** Percorsi con un'Isola della Liquidità (lago a nord del sentiero). */
 export const ISLET_ROUTES = [3, 5, 7];

@@ -1,13 +1,21 @@
 import { S, advanceDays, hasTech, TECH } from '../systems/state';
 import { TOWNS, mentor } from '../data/story';
 import { getMap } from '../world/maps';
-import { ABILITY, ISLET_ROUTES, LABEL_ABOVE, REGION_POS, canSwim, canTransfer, outdoorOf, transferTargets, TRANSFER_BADGE } from '../world/travel';
+import { ABILITY, ISLET_ROUTES, LABEL_ABOVE, REGION_POS, canSwim, canTransfer, canCut, canSeeDark, outdoorOf, transferTargets, TRANSFER_BADGE } from '../world/travel';
 import { modal, esc, el, confirm, toast } from './core';
 import { beep } from '../systems/audio';
+
+const SEA_POS: [number, number] = [45, 65];
+const SEA_ISLANDS: [number, number, number][] = [[37, 64, 3], [54, 63, 2.6], [45, 68, 3.4]];
+const CAVES = [
+  { name: 'Galleria del Dark Pool (Percorso 2 → Diversia)', from: 't1', route: 2, to: 't3', bend: [0, -9] },
+  { name: 'Miniera dei Lingotti (Percorso 5 → Valdividendo)', from: 't4', route: 5, to: 't6', bend: [-6, 8] },
+];
 
 /** Luogo in cui si trova il giocatore sulla mappa: una città o il punto medio di un percorso. */
 function herePos(): { pos: [number, number]; label: string; town?: string } {
   const out = outdoorOf(S.map, getMap);
+  if (out === 'sea') return { pos: SEA_POS, label: 'Mare della Liquidità' };
   if (REGION_POS[out]) return { pos: REGION_POS[out], label: TOWNS.find((t) => t.id === out)?.name ?? out, town: out };
   const r = /^r(\d+)$/.exec(out);
   if (r) {
@@ -21,12 +29,27 @@ function herePos(): { pos: [number, number]; label: string; town?: string } {
 function svg(): string {
   const vis = (id: string) => S.visited.includes(id);
   const here = herePos();
-  let s = `<svg viewBox="0 0 100 62" class="region-svg" role="img" aria-label="Mappa della Regione di Capitalia">
+  let s = `<svg viewBox="0 0 100 74" class="region-svg" role="img" aria-label="Mappa della Regione di Capitalia">
     <defs><linearGradient id="rgSea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f9fe0"/><stop offset="1" stop-color="#2f6fc0"/></linearGradient>
     <pattern id="rgWave" width="6" height="4" patternUnits="userSpaceOnUse"><path d="M0 2 q1.5 -1.4 3 0 t3 0" fill="none" stroke="#8cc8f8" stroke-width=".35" opacity=".7"/></pattern></defs>
-    <rect width="100" height="62" fill="url(#rgSea)"/><rect width="100" height="62" fill="url(#rgWave)"/>
+    <rect width="100" height="74" fill="url(#rgSea)"/><rect width="100" height="74" fill="url(#rgWave)"/>
     <path d="M3 6 Q20 1 45 5 Q70 2 92 8 Q99 18 97 34 Q99 50 90 58 Q60 61 35 59 Q12 61 4 55 Q0 40 4 28 Q1 16 3 6Z" fill="#7cc65a" stroke="#3f7f2a" stroke-width=".8"/>
     <path d="M30 30 Q50 26 70 32 Q82 36 84 42 Q60 40 40 41 Q25 40 22 35Z" fill="#5fae45" opacity=".55"/>`;
+  // Mare della Liquidità: dal molo di Porto Ordini verso sud
+  if (vis('t2')) {
+    const [px2, py2] = REGION_POS.t2;
+    const seaSeen = !!S.flags.seaVisited;
+    s += `<line x1="${px2}" y1="${py2 + 3}" x2="${SEA_POS[0]}" y2="${SEA_POS[1] - 4}" stroke="#d8f0ff" stroke-width="1" stroke-dasharray="1.2 1.2"/>`;
+    s += `<g><title>Mare della Liquidità</title>${SEA_ISLANDS.map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 0.6}" fill="${seaSeen ? '#e6cf94' : '#a8b8c0'}" stroke="#86683c" stroke-width=".4"/>`).join('')}
+      <text x="${SEA_POS[0]}" y="${SEA_POS[1] + 6.5}" class="rg-name${seaSeen ? '' : ' rg-unknown'}">${seaSeen ? 'Mare della Liquidità' : '???'}</text></g>`;
+  }
+  // grotte: scorciatoie da metà percorso a una città più avanti
+  for (const c of CAVES) {
+    if (!vis(c.from)) continue;
+    const a = REGION_POS[`t${c.route - 1}`], b = REGION_POS[`t${c.route}`], d = REGION_POS[c.to];
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    s += `<g><title>${esc(c.name)}</title><path d="M${mx} ${my} Q${(mx + d[0]) / 2 + c.bend[0]} ${(my + d[1]) / 2 + c.bend[1]} ${d[0]} ${d[1]}" fill="none" stroke="#5a4636" stroke-width="1.3" stroke-dasharray="2 1.2"/><circle cx="${mx}" cy="${my}" r="1.3" fill="#2a2018"/></g>`;
+  }
   // percorsi: da t(k-1) a t(k)
   for (let k = 1; k <= 9; k++) {
     const a = REGION_POS[`t${k - 1}`], b = REGION_POS[`t${k}`];
@@ -81,7 +104,9 @@ export async function openRegionMap(): Promise<string | undefined> {
     } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale si sblocca battendo il Mentore di mezzo (Medaglia ${TRANSFER_BADGE}). Intanto, dalla seconda Medaglia, le stazioni collegano le città visitate.`));
     const ab = [
       { a: ABILITY.swim, ok: canSwim() },
+      { a: ABILITY.cut, ok: canCut() },
       { a: ABILITY.transfer, ok: canTransfer() },
+      { a: ABILITY.dark, ok: canSeeDark() },
       { a: ABILITY.cold, ok: hasTech(TECH.COLD) },
     ];
     body.appendChild(el('div', 'small', ab.map(({ a, ok }) => `<p style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b>: ${ok ? esc(a.desc) : `si sblocca con la Medaglia ${a.badge} (${esc(mentor(a.badge, S.track).badge)}).`}</p>`).join('')));

@@ -164,6 +164,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'houses_all', name: 'Porta a porta', desc: 'Entra in tutte le 30 case', check: () => c('house_unique') >= 30 },
   { id: 'agenda7', name: 'Agenda piena', desc: 'Completa tutte le missioni del giorno 7 volte', title: 'Metodico', check: () => c('agenda_full') >= 7 },
   { id: 'islets_all', name: 'Navigatore di Liquidità', desc: 'Vinci la sfida sulle tre Isole della Liquidità', title: 'Navigatore', check: () => [3, 5, 7].every((r) => !!S.flags[`islet_r${r}`]) },
+  { id: 'sea_all', name: 'Capitano di Liquidità', desc: 'Vinci le sfide della Guardiana del Faro e del Pescatore di Perle', title: 'Capitano', check: () => !!S.flags.islet_faro && !!S.flags.islet_perle },
   { id: 'legend1', name: 'Storico', desc: 'Supera una crisi leggendaria', title: 'Storico', check: () => S.legends.length >= 1 },
   { id: 'legend_all', name: 'Memoria dei mercati', desc: 'Supera tutte le crisi leggendarie', title: 'Memoria viva', decor: 'globe', check: () => S.legends.length >= 5 },
   { id: 'tower10', name: 'Scalatore', desc: 'Piano 10 della Torre', title: 'Scalatore', check: () => S.tower.best >= 10 },

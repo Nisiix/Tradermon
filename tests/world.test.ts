@@ -48,11 +48,12 @@ describe('mappe', () => {
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const nx = x + dx, ny = y + dy, k = `${nx},${ny}`;
           if (nx < 0 || ny < 0 || nx >= m.w || ny >= m.h || seen.has(k)) continue;
-          if (SOLID.has(m.tiles[ny][nx]) || npcAt.has(k)) continue;
+          if ((SOLID.has(m.tiles[ny][nx]) && m.tiles[ny][nx] !== TILE.BOULDER) || npcAt.has(k)) continue;
           seen.add(k); q.push([nx, ny]);
         }
       }
-      for (const w of m.warps) expect(seen.has(`${w.x},${w.y}`), `${id}: uscita (${w.x},${w.y}) verso ${w.to} irraggiungibile`).toBe(true);
+      // i passaggi chiusi da un'abilità (acqua, grotte buie) li verifica reach.test.ts
+      for (const w of m.warps.filter((x) => x.lock !== 'swim' && x.lock !== 'dark')) expect(seen.has(`${w.x},${w.y}`), `${id}: uscita (${w.x},${w.y}) verso ${w.to} irraggiungibile`).toBe(true);
     }
   });
 });
