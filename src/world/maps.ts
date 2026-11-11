@@ -4,10 +4,11 @@ import { TOWNS, TRAINER_NAMES, TRAINER_LINES } from '../data/story';
 import { mulberry32 } from '../systems/rng';
 import { HOUSEHOLDS, type Household } from '../data/residents';
 import { ISLET_ROUTES } from './travel';
+import { TAPE_SHELF, TAPE_ROOM, HODL_STONE, WHALE } from './secretsData';
 
 export type NpcKind =
   | 'talk' | 'trainer' | 'mentor' | 'student' | 'guard' | 'nurse' | 'prof' | 'aide' | 'case' | 'rival'
-  | 'librarian' | 'daily' | 'pc' | 'station' | 'simop' | 'croupier' | 'archivist' | 'league' | 'towerop' | 'speculator' | 'legend' | 'mom' | 'sage' | 'resident' | 'hermit';
+  | 'librarian' | 'daily' | 'pc' | 'station' | 'simop' | 'croupier' | 'archivist' | 'league' | 'towerop' | 'speculator' | 'legend' | 'mom' | 'sage' | 'resident' | 'hermit' | 'secret';
 
 export interface NpcDef {
   id: string;
@@ -25,7 +26,7 @@ export interface NpcDef {
   hiddenSprite?: boolean;
 }
 
-export interface Warp { x: number; y: number; to: string; tx: number; ty: number; dir?: 0 | 1 | 2 | 3; lock?: 'archive' | 'tower' | 'badge' | 'swim' | 'dark' }
+export interface Warp { x: number; y: number; to: string; tx: number; ty: number; dir?: 0 | 1 | 2 | 3; lock?: 'archive' | 'tower' | 'badge' | 'swim' | 'dark' | 'secret' }
 export interface Sign { x: number; y: number; text: string[] }
 /** Insegna sul muro frontale di un edificio pubblico: centrata sulla porta (x), appesa al bordo tra tetto e muro (y = riga del muro). */
 export interface Plaque { x: number; y: number; text: string; kind: 'clinic' | 'gym' | 'public' }
@@ -149,6 +150,7 @@ function buildAll() {
   buildLeagueTown();
   for (let r = 1; r <= 9; r++) buildRoute(r);
   buildSeaAndCaves();
+  buildSecrets();
   for (const m of Object.values(MAPS)) diversify(m);
 }
 
@@ -610,4 +612,28 @@ function buildSeaAndCaves() {
     { id: 'cave_gold_s', x: 21, y: 3, pal: 18, dir: 0, name: 'Vecchio Minatore', kind: 'talk', lines: ['Una volta ho messo tutto in una sola vena d\'oro. Si è esaurita in un mese.', 'Da allora scavo in tante gallerie diverse. Si chiama diversificare, ragazzo.'] },
   );
   MAPS.cave_gold = gold;
+}
+
+// ---------------- Segreti della seconda parte (dalla Medaglia 4) ----------------
+
+function buildSecrets() {
+  // Sala del Nastro: dietro lo scaffale con il libro al contrario nella Biblioteca di Bilancia
+  const lib = MAPS[TAPE_SHELF.map];
+  const room = interior(TAPE_ROOM, 'Sala del Nastro', 9, 7, TAPE_SHELF.map, TAPE_SHELF.x, TAPE_SHELF.y);
+  room.tiles[2][1] = TILE.PC; room.tiles[2][2] = TILE.PC; room.tiles[2][6] = TILE.PC; room.tiles[2][7] = TILE.PC;
+  room.tiles[2][4] = TILE.SHELF; room.tiles[6][1] = TILE.PLANT;
+  rect(room.tiles, 3, 4, 3, 1, TILE.RUG);
+  room.npcs.push({ id: 'secret_tape_lady', x: 4, y: 3, pal: 19, dir: 0, name: 'Vecchia del Nastro', kind: 'secret', data: { key: 'tape' } });
+  MAPS[TAPE_ROOM] = room;
+  lib.warps.push({ x: TAPE_SHELF.x, y: TAPE_SHELF.y, to: TAPE_ROOM, tx: Math.floor(room.w / 2), ty: room.h - 2, dir: 1, lock: 'secret' });
+
+  // Pietra delle Mani di Diamante, con due fiori ai lati
+  const r6 = MAPS[HODL_STONE.map];
+  r6.tiles[HODL_STONE.y][HODL_STONE.x] = TILE.SIGN;
+  r6.tiles[HODL_STONE.y][HODL_STONE.x - 1] = TILE.FLOWERS; r6.tiles[HODL_STONE.y][HODL_STONE.x + 1] = TILE.FLOWERS;
+  r6.signs.push({ x: HODL_STONE.x, y: HODL_STONE.y, text: ['Una pietra antica con due mani scolpite, chiuse a pugno.', 'Sotto, un\'incisione consumata: "CHI NON SI MUOVE, VEDE."'] });
+
+  // La Balena (solo nel fine settimana) e il Sussurratore del Casinò
+  MAPS[WHALE.map].npcs.push({ id: 'secret_whale', x: WHALE.x, y: WHALE.y, pal: 12, dir: 2, name: 'La Balena', kind: 'secret', data: { key: 'whale' } });
+  MAPS.casino.npcs.push({ id: 'secret_rumors', x: 9, y: 5, pal: 17, dir: 2, name: 'Il Sussurratore', kind: 'secret', data: { key: 'rumors' } });
 }

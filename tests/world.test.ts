@@ -52,8 +52,8 @@ describe('mappe', () => {
           seen.add(k); q.push([nx, ny]);
         }
       }
-      // i passaggi chiusi da un'abilità (acqua, grotte buie) li verifica reach.test.ts
-      for (const w of m.warps.filter((x) => x.lock !== 'swim' && x.lock !== 'dark')) expect(seen.has(`${w.x},${w.y}`), `${id}: uscita (${w.x},${w.y}) verso ${w.to} irraggiungibile`).toBe(true);
+      // i passaggi chiusi da un'abilità (acqua, grotte buie) o segreti li verifica reach.test.ts
+      for (const w of m.warps.filter((x) => x.lock !== 'swim' && x.lock !== 'dark' && x.lock !== 'secret')) expect(seen.has(`${w.x},${w.y}`), `${id}: uscita (${w.x},${w.y}) verso ${w.to} irraggiungibile`).toBe(true);
     }
   });
 });

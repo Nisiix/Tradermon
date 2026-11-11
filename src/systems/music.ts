@@ -112,10 +112,11 @@ const T: Record<TrackId, Track> = {
   },
 };
 
-const JINGLES: Record<'win' | 'badge' | 'quest', string> = {
+const JINGLES: Record<'win' | 'badge' | 'quest' | 'secret', string> = {
   win: 'C5 E5 G5 C6 . G5 C6 . E6 . . . _ _ _ _',
   badge: 'G5 . C6 . E6 . G6 . . . E6 G6 . . . .',
   quest: 'E5 G5 C6 . . . _ _',
+  secret: 'A4 E5 A5 . G#5 . E5 . B5 . . . _ _ _ _',
 };
 
 const NOTE: Record<string, number> = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11 };

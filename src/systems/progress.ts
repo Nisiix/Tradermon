@@ -6,12 +6,13 @@ import { toast } from '../ui/core';
 import { jingle } from './music';
 import { ALL_RESIDENTS } from '../data/residents';
 import type { AgendaTask } from '../types';
+import { LEDGER_PAGES, pageFlag, SECRET_FLAGS } from '../world/secretsData';
 
 // ---------------- Contatori di eventi ----------------
 
 export type GameEvent =
   | 'lesson' | 'duel_win' | 'duel_perfect' | 'checkup' | 'tip' | 'daily_q' | 'mission' | 'journal' | 'minigame'
-  | 'rematch' | 'steps' | 'trade' | 'rebalance' | 'quest' | 'house_unique' | 'review' | 'review_journal' | 'challenge' | 'badge' | 'legend' | 'islet';
+  | 'rematch' | 'steps' | 'trade' | 'rebalance' | 'quest' | 'house_unique' | 'review' | 'review_journal' | 'challenge' | 'badge' | 'legend' | 'islet' | 'secret';
 
 const listeners: ((ev: GameEvent, n: number) => void)[] = [];
 export function onEvent(fn: (ev: GameEvent, n: number) => void) { listeners.push(fn); }
@@ -130,7 +131,8 @@ export function rematchesReady(): string[] { return Object.keys(S.rematch).filte
 
 // ---------------- Traguardi e titoli ----------------
 
-export interface Achievement { id: string; name: string; desc: string; title?: string; decor?: string; check: () => boolean }
+/** secret: nascosto come "???" nell'Agenda finché non viene sbloccato. */
+export interface Achievement { id: string; name: string; desc: string; title?: string; decor?: string; secret?: boolean; check: () => boolean }
 
 const c = (k: string) => S.counters[k] ?? 0;
 
@@ -177,7 +179,15 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'steps10000', name: 'Esploratore', desc: 'Cammina 10.000 passi', title: 'Esploratore', check: () => c('steps') >= 10000 },
   { id: 'bias_all', name: 'Conosco i miei limiti', desc: 'Impara tutti e 4 i bias', title: 'Consapevole', check: () => S.biasSeen.length >= 4 },
   { id: 'casino', name: 'Il banco vince sempre', desc: 'Scopri la lezione del Casinò', check: () => !!S.flags.casinoLesson },
+  // segreti della seconda parte (dalla Medaglia 4): restano "???" finché non li trovi
+  { id: 'secret_ledger', name: 'Il Libro Mastro Perduto', desc: 'Ritrova le sei pagine nascoste di Mastro Ventura', title: 'Custode del Libro Mastro', decor: 'ledger', secret: true, check: () => ledgerDone() },
+  { id: 'secret_tape', name: 'Lettore del Nastro', desc: 'Trova la Sala del Nastro e batti la Vecchia del Nastro', title: 'Lettore del Nastro', decor: 'tape', secret: true, check: () => !!S.flags[SECRET_FLAGS.tape] },
+  { id: 'secret_whale', name: 'Avvistamento', desc: 'Incontra la Balena nel fine settimana', title: 'Avvistatore di Balene', secret: true, check: () => !!S.flags[SECRET_FLAGS.whale] },
+  { id: 'secret_hodl', name: 'Mani di Diamante', desc: 'Compi il rituale della pietra sul Percorso 6', title: 'Mani di Diamante', secret: true, check: () => !!S.flags[SECRET_FLAGS.hodl] },
+  { id: 'secret_all', name: 'Cacciatore di Segreti', desc: 'Scopri tutti i segreti della regione', title: 'Cacciatore di Segreti', decor: 'lamp', secret: true, check: () => ledgerDone() && !!S.flags[SECRET_FLAGS.tape] && !!S.flags[SECRET_FLAGS.whale] && !!S.flags[SECRET_FLAGS.hodl] },
 ];
+
+function ledgerDone(): boolean { return LEDGER_PAGES.every((p) => !!S.flags[pageFlag(p.id)]); }
 
 /** Controlla i traguardi e assegna quelli nuovi. */
 export function checkAchievements(): Achievement[] {
@@ -222,4 +232,7 @@ export const DECOR_INFO: Record<string, { name: string; tile: string }> = {
   radio: { name: 'Radio di Eleonora', tile: 'radio' },
   aquarium: { name: 'Acquario di Gennaro', tile: 'aquarium' },
   painting: { name: 'Quadro di Ottavio', tile: 'painting' },
+  ledger: { name: 'Libro Mastro rilegato', tile: 'shelf' },
+  tape: { name: 'Nastro delle quotazioni incorniciato', tile: 'frame' },
+  lamp: { name: 'Mappamondo delle rotte segrete', tile: 'globe' },
 };
