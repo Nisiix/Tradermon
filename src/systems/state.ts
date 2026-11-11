@@ -27,7 +27,7 @@ export let S: SaveData = null as unknown as SaveData;
 export function newGame(): SaveData {
   const seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
   S = {
-    version: SAVE_VERSION, createdAt: Date.now(), name: 'Alex', avatar: 0, rival: 'Leo', profile: 'equilibrato', profileScore: 4,
+    version: SAVE_VERSION, createdAt: Date.now(), name: 'Alex', avatar: 0, rival: 'Leo', profile: 'equilibrato', profileScore: 3,
     goal: '', horizon: '', track: 'stocks', mixedClasses: [], map: 'home', x: 4, y: 4, facing: 'down', flags: {}, badges: 0, techniques: [],
     stats: { xp: 0, fiducia: 100, disciplina: 50, pazienza: 50, reputazione: 0 }, bias: null, biasSeen: [], cards: {}, lessonsRead: [], booksRead: [], tipsHeard: [], defeated: [], visited: ['t0'],
     portfolio: newPortfolio(10000, 0, 'equilibrato'), market: createWorldMarket(seed), review: {}, reviewDue: {}, answered: {}, daily: { lastDate: '', streak: 0 },
@@ -257,9 +257,9 @@ export function newGamePlus(track: Track) {
   keep.gold.forEach(([id, c]) => (S.cards[id] = c));
 }
 
-/** Profilo dal punteggio delle 4 domande sul rischio (0-8). */
+/** Profilo dichiarato dal punteggio delle 3 domande sul rischio (0-6). */
 export function profileFromScore(score: number): RiskProfile {
-  return score <= 2 ? 'prudente' : score <= 5 ? 'equilibrato' : 'audace';
+  return score <= 1 ? 'prudente' : score <= 3 ? 'equilibrato' : 'audace';
 }
 
 export function allAssetIds(): string[] { return ASSETS.map((a) => a.id); }

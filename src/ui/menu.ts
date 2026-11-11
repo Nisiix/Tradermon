@@ -1,3 +1,4 @@
+import { revealedProfile } from '../systems/mirror';
 import { S, save, level, xpToNext, cardLevel, slots, exportSave, LIVE_LIMITS } from '../systems/state';
 import { choose, modal, esc, say, el, toast, bar } from './core';
 import { ASSETS, SECTOR_LABEL, SECTOR_COLOR, classesOf } from '../data/assets';
@@ -107,7 +108,7 @@ async function profile() {
     body.innerHTML = `
       <div class="grid2">
         <div><b>${esc(S.name)}</b>${S.title ? ` <span class="muted">«${esc(S.title)}»</span>` : ''} · ${({ stocks: 'Sentiero dei Titoli', etf: 'Sentiero degli Indici', crypto: 'Sentiero Cripto', mixed: 'Sentiero Misto' } as Record<string, string>)[S.track]}${S.ngPlus ? ` · Nuova Partita+ ${S.ngPlus}` : ''}<br>
-        Profilo di rischio: <b>${S.profile}</b> · Orizzonte: ${esc(S.horizon || '—')}<br>
+        Profilo dichiarato: <b>${S.profile}</b> · rivelato dalle missioni: <b>${revealedProfile() ?? '—'}</b> · Orizzonte: ${esc(S.horizon || '—')}<br>
         Livello di Conoscenza <b>${level()}</b> (${cur}/${need} XP)${bar((cur / need) * 100)}
         Fiducia ${S.stats.fiducia}/100 ${bar(S.stats.fiducia)}
         Disciplina ${S.stats.disciplina} · Pazienza ${S.stats.pazienza} · Reputazione ${S.stats.reputazione}<br>
