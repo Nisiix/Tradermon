@@ -19,7 +19,7 @@ export function presetTarget(profile: string): { risky: number; defensive: numbe
 }
 
 export function newPortfolio(initial: number, monthly: number, profile: string): Portfolio {
-  const target = profile === 'prudente' ? { risky: 40, defensive: 50, cash: 10 } : profile === 'audace' ? { risky: 80, defensive: 10, cash: 10 } : { risky: 60, defensive: 30, cash: 10 };
+  const target = presetTarget(profile);
   return {
     cash: initial, initial, contributed: initial, positions: [], orders: [], log: [], peak: initial,
     valueHistory: [initial], eggs: [], drip: true, monthly, refillsUsed: 0, target,

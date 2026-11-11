@@ -31,7 +31,7 @@ export async function openClinic(townIdx: number) {
   for (;;) {
     const opts = [
       'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Cura: ribilanciamento', 'Lezione sui bias',
-      'Uova dei dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Conto Alpaca (paper e reale)', 'Osservatorio Alpaca (sola lettura)', 'Rifai il questionario', 'Arrivederci',
+      'Uova dei dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Conto Alpaca (paper e reale)', 'Osservatorio Alpaca (sola lettura)', 'Rivedi il profilo', 'Arrivederci',
     ];
     const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Cura') && !hasTech(TECH.REBAL)));
     const c = await choose(opts, { cancel: true, title: 'CLINICA DEL PORTAFOGLIO', disabled: dis });
@@ -56,8 +56,11 @@ export async function openClinic(townIdx: number) {
       case 'Cartella clinica': await records(); break;
       case 'Conto Alpaca (paper e reale)': await openAlpacaHub(); break;
       case 'Osservatorio Alpaca (sola lettura)': await openObservatory(); break;
-      case 'Rifai il questionario': {
+      case 'Rivedi il profilo': {
         const before = S.profile;
+        const t0 = S.portfolio.target;
+        const redo = await choose(['Sì, rifacciamolo', 'No, va bene così'], { prompt: `Il tuo profilo è ${S.profile.toUpperCase()} (orizzonte: ${S.horizon || '—'}), obiettivo del conto ${t0.risky}/${t0.defensive}/${t0.cash}. Il profilo non cambia le regole del gioco: serve solo a proporti l'allocazione. Vuoi rifare il questionario?`, who: NURSE });
+        if (redo !== 0) break;
         const sc = await questionnaire();
         S.profileScore = sc;
         S.profile = profileFromScore(sc);
