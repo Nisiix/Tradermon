@@ -27,6 +27,7 @@ import { playMinigame } from '../ui/minigames';
 import { jingle } from '../systems/music';
 import { ABILITY, SWIM_BADGE, TRANSFER_BADGE } from './travel';
 import { HERMITS } from './maps';
+import { secretVisible, secretTalk, secretHint } from './secrets';
 
 export interface WorldApi {
   warp(map: string, x: number, y: number, dir?: 0 | 1 | 2 | 3): void;
@@ -59,13 +60,14 @@ export function npcVisible(n: NpcDef): boolean {
     case 'case': return !S.flags.starter;
     case 'league': return !S.defeated.includes(`league_${n.data?.i}`);
     case 'speculator': return !S.defeated.includes(n.id);
+    case 'secret': return secretVisible(n);
     default: return true;
   }
 }
 
 export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
   switch (n.kind) {
-    case 'talk': return say(n.lines ?? ['...'], n.name);
+    case 'talk': return say([...(n.lines ?? ['...']), ...secretHint(n.id)], n.name);
     case 'mom': return mom();
     case 'resident': return resident(n);
     case 'aide': return say(['Aspetta! Non puoi partire senza una Valigetta.', 'Il Professore ti aspetta al Laboratorio, l\'edificio viola.'], 'Assistente');
@@ -89,6 +91,7 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
     case 'towerop': return tower();
     case 'legend': return legend();
     case 'hermit': return hermit(n);
+    case 'secret': return secretTalk(n);
     case 'sage': return say([pick(TRAINER_TIPS), `Il tuo livello di Conoscenza è ${level()}. Continua così!`], n.name);
   }
 }

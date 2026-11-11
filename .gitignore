@@ -6,3 +6,6 @@ server/.secrets/
 .env
 .preview/
 scripts/.cr.mjs
+
+# piano degli easter egg (contiene le soluzioni): solo in locale
+docs/04-EASTER-EGG.md

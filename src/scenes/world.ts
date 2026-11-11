@@ -11,6 +11,8 @@ import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorl
 import { say, toast, getStage, el, esc, choose } from '../ui/core';
 import { pauseMenu } from '../ui/menu';
 import { canSwim, canCut, canSeeDark, boulderFlag, ABILITY } from '../world/travel';
+import { hiddenPage, findPage, isTapeShelf, tapeShelf, atHodlStone, hodlRitual } from '../world/secrets';
+import { SECRET_FLAGS, HODL_MS } from '../world/secretsData';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { beep } from '../systems/audio';
 import { addPlayTime, formatPlayTime, startPlayTimeAutosave } from '../systems/playtime';
@@ -56,6 +58,8 @@ export class WorldScene extends Phaser.Scene {
   walk?: Walk;
   lastStepEnd = -1e9;
   lastSignMap = '';
+  /** Tempo passato immobili davanti alla pietra delle Mani di Diamante (rituale segreto). */
+  idleMs = 0;
   playerShadow?: Phaser.GameObjects.Image;
   raft?: Phaser.GameObjects.Graphics;
   grassOver?: Phaser.GameObjects.Sprite;
@@ -124,7 +128,14 @@ export class WorldScene extends Phaser.Scene {
       const floor = m.tiles.some((r) => r.includes(TILE.CAVE)) ? TILE.CAVE : TILE.PATH;
       this.map = { ...m, tiles: m.tiles.map((r, yy) => r.map((t, xx) => (t === TILE.BOULDER && S.flags[boulderFlag(id, xx, yy)] ? floor : t))) };
     }
+    // passaggi segreti già aperti (lo scaffale della Sala del Nastro): il pavimento prende il posto dello scaffale
+    if (S.flags[SECRET_FLAGS.tapeOpen] && this.map.warps.some((w) => w.lock === 'secret')) {
+      const m = this.map;
+      const open = new Set(m.warps.filter((w) => w.lock === 'secret').map((w) => `${w.x},${w.y}`));
+      this.map = { ...m, tiles: m.tiles.map((r, yy) => r.map((t, xx) => (open.has(`${xx},${yy}`) ? TILE.FLOOR : t))) };
+    }
     S.map = id; S.x = x; S.y = y; S.facing = DIR_NAME[dir];
+    this.idleMs = 0;
     // l'ultima Clinica in cui sei entrato è quella in cui rinasci dopo una sconfitta
     if (/^clinic_\d+$/.test(id)) S.lastClinic = { map: id, x: 5, y: 4 };
     this.walk = undefined;
@@ -272,15 +283,26 @@ export class WorldScene extends Phaser.Scene {
     addPlayTime(now - this.lastMs);
     this.lastMs = now;
     this.updateWeather(delta);
-    if (this.walk) return void this.advanceWalk(Math.min(delta, 100));
-    if (this.busy || this.moving || uiActive()) return;
+    if (this.walk) { this.idleMs = 0; return void this.advanceWalk(Math.min(delta, 100)); }
+    if (this.busy || this.moving || uiActive()) { this.idleMs = 0; return; }
     if (this.time.now < this.turnLock) return;
     const p = takeWorldPress();
+    if (p) this.idleMs = 0;
     if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => { travelTo(id, this.api()); this.cameras.main.fadeIn(450, 255, 255, 255); }));
     if (p === 'a') return void this.interactFront();
     const dir = this.nextDir();
-    if (dir) this.tryMove(dir, this.time.now - this.lastStepEnd < MOMENTUM_MS);
+    if (dir) { this.idleMs = 0; this.tryMove(dir, this.time.now - this.lastStepEnd < MOMENTUM_MS); return; }
+    this.tickHodl(delta);
     void time;
+  }
+
+  /** Rituale delle Mani di Diamante: un minuto immobili davanti alla pietra, senza premere nulla. */
+  tickHodl(delta: number) {
+    if (!atHodlStone()) { this.idleMs = 0; return; }
+    const before = this.idleMs;
+    this.idleMs += Math.min(delta, 100);
+    if (before < HODL_MS / 2 && this.idleMs >= HODL_MS / 2) toast('Le mani di pietra sembrano scaldarsi...');
+    if (this.idleMs >= HODL_MS) { this.idleMs = 0; void this.runScript(() => hodlRitual()); }
   }
 
   /** Direzione voluta: l'ultimo tasto tenuto premuto, altrimenti un tocco breve rimasto in memoria. */
@@ -319,6 +341,7 @@ export class WorldScene extends Phaser.Scene {
     if (warp && !this.blockedNpcOnly(nx, ny)) {
       if (warp.lock === 'archive' && S.badges < 5) { void this.runScript(() => say(['La porta dell\'Archivio è chiusa.', 'Una targa dice: "Si apre solo a chi sa leggere oltre la superficie" (Mentore 5).'], 'Archivio')); return; }
       if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione della Lega.'], 'Torre')); return; }
+      if (warp.lock === 'secret' && !S.flags[SECRET_FLAGS.tapeOpen]) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'swim' && !canSwim()) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'dark' && !canSeeDark()) { void this.runScript(() => say(['È buio pesto: non si vede nemmeno dove mettere i piedi.', `Senza la ${ABILITY.dark.name} (Medaglia ${ABILITY.dark.badge}) è meglio non entrare.`])); return; }
       this.walkTo(nx, ny, di, () => {
@@ -443,6 +466,14 @@ export class WorldScene extends Phaser.Scene {
     const sign = this.map.signs.find((s) => s.x === fx && s.y === fy);
     if (sign) return void this.runScript(() => say(sign.text));
     const t = this.map.tiles[fy]?.[fx];
+    const page = hiddenPage(S.map, fx, fy);
+    if (page) return void this.runScript(() => findPage(page));
+    if (t === TILE.SHELF && isTapeShelf(S.map, fx, fy) && !S.flags[SECRET_FLAGS.tapeOpen]) {
+      return void this.runScript(async () => {
+        const opened = await tapeShelf(async (prompt) => (await choose(['Sì', 'No'], { prompt, cancel: true })) === 0);
+        if (opened) { this.cameras.main.shake(160, 0.004); this.loadMap(S.map, S.x, S.y, DIRS[S.facing][2] as 0 | 1 | 2 | 3); }
+      });
+    }
     if (t === TILE.SHELF) return void this.runScript(() => say('Scaffali pieni di libri di economia. Le lezioni si leggono parlando con la Bibliotecaria o dal menu.'));
     if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? 'Il rumore delle notizie non ti tocca più: puoi attraversare.' : ['Un muro di notizie urlate, grafici impazziti e "consigli" dai social.', 'Serve una mente fredda per attraversarlo (Mentore 7).']));
     if (t === TILE.STATION) { const st = this.npcs.find((x) => x.def.kind === 'station'); if (st) void this.runScript(() => interact(st.def, this.api())); }
