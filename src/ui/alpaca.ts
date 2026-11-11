@@ -72,10 +72,10 @@ export async function openAlpacaHub() {
         '1) Crea un account su alpaca.markets. Il conto Paper è gratuito e usa denaro finto.',
         '2) Nella dashboard Paper genera una coppia di chiavi API (Key ID e Secret).',
         ...(onSite(st)
-          ? ['3) Inseriscile qui: restano SOLO su questo dispositivo, cifrate con la password del tuo giocatore. Non vanno su Supabase, non entrano nel salvataggio e nessun server di Tradermon le riceve.',
+          ? ['3) Inseriscile qui: restano SOLO su questo dispositivo, cifrate con la password del tuo giocatore. Non vanno online, non entrano nel salvataggio e nessun server di Tradermon le riceve.',
             'Quando operi, il browser apre le chiavi e parla direttamente con Alpaca, su connessione cifrata. Su un altro dispositivo dovrai inserirle di nuovo; se cancelli i dati del sito le perdi e ne generi di nuove dalla dashboard di Alpaca.']
           : ['3) Inseriscile qui: il gioco le manda al server locale, che le salva sul tuo computer e non le rimanda mai al browser.',
-            'Le chiavi restano solo su questo computer: non vanno su Supabase e non entrano nel salvataggio. Su un altro computer dovrai inserirle di nuovo.']),
+            'Le chiavi restano solo su questo computer: non vanno online e non entrano nel salvataggio. Su un altro computer dovrai inserirle di nuovo.']),
         'Non condividere mai le chiavi con nessuno.',
       ], NURSE);
     }
@@ -126,17 +126,17 @@ const onSite = (st: A.ServerStatus | null) => !!(st?.direct || st?.cloud);
 /** Avviso prima dell'inserimento delle chiavi: dove restano, a chi vengono inviate, che cosa comporta. */
 function keysNotice(site: boolean): string {
   const game = `<p><b>${esc(PAPER_ONLY)}</b></p>`;
-  if (!site) return `<div class="small keys-notice">${game}<p>Le chiavi vengono inviate una sola volta al server locale di Tradermon in esecuzione sul tuo computer, che le verifica con Alpaca e le salva in <code>server/.secrets/keys.json</code>. Il gioco non le salva nel browser, non le manda a Supabase e non le mette nel salvataggio: su un altro computer dovrai inserirle di nuovo.</p></div>`;
+  if (!site) return `<div class="small keys-notice">${game}<p>Le chiavi vengono inviate una sola volta al server locale di Tradermon in esecuzione sul tuo computer, che le verifica con Alpaca e le salva in <code>server/.secrets/keys.json</code>. Il gioco non le salva nel browser, non le manda online e non le mette nel salvataggio: su un altro computer dovrai inserirle di nuovo.</p></div>`;
   return `
     <div class="small keys-notice">
       ${game}
-      <p><b>Dove restano le chiavi.</b> Solo su questo dispositivo, cifrate (AES-256) con la password del tuo giocatore. Non vanno su Supabase, non entrano nel salvataggio della partita e nessun server di Tradermon le riceve o le conserva.</p>
+      <p><b>Dove restano le chiavi.</b> Solo su questo dispositivo, cifrate (AES-256) con la password del tuo giocatore. Non vanno online, non entrano nel salvataggio della partita e nessun server di Tradermon le riceve o le conserva.</p>
       <p><b>A chi vengono inviate.</b> Soltanto ad Alpaca: è il tuo browser a parlare direttamente con Alpaca, su connessione cifrata, ogni volta che il gioco legge il conto Paper o invia un ordine deciso da te.</p>
       <p><b>Che cosa comporta.</b> Su un altro dispositivo o browser dovrai inserirle di nuovo. Se cancelli i dati del sito le perdi: ne generi di nuove dalla dashboard di Alpaca. Chi usa questo browser mentre il tuo giocatore è collegato può usarle: su un dispositivo condiviso esci dal giocatore quando hai finito. Puoi revocarle in ogni momento dalla dashboard di Alpaca: smettono di funzionare subito.</p>
     </div>`;
 }
 
-const RELAY_TEXT = 'Le chiavi Paper verranno inviate, a ogni richiesta e su connessione cifrata, al servizio di Tradermon su Supabase, che le usa per parlare con Alpaca e non le salva. Vale solo su questo dispositivo: puoi tornare al collegamento diretto dalla voce "Conto Paper e scollegamento".';
+const RELAY_TEXT = 'Le chiavi Paper verranno inviate, a ogni richiesta e su connessione cifrata, al servizio di Tradermon, che le usa per parlare con Alpaca e non le salva. Vale solo su questo dispositivo: puoi tornare al collegamento diretto dalla voce "Conto Paper e scollegamento".';
 
 /** Il browser non raggiunge Alpaca: chiede al giocatore se far passare il conto Paper dal servizio di Tradermon. */
 export async function offerRelay(): Promise<boolean> {
@@ -208,9 +208,9 @@ export async function restoreKeys(st: A.ServerStatus): Promise<boolean> {
   try { legacy = (await C.savedKeyEnvs()).includes('paper'); } catch { legacy = false; }
   const locked = site ? (await A.lockedKeys()).includes('paper') : false;
   if (!legacy && !locked) return false;
-  if (!(await C.vaultUnlocked()) && !(await unlockForm(site ? 'Le tue chiavi Alpaca Paper sono salvate cifrate: per usarle su questo dispositivo serve la password del giocatore.' : 'Una versione precedente del gioco ha salvato su Supabase una copia cifrata delle tue chiavi Alpaca Paper: per riportarle su questo computer serve la password del giocatore.'))) return false;
+  if (!(await C.vaultUnlocked()) && !(await unlockForm(site ? 'Le tue chiavi Alpaca Paper sono salvate cifrate: per usarle su questo dispositivo serve la password del giocatore.' : 'Una versione precedente del gioco ha salvato online una copia cifrata delle tue chiavi Alpaca Paper: per riportarle su questo computer serve la password del giocatore.'))) return false;
   if (site) {
-    try { await K.migrateFromCloud(); } catch (e) { toast(`Copia delle chiavi su Supabase non spostata: ${(e as Error).message}`); }
+    try { await K.migrateFromCloud(); } catch (e) { toast(`Copia online delle chiavi non spostata: ${(e as Error).message}`); }
     const now = await A.serverStatus();
     if (!now?.paper.configured) return false;
     toast('Chiavi Alpaca Paper aperte su questo dispositivo.');
@@ -221,7 +221,7 @@ export async function restoreKeys(st: A.ServerStatus): Promise<boolean> {
     if (!k) return false;
     await A.setKeys('paper', k.keyId, k.secret);
     await C.removeAlpacaKeys('paper');
-    toast('Chiavi Alpaca Paper riportate sul server locale e tolte da Supabase.');
+    toast('Chiavi Alpaca Paper riportate sul server locale e tolte dalla copia online.');
     return true;
   } catch (e) { toast(`Chiavi Paper non ripristinate: ${(e as Error).message}`); return false; }
 }

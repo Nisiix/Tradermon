@@ -305,7 +305,7 @@ export function isLocalHost(): boolean {
 /** Spiegazione unica quando l'intermediario verso Alpaca non è raggiungibile. */
 export function noServerLines(what: string): string[] {
   return isLocalHost()
-    ? [`Per ${what} serve il server locale di Tradermon, che ora non risponde.`, 'Avvialo con "npm start" (oppure "npm run dev"): le istruzioni sono nel file LEGGIMI e nella sezione Guida della pagina iniziale.', ...ACCOUNT_LINES]
+    ? [`Per ${what} serve il server locale di Tradermon, che ora non risponde.`, 'Avvialo come spiegato nel file README del progetto.', ...ACCOUNT_LINES]
     : [`Per ${what} serve un conto Alpaca collegato con le chiavi API. Dal sito le chiavi restano cifrate su questo dispositivo e si aprono con la password del tuo giocatore: ricarica la pagina ed entra con nome e password.`, 'La sezione Guida della pagina iniziale spiega passo per passo come creare il conto e collegare le chiavi.', ...ACCOUNT_LINES];
 }
 

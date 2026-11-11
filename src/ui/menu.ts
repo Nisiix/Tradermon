@@ -177,7 +177,7 @@ async function options() {
       <label style="display:block;margin-top:6px"><input type="checkbox" class="sm"> Modalità Studio (nessun timer nei quiz, Reputazione dimezzata nei duelli)</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="ig"${Acc.ignoreAllowed() ? '' : ' disabled'}> Prove sul conto: prosegui anche se vanno male${Acc.ignoreAllowed() ? '' : ' (solo in Apprendista e Investitore)'}</label>
       <p class="small muted" style="margin:2px 0 0">Se una Prova sul conto viene annullata (vendita, stop, vendita forzata della leva, bancarotta) il risultato viene ignorato e prosegui lo stesso. Non salta la Prova: va comunque affrontata. <span class="bad">${esc(Acc.IGNORE_WARNING)}</span></p>
-      <p class="small muted">${cloudPlayer() ? `Giocatore <b>${esc(cloudPlayer()!.name)}</b>: la partita è salvata su Supabase e la ritrovi su qualsiasi dispositivo entrando con nome e password. Le chiavi Alpaca non sono mai nel salvataggio: restano solo su questo dispositivo, cifrate con la tua password.` : 'Nessun giocatore collegato: il salvataggio resta solo in questo browser.'} Puoi sempre esportarne una copia come file.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
+      <p class="small muted">${cloudPlayer() ? `Giocatore <b>${esc(cloudPlayer()!.name)}</b>: la partita è salvata online e la ritrovi su qualsiasi dispositivo entrando con nome e password. Le chiavi Alpaca non sono mai nel salvataggio: restano solo su questo dispositivo, cifrate con la tua password.` : 'Nessun giocatore collegato: il salvataggio resta solo in questo browser.'} Puoi sempre esportarne una copia come file.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
     const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
     q<HTMLSelectElement>('.ts').value = String(S.options.textSpeed);
     q<HTMLSelectElement>('.fs').value = String(S.options.fontScale);
@@ -219,8 +219,8 @@ async function leavePlayer() {
   save();
   const sent = await flush();
   const ask = sent
-    ? 'Uscire dal giocatore su questo dispositivo? La partita resta su Supabase: per riprenderla basta rientrare con nome e password.'
-    : 'Supabase non è raggiungibile e gli ultimi progressi non sono ancora stati inviati: uscendo adesso li perderesti. Uscire lo stesso?';
+    ? 'Uscire dal giocatore su questo dispositivo? La partita resta salvata online: per riprenderla basta rientrare con nome e password.'
+    : 'Il servizio dei salvataggi non è raggiungibile e gli ultimi progressi non sono ancora stati inviati: uscendo adesso li perderesti. Uscire lo stesso?';
   const c = await choose(['Esci', 'Resta'], { prompt: ask, cancel: true });
   if (c !== 0) return;
   await logout();

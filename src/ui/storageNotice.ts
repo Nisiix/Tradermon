@@ -12,7 +12,7 @@ function installedApp(): boolean {
 }
 export function safariAtRisk(): boolean { return isSafari() && !installedApp(); }
 
-export const SAFARI_TEXT = 'Stai usando <b>Safari</b>: se non apri Tradermon per circa <b>7 giorni</b>, Safari può cancellare i dati del sito su questo dispositivo. La tua partita è al sicuro su Supabase: dovrai solo rientrare con <b>nome giocatore e password</b> (la password serve anche a sbloccare le chiavi Alpaca). Si perderebbero solo i progressi non ancora inviati perché eri senza rete.';
+export const SAFARI_TEXT = 'Stai usando <b>Safari</b>: se non apri Tradermon per circa <b>7 giorni</b>, Safari può cancellare i dati del sito su questo dispositivo. La tua partita è al sicuro online: dovrai solo rientrare con <b>nome giocatore e password</b> (la password serve anche a sbloccare le chiavi Alpaca). Si perderebbero solo i progressi non ancora inviati perché eri senza rete.';
 
 const SEEN = 'tradermon.safariNoticeSeen';
 /** Mostra l'avviso una sola volta per browser, solo su Safari. */
