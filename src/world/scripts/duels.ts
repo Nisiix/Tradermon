@@ -26,8 +26,10 @@ import { reward, routeStage, afterDuel, defeatRespawn, lockRetry, clearRetry, re
 import type { WorldApi } from './common';
 import { credits } from './places';
 import * as Acc from '../../systems/account';
-import { requireAccount, nextSealLine } from '../../ui/broker';
+import { requireAccount, nextSealLine, chooseDifficulty, applyDifficulty } from '../../ui/broker';
+import { leagueTrial, runTrial, type Trial } from '../../systems/trials';
 import { bossMenu } from '../../ui/boss';
+import { trade } from '../../ui/clinic';
 import { STAGE_TOOL } from '../../systems/balance';
 import { tick } from '../../systems/account';
 
@@ -131,7 +133,7 @@ export async function mentorBattle(m: number, w: WorldApi) {
   }
   if (S.badges < m - 1) return say(['Sei arrivato qui troppo presto!', `Prima ti serve l'Attestato del Mentore ${S.badges + 1}.`], md.name);
   if (!allStudentsBeaten(m)) return say(['Benvenuto nella mia Accademia.', 'Prima di sfidarmi devi battere tutti i miei allievi.'], md.name);
-  await say([md.intro, 'La Medaglia ha due metà. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada. Il Sigillo pratico si guadagna dopo: una missione su un periodo vero di mercato e un esercizio sul tuo conto.'], md.name);
+  await say([md.intro, 'La Medaglia ha due metà. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada. Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco.'], md.name);
   const unread = mentorBooks(m, S.track, S.mixedClasses).filter((b) => !S.booksRead.includes(b.id)).length;
   if (unread) await say([`Un consiglio da Mentore: nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, 'Le domande del duello vengono da lì.'], md.name);
   // dopo una sconfitta si torna solo dopo aver studiato: un libro della sezione o un ripasso in Biblioteca
@@ -148,39 +150,52 @@ export async function mentorBattle(m: number, w: WorldApi) {
   S.flags[`m${m}_p1`] = true;
   S.flags[`m${m}_perfect`] = r.perfect;
   await winBadge(m, w);
-  const go = await choose(['Proviamo subito la missione', 'Più tardi'], { prompt: 'Ottimo duello! Vuoi tentare ora la parte pratica per il Sigillo?', who: md.name });
+  const go = await choose(['Vediamo la Prova sul conto', 'Più tardi'], { prompt: 'Ottimo duello! Vuoi vedere adesso la parte pratica per il Sigillo?', who: md.name });
   if (go === 0) await sealChallenge(m, w);
 }
 
-/** Parte pratica della Medaglia: missione su un periodo reale, più l'esercizio di tappa sul conto. */
+/**
+ * Parte pratica della Medaglia: la Prova sul conto, cioè l'esercizio di tappa fatto con ordini veri sul mercato di oggi.
+ * I replay della Macchina del Tempo restano come allenamento facoltativo: non servono per il Sigillo.
+ */
 async function sealChallenge(m: number, w: WorldApi) {
   const md = mentor(m, S.track);
   if (S.flags.bankrupt) return say(['Dopo la bancarotta la parte pratica di questa partita è chiusa.', 'Il tuo Attestato resta valido, e la strada è aperta.'], md.name);
-  if (S.seals < m - 1) return say([`I Sigilli si prendono in ordine: prima ti serve il Sigillo ${S.seals + 1}.`, nextSealLine()], md.name);
-  if (!S.flags[`m${m}_mission`]) {
-    const mission = mentorMission(m, S.track, S.profile);
-    if (mission.kind === 'sim' && !(await requireAccount('la missione sui dati reali', md.name))) return;
-    await say(['La missione pratica: un periodo vero di mercato, con i nomi dei titoli nascosti. Si giudica il metodo.'], md.name);
-    const res = await runMission(mission);
-    if (!res) return say('Missione interrotta. Torna quando vuoi.', md.name);
-    if (!res.ok) return say(['La missione non è riuscita: ' + res.detail, 'Riprova quando vuoi: l\'Attestato resta tuo.'], md.name);
-    track('mission');
-    S.flags[`m${m}_mission`] = true;
-    save();
+  for (;;) {
+    const got = Acc.grantSeals();
+    if (got.includes(m)) {
+      beep('badge'); jingle('badge');
+      await say([`Prova sul conto superata: ecco il Sigillo pratico. La ${md.badge} adesso è completa!`, m === 8 ? 'Con tutti e otto i Sigilli la Guardia della Lega ti lascerà passare.' : `Sigilli pratici: ${S.seals}/8.`], md.name);
+      w.refresh(); save();
+      return;
+    }
+    if (S.seals >= m) return;
+    const ex = Acc.exercise();
+    const lines = S.seals < m - 1 || ex.stage < m
+      ? [`I Sigilli si prendono in ordine: prima ti serve ${ex.stage === 0 ? 'l\'esercizio della Valigetta' : `la Prova sul conto della tappa ${ex.stage}`}.`, nextSealLine()]
+      : [
+        `Prova sul conto, tappa ${m}: ${STAGE_TOOL[m].text}`,
+        `In tutto servono ${Acc.exNeed(m).toFixed(0)} $ di acquisti sul tuo conto (finora ${ex.got.toFixed(0)} $). È il minimo: se vuoi investire di più, sei libero di farlo.`,
+        'Sono ordini veri sul mercato di oggi: nessuno ti chiede un rendimento, si guarda il metodo. A mercato chiuso l\'ordine vale quando Alpaca lo accetta e si esegue all\'apertura.',
+      ];
+    const c = await choose(['Opero adesso', 'Allenamento nella Macchina del Tempo', 'Più tardi'], { cancel: true, prompt: lines.join(' '), who: md.name });
+    if (c === 1) { await training(m); continue; }
+    if (c !== 0) return say('Si fa anche da qualsiasi Clinica: il Sigillo arriva da solo, non serve tornare qui.', md.name);
+    if (!(await trade())) return;
   }
-  const got = Acc.grantSeals();
-  if (got.includes(m)) {
-    beep('badge'); jingle('badge');
-    await say([`Missione superata ed esercizio fatto: ecco il Sigillo pratico. La ${md.badge} adesso è completa!`, m === 8 ? 'Con tutti e otto i Sigilli la Guardia della Lega ti lascerà passare.' : `Sigilli pratici: ${S.seals}/8.`], md.name);
-    w.refresh(); save();
-    return;
-  }
-  const ex = Acc.exercise();
-  await say([
-    'Missione superata. Per il Sigillo manca l\'esercizio sul tuo conto vero.',
-    `Tappa ${m}: ${STAGE_TOOL[m].text} In tutto servono ${Acc.exNeed(m).toFixed(0)} $ di acquisti accettati da Alpaca (finora ${ex.got.toFixed(0)} $).`,
-    'Si fa in qualsiasi Clinica, anche a mercato chiuso: l\'ordine vale quando Alpaca lo accetta. Il Sigillo arriva da solo, non serve tornare qui.',
-  ], md.name);
+}
+
+/** Allenamento facoltativo: la missione del Mentore su un periodo vero del passato, con i nomi dei titoli nascosti. */
+async function training(m: number) {
+  const md = mentor(m, S.track);
+  const mission = mentorMission(m, S.track, S.profile);
+  if (mission.kind === 'sim' && !(await requireAccount('i dati reali della Macchina del Tempo', md.name))) return;
+  await say(['Un allenamento: un periodo vero del passato, con i nomi dei titoli nascosti. Si giudica il metodo.', 'Non serve per il Sigillo e non tocca il tuo conto: è una palestra.'], md.name);
+  const res = await runMission(mission);
+  if (!res) return say('Allenamento interrotto. Torna quando vuoi.', md.name);
+  if (!res.ok) return say(['Stavolta non è riuscito: ' + res.detail, 'Nessun problema: la palestra serve a sbagliare senza conseguenze.'], md.name);
+  if (!S.flags[`m${m}_mission`]) { track('mission'); reward({ flag: `m${m}_mission`, xp: REWARD.xp.badge / 4 }); }
+  await say('Allenamento riuscito. Adesso lo stesso metodo, sul mercato di oggi.', md.name);
 }
 
 /** Periodo reale di riserva per le prove che chiedono di reggere un calo; per le altre vale un anno tranquillo. */
@@ -211,7 +226,7 @@ async function runMission(m: Mission): Promise<{ ok: boolean; detail: string } |
   return { ok: r.ok, detail: r.detail };
 }
 
-/** Attestato del Mentore: apre il mondo (guardie, Tecnica, carte, abilità) e libera la rata della tappa. */
+/** Attestato del Mentore: apre il mondo (guardie, Tecnica, carte, abilità) e la Prova sul conto della tappa. */
 async function winBadge(m: number, w: WorldApi) {
   const md = mentor(m, S.track);
   S.badges = m;
@@ -232,7 +247,7 @@ async function winBadge(m: number, w: WorldApi) {
   jingle('badge');
   track('badge');
   await say([md.win, mentorCharacterLine(), `Hai ottenuto l'Attestato della ${md.badge}!`, `Nuova Tecnica: ${md.technique}. ${md.techDesc}`, `Slot di portafoglio: ${slots()}.`, newCards.length ? `Nuove Asset Card: ${newCards.map((a) => a.name).join(', ')}.` : '',
-    S.ngPlus > 0 || S.flags.bankrupt ? '' : `L'Accademia libera una nuova rata del tuo capitale: ${(S.portfolio.initial * 0.1).toFixed(0)} $. ${STAGE_TOOL[m].text}`].filter(Boolean), md.name);
+    S.flags.bankrupt ? '' : `Si apre la Prova sul conto della tappa ${m}, quella che vale il Sigillo. ${STAGE_TOOL[m].text} Il minimo in tutto è ${Acc.exNeed(m).toFixed(0)} $ di acquisti: sopra il minimo decidi tu.`].filter(Boolean), md.name);
   const extra: string[] = [];
   if (m === 1) extra.push('Ora puoi sostenere l\'Esame di Abilitazione per il conto reale, dal menu (voce "Chiavi API"). È facoltativo e fuori dalla storia.');
   if (m === 2) extra.push('Con l\'abbonamento al treno puoi viaggiare tra le città visitate dalle stazioni.');
@@ -249,7 +264,7 @@ async function winBadge(m: number, w: WorldApi) {
 
 export async function guard(n: NpcDef, w: WorldApi) {
   const b = n.data?.badge as number;
-  if (n.data?.league) await say(['Alt! Nella Lega entra solo chi ha completato tutte e otto le Medaglie: Attestato e Sigillo pratico.', `Hai ${S.seals} Sigilli su 8. ${nextSealLine()}`, 'Nella Lega le prove sono su periodi veri di mercato: per questo serve aver fatto pratica sul conto.'], n.name);
+  if (n.data?.league) await say(['Alt! Nella Lega entra solo chi ha completato tutte e otto le Medaglie: Attestato e Sigillo pratico.', `Hai ${S.seals} Sigilli su 8. ${nextSealLine()}`, 'Nella Lega i Superiori guardano il tuo conto com\'è, sul mercato di oggi: per questo serve aver fatto pratica con ordini veri.'], n.name);
   else await say([`Alt! Per proseguire serve l'Attestato della ${mentor(b, S.track).badge}.`, `Lo consegna il Mentore dell'Accademia di ${TOWNS[b].name}, a chi vince il suo duello.`], n.name);
   w.bumpBack();
 }
@@ -310,6 +325,27 @@ export async function linkDuel() {
   await say([`Risultato del duello ${code}: ${q.correct}/5 risposte, Sharpe ${r ? r.sharpe.toFixed(2) : '—'}, drawdown ${r ? (r.mdd * 100).toFixed(1) : '—'}%.`, `Punteggio: ${score}. Confrontalo con quello del tuo amico!`], 'Operatrice');
 }
 
+/**
+ * Prova pratica sul conto di gioco: il Superiore guarda il conto com'è adesso, sul mercato di oggi.
+ * Chi non la supera opera (ordini veri sul conto Paper) e chiede una nuova verifica, senza rifare il duello.
+ */
+async function accountTrial(t: Trial, who: string): Promise<boolean> {
+  if (!(await requireAccount('la prova pratica della Lega', who))) return false;
+  await say([`${t.title}. ${t.brief}`, 'Guardo il tuo conto di gioco com\'è adesso, sul mercato di oggi. Non ti chiedo un rendimento: quello non lo controlla nessuno. Ti chiedo metodo.'], who);
+  for (;;) {
+    await Acc.sync(true).catch(() => []);
+    const r = runTrial(t);
+    const lines = r.checks.map((c) => `${c.ok ? '✓' : '✗'} ${c.label} (ora: ${c.now})`);
+    if (r.ok) { await say(['Controllo il conto…', ...lines, 'Tutto in ordine.'], who); return true; }
+    if (r.waiting) lines.push(`Hai ${r.waiting === 1 ? 'un acquisto' : `${r.waiting} acquisti`} in coda: per questa prova contano gli ordini eseguiti. A mercato chiuso torna dopo l'apertura.`);
+    const c = await choose(['Opero adesso', 'Controlla di nuovo', 'Torno più tardi'], { cancel: true, prompt: lines.join(' · '), who });
+    if (c === 0) { await trade(); continue; }
+    if (c === 1) continue;
+    await say('Il duello l\'hai già vinto: quando torni ripeterai solo questa verifica.', who);
+    return false;
+  }
+}
+
 export async function league(i: number, w: WorldApi) {
   const L = LEAGUE[i];
   if (i > 0 && !S.defeated.includes(`league_${i - 1}`)) return say('Devi prima superare il Superiore precedente.', L.name);
@@ -325,16 +361,18 @@ export async function league(i: number, w: WorldApi) {
     clearRetry(`league_${i}`);
     S.flags[`league_${i}_p1`] = true;
   }
-  const lm = leagueMission(i);
-  if (lm.kind === 'sim' && !(await requireAccount('la prova pratica della Lega', L.name))) return;
-  const res = await runMission(lm);
-  if (!res || !res.ok) return say(['La prova pratica non è riuscita.' + (res ? ' ' + res.detail : ''), 'Riprova quando vuoi: ripeterai solo la prova pratica.'], L.name);
+  const trial = leagueTrial(i);
+  if (!trial) {
+    // Regole: lo sportello delle offerte, che non passa dal conto
+    const res = await runMission(leagueMission(i));
+    if (!res || !res.ok) return say(['La prova pratica non è riuscita.' + (res ? ' ' + res.detail : ''), 'Riprova quando vuoi: ripeterai solo la prova pratica.'], L.name);
+  } else if (!(await accountTrial(trial, L.name))) return;
   reward({ defeated: `league_${i}`, rep: REWARD.rep.league, save: false });
   beep('win');
   await say(i === 4 ? ['Incredibile. Hai battuto il Campione!', `${S.name}, da oggi sei il nuovo Campione della Lega degli Investitori!`] : ['Hai superato la mia prova. Prosegui!'], L.name);
   if (i === 4) {
     S.flags.champion = true;
-    await say(['Congratulazioni, Campione!', 'Il titolo non ti rende infallibile: i mercati cambiano, e chi smette di imparare torna principiante.', 'L\'Accademia libera l\'ultima rata: da oggi tutto il capitale del conto di gioco è tuo, e in Clinica puoi anche aumentarlo.', 'Alla Torre delle Sfide ti aspettano le crisi leggendarie, i piani infiniti e i tre Boss dei Mercati, che si battono sui grafici veri.', 'E se vuoi, puoi iniziare una Nuova Partita+ in un altro percorso, conservando avatar, record e carte dorate.'], 'Prof. Saldi');
+    await say(['Congratulazioni, Campione!', 'Il titolo non ti rende infallibile: i mercati cambiano, e chi smette di imparare torna principiante.', 'Da oggi in Clinica puoi anche aumentare il capitale del conto di gioco: è il privilegio dei Campioni.', 'Alla Torre delle Sfide ti aspettano le crisi leggendarie, i piani infiniti e i tre Boss dei Mercati, che si battono sui grafici veri.', 'E se vuoi, puoi iniziare una Nuova Partita+: riparte tutto da zero tranne i tuoi trofei, e si sblocca la difficoltà Leggenda.'], 'Prof. Saldi');
     const mirror = mirrorEpilogue();
     await say(mirror ? [...epilogue(), mirror] : epilogue(), 'Epilogo');
     await credits();
@@ -344,7 +382,7 @@ export async function league(i: number, w: WorldApi) {
 }
 
 export async function tower() {
-  const opts = ['Torre delle Sfide (piani infiniti)', ...LEGENDS.map((l) => `Crisi leggendaria: ${l.title}${S.legends.includes(l.id) ? ' ✓' : ''}`), `Boss dei Mercati${Acc.graduated() ? '' : ' (dopo la Lega)'}`, 'Nuova Partita+', 'Esci'];
+  const opts = ['Torre delle Sfide (piani infiniti)', ...LEGENDS.map((l) => `Crisi leggendaria: ${l.title}${S.legends.includes(l.id) ? ' ✓' : ''}`), `Boss dei Mercati${Acc.graduated() ? '' : ' (dopo la Lega)'}`, `Nuova Partita+${Acc.graduated() ? '' : ' (dopo la Lega)'}`, 'Esci'];
   const c = await choose(opts, { cancel: true, prompt: `Record personale: piano ${S.tower.best}.`, who: 'Custode della Torre' });
   if (c < 0 || c === opts.length - 1) return;
   if (c === 0) {
@@ -378,13 +416,20 @@ export async function tower() {
     if (!Acc.graduated()) return say(['I Boss dei Mercati sfidano solo i Campioni della Lega.', 'Si battono con un quiz e poi con una sola decisione su un grafico vero, che può durare ore o settimane.'], 'Custode della Torre');
     return bossMenu();
   }
-  if (opts[c] === 'Nuova Partita+') {
+  if (opts[c].startsWith('Nuova Partita+')) {
+    if (!Acc.graduated()) return say(['La Nuova Partita+ è per chi ha vinto la Lega.', 'Ricomincia tutto da zero tranne i trofei, e sblocca la difficoltà Leggenda.'], 'Custode della Torre');
     // il percorso (anche il Sentiero Misto) si sceglie di nuovo dal Professore, come nella prima partita
-    const t = await choose(['Sì, ricomincio', 'Annulla'], { cancel: true, prompt: 'Ricomincerai lo studio dall\'inizio scegliendo un percorso dal Professore (anche il Sentiero Misto). Conservi avatar, record, carte dorate e il conto di gioco, che è reale e ti segue. Sicuro?' });
+    await say([
+      'La Nuova Partita+ riparte da zero: conto di gioco con capitale nuovo, Attestati, Sigilli, Prove sul conto, Esame della Leva. Anche la Torre e i Boss tornano chiusi fino alla prossima Lega.',
+      'Restano con te solo i trofei: record della Torre, crisi leggendarie, Boss battuti, carte dorate, traguardi, titolo e arredi. E resta il tuo Diario.',
+      'In cambio si sblocca la difficoltà più alta, Leggenda, e i Mentori faranno domande più difficili.',
+      'Una cosa pratica: i titoli che hai adesso restano nel tuo conto Alpaca Paper, ma escono dal registro del gioco. Se vuoi ripartire pulito, vendili prima da una Clinica.',
+    ], 'Custode della Torre');
+    const t = await choose(['Sì, ricomincio da zero', 'Annulla'], { cancel: true, prompt: 'Sicuro? Non si torna indietro.', who: 'Custode della Torre' });
     if (t !== 0) return;
     newGamePlus(S.track);
-    await say(['Nuova Partita+: i Mentori faranno domande più difficili e una domanda su due avrà numeri nuovi.', 'Le carte dorate, i record della Torre e le Leggende restano con te. Il Professore ti aspetta per la nuova Valigetta.'], 'Custode della Torre');
-    S.flags.starter = false;
+    applyDifficulty(await chooseDifficulty('Custode della Torre'));
+    await say(['Fatto. Il Professore ti aspetta al Laboratorio per la nuova Valigetta.'], 'Custode della Torre');
     save();
     location.reload();
   }

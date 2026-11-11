@@ -1,4 +1,5 @@
 import * as A from '../systems/alpaca';
+import * as Acc from '../systems/account';
 import { S, save, LIVE_LIMITS, hasTech, TECH, classes } from '../systems/state';
 import { say, choose, modal, el, esc, toast, confirm } from './core';
 import { runExam } from './setup';
@@ -255,7 +256,9 @@ async function accountScreen(env: A.Env) {
       body.innerHTML = '<p>Caricamento...</p>';
       try {
         const [acc, pos, ord, clk] = await Promise.all([A.account(env), A.positions(env), A.openOrders(env), A.clock(env).catch(() => null)]);
+        const lv = env === 'live' ? Acc.liveCheck(Number(acc.equity ?? acc.portfolio_value)) : null;
         body.innerHTML = `
+          ${lv ? liveBustHtml(lv) : ''}
           ${env === 'live' ? '<p class="bad"><b>Denaro reale.</b> Nessuna XP o ricompensa di gioco da queste operazioni.</p>' : '<p class="small muted">Conto Paper di Alpaca, intero: denaro finto, prezzi reali. Il <b>conto di gioco</b> è una parte di questo conto: lo trovi nel Check-up della Clinica, e si opera solo da lì (voce «Compra / Vendi»), così ogni ordine entra nel registro delle tappe. Qui si guarda soltanto.</p>'}
           <p><b>Valore:</b> ${Number(acc.portfolio_value).toFixed(2)} ${acc.currency} · <b>Liquidità:</b> ${Number(acc.cash).toFixed(2)} · <b>Stato:</b> ${esc(acc.status)} · ${clk ? (clk.is_open ? '<span class="good">Mercato aperto</span>' : 'Mercato chiuso') : ''}</p>
           ${pos.length ? `<table class="t"><tr><th>Simbolo</th><th class="n">Quantità</th><th class="n">Prezzo medio</th><th class="n">Valore</th><th class="n">P&amp;L</th></tr>${pos.map((p) => `<tr><td>${esc(p.symbol)}</td><td class="n">${p.qty}</td><td class="n">${Number(p.avg_entry_price).toFixed(2)}</td><td class="n">${Number(p.market_value).toFixed(2)}</td><td class="n ${Number(p.unrealized_pl) >= 0 ? 'good' : 'bad'}">${(Number(p.unrealized_plpc) * 100).toFixed(2)}%</td></tr>`).join('')}</table>` : '<p class="muted">Nessuna posizione.</p>'}
@@ -263,14 +266,14 @@ async function accountScreen(env: A.Env) {
           ${env === 'live' ? `          <h4>Nuovo ordine</h4>
           <div class="grid2">
             <label>Simbolo (es. ${classes().includes('crypto') ? 'BTC/USD' : 'un ticker USA'})<span class="row"><input class="tx sym" spellcheck="false" style="flex:1"><button class="btn chart" title="Grafico a candele prima di decidere">Grafico</button></span></label>
-            <label>Lato<select class="tx side"><option value="buy">Acquisto</option><option value="sell">Vendita</option></select></label>
+            <label>Lato<select class="tx side">${lv && lv.state !== 'ok' ? '' : '<option value="buy">Acquisto</option>'}<option value="sell">Vendita</option></select></label>
             <label>Tipo<select class="tx typ"><option value="market">A mercato</option>${hasTech(TECH.LIMIT) ? '<option value="limit">Limite</option>' : ''}${hasTech(TECH.STOP) ? '<option value="stop">Stop</option>' : ''}</select></label>
-            <label>Importo ($)<input class="tx amt" type="number" min="1" step="1" value="10"></label>
+            <label>Importo ($) <span class="small muted">anche frazioni di titolo</span><input class="tx amt" type="number" min="1" step="any" value="10"></label>
             <label>Prezzo limite/stop<input class="tx pr" type="number" step="any"></label>
           </div>
           <p class="small muted">Il gioco non suggerisce titoli: la scelta è solo tua. Classi consentite dal tuo percorso: ${classes().map((c) => (c === 'crypto' ? 'cripto' : c === 'etf' ? 'ETF (us_equity)' : 'azioni (us_equity)')).join(', ')}.</p>` : ''}
           <p class="msg"></p>`;
-        (body.querySelector('.chart') as HTMLButtonElement).addEventListener('click', () => {
+        (body.querySelector('.chart') as HTMLButtonElement | null)?.addEventListener('click', () => {
           const sym = (body.querySelector('.sym') as HTMLInputElement).value.trim().toUpperCase();
           if (!sym) { toast('Scrivi prima il simbolo.'); return; }
           const p = pos.find((x) => x.symbol === sym);
@@ -320,6 +323,11 @@ function button2(body: HTMLElement, env: A.Env, reload: () => Promise<void>) {
         const perOrder = Math.min(S.liveLimits.perOrder, isCrypto ? L.cOrder : L.order);
         const perMonth = Math.min(S.liveLimits.perMonth, isCrypto ? L.cMonth : L.month);
         if (S.liveLimits.monthKey !== monthKey()) { S.liveLimits.monthKey = monthKey(); S.liveLimits.spentThisMonth = 0; }
+        if (side === 'buy') {
+          const now = await A.account('live');
+          const lv = Acc.liveCheck(Number(now.equity ?? now.portfolio_value));
+          if (lv.state !== 'ok') { void reload(); throw new Error(lv.state === 'closed' ? 'Dopo la bancarotta del conto reale il gioco non invia più acquisti con denaro vero.' : `Dopo la bancarotta del conto reale gli acquisti dal gioco sono fermi fino al ${new Date(lv.until).toLocaleDateString('it-IT')}.`); }
+        }
         if (side === 'buy' && amt > perOrder) throw new Error(`Supera il tuo limite per ordine (${perOrder} $).`);
         if (side === 'buy' && S.liveLimits.spentThisMonth + amt > perMonth) throw new Error(`Supera il tuo limite mensile (${perMonth} $, già usati ${S.liveLimits.spentThisMonth.toFixed(2)} $).`);
         if (side === 'buy' && !isCrypto && S.levExam) {
@@ -330,14 +338,16 @@ function button2(body: HTMLElement, env: A.Env, reload: () => Promise<void>) {
         confirmWord = await typedConfirm(`${useMargin ? 'CON MARGINE (denaro in prestito da Alpaca). ' : ''}${side === 'buy' ? 'ACQUISTO' : 'VENDITA'} ${type === 'market' ? 'a mercato' : type === 'limit' ? `limite a ${pr}` : `stop a ${pr}`} di ${sym} per circa ${amt.toFixed(2)} $. Costi: eventuale spread${isCrypto ? ' e commissione cripto di Alpaca' : ''}. Limiti: ${perOrder} $ per ordine, ${perMonth} $ al mese.`);
         if (!confirmWord) { msg.textContent = 'Ordine annullato.'; return; }
       }
-      const fractional = type === 'market' && info.fractionable !== false;
+      // ordini frazionati: a mercato per importo; limite e stop per quantità con i decimali, se il titolo lo permette
+      // (su azioni ed ETF Alpaca li accetta solo validi per la giornata). Altrimenti quote intere.
+      const frac = isCrypto || info.fractionable !== false;
       const order: A.OrderReq = { symbol: sym, side, type, time_in_force: isCrypto ? 'gtc' : 'day', client_order_id: `tm-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
-      if (fractional) order.notional = amt.toFixed(2);
+      if (type === 'market' && frac) order.notional = amt.toFixed(2);
       else {
         const ref = pr || (await A.latest(sym, isCrypto ? 'crypto' : 'stocks')).price;
-        const q = isCrypto ? amt / ref : Math.floor(amt / ref);
-        if (q <= 0) throw new Error('Importo troppo basso per una quota intera con questo tipo di ordine.');
-        order.qty = isCrypto ? q.toFixed(6) : String(q);
+        const q = liveQty(amt, ref, frac);
+        if (!(q > 0)) throw new Error(frac ? 'Importo troppo basso per questo ordine.' : 'Questo titolo si compra solo a quote intere: l\'importo non basta per una quota.');
+        order.qty = frac ? q.toFixed(6) : String(q);
       }
       if (type === 'limit') order.limit_price = String(pr);
       if (type === 'stop') {
@@ -371,4 +381,18 @@ function typedConfirm(summary: string): Promise<string | undefined> {
     button('Invia', send, 'danger');
     button('Annulla', () => close(undefined));
   }, { serious: true, closable: false });
+}
+
+/** Quantità per un ordine dal conto reale: frazionata fino a sei decimali se il titolo lo permette, altrimenti intera. */
+export function liveQty(amount: number, price: number, fractionable: boolean): number {
+  if (!(amount > 0) || !(price > 0)) return 0;
+  return fractionable ? Math.floor((amount / price) * 1e6) / 1e6 : Math.floor(amount / price);
+}
+
+function liveBustHtml(lv: Acc.LiveState): string {
+  const money = (x: number) => `${x.toFixed(2)} $`;
+  if (lv.state === 'ok') return lv.base > 0 ? `<p class="small muted">Patrimonio di riferimento ${money(lv.base)} (quello che il conto aveva quando il gioco l'ha visto la prima volta) · soglia di bancarotta ${money(lv.floor)}. Sotto la soglia il gioco smette di inviare acquisti.</p>` : '';
+  const lesson = lv.fresh ? '<p>Hai perso più del 60% di quello che avevi su questo conto. Fermati: prima di qualsiasi altra operazione rileggi nel Diario come ci sei arrivato. Rincorrere le perdite con altro denaro è l\'errore che le raddoppia.</p>' : '';
+  if (lv.state === 'closed') return `<p class="bad"><b>BANCAROTTA SUL CONTO REALE.</b> Da questa partita il gioco non invia più acquisti con denaro vero.</p>${lesson}<p class="small">Vendere da qui e prelevare dal sito di Alpaca resta sempre possibile. Il gioco non tocca il tuo denaro.</p>`;
+  return `<p class="bad"><b>BANCAROTTA SUL CONTO REALE.</b> Gli acquisti dal gioco sono fermi fino al ${new Date(lv.until).toLocaleDateString('it-IT')}.</p>${lesson}<p class="small">Vendere da qui e prelevare dal sito di Alpaca resta sempre possibile. Alla fine della pausa il gioco riparte dal patrimonio che troverà.${lv.busts <= 1 ? ' Solo questa prima volta, se proprio vuoi ricaricare il conto, la regola del gioco è: non più della metà del patrimonio di riferimento, e dal sito di Alpaca. Il gioco non sposta denaro e non te lo chiederà mai.' : ' Stavolta nessuna ricarica: la regola del gioco la concede una volta sola.'}</p>`;
 }

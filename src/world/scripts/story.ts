@@ -35,6 +35,7 @@ export async function prof(w: WorldApi) {
   if (!S.flags.starter) {
     if (!S.flags.profIntro) {
       await say(['Eccoti! Benvenuto nel mio Laboratorio.', 'A Capitalia si studia. I titoli veri si comprano fuori dalla regione, sui Mercati di Fuori: le borse del mondo reale, con prezzi veri e orari veri.', 'Su quel tavolo ci sono tre Valigette. Ognuna apre un percorso e contiene la scheda del tuo primo titolo vero, scelto da te in una piccola vetrina.', 'Blu: il Sentiero dei Titoli, le azioni delle aziende.', 'Verde: il Sentiero degli Indici, gli ETF.', 'Arancione: il Sentiero Cripto, la frontiera più rischiosa.', 'Avvicinati a una Valigetta per leggere la scheda. Oppure parla con me se vuoi un percorso misto.'], 'Prof. Saldi');
+      await say(['Prima che tu scelga, la regola che regge tutto il viaggio.', 'In ogni città c\'è un Mentore, e la sua Medaglia ha due metà. L\'ATTESTATO si vince con un duello di conoscenza: basta quello per proseguire verso la città successiva.', 'Il SIGILLO pratico si guadagna con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che il Mentore ti ha appena insegnato.', 'Puoi viaggiare con i soli Attestati, ma nella Lega degli Investitori entra solo chi ha tutti e otto i Sigilli. Studiare apre la strada; saper fare apre la Lega.'], 'Prof. Saldi');
       S.flags.profIntro = true;
     }
     const c = await choose(['Guardo le Valigette', 'Vorrei il Sentiero Misto', 'Cos\'è la Licenza?'], { cancel: true, prompt: 'Allora, hai deciso?', who: 'Prof. Saldi' });
@@ -48,14 +49,14 @@ export async function prof(w: WorldApi) {
     return startTrack('mixed', w);
   }
   if (!caseOpen()) await say(['La tua Valigetta è ancora sigillata: si apre con il primo acquisto sul conto Alpaca Paper.', 'Collega il conto dal menu, voce "Chiavi API", e passa in una Clinica. Nel frattempo studia: Attestati e storia non aspettano il conto.'], 'Prof. Saldi');
-  if (S.badges >= 8 && S.defeated.includes('league_4')) return say(['Campione! Sono fiero di te.', 'Alla Torre delle Sfide trovi le crisi leggendarie. E se vuoi, dalla Torre puoi iniziare una Nuova Partita+ in un altro percorso.'], 'Prof. Saldi');
+  if (S.badges >= 8 && S.defeated.includes('league_4')) return say(['Campione! Sono fiero di te.', 'Alla Torre delle Sfide trovi le crisi leggendarie e i Boss. E se vuoi, dalla Torre puoi iniziare una Nuova Partita+: da zero, con i tuoi trofei e la difficoltà Leggenda.'], 'Prof. Saldi');
   return say([`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8 · Sigilli pratici: ${S.seals}/8.`, S.badges === 0 ? 'Il primo Mentore, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.' : 'Continua così, e ricorda di passare dalle Cliniche.', 'E non fidarti di chi ti promette guadagni garantiti!'], 'Prof. Saldi');
 }
 
 async function licenseTalk() {
   await say([
     'Ci sono due cose diverse, e conviene non confonderle.',
-    'La prima è il conto di gioco: un conto Alpaca Paper, gratuito, con denaro finto e prezzi veri. Lo colleghi con le chiavi API dal menu, voce "Chiavi API". Lì fai gli esercizi di tappa e guadagni i Sigilli pratici.',
+    'La prima è il conto di gioco: un conto Alpaca Paper, gratuito, con denaro finto e prezzi veri. Lo colleghi con le chiavi API dal menu, voce "Chiavi API". Lì fai le Prove sul conto e guadagni i Sigilli pratici.',
     'Senza quel conto puoi comunque studiare tutto: storia, biblioteche, duelli e Attestati dei Mentori. Ti mancheranno i Sigilli, la Lega e le sfide sui grafici veri.',
     'La seconda è la Licenza di Investitore, per chi vuole collegare anche un conto reale. Si ottiene con un esame, dopo il primo Attestato. È facoltativa e non fa parte della storia: nessun premio del gioco dipende dal denaro vero.',
     'Sul conto reale i prelievi si fanno sempre dal sito di Alpaca; i depositi non passano mai dal gioco.',
@@ -75,7 +76,7 @@ export async function chooseCase(n: NpcDef, w: WorldApi) {
       <table class="t"><tr><td>Rischio della classe</td><td>${'★'.repeat(info.stars)}${'☆'.repeat(5 - info.stars)}</td></tr>
       <tr><td>Volatilità tipica</td><td>${info.vol}</td></tr><tr><td>Esempio di caduta storica</td><td>${info.dd}</td></tr>
       <tr><td>Antagonisti</td><td>${antagonist(cls).team}</td></tr><tr><td>Tono della storia</td><td>${info.tone}</td></tr></table>
-      <p class="small muted">Il percorso non si cambia a metà partita: dopo la Lega potrai iniziare una Nuova Partita+ in un altro percorso.</p>`;
+      <p class="small muted">Il percorso non si cambia a metà partita: dopo la Lega potrai iniziare una Nuova Partita+ in un altro percorso, ripartendo da zero.</p>`;
     button('Scelgo questa Valigetta', () => close(true), 'primary');
     button('Ci penso ancora', () => close(false));
   });
@@ -102,15 +103,6 @@ async function startTrack(track: S_Track, w: WorldApi) {
   const first = track === 'mixed' ? S.mixedClasses[0] : (track as AssetClass);
   beep('badge');
   await say([`Hai scelto il ${TRACK_LABEL[track]}!`], 'Prof. Saldi');
-  if (S.ngPlus > 0) {
-    // Nuova Partita+: il conto è reale e ti ha seguito, con le sue posizioni
-    S.flags.starter = true;
-    card(String(S.flags.starterAsset ?? starterFor(first)));
-    unlockHeld();
-    await say(['Il tuo conto di gioco è lo stesso di prima: è un conto vero, non riparte con te.', 'Riparte lo studio: Attestati e Sigilli si guadagnano di nuovo, con domande più difficili.'], 'Prof. Saldi');
-    save(); w.refresh(); await wait(200);
-    return rivalIntro(w);
-  }
   await say(['Ah, eccola. La Dott.ssa Ratio è passata per aprirti il conto.'], 'Prof. Saldi');
   const linked = await openGameAccount();
   const starter = await chooseStarter(first);
@@ -120,7 +112,7 @@ async function startTrack(track: S_Track, w: WorldApi) {
   await say([`La scheda di ${ASSET_BY_ID[starter].name} è entrata nel tuo Investidex.`], 'Prof. Saldi');
   if (linked) {
     const D = DIFFICULTY[S.difficulty];
-    await say(['Apriamo la Valigetta con il primo acquisto, così vedi come funziona un ordine vero.', `La prima rata è di ${fmtMoney(capital() * RATE)}: puoi versarla tutta o in parte${D.tolerance > 0 ? ` (ne basta il ${Math.round((1 - D.tolerance) * 100)}%)` : ''}. Se la Borsa è chiusa l'ordine parte lo stesso e si esegue all'apertura.`], 'Dott.ssa Ratio');
+    await say(['Apriamo la Valigetta con il primo acquisto, così vedi come funziona un ordine vero.', `Il minimo per aprirla è ${fmtMoney(capital() * RATE * (1 - D.tolerance))}. Se vuoi investire di più puoi: il capitale è tutto tuo, e anche il rischio. Se la Borsa è chiusa l'ordine parte lo stesso e si esegue all'apertura.`], 'Dott.ssa Ratio');
     if (await trade(true)) { await say('Valigetta aperta: il tuo primo titolo vero è nel conto, o in coda per l\'apertura dei mercati.', 'Dott.ssa Ratio'); }
     else await say('Nessun acquisto per ora: la Valigetta resta sigillata. La apri quando vuoi, da una Clinica.', 'Dott.ssa Ratio');
   }
@@ -177,9 +169,11 @@ async function rivalDuel(k: number, w: WorldApi) {
 
 /**
  * Confronto con il rivale sugli STESSI giorni reali: quelli in cui il tuo conto è stato misurato, dal più vecchio
- * disponibile. Il rivale ha il tuo stesso capitale e la tua stessa Riserva, e investe la parte liberata secondo il
+ * disponibile. Il rivale ha il tuo stesso capitale e ne investe una parte fissa secondo il
  * suo stile. Con pochi giorni si guardano solo rendimento e calo massimo: volatilità e Sharpe non direbbero nulla.
  */
+export const RIVAL_SHARE = { audace: 0.8, prudente: 0.3 } as const;
+
 export function rivalSeries(style: string): { me: number[]; rival: number[]; days: number } | null {
   const pf = S.portfolio;
   const hist = S.market.history;
@@ -199,7 +193,8 @@ export function rivalSeries(style: string): { me: number[]; rival: number[]; day
     if (back < len) pts.push({ v, i: len - 1 - back });
   });
   if (pts.length < 5) return null;
-  const share = (style === 'audace' ? 1 : 0.25) * releasedFrac();
+  // quota investita dal rivale: fissa, secondo lo stile (il resto è liquidità)
+  const share = (style === 'audace' ? RIVAL_SHARE.audace : RIVAL_SHARE.prudente) * releasedFrac();
   const at = (i: number) => chosen.reduce((s, a) => { const h = hist[a.id].slice(-len); return s + h[i] / h[pts[0].i] / chosen.length; }, 0);
   return { me: pts.map((p) => p.v), rival: pts.map((p) => capital() * (1 - share + share * at(p.i))), days: pts.length };
 }
@@ -214,7 +209,7 @@ async function comparePortfolios() {
   const full = cmp.days >= 20;
   const row = (l: string, a: string, b: string) => `<tr><td>${l}</td><td class="n">${a}</td><td class="n">${b}</td></tr>`;
   await modal('Confronto dei portafogli', ({ body, button, close }) => {
-    body.innerHTML = `<p>Stessi ${cmp.days} giorni reali per entrambi, stesso capitale e stessa Riserva dell'Accademia. ${S.rival} ha uno stile <b>${style}</b>.</p>
+    body.innerHTML = `<p>Stessi ${cmp.days} giorni reali per entrambi, stesso capitale di partenza. ${S.rival} ha uno stile <b>${style}</b>.</p>
       <table class="t"><tr><th></th><th class="n">${esc(S.name)}</th><th class="n">${esc(S.rival)}</th></tr>
       ${row('Rendimento', (me.ret * 100).toFixed(1) + '%', (rm.ret * 100).toFixed(1) + '%')}
       ${row('Max drawdown', '−' + (me.mdd * 100).toFixed(1) + '%', '−' + (rm.mdd * 100).toFixed(1) + '%')}

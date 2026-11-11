@@ -411,7 +411,7 @@ export class WorldScene extends Phaser.Scene {
     const warp = this.map.warps.find((w) => w.x === nx && w.y === ny) ?? (this.map.tiles[ny]?.[nx] === TILE.DOOR ? undefined : undefined);
     if (warp && !this.blockedNpcOnly(nx, ny)) {
       if (warp.lock === 'archive' && S.badges < 5) { void this.runScript(() => say(['La porta dell\'Archivio è chiusa.', 'Una targa dice: "Si apre solo a chi sa leggere oltre la superficie" (Mentore 5).'], 'Archivio')); return; }
-      if (warp.lock === 'tower' && !S.flags.champion && S.ngPlus === 0) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione della Lega.'], 'Torre')); return; }
+      if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione della Lega.'], 'Torre')); return; }
       if (warp.lock === 'secret' && !S.flags[SECRET_FLAGS.tapeOpen]) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'swim' && !canSwim()) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'dark' && !canSeeDark()) { void this.runScript(() => say(['È buio pesto: non si vede nemmeno dove mettere i piedi.', `Senza la ${ABILITY.dark.name} (Attestato ${ABILITY.dark.badge}) è meglio non entrare.`])); return; }

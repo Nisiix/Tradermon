@@ -31,7 +31,7 @@ import { ABILITY, canSwim, canTransfer } from '../world/travel';
 export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) {
   for (;;) {
     const pending = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length;
-    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Giornale dei Mercati', 'Cartella dello studente', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Tappe, rate e Sigilli', 'Chiavi API', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
+    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Giornale dei Mercati', 'Cartella dello studente', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Tappe, Prove e Sigilli', 'Chiavi API', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
     const c = await choose(opts, { cancel: true, title: 'MENU' });
     if (c < 0 || c === opts.length - 1) return;
     const o = opts[c];
@@ -40,7 +40,7 @@ export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) 
     else if (o.startsWith('Agenda')) await openAgenda();
     else if (o === 'Diario') await openJournal();
     else if (o === 'Giornale dei Mercati') await openGazette();
-    else if (o === 'Tappe, rate e Sigilli') await stageScreen();
+    else if (o === 'Tappe, Prove e Sigilli') await stageScreen();
     else if (o === 'Chiavi API') await apiKeysMenu();
     else if (o === 'Cartella dello studente') await openStudentFolder();
     else if (o === 'Profilo e Licenza') await profile();

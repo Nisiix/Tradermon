@@ -226,7 +226,7 @@ export interface SaveData {
   saveId: string;
   /** Difficoltà scelta all'inizio: fissa il capitale del conto di gioco e non si cambia più. */
   difficulty: Difficulty;
-  /** Sigilli pratici ottenuti (0-8): missione su dati reali ed esercizio di tappa, in ordine. */
+  /** Sigilli pratici ottenuti (0-8): Attestato più Prova sul conto della tappa, in ordine. */
   seals: number;
   /** Esercizi di tappa completati (0-9): il prossimo da fare è quello con questo numero. */
   exDone: number;

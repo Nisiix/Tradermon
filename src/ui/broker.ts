@@ -1,5 +1,5 @@
 // Sportello del conto: collegamento ad Alpaca e chiavi API, guida, apertura del conto di gioco, difficoltà,
-// stato delle tappe (Attestati, Sigilli, rate), leva, chiamata di margine, bancarotta e "Mentre eri via".
+// stato delle tappe (Attestati, Sigilli, quote minime), leva, chiamata di margine, bancarotta e "Mentre eri via".
 import * as A from '../systems/alpaca';
 import * as Acc from '../systems/account';
 import { S, save } from '../systems/state';
@@ -26,11 +26,15 @@ export const GUIDE_LINES = [
   '1) Crea un account su alpaca.markets: per il conto Paper basta l\'email. È gratuito e usa denaro finto con prezzi veri.',
   '2) Nella dashboard, in modalità Paper, genera una coppia di chiavi API (Key ID e Secret) e inseriscile alla voce "Chiavi API" del menu.',
   '3) Le chiavi restano sul server locale di Tradermon, sul tuo computer: il gioco non le rilegge e non le mostra mai.',
-  'Il conto Paper è il conto di gioco: capitale fissato dalla difficoltà, rate di tappa, Sigilli e Lega vivono lì.',
+  'Il conto Paper è il conto di gioco: capitale fissato dalla difficoltà, Prove sul conto, Sigilli e Lega vivono lì.',
+  'La Medaglia ha due metà. L\'ATTESTATO si vince con il duello di conoscenza del Mentore e apre la strada verso la città successiva. Il SIGILLO pratico si guadagna con la Prova sul conto: ordini veri sul mercato di oggi, dal conto Paper. Per entrare nella Lega servono tutti e otto i Sigilli.',
+  'Ogni tappa chiede una quota MINIMA da investire, più alta nelle difficoltà più dure. Sopra il minimo sei libero: puoi investire tutto il capitale fin dal primo giorno. Se il patrimonio scende sotto il 40% del capitale è bancarotta, in ogni difficoltà.',
+  'Gli ordini sono anche frazionati: scegli un importo in dollari e compri la frazione di titolo corrispondente, senza dover arrivare a una quota intera.',
   'Il conto reale (Live) è facoltativo e separato dalla storia: si collega dopo il primo Attestato e l\'Esame di Abilitazione, con chiavi Live distinte. Potrebbe non essere disponibile per tutti i Paesi: lo decide Alpaca in fase di verifica.',
   'Sul conto reale i PRELIEVI si possono sempre fare, dal sito di Alpaca. I DEPOSITI non passano mai dal gioco: Tradermon non sposta denaro e non ti chiederà mai di versarne.',
+  'Anche sul conto reale esiste la bancarotta: se il patrimonio scende sotto il 40% di quello che avevi quando l\'hai collegato, il gioco ferma i nuovi acquisti dal suo sportello. Vendere e prelevare resta sempre possibile.',
   'Il conto è in dollari. Chi risiede in Italia e usa un broker estero deve dichiarare conto e redditi: il gioco esporta un CSV, non fa consulenza fiscale.',
-  'Limiti di Alpaca da conoscere: gli stop su quote frazionarie valgono solo per la giornata; il Paper non paga dividendi; le cripto non hanno leva.',
+  'Limiti di Alpaca da conoscere: gli stop su quote frazionarie valgono solo per la giornata; il Paper non paga dividendi, che nel gioco restano un argomento di teoria; le cripto non hanno leva.',
 ];
 
 /** Voce "Chiavi API" del menu: stato del collegamento, chiavi Paper e Live, guida. */
@@ -78,11 +82,14 @@ export async function requireAccount(what: string, who = NURSE): Promise<boolean
 
 /** Scelta della difficoltà: fissa il capitale del conto di gioco e non si cambia più. */
 export async function chooseDifficulty(who = 'Prof. Saldi'): Promise<Difficulty> {
+  // la difficoltà più alta si sblocca solo con la Nuova Partita+
+  const lockedTop = S.ngPlus === 0;
   for (;;) {
-    const c = await choose(DIFFICULTIES.map((d) => `${DIFFICULTY[d].name} · ${fmtMoney(DIFFICULTY[d].capital)}`), { prompt: 'Con quale difficoltà vuoi giocare? Fissa il capitale del tuo conto di gioco e non si potrà cambiare.', who });
+    const c = await choose(DIFFICULTIES.map((d) => `${DIFFICULTY[d].name} · ${fmtMoney(DIFFICULTY[d].capital)}${d === 'leggenda' && lockedTop ? ' (si sblocca con la Nuova Partita+)' : ''}`), { prompt: 'Con quale difficoltà vuoi giocare? Fissa il capitale del tuo conto di gioco e non si potrà cambiare.', who, disabled: DIFFICULTIES.map((d) => d === 'leggenda' && lockedTop) });
     const d = DIFFICULTIES[Math.max(0, c)];
+    if (d === 'leggenda' && lockedTop) continue;
     const D = DIFFICULTY[d];
-    const ok = await choose(['Scelgo questa', 'Fammi vedere le altre'], { prompt: `${D.name}: ${D.desc} Capitale ${fmtMoney(D.capital)}, rate di ${fmtMoney(D.capital * RATE)} per tappa.`, who });
+    const ok = await choose(['Scelgo questa', 'Fammi vedere le altre'], { prompt: `${D.name}: ${D.desc} Capitale ${fmtMoney(D.capital)}, quota minima di ${fmtMoney(D.capital * RATE * (1 - D.tolerance))} per tappa.`, who });
     if (ok === 0) return d;
   }
 }
@@ -102,7 +109,9 @@ export async function openGameAccount(): Promise<boolean> {
     'Ciao, sono la Dott.ssa Ratio! Lavoro nelle Cliniche del Portafoglio di tutta la regione.',
     'Il Professore mi ha chiesto di aprirti il conto di gioco. A Capitalia si studia; i titoli veri si comprano sui Mercati di Fuori, attraverso un broker che si chiama Alpaca.',
     `Il tuo conto parte da ${fmtMoney(D.capital)}: è la difficoltà ${D.name}, e non cambia più. È denaro finto su un conto Paper, ma prezzi, orari e ordini sono quelli veri.`,
-    `L'Accademia libera il capitale a rate: ${fmtMoney(D.capital * RATE)} adesso, con la Valigetta, e un'altra rata a ogni Attestato. Il resto sta nella Riserva dell'Accademia e non pesa sui tuoi conti.`,
+    `Il capitale è tutto tuo da subito. Ogni tappa ti chiede solo un minimo da investire: ${fmtMoney(D.capital * RATE * (1 - D.tolerance))} adesso, con la Valigetta, e altrettanto a ogni Attestato. Sopra il minimo decidi tu, anche tutto il capitale.`,
+    `Attenzione, però: se il patrimonio del conto scende sotto il ${Math.round(LEVERAGE.bankrupt * 100)}% del capitale è bancarotta. Più investi, più ci puoi arrivare vicino.`,
+    'E ricorda come funziona la Medaglia. L\'Attestato lo vinci dal Mentore, con il duello di conoscenza, e ti apre la strada. Il Sigillo pratico lo guadagni qui, con la Prova sul conto: ordini veri sul mercato di oggi. Per la Lega servono tutti e otto i Sigilli.',
   ], NURSE);
   const res = await modal<{ risky: number; def: number; cash: number }>('Il tuo conto di gioco', ({ body, button, close }) => {
     const pt = presetTarget(S.profile);
@@ -114,7 +123,7 @@ export async function openGameAccount(): Promise<boolean> {
         <label>Asset difensivi % <span class="small muted">${S.track === 'crypto' ? '(stablecoin)' : '(obbligazioni, settori difensivi, oro)'}</span><input class="tx d" type="number" min="0" max="100" value="${pt.defensive}"></label>
         <label>Liquidità %<input class="tx c" type="number" min="0" max="100" value="${pt.cash}"></label>
       </div>
-      <p class="small muted">È il tuo piano, non un consiglio: Diagnosi e Ribilanciamento lo useranno, calcolato solo sul capitale già liberato.</p>
+      <p class="small muted">È il tuo piano, non un consiglio: Diagnosi e Ribilanciamento lo useranno, calcolato su tutto il conto.</p>
       <p class="msg small bad"></p>`;
     button('Apri il conto', () => {
       const q = (s: string) => Number((body.querySelector(s) as HTMLInputElement).value);
@@ -135,7 +144,7 @@ export async function openGameAccount(): Promise<boolean> {
   return ok;
 }
 
-// ---------------- Tappe: Attestati, Sigilli, rate ----------------
+// ---------------- Tappe: Attestati, Sigilli, Prove sul conto ----------------
 
 /** Che cosa manca al prossimo Sigillo pratico. */
 export function nextSealLine(): string {
@@ -143,30 +152,31 @@ export function nextSealLine(): string {
   const m = S.seals + 1;
   const miss: string[] = [];
   if (S.badges < m) miss.push(`l'Attestato del Mentore ${m}`);
-  if (!S.flags[`m${m}_mission`]) miss.push(`la missione del Mentore ${m} sui dati reali`);
-  if (S.exDone < m + 1) miss.push(`l'esercizio della tappa ${m} sul conto`);
-  return miss.length ? `Per il Sigillo ${m} ${miss.length > 1 ? 'mancano' : 'manca'}: ${miss.join(', ')}.` : `Il Sigillo ${m} è pronto.`;
+  if (S.exDone < m + 1) miss.push(S.exDone < m ? `le Prove sul conto fino alla tappa ${m}` : `la Prova sul conto della tappa ${m}`);
+  return miss.length ? `Per il Sigillo ${m} ${miss.length > 1 ? 'mancano' : 'manca'}: ${miss.join(' e ')}.` : `Il Sigillo ${m} è pronto.`;
 }
 
 export function stageHtml(): string {
   const pf = S.portfolio;
   const ex = Acc.exercise();
-  const rel = Acc.releasedFrac();
+  const D = DIFFICULTY[S.difficulty];
   const rows = Array.from({ length: STAGES }, (_, k) => {
     const done = S.exDone > k;
     const open = !!S.flags.starter && k <= S.badges;
     return `<tr><td>${k === 0 ? 'Valigetta' : `Tappa ${k}`}</td><td>${STAGE_TOOL[k].text}</td><td class="n">${fmtMoney(Acc.exNeed(k))}</td><td>${done ? '<span class="good">fatto</span>' : open ? '<b>da fare</b>' : `<span class="muted">con l'Attestato ${k}</span>`}</td></tr>`;
   }).join('');
+  const eq = Acc.equity();
+  const floor = pf.initial * LEVERAGE.bankrupt;
   return `
-    <p><b>Attestati</b> ${S.badges}/8 · <b>Sigilli pratici</b> ${S.seals}/8 · <b>Esercizi di tappa</b> ${S.exDone}/${STAGES}</p>
-    <p class="small">Capitale ${fmtMoney(pf.initial)} (${DIFFICULTY[S.difficulty].name}) · liberato ${(rel * 100).toFixed(0)}% · Riserva dell'Accademia ${fmtMoney(Acc.locked())} · puoi investire ancora ${fmtMoney(Acc.usableCash())}.</p>
-    ${ex.allDone ? '<p class="good">Tutti gli esercizi di tappa sono completati.</p>' : `<p class="small">${ex.open ? `<b>Esercizio in corso (${ex.stage === 0 ? 'Valigetta' : 'tappa ' + ex.stage}):</b> acquisti accettati ${fmtMoney(ex.got)} su ${fmtMoney(ex.need)} in totale${ex.toolOk ? '' : ' · manca: ' + ex.tool}` : `Il prossimo esercizio si apre con l'Attestato del Mentore ${ex.stage}.`}</p>`}
-    <table class="t"><tr><th>Tappa</th><th>Esercizio sul conto</th><th class="n">Acquisti totali</th><th></th></tr>${rows}</table>
-    <p class="small muted">${nextSealLine()} Le rate hanno una tolleranza solo verso il basso (${Math.round(DIFFICULTY[S.difficulty].tolerance * 100)}% in ${DIFFICULTY[S.difficulty].name}): puoi versare meno, mai più del capitale liberato. Un esercizio vale quando Alpaca accetta l'ordine, anche a mercato chiuso; se poi l'ordine viene annullato o scade senza essere eseguito, l'esercizio torna da fare.</p>`;
+    <p><b>Attestati</b> ${S.badges}/8 · <b>Sigilli pratici</b> ${S.seals}/8 · <b>Prove sul conto</b> ${S.exDone}/${STAGES}</p>
+    <p class="small">Capitale ${fmtMoney(pf.initial)} (${D.name}) · puoi investire ancora ${fmtMoney(Acc.usableCash())} · patrimonio ${fmtMoney(eq)} · soglia di bancarotta ${fmtMoney(floor)} (${Math.round(LEVERAGE.bankrupt * 100)}% del capitale).</p>
+    ${ex.allDone ? '<p class="good">Tutte le Prove sul conto sono completate.</p>' : `<p class="small">${ex.open ? `<b>Prova in corso (${ex.stage === 0 ? 'Valigetta' : 'tappa ' + ex.stage}):</b> acquisti ${fmtMoney(ex.got)} su un minimo di ${fmtMoney(ex.need)} in totale${ex.toolOk ? '' : ' · manca: ' + ex.tool}` : `La prossima Prova si apre con l'Attestato del Mentore ${ex.stage}.`}</p>`}
+    <table class="t"><tr><th>Tappa</th><th>Prova sul conto</th><th class="n">Acquisti minimi in totale</th><th></th></tr>${rows}</table>
+    <p class="small muted">${nextSealLine()} La quota di tappa è un minimo (${fmtMoney(pf.initial * RATE * (1 - D.tolerance))} per tappa in ${D.name}): sopra il minimo investi quanto vuoi, anche tutto il capitale. Una Prova vale quando Alpaca accetta l'ordine, anche a mercato chiuso; se poi l'ordine viene annullato o scade senza essere eseguito, la Prova torna da fare.</p>`;
 }
 
 export async function stageScreen(): Promise<void> {
-  await modal('Tappe, rate e Sigilli', ({ body, button, close }) => { body.innerHTML = stageHtml(); button('Chiudi', () => close(), 'primary'); }, { wide: true });
+  await modal('Tappe, Prove e Sigilli', ({ body, button, close }) => { body.innerHTML = stageHtml(); button('Chiudi', () => close(), 'primary'); }, { wide: true });
 }
 
 // ---------------- Leva ----------------
@@ -231,7 +241,7 @@ async function bankruptcy(): Promise<void> {
   const pf = S.portfolio;
   const D = DIFFICULTY[S.difficulty];
   const eq = Acc.equity();
-  await say([`BANCAROTTA: il patrimonio del conto di gioco è sceso a ${fmtMoney(Math.max(0, eq))}, sotto il ${Math.round(LEVERAGE.bankrupt * 100)}% del capitale.`, 'È il punto in cui un investitore vero ha perso quasi tutto. Fermiamoci a capire come ci siamo arrivati: guarda la Cartella clinica.'], NURSE);
+  await say([`BANCAROTTA: il patrimonio del conto di gioco è sceso a ${fmtMoney(Math.max(0, eq))}, sotto il ${Math.round(LEVERAGE.bankrupt * 100)}% del capitale.`, 'È il punto in cui un investitore vero ha perso più di metà di quello che aveva, e risalire richiede di più che raddoppiare. Fermiamoci a capire come ci siamo arrivati: guarda la Cartella clinica.'], NURSE);
   const canRestart = D.bankrupt === 'riparti' || (D.bankrupt === 'una-volta' && pf.bankruptcies < 1);
   if (!canRestart) {
     S.flags.bankrupt = true; save();

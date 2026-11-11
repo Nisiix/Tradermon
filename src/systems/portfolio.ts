@@ -118,8 +118,8 @@ export function processOrders(b: Book, prices: Record<string, number>, day: numb
 export interface Health { score: number; state: 'Ottima' | 'Buona' | 'Ha la febbre' | 'Affaticata'; maxW: number; dd: number; cashW: number; dev: number; sectors: number }
 
 /**
- * Allocazione in percentuale. `locked` è la Riserva dell'Accademia: la parte di capitale non ancora liberata
- * dalle rate di tappa. Non è una scelta del giocatore, quindi non conta né come liquidità né nel totale.
+ * Allocazione in percentuale. `locked` è il capitale non ancora investibile (solo prima di aprire il conto: poi è
+ * sempre zero): non è una scelta del giocatore, quindi non conta né come liquidità né nel totale.
  */
 export function allocation(b: Book, prices: Record<string, number>, locked = 0): { risky: number; defensive: number; cash: number } {
   const tot = Math.max(0, value(b, prices) - locked) || 1;
@@ -135,7 +135,7 @@ export function allocation(b: Book, prices: Record<string, number>, locked = 0):
 export function health(pf: Portfolio, prices: Record<string, number>, locked = 0): Health {
   const tot = value(pf, prices);
   const free = Math.max(1, tot - locked);
-  // i pesi si misurano sul capitale liberato: con una sola rata versata un titolo non è "il 10% del conto"
+  // i pesi si misurano sul capitale investibile, cioè tutto il conto una volta aperto
   const ws = weights(pf, prices).map((x) => ({ ...x, w: x.v / free }));
   const maxW = pf.positions.length > 1 ? ws.reduce((m, x) => Math.max(m, x.w), 0) * 100 : 0;
   const dd = pf.peak > 0 ? Math.max(0, (1 - tot / pf.peak) * 100) : 0;

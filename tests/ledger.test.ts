@@ -48,27 +48,25 @@ describe('conto di gioco dentro il conto Alpaca Paper', () => {
     expect(S.market.history.AAPL.length).toBeGreaterThan(100);
   }, 20_000);
 
-  it('la Valigetta si apre con il primo acquisto accettato e la Riserva blocca il capitale non liberato', async () => {
+  it('la Valigetta si apre con il primo acquisto accettato; tutto il capitale è investibile, non un dollaro di più', async () => {
     const cap = DIFFICULTY.investitore.capital;
     expect(Acc.caseOpen()).toBe(false);
-    expect(Acc.usableCash()).toBeCloseTo(cap * 0.1, 6);
-    const over = await Acc.buy('AAPL', cap * 0.2);
-    expect(over.ok).toBe(false);
-    expect(over.msg).toContain('Riserva');
+    expect(Acc.usableCash()).toBeCloseTo(cap, 6); // nessuna riserva: la tappa chiede un minimo, mai un massimo
+    const over = await Acc.buy('AAPL', cap * 1.2);
+    expect(over.ok).toBe(false); // senza leva non si compra oltre la liquidità
     const r = await Acc.buy('AAPL', 400);
     expect(r.ok && r.filled).toBe(true);
     expect(S.portfolio.positions[0].qty).toBeCloseTo(2, 6);
     expect(S.portfolio.cash).toBeCloseTo(cap - 400 * (1 + DIFFICULTY.investitore.fee), 6);
     expect(S.portfolio.costs).toBeCloseTo(0.4, 6);
     expect(Acc.caseOpen()).toBe(true);
-    expect(S.exDone).toBe(1); // 400 $ ≥ rata di 500 $ meno la tolleranza del 30%
+    expect(S.exDone).toBe(1); // 400 $ ≥ quota minima di tappa (350 $ in Investitore)
     expect(r.exercise).toContain('Valigetta');
     expect(fake.positions.AAPL).toBeCloseTo(2, 6);
   }, 20_000);
 
   it('a mercato chiuso l\'ordine è accettato, il denaro resta riservato e l\'esecuzione arriva alla riapertura', async () => {
     S.badges = 1;
-    S.flags.m1_mission = true;
     fake.open = false;
     const before = S.portfolio.cash;
     const r = await Acc.buy('KO', 300);
@@ -77,7 +75,7 @@ describe('conto di gioco dentro il conto Alpaca Paper', () => {
     expect(S.portfolio.pending.length).toBe(1);
     expect(S.portfolio.cash).toBe(before);
     expect(Acc.reserved()).toBeCloseTo(300 * 1.001, 6);
-    // l'esercizio vale all'accettazione: secondo titolo e rata della tappa 1, quindi Sigillo 1
+    // la Prova sul conto vale all'accettazione: secondo titolo e quota della tappa 1, quindi Sigillo 1 (senza replay)
     expect(S.exDone).toBe(2);
     expect(S.seals).toBe(1);
     fake.open = true; fake.prices.KO = 62; fake.match();
@@ -88,8 +86,8 @@ describe('conto di gioco dentro il conto Alpaca Paper', () => {
     expect(S.portfolio.cash).toBeCloseTo(before - 300.3, 6);
   }, 20_000);
 
-  it('un ordine annullato prima dell\'esecuzione non vale come rata: esercizio e Sigillo tornano in sospeso', async () => {
-    S.badges = 2; S.flags.m2_mission = true;
+  it('un ordine annullato prima dell\'esecuzione non vale come quota: Prova e Sigillo tornano in sospeso', async () => {
+    S.badges = 2;
     fake.open = false;
     // limite lontanissimo dal prezzo per tutta la rata della tappa 2: accettato, quindi esercizio e Sigillo arrivano subito
     const need = Acc.exNeed(2) - S.portfolio.bought;

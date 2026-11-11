@@ -223,16 +223,30 @@ export function profileTimer(): number {
   return ANSWER_SECONDS;
 }
 
+/**
+ * Nuova Partita+: tutto riparte da zero (conto di gioco con capitale nuovo, Attestati, Sigilli, Prove sul conto,
+ * Esame della Leva, storia, accesso a Torre e Boss), tranne i TROFEI già guadagnati e ciò che riguarda il giocatore
+ * e non la partita: nome e aspetto, opzioni, tempo di gioco, e le tutele del conto reale (Licenza, limiti, registro).
+ * La nuova difficoltà si sceglie subito dopo, e da qui in poi è disponibile anche la più alta.
+ */
 export function newGamePlus(track: Track) {
-  // il conto di gioco è reale e segue il giocatore: capitale, posizioni, difficoltà ed esercizi di tappa non ripartono
-  const keep = { name: S.name, avatar: S.avatar, rival: S.rival, tower: S.tower, legends: S.legends, gold: Object.entries(S.cards).filter(([, c]) => c.gold), ng: S.ngPlus + 1, options: S.options, bankrupt: !!S.flags.bankrupt,
-    portfolio: S.portfolio, market: S.market, saveId: S.saveId, difficulty: S.difficulty, exDone: S.exDone, levExam: S.levExam, boss: S.boss, license: S.license, liveLimits: S.liveLimits, liveAudit: S.liveAudit, createdAt: S.createdAt };
+  const old = S;
+  const liveFlags = ['liveBase', 'liveBust', 'liveClosed', 'liveBusts'];
   newGame();
-  Object.assign(S, { name: keep.name, avatar: keep.avatar, rival: keep.rival, tower: keep.tower, legends: keep.legends, ngPlus: keep.ng, options: keep.options, track,
-    portfolio: keep.portfolio, market: keep.market, saveId: keep.saveId, difficulty: keep.difficulty, exDone: keep.exDone, levExam: keep.levExam, boss: keep.boss, license: keep.license, liveLimits: keep.liveLimits, liveAudit: keep.liveAudit, createdAt: keep.createdAt });
-  keep.gold.forEach(([id, c]) => (S.cards[id] = c));
-  // la parte pratica chiusa da una bancarotta definitiva resta chiusa: il conto è lo stesso
-  if (keep.bankrupt) S.flags.bankrupt = true;
+  Object.assign(S, {
+    // chi sei
+    name: old.name, avatar: old.avatar, rival: old.rival, options: old.options, track, createdAt: old.createdAt, playMs: old.playMs,
+    profile: old.profile, profileScore: old.profileScore, goal: old.goal, horizon: old.horizon,
+    ngPlus: old.ngPlus + 1,
+    // trofei
+    tower: old.tower, legends: old.legends, achievements: old.achievements, title: old.title, decor: old.decor,
+    challenges: old.challenges, minigames: old.minigames, daily: old.daily, journal: old.journal,
+    boss: { run: null, runs: {}, beaten: old.boss.beaten, tries: old.boss.tries },
+    // conto reale: tutele e storia non si azzerano con la partita
+    license: old.license, examLastFail: old.examLastFail, liveLimits: old.liveLimits, liveAudit: old.liveAudit,
+  });
+  Object.entries(old.cards).filter(([, c]) => c.gold).forEach(([id, c]) => (S.cards[id] = c));
+  for (const k of liveFlags) if (old.flags[k] !== undefined) S.flags[k] = old.flags[k];
 }
 
 /** Profilo dichiarato dal punteggio delle 3 domande sul rischio (0-6). */

@@ -29,17 +29,17 @@ describe('registro del conto di gioco', () => {
     expect(pf.costs).toBeCloseTo(0.4, 6);
     expect(pf.loan).toBe(0);
   });
-  it('un acquisto scaduto libera il denaro riservato e la rata va versata di nuovo', () => {
+  it('un acquisto scaduto libera il denaro riservato e la quota va investita di nuovo', () => {
     const S = newGame();
     S.flags.starter = 'AAPL';
     const pf = S.portfolio;
     const p = pending({ type: 'limit', qty: 2, price: 190, reserved: 380.38, tag: 'limite' });
     pf.pending.push(p); pf.bought = 380;
-    expect(Acc.usableCash()).toBeCloseTo(500 - 380.38, 6);
+    expect(Acc.usableCash()).toBeCloseTo(5000 - 380.38, 6);
     const r = Acc.applyOrder(pf, p, order({ status: 'expired' }));
     expect(r.notes.join(' ')).toContain('scaduto');
     expect(pf.bought).toBe(0);
-    expect(Acc.usableCash()).toBeCloseTo(500, 6);
+    expect(Acc.usableCash()).toBeCloseTo(5000, 6);
     // dopo un conto azzerato gli acquisti ripartono da zero: un ordine scaduto non riapre gli esercizi già fatti
     S.exDone = 4; S.seals = 3; S.badges = 4;
     const q = pending({ notional: 100, reserved: 100.1 });
@@ -49,38 +49,35 @@ describe('registro del conto di gioco', () => {
     expect(S.seals).toBe(3);
     expect(pf.cash).toBe(5000);
   });
-  it('le rate liberano il capitale un Attestato alla volta e gli esercizi si aprono in ordine', () => {
+  it('tutto il capitale è investibile dal primo giorno; le tappe chiedono solo un minimo, più alto nelle difficoltà dure', () => {
     const S = newGame();
     expect(Acc.releasedFrac()).toBe(0); // senza Valigetta non c'è ancora un conto di gioco
     S.flags.starter = 'AAPL';
-    expect(Acc.releasedFrac()).toBeCloseTo(0.1, 9);
-    expect(Acc.locked()).toBeCloseTo(4500, 6);
-    S.badges = 3;
-    expect(Acc.releasedFrac()).toBeCloseTo(0.4, 9);
-    S.badges = 8;
-    expect(Acc.releasedFrac()).toBeCloseTo(0.9, 9);
-    S.flags.champion = true;
     expect(Acc.releasedFrac()).toBe(1);
-    // rata cumulata con la tolleranza della difficoltà
+    expect(Acc.locked()).toBe(0);
+    expect(Acc.usableCash()).toBe(5000);
+    // quota minima cumulata, secondo la difficoltà
     S.difficulty = 'leggenda'; S.portfolio.initial = 1000;
     expect(Acc.exNeed(0)).toBeCloseTo(95, 6);
     expect(Acc.exNeed(8)).toBeCloseTo(855, 6);
-    for (const d of Object.values(DIFFICULTY)) expect(d.fee).toBeLessThan(d.tolerance); // il costo non può rendere impossibile una rata
+    S.difficulty = 'apprendista'; S.portfolio.initial = 10000;
+    expect(Acc.exNeed(8)).toBeCloseTo(4500, 6);
+    const mins = Object.values(DIFFICULTY).map((d) => 1 - d.tolerance);
+    expect([...mins].sort((a, b) => a - b)).toEqual(mins); // più dura la difficoltà, più alta la quota minima
+    for (const d of Object.values(DIFFICULTY)) expect(d.fee).toBeLessThan(d.tolerance); // il costo non può rendere impossibile una quota
   });
-  it('il Sigillo m chiede Attestato, missione ed esercizio della tappa m, in ordine', () => {
+  it('il Sigillo m chiede Attestato e Prova sul conto della tappa m, in ordine, senza replay', () => {
     const S = newGame();
     S.flags.starter = 'AAPL';
-    S.badges = 2; S.exDone = 3;
-    expect(Acc.grantSeals()).toEqual([]); // manca la missione del Mentore 1
-    S.flags.m2_mission = true;
-    expect(Acc.grantSeals()).toEqual([]); // i Sigilli non si saltano
-    S.flags.m1_mission = true;
-    expect(Acc.grantSeals()).toEqual([1, 2]);
-    S.badges = 3; S.flags.m3_mission = true;
-    expect(Acc.grantSeals()).toEqual([]); // manca l'esercizio della tappa 3
-    S.exDone = 4;
-    expect(Acc.grantSeals()).toEqual([3]);
+    S.badges = 2; S.exDone = 2;
+    expect(Acc.grantSeals()).toEqual([1]); // la Prova della tappa 2 non è ancora fatta
+    S.exDone = 3;
+    expect(Acc.grantSeals()).toEqual([2]);
+    S.badges = 3; S.exDone = 9;
+    expect(Acc.grantSeals()).toEqual([3]); // senza Attestato il Sigillo non arriva, anche con le Prove fatte
     expect(S.seals).toBe(3);
+    S.flags.bankrupt = true; S.badges = 8;
+    expect(Acc.grantSeals()).toEqual([]);
   });
   it('la leva si apre solo dopo esame e ottavo Attestato; interessi, chiamata di margine e bancarotta seguono le regole', () => {
     const S = newGame();
@@ -100,37 +97,95 @@ describe('registro del conto di gioco', () => {
     pf.interestDay = new Date(mon).toISOString().slice(0, 10);
     const interest = Acc.accrue(pf, mon + 7 * 86400000);
     expect(interest).toBeCloseTo(5000 * (LEVERAGE.interest / 252) * 5, 4);
-    S.market.prices.AAPL = 70; // 7000 di titoli, ~5000 di prestito: margine sotto il 30%
+    S.market.prices.AAPL = 71; // 7100 di titoli, ~5000 di prestito: margine sotto il 30%, patrimonio ancora sopra il 40%
     expect(Acc.margin().call).toBe(true);
     expect(Acc.margin().bankrupt).toBe(false);
-    S.market.prices.AAPL = 54; // patrimonio netto sotto il 10% del capitale
+    S.market.prices.AAPL = 69; // patrimonio netto sotto il 40% del capitale
     expect(Acc.margin().bankrupt).toBe(true);
   });
-  it('la Nuova Partita+ conserva il conto di gioco vero, la difficoltà e gli esercizi', () => {
+  it('la bancarotta è possibile in ogni difficoltà e senza leva: basta investire più del minimo', () => {
+    for (const d of Object.keys(DIFFICULTY) as (keyof typeof DIFFICULTY)[]) {
+      const S = newGame();
+      S.flags.starter = 'BTC/USD'; S.difficulty = d;
+      const cap = DIFFICULTY[d].capital;
+      S.portfolio.initial = cap; S.portfolio.contributed = cap;
+      S.market.asOf = Date.now(); S.market.prices = { 'BTC/USD': 100 };
+      // tutto il capitale in un titolo solo: scelta libera del giocatore
+      S.portfolio.cash = 0; S.portfolio.positions = [{ id: 'BTC/USD', qty: cap / 100, cost: cap }];
+      expect(Acc.margin().bankrupt).toBe(false);
+      S.market.prices['BTC/USD'] = 39;
+      expect(Acc.margin().bankrupt).toBe(true);
+      // chi investe solo il minimo di tutte le tappe ci arriva tanto più facilmente quanto più dura è la difficoltà
+      const min = Acc.exNeed(8);
+      S.portfolio.cash = cap - min; S.portfolio.positions = [{ id: 'BTC/USD', qty: min / 100, cost: min }];
+      S.market.prices['BTC/USD'] = 20; // −80% sulla parte investita
+      expect(Acc.margin().bankrupt).toBe(d === 'stratega' || d === 'leggenda');
+    }
+  });
+  it('la Nuova Partita+ riparte da zero e conserva solo i trofei, il giocatore e le tutele del conto reale', () => {
     const S0 = newGame();
-    S0.flags.starter = 'AAPL'; S0.difficulty = 'stratega'; S0.exDone = 9; S0.seals = 8; S0.badges = 8;
+    S0.name = 'Nina'; S0.profile = 'audace';
+    S0.flags.starter = 'AAPL'; S0.flags.champion = true; S0.flags.bankrupt = true; S0.flags.liveBase = 800; S0.flags.liveClosed = true;
+    S0.difficulty = 'stratega'; S0.exDone = 9; S0.seals = 8; S0.badges = 8; S0.levExam = true;
     S0.portfolio.positions = [{ id: 'AAPL', qty: 1, cost: 100 }];
+    S0.tower.best = 7; S0.legends = ['leg2020']; S0.achievements = ['a1']; S0.title = 'Campione'; S0.boss.beaten = ['b1'];
+    S0.boss.runs = { b2: { id: 'b2', quiz: 6, quizMax: 8, plan: null, startedAt: 1 } };
+    S0.cards.AAPL = { xp: 90, gold: true } as never; S0.cards.KO = { xp: 10, gold: false } as never;
+    S0.license = 'investitore'; S0.liveLimits.perOrder = 50; S0.playMs = 1234;
     const id = S0.saveId;
     newGamePlus('etf');
     const S1 = State.S;
     expect(S1.ngPlus).toBe(1);
-    expect(S1.badges).toBe(0);
-    expect(S1.seals).toBe(0);
-    expect(S1.saveId).toBe(id);
-    expect(S1.difficulty).toBe('stratega');
-    expect(S1.exDone).toBe(9);
-    expect(S1.portfolio.positions.length).toBe(1);
-    // finché il Professore non riassegna il percorso il conto resta fermo; poi tutto il capitale è già libero
-    S1.flags.starter = 'SPY';
-    expect(Acc.releasedFrac()).toBe(1);
-    // i Sigilli tornano con Attestato e missione: gli esercizi sul conto vero sono già stati fatti
-    S1.badges = 1; S1.flags.m1_mission = true;
-    expect(Acc.grantSeals()).toEqual([1]);
+    expect(S1.track).toBe('etf');
+    // da zero
+    expect([S1.badges, S1.seals, S1.exDone, S1.levExam]).toEqual([0, 0, 0, false]);
+    expect(S1.saveId).not.toBe(id);
+    expect(S1.portfolio.positions.length).toBe(0);
+    expect(S1.portfolio.bought).toBe(0);
+    expect(S1.flags.champion).toBeUndefined(); // Torre e Boss tornano chiusi fino alla prossima Lega
+    expect(S1.flags.bankrupt).toBeUndefined();
+    expect(S1.flags.starter).toBeUndefined();
+    expect(Acc.graduated()).toBe(false);
+    expect(Acc.caseOpen()).toBe(false);
+    expect(S1.boss.runs).toEqual({});
+    expect(S1.cards.KO).toBeUndefined();
+    // trofei, giocatore, tutele del conto reale
+    expect(S1.tower.best).toBe(7);
+    expect(S1.legends).toEqual(['leg2020']);
+    expect(S1.achievements).toEqual(['a1']);
+    expect(S1.title).toBe('Campione');
+    expect(S1.boss.beaten).toEqual(['b1']);
+    expect(S1.cards.AAPL.gold).toBe(true);
+    expect([S1.name, S1.profile, S1.playMs]).toEqual(['Nina', 'audace', 1234]);
+    expect(S1.license).toBe('investitore');
+    expect(S1.liveLimits.perOrder).toBe(50);
+    expect([S1.flags.liveBase, S1.flags.liveClosed]).toEqual([800, true]);
+  });
+  it('bancarotta sul conto reale: stessa soglia, pausa degli acquisti o chiusura secondo la difficoltà', () => {
+    const day = 86400000, t0 = Date.UTC(2026, 10, 11);
+    let S = newGame(); // Investitore: riparte dopo una pausa
+    expect(Acc.liveCheck(1000, t0).state).toBe('ok');
+    expect(S.flags.liveBase).toBe(1000);
+    expect(Acc.liveCheck(450, t0).state).toBe('ok');
+    const bust = Acc.liveCheck(399, t0);
+    expect([bust.state, bust.fresh, bust.busts]).toEqual(['paused', true, 1]);
+    expect(Acc.liveCheck(900, t0 + 3 * day).state).toBe('paused'); // la pausa non si accorcia
+    const back = Acc.liveCheck(600, t0 + 8 * day);
+    expect([back.state, back.base]).toEqual(['ok', 600]); // si riparte dal patrimonio trovato
+    S = newGame(); S.difficulty = 'stratega';
+    Acc.liveCheck(1000, t0);
+    expect(Acc.liveCheck(300, t0).state).toBe('paused');
+    Acc.liveCheck(300, t0 + 31 * day);
+    expect(Acc.liveCheck(100, t0 + 32 * day).state).toBe('closed'); // una sola ripartenza
+    expect(Acc.liveCheck(5000, t0 + 400 * day).state).toBe('closed');
+    S = newGame(); S.difficulty = 'leggenda';
+    Acc.liveCheck(1000, t0);
+    expect(Acc.liveCheck(399, t0).state).toBe('closed');
   });
 });
 
 describe('confronto con il rivale', () => {
-  it('usa gli stessi giorni reali del giocatore, lo stesso capitale e la stessa Riserva', async () => {
+  it('usa gli stessi giorni reali del giocatore e lo stesso capitale di partenza', async () => {
     const { rivalSeries } = await import('../src/world/scripts/story');
     const S = newGame();
     S.flags.starter = true; S.track = 'stocks';
@@ -146,8 +201,8 @@ describe('confronto con il rivale', () => {
     expect(c.days).toBe(6);
     expect(c.me).toEqual(pf.valueHistory);
     expect(c.rival[0]).toBeCloseTo(5000, 6);
-    // 14 sedute tra il 19 ottobre e il 6 novembre, solo il 10% liberato è investito
-    expect(c.rival[5]).toBeCloseTo(5000 * (0.9 + 0.1 * 1.01 ** 14), 4);
+    // 14 sedute tra il 19 ottobre e il 6 novembre, con l'80% investito (stile audace)
+    expect(c.rival[5]).toBeCloseTo(5000 * (0.2 + 0.8 * 1.01 ** 14), 4);
     expect(rivalSeries('prudente')!.rival[5]).toBeLessThan(c.rival[5]);
     pf.valueDays = pf.valueDays.slice(0, 3); pf.valueHistory = pf.valueHistory.slice(0, 3);
     expect(rivalSeries('audace')).toBeNull(); // conto troppo giovane

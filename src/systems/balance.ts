@@ -68,7 +68,11 @@ export interface DifficultyDef {
   capital: number;
   /** Costo didattico per ordine, in percentuale del controvalore (solo conto Paper, mostrato a parte). */
   fee: number;
-  /** Tolleranza sulle rate: quanta parte di ogni rata si può lasciare non investita senza perdere l'esercizio. */
+  /**
+   * Quota minima di tappa = RATE × (1 − tolerance) del capitale: è l'investimento MINIMO richiesto a ogni tappa
+   * (5% / 7% / 8,5% / 9,5%). Sopra il minimo il giocatore investe quanto vuole: tutto il capitale è suo dall'inizio.
+   * Più alta è la quota, più capitale resta esposto e più vicina è la bancarotta.
+   */
   tolerance: number;
   /** Leva massima nei replay storici e nei boss, dopo l'Esame della Leva. */
   replayLeverage: number;
@@ -78,14 +82,14 @@ export interface DifficultyDef {
 }
 
 export const DIFFICULTY: Record<Difficulty, DifficultyDef> = {
-  apprendista: { name: 'Apprendista', capital: 10000, fee: 0, tolerance: 0.5, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale ampio, nessun costo didattico, rate molto tolleranti. Per chi parte da zero.' },
-  investitore: { name: 'Investitore', capital: 5000, fee: 0.001, tolerance: 0.3, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale medio, costo dello 0,10% per ordine, rate tolleranti.' },
-  stratega: { name: 'Stratega', capital: 2500, fee: 0.0025, tolerance: 0.15, replayLeverage: 3, bankrupt: 'una-volta', desc: 'Capitale ridotto, costo dello 0,25% per ordine, poco margine di errore. Una sola ripartenza dopo una bancarotta (può capitare con la leva o dopo la Lega: prima, la Riserva dell\'Accademia ti protegge).' },
-  leggenda: { name: 'Leggenda', capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', desc: 'Capitale minimo, costo dello 0,50% per ordine, rate quasi esatte. Alla bancarotta la parte pratica finisce (può capitare con la leva o dopo la Lega: prima, la Riserva dell\'Accademia ti protegge).' },
+  apprendista: { name: 'Apprendista', capital: 10000, fee: 0, tolerance: 0.5, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale ampio, nessun costo didattico. A ogni tappa devi investire almeno il 5% del capitale: molta liquidità di scorta, bancarotta lontana. Per chi parte da zero.' },
+  investitore: { name: 'Investitore', capital: 5000, fee: 0.001, tolerance: 0.3, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale medio, costo dello 0,10% per ordine. A ogni tappa devi investire almeno il 7% del capitale.' },
+  stratega: { name: 'Stratega', capital: 2500, fee: 0.0025, tolerance: 0.15, replayLeverage: 3, bankrupt: 'una-volta', desc: 'Capitale ridotto, costo dello 0,25% per ordine. A ogni tappa devi investire almeno l\'8,5% del capitale: poca liquidità di scorta. Una sola ripartenza dopo una bancarotta.' },
+  leggenda: { name: 'Leggenda', capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', desc: 'Capitale minimo, costo dello 0,50% per ordine. A ogni tappa devi investire almeno il 9,5% del capitale: quasi tutto resta esposto al mercato. Alla bancarotta la parte pratica finisce. Si sblocca con la Nuova Partita+.' },
 };
 export const DIFFICULTIES = Object.keys(DIFFICULTY) as Difficulty[];
 
-/** Tappe: la 0 è la Valigetta, la k si apre con l'Attestato del Mentore k. Nove rate, ognuna il 10% del capitale. */
+/** Tappe: la 0 è la Valigetta, la k si apre con l'Attestato del Mentore k. Nove quote minime, ognuna una parte del 10% del capitale. */
 export const STAGES = 9;
 export const RATE = 0.1;
 
@@ -95,12 +99,16 @@ export const STAGE_TOOL: { key: 'any' | 'second' | 'limit' | 'sectors' | 'stop';
   { key: 'second', text: 'Aggiungi almeno un secondo titolo: le nuove Asset Card sono in vetrina.' },
   { key: 'limit', text: 'Usa almeno un ordine limite (Tecnica di Orazio Limite).' },
   { key: 'sectors', text: 'Arriva ad almeno tre settori diversi, o tre titoli se il tuo percorso ha meno settori.' },
-  { key: 'any', text: 'Versa la rata: ormai sai che è un piano di accumulo.' },
-  { key: 'any', text: 'Versa la rata dopo aver letto la scheda completa del titolo che scegli.' },
-  { key: 'any', text: 'Versa la rata.' },
-  { key: 'any', text: 'Versa la rata a mente fredda: scrivi il motivo nel Diario.' },
+  { key: 'any', text: 'Investi la quota della tappa: un versamento alla volta, è un piano di accumulo.' },
+  { key: 'any', text: 'Investi la quota della tappa dopo aver letto la scheda completa del titolo che scegli.' },
+  { key: 'any', text: 'Investi la quota della tappa. I dividendi restano teoria: il conto Paper non li paga.' },
+  { key: 'any', text: 'Investi la quota della tappa a mente fredda: scrivi il motivo nel Diario.' },
   { key: 'stop', text: 'Proteggi almeno una posizione con un ordine stop (Tecnica di Rocco Rischio).' },
 ];
 
-/** Leva sul conto di gioco: tetto di Alpaca oltre la giornata, interesse annuo e margine di mantenimento di Alpaca. */
-export const LEVERAGE = { max: 2, fromBadge: 8, examBadge: 5, interest: 0.065, maintenance: 0.3, callDays: 3, bankrupt: 0.1, restart: 0.5 } as const;
+/**
+ * Leva sul conto di gioco: tetto di Alpaca oltre la giornata, interesse annuo e margine di mantenimento di Alpaca.
+ * `bankrupt`: bancarotta quando il patrimonio scende sotto questa parte del capitale (hai perso il 60%). Vale in ogni
+ * difficoltà e in ogni momento; la difficoltà la avvicina o la allontana con la quota minima da investire.
+ */
+export const LEVERAGE = { max: 2, fromBadge: 8, examBadge: 5, interest: 0.065, maintenance: 0.3, callDays: 3, bankrupt: 0.4, restart: 0.5 } as const;

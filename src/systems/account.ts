@@ -57,19 +57,20 @@ function unreachable(e: unknown): string {
 
 const fee = () => DIFFICULTY[S.difficulty].fee;
 
-/** Ha già vinto la Lega almeno una volta (anche in una partita precedente: la Nuova Partita+ azzera i flag, non il conto). */
+/** Ha vinto la Lega in questa partita: apre Torre, Boss e aumenti di capitale. La Nuova Partita+ riparte da zero. */
 export function graduated(): boolean {
-  return !!S.flags.champion || S.ngPlus > 0;
+  return !!S.flags.champion;
 }
 
-/** Quota di capitale liberata dalle rate: una per tappa aperta, tutto dopo la Lega. */
+/**
+ * Quota di capitale che si può investire: tutta, dal momento in cui il conto è aperto. Le tappe chiedono un
+ * investimento MINIMO (vedi exNeed), mai un massimo: quanto rischiare oltre il minimo lo decide il giocatore.
+ */
 export function releasedFrac(): number {
-  if (!S.flags.starter) return 0;
-  if (graduated()) return 1;
-  return Math.min(STAGES, Math.min(8, S.badges) + 1) * RATE;
+  return S.flags.starter ? 1 : 0;
 }
 
-/** Riserva dell'Accademia: capitale non ancora liberato. Non si può spendere e non conta nella salute del conto. */
+/** Capitale non ancora investibile: solo prima di aprire il conto (poi è sempre zero). */
 export function locked(pf: Portfolio = S.portfolio): number {
   return Math.max(0, Math.min(pf.cash, pf.initial * (1 - releasedFrac())));
 }
@@ -90,7 +91,7 @@ export function equity(pf: Portfolio = S.portfolio): number {
 
 /** Leva sul conto: dopo l'Esame della Leva e la Medaglia dello Scudo, solo azioni ed ETF, mai oltre il tetto di Alpaca. */
 export function leverageOpen(): boolean {
-  return S.levExam && (S.badges >= LEVERAGE.fromBadge || graduated());
+  return S.levExam && S.badges >= LEVERAGE.fromBadge;
 }
 
 /** Prestito ancora disponibile con la leva. */
@@ -102,7 +103,7 @@ export function credit(pf: Portfolio = S.portfolio): number {
 
 export interface Exercise { stage: number; open: boolean; need: number; got: number; toolOk: boolean; tool: string; allDone: boolean }
 
-/** Acquisti accettati necessari, in totale, per completare l'esercizio della tappa k (le rate si sommano). */
+/** Acquisti accettati necessari, in totale, per completare la Prova sul conto della tappa k (le quote minime si sommano). */
 export function exNeed(k: number): number {
   return (k + 1) * S.portfolio.initial * RATE * (1 - DIFFICULTY[S.difficulty].tolerance);
 }
@@ -149,20 +150,21 @@ function closeExercises(): string {
   return msg;
 }
 
-/** La Valigetta è aperta dal primo acquisto accettato (in Nuova Partita+ il conto ti ha seguito). */
+/** La Valigetta è aperta dal primo acquisto accettato. */
 export function caseOpen(): boolean {
-  return S.exDone > 0 || S.portfolio.bought > 0 || S.ngPlus > 0;
+  return S.exDone > 0 || S.portfolio.bought > 0;
 }
 
 /**
- * Sigillo pratico m: Attestato m, missione m superata sui dati reali ed esercizio della tappa m fatto sul conto
- * (la Tecnica appena imparata, usata per davvero). I Sigilli si ottengono in ordine. Restituisce quelli nuovi.
+ * Sigillo pratico m: Attestato m e Prova sul conto della tappa m (quota minima investita con ordini veri sul mercato
+ * attuale, usando la Tecnica appena imparata). I Sigilli si ottengono in ordine. Restituisce quelli nuovi.
+ * I replay della Macchina del Tempo sono allenamento: non servono per il Sigillo.
  */
 export function grantSeals(): number[] {
   const got: number[] = [];
   while (S.seals < 8) {
     const m = S.seals + 1;
-    if (S.badges < m || !S.flags[`m${m}_mission`] || S.exDone < m + 1 || S.flags.bankrupt) break;
+    if (S.badges < m || S.exDone < m + 1 || S.flags.bankrupt) break;
     S.seals = m;
     got.push(m);
     // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (missione dal Mentore o esercizio in Clinica),
@@ -178,8 +180,8 @@ export function grantSeals(): number[] {
 
 /**
  * L'accredito di un esercizio all'accettazione dell'ordine è provvisorio: se l'ordine finisce annullato, scaduto o
- * rifiutato senza esecuzione, la rata non è stata versata davvero. Gli esercizi che non sono più coperti dagli
- * acquisti tornano "da fare", e i Sigilli ottenuti grazie a loro restano sospesi finché la rata non viene versata.
+ * rifiutato senza esecuzione, la quota non è stata investita davvero. Gli esercizi che non sono più coperti dagli
+ * acquisti tornano "da fare", e i Sigilli ottenuti grazie a loro restano sospesi finché la quota non viene investita davvero.
  * Dopo la Lega non si torna indietro.
  */
 export function reopenExercises(boughtBefore: number): string[] {
@@ -190,12 +192,12 @@ export function reopenExercises(boughtBefore: number): string[] {
   // ripartenza gli acquisti ripartono da zero, e gli esercizi già fatti non si toccano)
   while (S.exDone > 0 && S.portfolio.bought + 0.005 < exNeed(S.exDone - 1) && boughtBefore + 0.005 >= exNeed(S.exDone - 1)) S.exDone--;
   if (S.exDone === before) return notes;
-  // l'attrezzo era già stato usato: resta valido, manca solo la rata
+  // l'attrezzo era già stato usato: resta valido, manca solo la quota
   S.exTools = { limit: true, stop: true };
-  notes.push(`${S.exDone === 0 ? 'L\'esercizio della Valigetta' : `L'esercizio della tappa ${S.exDone}`} torna da fare: l'ordine non è stato eseguito, quindi la rata non è stata versata davvero.`);
+  notes.push(`${S.exDone === 0 ? 'L\'esercizio della Valigetta' : `L'esercizio della tappa ${S.exDone}`} torna da fare: l'ordine non è stato eseguito, quindi la quota della tappa non è stata investita davvero.`);
   const keep = Math.max(0, S.exDone - 1);
   if (S.seals > keep) {
-    notes.push(`${S.seals - keep === 1 ? `Il Sigillo ${S.seals} resta sospeso` : `I Sigilli da ${keep + 1} a ${S.seals} restano sospesi`} finché non versi la rata con un acquisto eseguito.`);
+    notes.push(`${S.seals - keep === 1 ? `Il Sigillo ${S.seals} resta sospeso` : `I Sigilli da ${keep + 1} a ${S.seals} restano sospesi`} finché non investi la quota con un acquisto eseguito.`);
     S.seals = keep;
   }
   return notes;
@@ -324,8 +326,7 @@ export async function buy(asset: string, amount: number, o: { type?: 'market' | 
   const total = amount * (1 + fee());
   const avail = usableCash(pf) + (lev ? credit(pf) : 0);
   if (total > avail + 0.005) {
-    const lockedNow = locked(pf);
-    return { ok: false, msg: `Puoi investire ancora ${fmtMoney(avail)}.${lockedNow > 0 ? ` Altri ${fmtMoney(lockedNow)} sono nella Riserva dell'Accademia: si liberano una rata alla volta, con gli Attestati.` : ''}` };
+    return { ok: false, msg: `Puoi investire ancora ${fmtMoney(avail)}: il resto del capitale è già nei titoli o riservato agli ordini in coda.` };
   }
   const crypto = isCrypto(asset);
   const req: A.OrderReq = { symbol: asset, side: 'buy', type, time_in_force: crypto ? 'gtc' : 'day', client_order_id: `tm-${S.saveId}-${pf.orderSeq + 1}` };
@@ -529,6 +530,48 @@ export function margin(pf: Portfolio = S.portfolio, now = Date.now()): MarginSta
   const call = pf.loan > 0 && ratio < LEVERAGE.maintenance;
   const daysLeft = call && pf.marginCallAt ? Math.max(0, LEVERAGE.callDays - tradingDaysBetween(pf.marginCallAt, now)) : LEVERAGE.callDays;
   return { loan: pf.loan, ratio, call, daysLeft, bankrupt: S.market.asOf > 0 && !!S.flags.starter && eq < pf.initial * LEVERAGE.bankrupt };
+}
+
+// ---------------- Conto reale: bancarotta ----------------
+
+export const LIVE_BUST = { pauseDays: { riparti: 7, 'una-volta': 30 } as Record<string, number> } as const;
+export interface LiveState { state: 'ok' | 'paused' | 'closed'; base: number; floor: number; until: number; fresh: boolean; busts: number }
+
+/**
+ * Bancarotta sul conto REALE. Il riferimento è il patrimonio che il conto aveva la prima volta che il gioco l'ha
+ * visto; sotto la stessa soglia del conto di gioco (LEVERAGE.bankrupt) il gioco smette di inviare ACQUISTI dal suo
+ * sportello: per qualche giorno, o per sempre, secondo la difficoltà. Vendere, prelevare e operare dal sito di Alpaca
+ * resta sempre possibile: il gioco non tocca il denaro e non chiude nulla da solo. Nessun premio o penalità di
+ * gioco dipende da questo stato: è una tutela, e segue il giocatore anche in Nuova Partita+.
+ */
+export function liveCheck(equity: number, now = Date.now()): LiveState {
+  const f = S.flags;
+  const out = (state: LiveState['state'], fresh = false): LiveState => {
+    const base = Number(f.liveBase ?? 0);
+    return { state, base, floor: base * LEVERAGE.bankrupt, until: Number(f.liveBust ?? 0), fresh, busts: Number(f.liveBusts ?? 0) };
+  };
+  if (f.liveClosed) return out('closed');
+  const until = Number(f.liveBust ?? 0);
+  if (until) {
+    if (now < until) return out('paused');
+    // pausa finita: si riparte dal patrimonio che c'è adesso
+    f.liveBust = 0;
+    f.liveBase = equity > 0 ? equity : 0;
+    save();
+    return out('ok');
+  }
+  if (!(Number(f.liveBase ?? 0) > 0)) {
+    if (equity > 0) { f.liveBase = equity; save(); }
+    return out('ok');
+  }
+  if (equity >= Number(f.liveBase) * LEVERAGE.bankrupt) return out('ok');
+  const busts = Number(f.liveBusts ?? 0) + 1;
+  f.liveBusts = busts;
+  const rule = DIFFICULTY[S.difficulty].bankrupt;
+  if (rule === 'game-over' || (rule === 'una-volta' && busts > 1)) f.liveClosed = true;
+  else f.liveBust = now + LIVE_BUST.pauseDays[rule] * 86400000;
+  save();
+  return out(f.liveClosed ? 'closed' : 'paused', true);
 }
 
 /** La chiamata di margine parte quando il giocatore la vede: nessuna scadenza corre mentre il gioco è chiuso. */

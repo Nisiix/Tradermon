@@ -12,7 +12,7 @@ import { openObservatory, realChart } from './live';
 import * as Acc from '../systems/account';
 import { asOfLabel, hasPrices } from '../systems/realdata';
 import { marketClock } from '../systems/market';
-import { DIFFICULTY } from '../systems/balance';
+import { DIFFICULTY, LEVERAGE } from '../systems/balance';
 import { requireAccount, apiKeysMenu, stageScreen, leverageDesk, accountAlerts, nextSealLine } from './broker';
 import { journalPrompt } from './journal';
 import { questionnaire } from './setup';
@@ -42,7 +42,7 @@ export async function openClinic(townIdx: number) {
   for (;;) {
     const opts = [
       'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Cura: ribilanciamento', 'Lezione sui bias',
-      'Tappe, rate e Sigilli', 'Leva e margine', 'Dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Chiavi API e conto reale', 'Osservatorio Alpaca (sola lettura)', 'Specchio dell\'investitore', 'Arrivederci',
+      'Tappe, Prove e Sigilli', 'Leva e margine', 'Dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Chiavi API e conto reale', 'Osservatorio Alpaca (sola lettura)', 'Specchio dell\'investitore', 'Arrivederci',
     ];
     const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Cura') && !hasTech(TECH.REBAL)));
     const c = await choose(opts, { cancel: true, title: 'CLINICA DEL PORTAFOGLIO', disabled: dis });
@@ -62,7 +62,7 @@ export async function openClinic(townIdx: number) {
       case 'Diagnosi': await diagnose(); break;
       case 'Cura: ribilanciamento': await rebalance(); break;
       case 'Lezione sui bias': await reflect(); break;
-      case 'Tappe, rate e Sigilli': await stageScreen(); break;
+      case 'Tappe, Prove e Sigilli': await stageScreen(); break;
       case 'Leva e margine': await leverageDesk(); break;
       case 'Dividendi': await dividends(); break;
       case 'Depositi e prelievi': await deposit(); break;
@@ -115,12 +115,12 @@ export function checkupHtml(): string {
   return `
     <div class="grid2">
       <div><b>Patrimonio:</b> ${fmtMoney(v)} <span class="${v >= pf.contributed ? 'good' : 'bad'}">(${fmtPct(v / pf.contributed - 1)} sul capitale)</span><br>
-      <b>Da investire:</b> ${fmtMoney(Acc.usableCash(pf))} · <b>Riserva dell'Accademia:</b> ${fmtMoney(lock)}${Acc.reserved(pf) > 0 ? ` · <b>in ordini:</b> ${fmtMoney(Acc.reserved(pf))}` : ''}${pf.loan > 0 ? ` · <b class="bad">prestito:</b> ${fmtMoney(pf.loan)}` : ''}<br>
+      <b>Da investire:</b> ${fmtMoney(Acc.usableCash(pf))} · <b>Soglia di bancarotta:</b> ${fmtMoney(pf.initial * LEVERAGE.bankrupt)}${Acc.reserved(pf) > 0 ? ` · <b>in ordini:</b> ${fmtMoney(Acc.reserved(pf))}` : ''}${pf.loan > 0 ? ` · <b class="bad">prestito:</b> ${fmtMoney(pf.loan)}` : ''}<br>
       <b>Slot:</b> ${pf.positions.length}/${slots()} · <b>Clima:</b> ${CLIMATE_LABEL[S.market.climate]} · ${clk.label}</div>
       <div><b>Salute: ${h.state}</b> (${h.score}/100)${bar(h.score)}
       <span class="small">Peso massimo ${h.maxW.toFixed(0)}% · drawdown ${h.dd.toFixed(1)}% · settori ${h.sectors}</span></div>
     </div>
-    <p class="small"><b>Allocazione del capitale liberato</b> rischiosi ${al.risky.toFixed(0)}% · difensivi ${al.defensive.toFixed(0)}% · liquidità ${al.cash.toFixed(0)}% — <span class="muted">obiettivo ${pf.target.risky}/${pf.target.defensive}/${pf.target.cash}</span><br>
+    <p class="small"><b>Allocazione del conto</b> rischiosi ${al.risky.toFixed(0)}% · difensivi ${al.defensive.toFixed(0)}% · liquidità ${al.cash.toFixed(0)}% — <span class="muted">obiettivo ${pf.target.risky}/${pf.target.defensive}/${pf.target.cash}</span><br>
     <b>Storico del conto</b> (${pf.valueHistory.length} giorni) rendimento ${fmtPct(m.ret)} · volatilità ${(m.vol * 100).toFixed(1)}% · max drawdown −${(m.mdd * 100).toFixed(1)}% · costi didattici e interessi ${fmtMoney(pf.costs)}</p>
     ${rows ? `<table class="t"><tr><th>Asset</th><th class="n">Quote</th><th class="n">Prezzo</th><th class="n">Valore</th><th class="n">Peso</th><th class="n">P&amp;L</th></tr>${rows}</table>` : '<p class="muted">Nessuna posizione. Usa "Compra / Vendi" in una Clinica per il primo investimento.</p>'}
     <p class="small muted">Titoli e prezzi reali, eseguiti sul tuo conto Alpaca Paper (denaro finto) · ${asOfLabel()}. ${nextSealLine()}</p>`;
@@ -161,9 +161,9 @@ export async function trade(guided = false): Promise<boolean> {
       const useLev = !!S.flags.useLev && Acc.leverageOpen();
       const fee = DIFFICULTY[S.difficulty].fee;
       body.innerHTML = `${msg ? `<p class="${msg.startsWith('!') ? 'bad' : 'good'}">${esc(msg.replace(/^!/, ''))}</p>` : ''}
-        <p class="small">Puoi investire <b>${fmtMoney(Acc.usableCash(pf) + (useLev ? Acc.credit(pf) : 0))}</b>${useLev ? ' (leva attiva)' : ''} · Riserva dell'Accademia ${fmtMoney(Acc.locked(pf))} · patrimonio ${fmtMoney(v - pf.loan)} · slot ${pf.positions.length}/${slots()} · ${fee ? `costo didattico ${(fee * 100).toFixed(2).replace('.', ',')}% per ordine` : 'nessun costo didattico'}.<br>
+        <p class="small">Puoi investire <b>${fmtMoney(Acc.usableCash(pf) + (useLev ? Acc.credit(pf) : 0))}</b>${useLev ? ' (leva attiva)' : ''} · patrimonio ${fmtMoney(v - pf.loan)} (bancarotta sotto ${fmtMoney(pf.initial * LEVERAGE.bankrupt)}) · slot ${pf.positions.length}/${slots()} · ${fee ? `costo didattico ${(fee * 100).toFixed(2).replace('.', ',')}% per ordine` : 'nessun costo didattico'}.<br>
         ${clk.open ? '<span class="good">Borsa USA aperta</span>: gli ordini a mercato si eseguono subito.' : `${clk.label}: puoi ordinare lo stesso, azioni ed ETF si eseguono alla prossima apertura (le cripto sempre).`} <span class="muted">${asOfLabel()}.</span><br>
-        ${ex.allDone ? '' : ex.open ? `<b>Esercizio ${ex.stage === 0 ? 'della Valigetta' : 'della tappa ' + ex.stage}:</b> ${ex.got + 0.005 >= ex.need ? 'rata versata' : `mancano ${fmtMoney(ex.need - ex.got)} di acquisti`}${ex.toolOk ? '' : ` · ${esc(ex.tool)}`}` : ''}${guided ? ' <b>Suggerimento:</b> versa la prima rata sul titolo della tua Valigetta.' : ''}</p>`;
+        ${ex.allDone ? '' : ex.open ? `<b>Prova sul conto ${ex.stage === 0 ? 'della Valigetta' : 'della tappa ' + ex.stage}:</b> ${ex.got + 0.005 >= ex.need ? 'quota minima investita' : `al minimo mancano ${fmtMoney(ex.need - ex.got)} di acquisti (puoi investire anche di più)`}${ex.toolOk ? '' : ` · ${esc(ex.tool)}`}` : ''}${guided ? ' <b>Suggerimento:</b> apri la Valigetta con il titolo che hai scelto in vetrina.' : ''}</p>`;
       const tbl = el('table', 't');
       tbl.innerHTML = '<tr><th>Asset</th><th class="n">Prezzo $</th><th class="n">1 mese</th><th class="n">Possiedi</th><th></th></tr>';
       for (const a of list) {
@@ -229,13 +229,13 @@ export async function trade(guided = false): Promise<boolean> {
       }
       body.appendChild(tbl);
       if (!list.length) body.appendChild(el('p', 'bad', 'Nessun prezzo disponibile per i tuoi titoli in questo momento: riprova tra poco.'));
-      body.appendChild(el('p', 'small muted', 'Ogni pulsante invia un ordine vero al tuo conto Alpaca Paper: denaro finto, prezzi e orari reali. La vetrina è scelta dal gioco per insegnare, non è un consiglio. Prima di decidere apri il Grafico. Gli stop su quote frazionarie valgono fino alla chiusura della seduta: è una regola di Alpaca.'));
+      body.appendChild(el('p', 'small muted', 'Ogni pulsante invia un ordine vero al tuo conto Alpaca Paper: denaro finto, prezzi e orari reali. La vetrina è scelta dal gioco per insegnare, non è un consiglio. Prima di decidere apri il Grafico. Scegli l\'importo in dollari: compri anche una frazione di titolo, non serve una quota intera. Gli stop su quote frazionarie valgono fino alla chiusura della seduta: è una regola di Alpaca.'));
     };
     const summaryOk = async (id: string, amt: number) => {
       const a = ASSET_BY_ID[id];
       const free = Math.max(1, value(S.portfolio, S.market.prices) - Acc.locked());
       const held = S.portfolio.positions.length;
-      if (held >= 1 && amt > free * 0.5 && !(await confirm(`Riepilogo: stai per investire ${fmtMoney(amt)} in ${a.name}, cioè il ${((amt / free) * 100).toFixed(0)}% del capitale liberato in un solo asset (rischio ${a.risk}/5). Confermi?`))) return false;
+      if (held >= 1 && amt > free * 0.5 && !(await confirm(`Riepilogo: stai per investire ${fmtMoney(amt)} in ${a.name}, cioè il ${((amt / free) * 100).toFixed(0)}% del tuo conto in un solo asset (rischio ${a.risk}/5). Confermi?`))) return false;
       return true;
     };
     render();
@@ -285,7 +285,7 @@ async function rebalance() {
   if (!(await requireAccount('il ribilanciamento'))) return;
   const plan = rebalancePlan(S.portfolio, S.market.prices, Acc.locked());
   if (!plan.length) { await say('Il portafoglio è già vicino al tuo obiettivo. Nessuna cura necessaria!', NURSE); return; }
-  await say(['Ecco la cura che propongo per tornare alla tua allocazione obiettivo, calcolata sul capitale già liberato.', 'Confermerai tu ogni singolo ordine: io propongo, non eseguo da sola. Sono ordini veri sul conto Paper.'], NURSE);
+  await say(['Ecco la cura che propongo per tornare alla tua allocazione obiettivo, calcolata su tutto il conto.', 'Confermerai tu ogni singolo ordine: io propongo, non eseguo da sola. Sono ordini veri sul conto Paper.'], NURSE);
   for (const p of plan) {
     const a = ASSET_BY_ID[p.id];
     const ok = (await choose(['Conferma', 'Salta'], { prompt: `${p.side === 'buy' ? 'Comprare' : 'Vendere'} circa ${fmtMoney(p.amount)} di ${a.name}?`, who: NURSE })) === 0;
@@ -323,8 +323,8 @@ async function dividends() {
   await say([
     'I dividendi sono la parte degli utili che un\'azienda distribuisce ai soci. Reinvestirli compra nuove quote, e sulle nuove quote arrivano altri dividendi.',
     payers.length ? `Tra i tuoi titoli pagano di solito un dividendo: ${payers.map((a) => `${a.name} (circa ${(a.dividend * 100).toFixed(1)}% l'anno)`).join(', ')}.` : 'In questo momento non hai titoli che pagano dividendi.',
-    'Una cosa da sapere: il conto Paper di Alpaca non simula i dividendi, quindi sul conto di gioco non li vedrai arrivare. Sul conto reale arrivano in contanti, e reinvestirli è una tua scelta.',
-    'Per vedere l\'effetto del reinvestimento su un anno intero c\'è la missione del sesto Mentore, nella Macchina del Tempo.',
+    'In Tradermon i dividendi sono un argomento di teoria: si studiano in Biblioteca e nei duelli, ma nessuna Prova sul conto li richiede. Il conto Paper di Alpaca non li paga, quindi sul conto di gioco non li vedrai arrivare.',
+    'Nella realtà arrivano in contanti, sono tassati, e reinvestirli è una tua scelta. Un rendimento da dividendo molto alto non è un regalo: spesso è il prezzo che è sceso.',
   ], NURSE);
 }
 
@@ -332,7 +332,7 @@ async function deposit() {
   const pf = S.portfolio;
   const lines = [
     `Capitale del conto di gioco: ${fmtMoney(pf.initial)}, fissato dalla difficoltà ${DIFFICULTY[S.difficulty].name}. Patrimonio attuale ${fmtMoney(Acc.equity())}.`,
-    'Durante il viaggio non si aggiunge e non si toglie denaro: il conto cambia solo con le tue operazioni e con il mercato. L\'Accademia libera il capitale a rate, una per tappa.',
+    'Durante il viaggio non si aggiunge e non si toglie denaro: il conto cambia solo con le tue operazioni e con il mercato. Il capitale è tutto investibile dal primo giorno: le tappe chiedono solo un minimo.',
     'Conto reale: i PRELIEVI si possono sempre fare, dal sito di Alpaca. I DEPOSITI non passano mai dal gioco, e Tradermon non ti chiederà mai di versare denaro.',
   ];
   if (!Acc.graduated()) { await say([...lines, 'Dopo la Lega potrai aumentare il capitale del conto di gioco da qui.'], NURSE); return; }
