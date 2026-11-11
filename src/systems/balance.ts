@@ -36,9 +36,9 @@ export const DUEL = {
 
 export const REWARD = {
   /** Reputazione per vittoria. */
-  rep: { trainer: 20, rematch: 15, student: 25, rival: 40, speculator: 30, boss: 150, badge: 200, league: 300, legend: 250, bookSection: 10, mentorRematch: 120 },
+  rep: { trainer: 20, rematch: 15, student: 25, rival: 40, speculator: 30, boss: 150, badge: 200, league: 300, legend: 250, bookSection: 10, mentorRematch: 120, temptation: 20 },
   /** Punti Conoscenza. */
-  xp: { badge: 100, rematch: 20, book: 5, tip: 5, hermit: 120, legend: 200, mentorRematch: 80, processStar: 15 },
+  xp: { badge: 100, rematch: 20, book: 5, tip: 5, hermit: 120, legend: 200, mentorRematch: 80, processStar: 15, daily: 10, dailyStreak: 5, dailyStreakMax: 50, casinoLesson: 30, archive: 50 },
 } as const;
 
 /** Gradi della Reputazione: ogni grado apre qualcosa (vedi systems/character.ts). */
