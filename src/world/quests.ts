@@ -61,7 +61,7 @@ export const QUESTS: Quest[] = [
   {
     id: 'q_pac', giver: 'giorgio', title: 'Il piano di Giorgio', xp: 100,
     steps: [
-      { kind: 'talk', target: 'annalisa', say: ['Ogni mese metto 100 Crediti nel mio piano di accumulo, ma non so quanto diventeranno.', 'Annalisa, la maestra qui accanto, conosce un trucco per calcolarlo. Chiediglielo per me.'],
+      { kind: 'talk', target: 'annalisa', say: ['Ogni mese metto 100 $ nel mio piano di accumulo, ma non so quanto diventeranno.', 'Annalisa, la maestra qui accanto, conosce un trucco per calcolarlo. Chiediglielo per me.'],
         targetLine: ['Giorgio vuole sapere del raddoppio? Regola del 72: dividi 72 per il rendimento annuo e ottieni gli anni per raddoppiare.', 'Al 6% servono circa 12 anni. Diglielo tu, a me non crede!'],
         done: ['Dodici anni per raddoppiare al 6%? Quindi più presto comincio, meglio è.'] },
       { kind: 'event', target: 'minigame', need: 1, say: ['Fammi un favore: prova il minigioco "Corsa dell\'interesse composto" in Biblioteca o nella Zona Simulazione.', 'Voglio sapere se i conti di Annalisa tornano davvero.'],

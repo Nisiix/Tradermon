@@ -6,15 +6,15 @@ import { PAL, titleBackdrop, portrait, playerPal, PLAYER_COLOR_LIST } from '../a
 import { getStage } from './core';
 import { controlsTutorial } from './tutorial';
 import { pushHandler, popHandler, type Key } from './input';
-import { newPortfolio, presetTarget } from '../systems/portfolio';
+import { applyDifficulty, chooseDifficulty } from './broker';
 import { keysOf } from '../systems/controls';
 
 export async function disclaimer(): Promise<void> {
   await modal('Prima di iniziare', ({ body, button, close }) => {
     body.innerHTML = `
       <p><b>Tradermon è un gioco educativo.</b> Non fornisce consulenza finanziaria né raccomandazioni personalizzate.</p>
-      <p>Il mondo, i personaggi e gli asset della Borsa di Capitalia sono di fantasia. I quiz citano fonti pubbliche di educazione finanziaria (SEC Investor.gov, Investopedia, Consob, Banca d'Italia, CFA Institute, ESMA).</p>
-      <p>Tutto il gioco si completa con denaro finto. Il collegamento opzionale a un conto reale Alpaca si sblocca solo più avanti, dopo un esame, con limiti prudenti e solo per maggiorenni. Investire comporta il rischio di perdere il capitale.</p>
+      <p>Il mondo e i personaggi di Capitalia sono di fantasia. <b>Titoli, prezzi e grafici sono reali</b>: arrivano da Alpaca, un broker, attraverso un conto Paper gratuito (denaro finto) che colleghi tu. I titoli in vetrina sono scelti per insegnare, non per consigliarti. I quiz citano fonti pubbliche di educazione finanziaria (SEC Investor.gov, Investopedia, Consob, Banca d'Italia, CFA Institute, ESMA).</p>
+      <p>Tutto il gioco si completa con denaro finto. Senza conto collegato resta il percorso di studio. Il collegamento a un conto reale è facoltativo, fuori dalla storia, dopo un esame, con limiti prudenti e solo per maggiorenni. Investire comporta il rischio di perdere il capitale.</p>
       <label><input type="checkbox" class="ck"> <span>Ho capito: è un gioco educativo, non consulenza.</span></label>`;
     const b = button('Inizia', () => close(), 'primary');
     b.disabled = true;
@@ -72,42 +72,10 @@ export async function onboarding(playerName?: string): Promise<void> {
   S.rival = (await ask('Come si chiama il tuo rivale?', 'Leo', 10)) || 'Leo';
   await say([`Giusto, ${S.rival}! Ora vai a casa a riposare.`, 'Domani vieni al mio Laboratorio: ti aspetta una scelta importante.'], 'Prof. Saldi');
   intro.remove();
-  S.portfolio = newPortfolio(10000, 0, S.profile);
+  await say(['Un\'ultima scelta, e questa non si cambia più: la difficoltà.', 'Decide quanto capitale avrà il tuo conto di gioco e quanto margine di errore ti lascio lungo il viaggio. I punteggi sono in percentuale: un capitale più grande non dà vantaggi.'], 'Prof. Saldi');
+  applyDifficulty(await chooseDifficulty());
   S.map = 'home'; S.x = 2; S.y = 4; S.facing = 'down';
   save();
-}
-
-export async function portfolioSetup(): Promise<void> {
-  await say(['Ciao, sono la Dott.ssa Ratio! Lavoro nelle Cliniche del Portafoglio di tutta la regione.', 'Il Professore mi ha chiesto di aprirti il tuo Conto di Prova: denaro finto, lezioni vere.'], 'Dott.ssa Ratio');
-  const res = await modal<{ cap: number; monthly: number; drip: boolean; risky: number; def: number; cash: number }>('Il tuo Conto di Prova', ({ body, button, close }) => {
-    const pt = presetTarget(S.profile);
-    const t = [pt.risky, pt.defensive, pt.cash];
-    body.innerHTML = `
-      <p class="small">Tutto in <b>Crediti</b> (1 Credito = 1 dollaro virtuale). I punteggi sono in percentuale: un capitale più grande non dà vantaggi.</p>
-      <div class="grid2">
-        <label>Capitale virtuale<select class="tx cap"><option>1000</option><option selected>10000</option><option>50000</option></select></label>
-        <p class="small muted" style="align-self:end">Il gioco non aggiunge né toglie denaro: il conto cambia solo con le tue operazioni e con il mercato.</p>
-      </div>
-      <p><b>Allocazione obiettivo</b> <span class="small muted">(preset per il profilo ${S.profile}; la somma deve fare 100)</span></p>
-      <div class="grid2">
-        <label>Asset rischiosi %<input class="tx r" type="number" min="0" max="100" value="${t[0]}"></label>
-        <label>Asset difensivi % <span class="small muted">${S.track === 'crypto' ? '(stablecoin, oro tokenizzato)' : '(obbligazioni, settori difensivi, oro)'}</span><input class="tx d" type="number" min="0" max="100" value="${t[1]}"></label>
-        <label>Liquidità %<input class="tx c" type="number" min="0" max="100" value="${t[2]}"></label>
-        <label style="align-self:end"><input type="checkbox" class="drip" checked> Reinvesti automaticamente i dividendi</label>
-      </div>
-      <p class="msg small bad"></p>`;
-    button('Apri il conto', () => {
-      const q = (s: string) => Number((body.querySelector(s) as HTMLInputElement).value);
-      const r = q('.r'), d = q('.d'), c = q('.c');
-      if (r + d + c !== 100 || [r, d, c].some((x) => x < 0)) { (body.querySelector('.msg') as HTMLElement).textContent = 'Le tre percentuali devono sommare a 100.'; return; }
-      close({ cap: q('.cap'), monthly: 0, drip: (body.querySelector('.drip') as HTMLInputElement).checked, risky: r, def: d, cash: c });
-    }, 'primary');
-  }, { closable: false });
-  const r = res!;
-  S.portfolio = newPortfolio(r.cap, r.monthly, S.profile);
-  S.portfolio.drip = r.drip;
-  S.portfolio.target = { risky: r.risky, defensive: r.def, cash: r.cash };
-  await say([`Conto aperto con ${r.cap.toLocaleString('it-IT')} Crediti.`, 'Ogni città ha una Clinica come questa: lì controlli la salute del portafoglio, compri, vendi e salvi.', 'E se un giorno perderai tutto in simulazione, potrai ricaricare il conto di prova una volta per regione. Ma ti costerà un po\' di Reputazione!'], 'Dott.ssa Ratio');
 }
 
 export async function runExam(): Promise<boolean> {

@@ -14,6 +14,20 @@ Regole d'oro del progetto:
 
 ---
 
+
+> **Aggiornamento: gioco sui dati reali (sostituisce le parti sul "mercato simulato" e sul "Conto di Prova" qui sotto).**
+> - Titoli, prezzi e grafici sono solo quelli reali di Alpaca; i titoli di fantasia e l'indice "Capitalia 100" non esistono più. Senza conto Alpaca Paper collegato resta il percorso di studio.
+> - Difficoltà scelta all'inizio (Apprendista 10.000 $, Investitore 5.000 $, Stratega 2.500 $, Leggenda 1.000 $): fissa capitale, costo didattico per ordine, quota minima di tappa e regola della bancarotta. Non si cambia. Leggenda si sblocca solo con la Nuova Partita+.
+> - Conto di gioco: registro dentro il conto Alpaca Paper, aggiornato solo dagli ordini inviati dal gioco e riconciliato con le posizioni vere. Tutto il capitale è investibile dal primo giorno; ogni tappa chiede una quota minima cumulata (5% / 7% / 8,5% / 9,5% del capitale per tappa), mai un massimo. Ordini anche frazionati.
+> - Medaglia = Attestato (duello, apre la strada) più Sigillo pratico (Prova sul conto: quota della tappa investita con ordini veri sul mercato di oggi, usando la Tecnica appena imparata). La Lega chiede otto Sigilli. I replay vivono solo nella Macchina del Tempo (Zona Simulazione: missioni facoltative, periodi liberi, crisi storiche) e nelle crisi leggendarie della Torre; i Mentori non ne propongono.
+> - Lega: duello più verifica del conto com'è adesso. Marta Macro: almeno metà del patrimonio investito, tre titoli, uno difensivo. Tito Tecnico: nessun titolo oltre il 40% dell'investito e stop attivi su almeno un quarto. Giulia Garante: lo sportello delle offerte (non passa dal conto). Fabio Freddo: quota rischiosa entro 15 punti dal proprio piano e tre decisioni motivate nel Diario. Campione: tutto insieme, senza chiamate di margine. Nessuna prova chiede un rendimento; contano solo gli ordini eseguiti (`src/systems/trials.ts`).
+> - Bancarotta: quando il conto arriva a zero (sotto 1 $), in ogni difficoltà. Le quote di tappa sono importi fissi sul capitale di partenza della difficoltà, anche dopo perdite o una ripartenza (`stageQuota`, `ZERO`). Ripartenza con metà del capitale di partenza; una sola in Stratega; nessuna in Leggenda. Sul conto reale la stessa regola ferma gli acquisti dal gioco per 7 o 30 giorni o per sempre.
+> - Leva: esame dal 5º Attestato (vale nei replay), sul conto dall'8º, massimo 2×, interessi 6,5%, mantenimento 30%, chiamata di margine di tre giorni di mercato. Dividendi: solo teoria.
+> - Dopo la Lega: aumenti di capitale, crisi leggendarie su periodi reali, tre Boss dei Mercati (quiz più un solo piano valutato sulle candele reali dopo 2 ore, 3 giorni o 4 settimane). Nuova Partita+: tutto da zero tranne i trofei, con la difficoltà Leggenda sbloccata.
+> - Bancarotta, come ci si arriva: con la leva oppure con le perdite realizzate. Le vendite in perdita contano sia fatte nel gioco sia fatte fuori (sito di Alpaca): il gioco le riconosce alla sincronizzazione, le registra al prezzo vero di esecuzione e ricontrolla la bancarotta. Nelle prove sul conto si può vendere un titolo, anche in parte, e puntare su un altro. Nei mandati dei Boss la decisione di vendere prima della scadenza annulla la sfida, che si ripete da capo con un titolo diverso e non conta come sconfitta.
+> - Dove si opera: sul sito pubblico gli ordini del conto Paper passano dalla funzione Supabase `alpaca` (giocatore collegato, chiavi cifrate con la sua password, mai salvate dalla funzione); il conto reale solo giocando sul proprio computer.
+> - Il conto reale (Live) resta facoltativo e fuori dalla storia. Numeri in `src/systems/balance.ts`; regole in `src/systems/account.ts`, `realdata.ts`, `boss.ts`.
+
 ## 1. Esperienza del giocatore in sintesi
 
 | Fase | Durata indicativa | Cosa impara | Cosa sblocca |
@@ -306,7 +320,7 @@ Dal menu Profilo si genera un **codice sfida** (seed). Un amico che inserisce lo
   - Anche l'ordine degli argomenti dei Mentori segue questa scala: le basi e il rischio vengono per prime; obbligazioni, bias, leva e margine verso la fine; macroeconomia e regole nella Lega.
   - Fonti: IOSCO/OECD, *Core Competencies Framework on Financial Literacy for Investors* (2019); Council for Economic Education, *National Standards for Financial Literacy* (benchmark grade 8 e grade 12); FINRA Foundation, *Why Is Measured Financial Literacy Declining?* (NFCS 2009–2021); Lusardi e Mitchell, HRS 2008 (PMC5445927); FINRA, *Investing Knowledge Quiz* (2023).
 - **Torre delle Sfide**: piani infiniti, ogni piano 3 domande casuali di difficoltà crescente; record personale salvato.
-- **Nuova Partita+**: si ricomincia in un altro percorso conservando avatar, record e carte dorate.
+- **Nuova Partita+**: si ricomincia da zero (conto di gioco, Attestati, Sigilli, Prove sul conto, leva, accesso a Torre e Boss), scegliendo di nuovo percorso e difficoltà. Restano solo i trofei (record della Torre, crisi leggendarie, Boss battuti, carte dorate, traguardi, titolo, arredi, Diario) e sblocca la difficoltà Leggenda.
 
 ### 5.15 Uova dei dividendi
 
@@ -389,6 +403,8 @@ Metriche finali: rendimento totale, volatilità annualizzata, **indice di Sharpe
 Le soglie sono uguali per tutti i profili.
 
 ### 6.3 Missioni della Lega
+
+> Sostituito dalle verifiche sul conto di gioco descritte nell'aggiornamento in testa al documento: la tabella qui sotto descrive i vecchi replay, che non fanno più parte della Lega (resta solo lo sportello delle offerte di Giulia Garante).
 
 | Avversario | Quiz | Missione | Obiettivo |
 |---|---|---|---|

@@ -52,6 +52,12 @@ export async function currentPlayer(): Promise<Player | null> {
   } catch { return null; }
 }
 
+/** Token della sessione del giocatore, per le chiamate alla funzione Supabase che parla con Alpaca (null se non collegato). */
+export async function accessToken(): Promise<string | null> {
+  if (!cloudEnabled()) return null;
+  try { return (await client().auth.getSession()).data.session?.access_token ?? null; } catch { return null; }
+}
+
 export async function isNameFree(name: string): Promise<boolean> {
   const { data, error } = await client().rpc('nome_disponibile', { n: normName(name) });
   if (error) throw new Error(netMsg(error) ?? 'Non riesco a controllare il nome, riprova tra poco.');

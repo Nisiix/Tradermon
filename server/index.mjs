@@ -7,7 +7,8 @@
 //    e non vengono mai restituite al browser;
 //  - solo un elenco chiuso di endpoint Alpaca è raggiungibile;
 //  - gli ordini LIVE richiedono la parola di conferma e rispettano un tetto rigido per ordine;
-//  - niente vendite allo scoperto né acquisti oltre la liquidità disponibile;
+//  - niente vendite allo scoperto; gli acquisti non superano la liquidità disponibile, oppure, quando il giocatore
+//    usa la leva (intestazione x-tradermon-margin), il potere d'acquisto concesso da Alpaca;
 //  - ogni ordine è registrato in server/.secrets/audit.log.
 
 import http from 'node:http';
@@ -15,18 +16,22 @@ import { readFile, writeFile, mkdir, appendFile, stat, chmod } from 'node:fs/pro
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createCore, validKeys } from '../supabase/functions/alpaca/core.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.resolve(ROOT, '..', 'dist');
-const SECRETS = path.join(ROOT, '.secrets');
+const SECRETS = process.env.TRADERMON_SECRETS_DIR ? path.resolve(process.env.TRADERMON_SECRETS_DIR) : path.join(ROOT, '.secrets');
 const KEYS_FILE = path.join(SECRETS, 'keys.json');
 const AUDIT_FILE = path.join(SECRETS, 'audit.log');
 const PORT = Number(process.env.TRADERMON_PORT || process.env.PORT || 8888);
 const HOST = process.env.TRADERMON_HOST || '127.0.0.1';
 const LIVE_MAX_ORDER = Number(process.env.TRADERMON_LIVE_MAX_ORDER || 2500);
 
-const TRADING = { paper: 'https://paper-api.alpaca.markets/v2', live: 'https://api.alpaca.markets/v2' };
-const DATA = 'https://data.alpaca.markets';
+// Indirizzi di Alpaca. TRADERMON_ALPACA_MOCK serve solo ai test automatici (un finto Alpaca locale):
+// è accettato soltanto se punta a questo stesso computer.
+const MOCK = /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.TRADERMON_ALPACA_MOCK || '') ? process.env.TRADERMON_ALPACA_MOCK : '';
+const TRADING = MOCK ? { paper: `${MOCK}/paper/v2`, live: `${MOCK}/live/v2` } : { paper: 'https://paper-api.alpaca.markets/v2', live: 'https://api.alpaca.markets/v2' };
+const DATA = MOCK ? `${MOCK}/data` : 'https://data.alpaca.markets';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -68,21 +73,6 @@ async function readBody(req) {
   return raw ? JSON.parse(raw) : {};
 }
 
-async function alpaca(env, method, url, body) {
-  const k = keys[env];
-  if (!k) { const e = new Error(`Nessuna chiave ${env === 'live' ? 'Live' : 'Paper'} configurata. Inseriscila nella Clinica.`); e.status = 400; throw e; }
-  const r = await fetch(url, {
-    method,
-    headers: { 'APCA-API-KEY-ID': k.keyId, 'APCA-API-SECRET-KEY': k.secret, 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await r.text();
-  let data;
-  try { data = text ? JSON.parse(text) : {}; } catch { data = { message: text }; }
-  if (!r.ok) { const e = new Error(data.message || `Alpaca ha risposto ${r.status}`); e.status = r.status; throw e; }
-  return data;
-}
-
 function dataEnv() { return keys.live ? 'live' : 'paper'; }
 
 async function audit(entry) {
@@ -90,71 +80,9 @@ async function audit(entry) {
   await appendFile(AUDIT_FILE, JSON.stringify({ t: new Date().toISOString(), ...entry }) + '\n', { mode: 0o600 });
 }
 
-const SYMBOL_RE = /^[A-Z0-9.]{1,12}(\/[A-Z]{3,5})?$/;
-
-async function validateOrder(env, o, confirm) {
-  if (!o || typeof o !== 'object') throw Object.assign(new Error('Ordine non valido'), { status: 400 });
-  const symbol = String(o.symbol || '').toUpperCase();
-  if (!SYMBOL_RE.test(symbol)) throw Object.assign(new Error('Simbolo non valido'), { status: 400 });
-  if (!['buy', 'sell'].includes(o.side)) throw Object.assign(new Error('Lato non valido'), { status: 400 });
-  if (!['market', 'limit', 'stop', 'stop_limit'].includes(o.type)) throw Object.assign(new Error('Tipo di ordine non consentito'), { status: 400 });
-  if (!['day', 'gtc', 'ioc'].includes(o.time_in_force)) throw Object.assign(new Error('Validità non consentita'), { status: 400 });
-  if (!o.notional && !o.qty) throw Object.assign(new Error('Serve un importo o una quantità'), { status: 400 });
-  if (env === 'live' && confirm !== 'CONFERMO') throw Object.assign(new Error('Per gli ordini reali serve la parola di conferma CONFERMO'), { status: 403 });
-
-  const clean = {
-    symbol, side: o.side, type: o.type, time_in_force: o.time_in_force,
-    client_order_id: String(o.client_order_id || `tm-${Date.now()}`).slice(0, 48),
-  };
-  if (o.notional) clean.notional = String(Number(o.notional).toFixed(2));
-  if (o.qty) clean.qty = String(Number(o.qty));
-  if (o.type === 'limit' || o.type === 'stop_limit') clean.limit_price = String(Number(o.limit_price));
-  if (o.type === 'stop' || o.type === 'stop_limit') clean.stop_price = String(Number(o.stop_price));
-  for (const k of ['limit_price', 'stop_price']) if (k in clean && !(Number(clean[k]) > 0)) throw Object.assign(new Error('Prezzo limite/stop non valido'), { status: 400 });
-  // sulle cripto Alpaca accetta solo validità gtc o ioc e non accetta lo stop semplice
-  if (symbol.includes('/')) {
-    if (clean.time_in_force === 'day') clean.time_in_force = 'gtc';
-    if (clean.type === 'stop') throw Object.assign(new Error('Sulle cripto usa uno stop limit'), { status: 400 });
-  } else if (clean.notional && (clean.type !== 'market' || clean.time_in_force !== 'day')) {
-    throw Object.assign(new Error('Gli ordini frazionari (per importo) sulle azioni devono essere a mercato e giornalieri'), { status: 400 });
-  }
-
-  // prezzo stimato per i controlli
-  const isCrypto = symbol.includes('/');
-  let price = Number(o.limit_price || o.stop_price || 0);
-  if (!price) {
-    try { price = (await latestPrice(symbol, isCrypto)).price; } catch { price = 0; }
-  }
-  const estimate = clean.notional ? Number(clean.notional) : Number(clean.qty) * price;
-
-  if (env === 'live' && estimate > LIVE_MAX_ORDER) throw Object.assign(new Error(`L'ordine supera il tetto del server (${LIVE_MAX_ORDER} $)`), { status: 403 });
-
-  if (o.side === 'buy') {
-    const acc = await alpaca(env, 'GET', `${TRADING[env]}/account`);
-    const cash = Number(acc.cash);
-    if (estimate > cash) throw Object.assign(new Error('Liquidità insufficiente: Tradermon non usa margine né prestiti'), { status: 403 });
-  } else {
-    let pos = null;
-    try { pos = await alpaca(env, 'GET', `${TRADING[env]}/positions/${encodeURIComponent(symbol.replace('/', ''))}`); } catch { pos = null; }
-    if (!pos) throw Object.assign(new Error('Non possiedi questo titolo: le vendite allo scoperto non sono consentite'), { status: 403 });
-    const owned = Number(pos.qty);
-    const mv = Number(pos.market_value);
-    if ((clean.qty && Number(clean.qty) > owned + 1e-9) || (clean.notional && Number(clean.notional) > mv + 0.01)) {
-      throw Object.assign(new Error('Stai vendendo più di quanto possiedi: niente vendite allo scoperto'), { status: 403 });
-    }
-  }
-  return { clean, estimate };
-}
-
-async function latestPrice(symbol, isCrypto) {
-  const env = dataEnv();
-  if (isCrypto) {
-    const d = await alpaca(env, 'GET', `${DATA}/v1beta3/crypto/us/latest/trades?symbols=${encodeURIComponent(symbol)}`);
-    return { price: d.trades?.[symbol]?.p ?? 0 };
-  }
-  const d = await alpaca(env, 'GET', `${DATA}/v2/stocks/${encodeURIComponent(symbol)}/trades/latest?feed=iex`);
-  return { price: d.trade?.p ?? 0 };
-}
+// Regole e rotte verso Alpaca: le stesse della funzione Supabase del sito pubblico (che però ammette solo il Paper).
+const core = createCore({ trading: TRADING, data: DATA, keysOf: (env) => keys[env], dataEnv, audit, liveMaxOrder: LIVE_MAX_ORDER });
+const alpaca = core.alpaca;
 
 async function handleApi(req, res, url) {
   const parts = url.pathname.split('/').filter(Boolean); // ['api', ...]
@@ -167,7 +95,7 @@ async function handleApi(req, res, url) {
       const env = b.env === 'live' ? 'live' : b.env === 'paper' ? 'paper' : null;
       const keyId = String(b.keyId || '').trim();
       const secret = String(b.secret || '').trim();
-      if (!env || !/^[A-Z0-9]{10,40}$/i.test(keyId) || secret.length < 20 || secret.length > 120) return send(res, 400, { message: 'Chiavi non valide' });
+      if (!env || !validKeys(keyId, secret)) return send(res, 400, { message: 'Chiavi non valide' });
       const prev = keys[env];
       keys[env] = { keyId, secret };
       try {
@@ -187,63 +115,8 @@ async function handleApi(req, res, url) {
       return send(res, 200, { ok: true });
     }
   }
-  if (parts[1] === 'alpaca' && (parts[2] === 'paper' || parts[2] === 'live')) {
-    const env = parts[2];
-    const rest = parts.slice(3);
-    const base = TRADING[env];
-    if (req.method === 'GET' && rest.length === 1 && ['account', 'positions', 'clock'].includes(rest[0])) {
-      return send(res, 200, await alpaca(env, 'GET', `${base}/${rest[0]}`));
-    }
-    if (req.method === 'GET' && rest[0] === 'orders' && rest.length === 1) {
-      const status = url.searchParams.get('status') === 'all' ? 'all' : 'open';
-      return send(res, 200, await alpaca(env, 'GET', `${base}/orders?status=${status}&limit=50`));
-    }
-    if (req.method === 'GET' && rest[0] === 'assets' && rest.length >= 2) {
-      const sym = decodeURIComponent(rest.slice(1).join('/')).toUpperCase();
-      if (!SYMBOL_RE.test(sym)) return send(res, 400, { message: 'Simbolo non valido' });
-      return send(res, 200, await alpaca(env, 'GET', `${base}/assets/${encodeURIComponent(sym)}`));
-    }
-    if (req.method === 'POST' && rest[0] === 'orders' && rest.length === 1) {
-      const body = await readBody(req);
-      const { clean, estimate } = await validateOrder(env, body, req.headers['x-tradermon-confirm']);
-      try {
-        const out = await alpaca(env, 'POST', `${base}/orders`, clean);
-        await audit({ event: 'order', env, symbol: clean.symbol, side: clean.side, type: clean.type, estimate, id: out.id, client_order_id: clean.client_order_id, status: out.status });
-        return send(res, 200, out);
-      } catch (e) {
-        await audit({ event: 'order_rejected', env, symbol: clean.symbol, side: clean.side, estimate, reason: e.message });
-        throw e;
-      }
-    }
-    if (req.method === 'DELETE' && rest[0] === 'orders' && rest.length === 2) {
-      const id = rest[1];
-      if (!/^[a-f0-9-]{36}$/i.test(id)) return send(res, 400, { message: 'Id ordine non valido' });
-      await alpaca(env, 'DELETE', `${base}/orders/${id}`);
-      await audit({ event: 'order_cancel', env, id });
-      return send(res, 200, { ok: true });
-    }
-  }
-  if (parts[1] === 'data') {
-    const sym = String(url.searchParams.get('symbol') || '').toUpperCase();
-    const cls = url.searchParams.get('class') === 'crypto' ? 'crypto' : 'stocks';
-    if (!SYMBOL_RE.test(sym)) return send(res, 400, { message: 'Simbolo non valido' });
-    if (parts[2] === 'latest') return send(res, 200, await latestPrice(sym, cls === 'crypto'));
-    if (parts[2] === 'bars') {
-      const start = String(url.searchParams.get('start') || '').slice(0, 10);
-      const end = String(url.searchParams.get('end') || '').slice(0, 10);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return send(res, 400, { message: 'Date non valide' });
-      const TIMEFRAMES = new Set(['5Min', '15Min', '1Hour', '4Hour', '1Day']);
-      const tf = String(url.searchParams.get('timeframe') || '1Day');
-      if (!TIMEFRAMES.has(tf)) return send(res, 400, { message: 'Orizzonte non valido (5Min, 15Min, 1Hour, 4Hour, 1Day)' });
-      const env = dataEnv();
-      if (cls === 'crypto') {
-        const d = await alpaca(env, 'GET', `${DATA}/v1beta3/crypto/us/bars?symbols=${encodeURIComponent(sym)}&timeframe=${tf}&start=${start}&end=${end}&limit=10000`);
-        return send(res, 200, { bars: d.bars?.[sym] ?? [] });
-      }
-      const d = await alpaca(env, 'GET', `${DATA}/v2/stocks/${encodeURIComponent(sym)}/bars?timeframe=${tf}&start=${start}&end=${end}&limit=10000&adjustment=all&feed=iex`);
-      return send(res, 200, { bars: d.bars ?? [] });
-    }
-  }
+  const out = await core.handle({ method: req.method, parts: parts.slice(1), query: url.searchParams, header: (n) => req.headers[n], body: () => readBody(req) });
+  if (out) return send(res, out.status, out.body);
   return send(res, 404, { message: 'Endpoint non disponibile' });
 }
 

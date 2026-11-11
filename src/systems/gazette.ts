@@ -1,4 +1,4 @@
-// Giornale di Capitalia: le notizie di ieri raccontate dal mercato del mondo. Deterministico dai prezzi,
+// Giornale dei Mercati: le sedute appena passate, raccontate dai prezzi REALI scaricati da Alpaca. Deterministico dai prezzi,
 // così il Giornale descrive ciò che è successo senza mai alimentarlo (niente profezie che si autoavverano).
 import { S } from './state';
 import { ASSETS, SECTOR_LABEL } from '../data/assets';
@@ -36,12 +36,12 @@ export function headlines(days = 8): Headline[] {
     const mover = [...byAsset].sort((a, b) => Math.abs(b.r) - Math.abs(a.r))[0];
     const day = S.market.day - (k - 1);
     const tone: Headline['tone'] = m > 0.01 ? 'su' : m < -0.01 ? 'giu' : 'neutro';
-    const title = Math.abs(m) > 0.03 ? (m > 0 ? `Capitalia festeggia: indice ${pct(m)}` : `Giornata nera: indice ${pct(m)}`)
+    const title = Math.abs(m) > 0.03 ? (m > 0 ? `I Mercati di Fuori festeggiano: S&P 500 ${pct(m)}` : `Giornata nera: S&P 500 ${pct(m)}`)
       : Math.abs(m) > 0.01 ? (m > 0 ? `Borsa in rialzo (${pct(m)})` : `Borsa in calo (${pct(m)})`) : `Seduta tranquilla (${pct(m)})`;
     const parts: string[] = [];
     if (best && worst && best.sector !== worst.sector) parts.push(`Bene ${SECTOR_LABEL[best.sector].toLowerCase()} (${pct(best.r)}), male ${SECTOR_LABEL[worst.sector].toLowerCase()} (${pct(worst.r)}).`);
     if (mover && Math.abs(mover.r) > 0.04) parts.push(`Il titolo del giorno è ${mover.name}: ${pct(mover.r)}.`);
-    const ops = S.journal.filter((e) => e.account === 'prova' && e.day === day).length;
+    const ops = S.journal.filter((e) => e.account === 'paper' && e.day === day).length;
     if (ops) parts.push(`Tu quel giorno hai fatto ${ops} operazion${ops === 1 ? 'e' : 'i'}: rileggile nel Diario.`);
     out.push({ day, title, body: parts.join(' '), tone });
   }
@@ -51,7 +51,7 @@ export function headlines(days = 8): Headline[] {
 /** Riquadro di apertura: la settimana e il clima, con il promemoria che il giornale racconta il passato. */
 export function weekSummary(): string {
   const idx = S.market.index;
-  if (idx.length < 6) return 'Il mercato ha appena aperto: le prime notizie arriveranno tra qualche giorno.';
+  if (idx.length < 6) return 'Nessun prezzo reale scaricato: il Giornale si riempie quando colleghi il conto Alpaca Paper (menu, voce "Chiavi API").';
   const w = idx[idx.length - 1] / idx[idx.length - 6] - 1;
-  return `Ultimi 5 giorni: indice ${pct(w)}. Clima: ${CLIMATE_LABEL[S.market.climate]}. Il Giornale racconta ieri: serve a capire cosa è successo, non a prevedere domani.`;
+  return `Ultime 5 sedute reali: S&P 500 ${pct(w)}. Clima: ${CLIMATE_LABEL[S.market.climate]}. Il Giornale racconta ieri: serve a capire cosa è successo, non a prevedere domani.`;
 }

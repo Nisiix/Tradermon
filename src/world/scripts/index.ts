@@ -8,7 +8,7 @@ import { openInvestidex } from '../../ui/menu';
 import { byTopic } from '../../data/quiz/build';
 import { mentor, TRAINER_TIPS } from '../../data/story';
 import { repTier, repGreeting } from '../../systems/character';
-import { startPrice, marketClock } from '../../systems/market';
+import { marketClock } from '../../systems/market';
 import { pick } from '../../systems/rng';
 import { RESIDENT_BY_ID, ALL_RESIDENTS } from '../../data/residents';
 import { track } from '../../systems/progress';
@@ -28,7 +28,8 @@ export function npcVisible(n: NpcDef): boolean {
   if (night && n.kind === 'resident' && KID_ROLES.has(RESIDENT_BY_ID[String(n.data?.rid)]?.role ?? '')) return false;
   if (night && n.kind === 'talk' && /^Bambin|^Ragazz/.test(n.name)) return false;
   switch (n.kind) {
-    case 'guard': return S.badges < (n.data?.badge as number);
+    // le guardie dei Percorsi si spostano con l'Attestato; quella della Lega solo con tutti e otto i Sigilli pratici
+    case 'guard': return n.data?.league ? S.seals < 8 : S.badges < (n.data?.badge as number);
     case 'aide': return !S.flags.starter;
     case 'rival': {
       const k = n.data?.n as number;
@@ -112,7 +113,7 @@ function memoryLine(id: string, visits: number): string {
 }
 
 export function questionsFor(topic: Parameters<typeof byTopic>[0]): Question[] { return byTopic(topic); }
-export { startPrice, hasTech, TECH };
+export { hasTech, TECH };
 
 export type { WorldApi } from './common';
 export { retryUnlocked } from './common';

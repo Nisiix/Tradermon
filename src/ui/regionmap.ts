@@ -1,9 +1,10 @@
-import { S, advanceDays, hasTech, TECH } from '../systems/state';
+import { S, hasTech, TECH } from '../systems/state';
 import { TOWNS, mentor } from '../data/story';
 import { getMap } from '../world/maps';
 import { ABILITY, ISLET_ROUTES, LABEL_ABOVE, REGION_POS, canSwim, canTransfer, canCut, canSeeDark, outdoorOf, transferTargets, TRANSFER_BADGE } from '../world/travel';
 import { modal, esc, el, confirm, toast } from './core';
 import { beep } from '../systems/audio';
+import { tick } from '../systems/account';
 
 const SEA_POS: [number, number] = [45, 65];
 const SEA_ISLANDS: [number, number, number][] = [[37, 64, 3], [54, 63, 2.6], [45, 68, 3.4]];
@@ -101,7 +102,7 @@ export async function openRegionMap(): Promise<string | undefined> {
         }
         body.appendChild(grid);
       }
-    } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale si sblocca battendo il Mentore di mezzo (Medaglia ${TRANSFER_BADGE}). Intanto, dalla seconda Medaglia, le stazioni collegano le città visitate.`));
+    } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale si sblocca battendo il Mentore di mezzo (Attestato ${TRANSFER_BADGE}). Intanto, dal secondo Attestato, le stazioni collegano le città visitate.`));
     const ab = [
       { a: ABILITY.swim, ok: canSwim() },
       { a: ABILITY.cut, ok: canCut() },
@@ -109,14 +110,14 @@ export async function openRegionMap(): Promise<string | undefined> {
       { a: ABILITY.dark, ok: canSeeDark() },
       { a: ABILITY.cold, ok: hasTech(TECH.COLD) },
     ];
-    body.appendChild(el('div', 'small', ab.map(({ a, ok }) => `<p style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b>: ${ok ? esc(a.desc) : `si sblocca con la Medaglia ${a.badge} (${esc(mentor(a.badge, S.track).badge)}).`}</p>`).join('')));
+    body.appendChild(el('div', 'small', ab.map(({ a, ok }) => `<p style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b>: ${ok ? esc(a.desc) : `si sblocca con l'Attestato ${a.badge} (${esc(mentor(a.badge, S.track).badge)}).`}</p>`).join('')));
     button('Chiudi', () => close(), 'primary');
   }, { wide: true });
   if (!dest) return undefined;
   const name = TOWNS.find((t) => t.id === dest)?.name ?? dest;
   if (!(await confirm(`Trasferire il capitale a ${name}? Il regolamento è T+1: passerà un giorno di mercato.`))) return undefined;
   beep('ok');
-  advanceDays(1).forEach((m) => toast(m));
+  tick();
   toast(`Trasferimento completato: benvenuto a ${name}.`);
   return dest;
 }

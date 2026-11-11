@@ -69,7 +69,7 @@ export function mirrorReport(declared: RiskProfile = S.profile, obs = mirrorObs(
   const revealed = revealedProfile(obs);
   if (!revealed) {
     const left = MIN_OBS - obs.length;
-    return { revealed, lines: [`Nel questionario il tuo profilo è ${declared.toUpperCase()}.`, `Lo Specchio ha bisogno di vederti all'opera: completa ancora ${left} ${left === 1 ? 'missione' : 'missioni'} nella Macchina del Tempo, facendo almeno un ordine.`] };
+    return { revealed, lines: [`Nel questionario il tuo profilo è ${declared.toUpperCase()}.`, `Lo Specchio ha bisogno di vederti all'opera: completa ancora ${left} ${left === 1 ? 'missione' : 'missioni'} nella Macchina del Tempo (Zona Simulazione di Diversia, o crisi leggendarie alla Torre), facendo almeno un ordine.`] };
   }
   const n = obs.length;
   const avg = (f: (o: MirrorObs) => number) => obs.reduce((s, o) => s + f(o), 0) / n;

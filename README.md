@@ -1,8 +1,8 @@
 # Tradermon · Il viaggio dell'investitore
 
-Tradermon è un gioco di ruolo educativo sugli investimenti, nello stile dei giochi per console portatili dei primi anni 2000. Il mondo, i personaggi e la grafica sono originali. Ci si muove su una mappa, si sfidano gli altri investitori con quiz di finanza e si superano missioni di trading in un mercato simulato. Si sconfiggono 8 Mentori, poi si affronta la Lega degli Investitori.
+Tradermon è un gioco di ruolo educativo sugli investimenti, nello stile dei giochi per console portatili dei primi anni 2000. Il mondo, i personaggi e la grafica sono originali. Ci si muove su una mappa, si sfidano gli altri investitori con quiz di finanza e si superano missioni di trading su periodi veri di mercato. Si sconfiggono 8 Mentori, poi si affronta la Lega degli Investitori. Titoli, prezzi e grafici sono reali: arrivano da Alpaca, con le chiavi del giocatore. Nel gioco non esistono titoli o andamenti inventati.
 
-> **Non è consulenza finanziaria.** Tutto il gioco si completa con denaro finto. Il collegamento a un conto reale (Alpaca) è facoltativo, si sblocca solo dopo la prima Medaglia e un esame, ed è limitato da tetti prudenti.
+> **Non è consulenza finanziaria.** Tutto il gioco si completa con denaro finto, su un conto Alpaca **Paper** (gratuito, basta un'email). Senza conto collegato resta aperto tutto il percorso di studio (storia, duelli, biblioteche, Attestati), ma non la parte pratica (Sigilli, Lega, grafici e titoli reali). Il collegamento a un conto reale (Live) è facoltativo, fuori dalla storia, si sblocca solo dopo il primo Attestato e un esame, ed è limitato da tetti prudenti.
 
 ## Avvio rapido
 
@@ -24,7 +24,7 @@ Il sito ha due pagine: la **landing** (`index.html`, codice in `landing/`) con l
 
 La porta predefinita del server locale è **8888**. Per usarne un'altra imposta la variabile `TRADERMON_PORT`, ad esempio `TRADERMON_PORT=9000 npm start` (su Windows PowerShell: `$env:TRADERMON_PORT=9000; npm start`). Vale anche per `npm run dev`.
 
-Il gioco è una PWA: dal browser si può "installare" e giocare anche offline. Le funzioni Alpaca richiedono il server locale e la rete.
+Il gioco è una PWA: dal browser si può "installare" e giocare anche offline. Le funzioni Alpaca richiedono la rete e un intermediario di Tradermon: sul tuo computer il server locale (Paper e conto reale), sul sito pubblico la funzione Supabase `alpaca` (solo Paper, serve essere entrati con il proprio giocatore).
 
 ## Giocatore e salvataggi (Supabase)
 
@@ -32,7 +32,7 @@ Al primo avvio, prima del tutorial, il gioco chiede di creare un **giocatore**: 
 
 - La partita (tutto l'oggetto di gioco: posizione, storia, portafoglio, opzioni) è salvata su **Supabase**, tabella `saves`, una riga per giocatore. Il gioco la invia a ogni salvataggio (pulsante, menu, entrata e uscita dagli edifici, dopo ogni sfida) e il tempo di gioco ogni minuto.
 - Sul dispositivo resta solo una copia di lavoro: serve a giocare senza rete. Quello che salvi offline parte appena torna la connessione.
-- Le **chiavi Alpaca** restano sul server locale come prima. In più ne va una copia su Supabase (tabella `alpaca_keys`), **cifrata nel browser** con AES-256-GCM. La chiave che la apre è derivata dalla password del giocatore (PBKDF2-SHA256, 600.000 iterazioni) e non lascia mai il dispositivo: sul server ci sono solo dati illeggibili, anche per chi amministra il database. Su un altro computer il gioco le ripristina nel server locale dopo aver chiesto la password.
+- Le **chiavi Alpaca**, giocando sul proprio computer, restano sul server locale. In più ne va una copia su Supabase (tabella `alpaca_keys`), **cifrata nel browser** con AES-256-GCM. La chiave che la apre è derivata dalla password del giocatore (PBKDF2-SHA256, 600.000 iterazioni) e non lascia mai il dispositivo: sul server ci sono solo dati illeggibili, anche per chi amministra il database. Su un altro computer il gioco le ripristina nel server locale dopo aver chiesto la password. Giocando dal sito pubblico non c'è un server locale: il gioco apre la copia cifrata sul dispositivo, tiene le chiavi **Paper** in memoria per la sessione (mai in `localStorage`) e le manda a ogni richiesta, su connessione cifrata, alla funzione Supabase `alpaca`, che le usa per parlare con Alpaca e non le salva né le scrive nei log. Le chiavi **Live** non passano mai dal sito.
 - Non c'è un'email collegata, quindi **la password non si recupera**: se la dimentichi, la partita resta su Supabase ma non puoi rientrare.
 - *Opzioni → Esci dal giocatore* toglie la sessione e la copia locale da questo dispositivo (la partita resta online). *Esporta salvataggio* scarica comunque un file JSON.
 - Le partite fatte prima di questo aggiornamento restano nel browser: al primo accesso il gioco chiede se portarle nel giocatore.
@@ -52,29 +52,37 @@ All'inizio un mini tutorial fa provare i comandi, con la versione per tastiera o
 
 1. All'inizio crei il tuo giocatore (nome e password); il Prof. Saldi ti chiama con quel nome e ti chiede l'aspetto. Poi fai un breve questionario sul profilo di rischio.
 2. Nel Laboratorio scegli una delle tre Valigette: Titoli (azioni), Indici (ETF) o Cripto. Parlando con il Prof puoi scegliere anche il Sentiero Misto.
-3. La Dott.ssa Ratio apre il tuo **Conto di Prova**. Scegli il capitale virtuale e l'allocazione obiettivo. Il gioco non aggiunge né toglie mai denaro da solo: il conto cambia solo con le tue operazioni e con il mercato.
-4. Ogni Mentore si batte in due fasi: un duello di conoscenza e una missione nella **Macchina del Tempo**, un mercato simulato con ordini, costi, dividendi e notizie.
-5. Entra nelle case: ogni abitante (single, coppie, famiglie) ti insegna un concetto diverso, che resta annotato nell'Investidex.
-6. Nelle Cliniche del Portafoglio salvi, fai il check-up, la diagnosi e il ribilanciamento, e impari a riconoscere i bias.
-7. L'erba alta è solo decorativa: non ci sono incontri casuali né stati alterati.
-8. Dal menu, l'**Agenda** propone tre missioni al giorno e una alla settimana (leggere, vincere duelli, fare il check-up, camminare...). Completarle dà solo punti Conoscenza. I **traguardi** sbloccano titoli (da mostrare nel profilo e nei duelli) e oggetti con cui si arreda la casa a Borgo Semina.
-9. Gli investitori battuti chiedono la **rivincita** dopo tre giorni, con domande più difficili. Alcuni abitanti, alla seconda visita, raccontano una **storia a tappe** (sei in tutto) che porta a parlare con altri, leggere una lezione o superare una prova.
-10. Dopo ogni acquisto o vendita il **Diario dell'investitore** chiede il perché; dopo 30 giorni propone di rileggerlo con il senno di poi. In Biblioteca e in Zona Simulazione ci sono quattro **minigiochi** (grafici, interesse composto, diversificazione, bilanci), gli **scenari storici** spiegati e la **sfida della settimana** con classifica locale e codice da scambiare con gli amici.
-11. Il clima di mercato si vede anche nel cielo: pioggia con l'orso, temporale con lampi nella tempesta, scintille con il toro, lucciole e finestre accese di notte. La musica è chiptune originale, generata in codice, e cambia con il luogo, la notte, i duelli e il clima.
+3. La **difficoltà** scelta all'inizio fissa il capitale del **conto di gioco** e non si cambia più: Apprendista 10.000 $, Investitore 5.000 $, Stratega 2.500 $, Leggenda 1.000 $ (con costi didattici e quote minime sempre più strette). **Leggenda è bloccata nella prima partita** e si sblocca con la Nuova Partita+. La Dott.ssa Ratio apre il conto: è un registro dentro il tuo conto Alpaca Paper, e cambia solo con gli ordini inviati dal gioco, ai prezzi veri di esecuzione.
+4. **Tutto il capitale è investibile dal primo giorno.** Ogni tappa chiede solo una **quota minima** da investire, cumulata: 5% del capitale per tappa in Apprendista, 7% in Investitore, 8,5% in Stratega, 9,5% in Leggenda. Sopra il minimo il giocatore investe quanto vuole. Gli ordini sono per importo in dollari, quindi anche **frazionati** (a mercato, limite e stop), e si possono inviare a mercato chiuso: Alpaca li esegue all'apertura.
+5. Ogni **Medaglia** ha due metà. L'**Attestato** si vince con il duello di conoscenza del Mentore e basta per proseguire verso la città successiva. Il **Sigillo pratico** si guadagna con la **Prova sul conto**: ordini veri sul mercato di oggi, dal conto di gioco, investendo la quota della tappa con la Tecnica appena imparata. Per entrare nella Lega servono tutti e otto i Sigilli. La regola è spiegata dal Professore all'inizio, dalla Dott.ssa Ratio all'apertura del conto e nella Guida (voce "Chiavi API").
+6. I replay di periodi veri del passato vivono solo nella **Macchina del Tempo** (Zona Simulazione di Diversia: missioni facoltative, periodi liberi, crisi storiche) e nelle **crisi leggendarie** della Torre. I Mentori non propongono replay, e Sigilli e Lega non ne dipendono. Nella **Lega** ogni Superiore guarda il conto di gioco com'è adesso (quanto è investito, come è diviso, se è protetto da stop, se segue il piano) e non chiede mai un rendimento. Chi non supera la verifica opera e la ripete, senza rifare il duello.
+7. **Bancarotta**: quando il conto arriva a **zero** (sotto 1 $, il minimo per un ordine), in ogni difficoltà. Le quote di tappa sono importi fissi calcolati sul **capitale di partenza**, non sul patrimonio del momento: chi perde le finanzia sempre più a fatica, chi opera con metodo arriva alla Lega con capitale in tasca. Quanti errori sono concessi lo decide la difficoltà. Apprendista e Investitore ripartono con metà del capitale di partenza, Stratega una volta sola, in Leggenda la parte pratica finisce. Vale anche sul **conto reale**: se arriva a zero il gioco ferma gli acquisti dal suo sportello (7 giorni, 30 giorni o per sempre, secondo la difficoltà). Vendere e prelevare resta sempre possibile. Al conto a zero si arriva con la **leva** oppure con le **perdite realizzate**: una vendita in perdita fatta nel gioco, oppure fatta fuori (dal sito di Alpaca), che il gioco riconosce alla sincronizzazione, registra al prezzo vero di esecuzione letto dagli ordini chiusi di Alpaca e somma al risultato realizzato (Cartella clinica) prima di ricontrollare la bancarotta. Nelle prove sul conto, se con un titolo non si arriva all'obiettivo, si può vendere (anche in parte) e puntare su un altro; nei mandati dei Boss la decisione di vendere annulla la sfida, che si ripete da capo con un titolo diverso.
+8. Dal 5º Attestato si può sostenere l'**Esame della Leva**: vale subito nei replay e, dall'8º Attestato, anche sul conto di gioco (massimo 2×, solo azioni ed ETF), con interessi e chiamata di margine. I **dividendi** sono solo teoria (libri e duelli): nessuna prova pratica li usa, e il conto Paper non li paga.
+9. Dopo la Lega: aumento del capitale, crisi leggendarie e tre **Boss dei Mercati** (quiz, poi un solo piano su un grafico vero, valutato dopo ore o settimane). La **Nuova Partita+** riparte da zero (conto, Attestati, Sigilli, Prove, leva, accesso a Torre e Boss) conservando solo i trofei: record della Torre, crisi leggendarie, Boss battuti, carte dorate, traguardi, titolo, arredi e Diario.
+10. Entra nelle case: ogni abitante (single, coppie, famiglie) ti insegna un concetto diverso, che resta annotato nell'Investidex.
+11. Nelle Cliniche del Portafoglio salvi, fai il check-up, la diagnosi e il ribilanciamento, e impari a riconoscere i bias.
+12. L'erba alta è solo decorativa: non ci sono incontri casuali né stati alterati.
+13. Dal menu, l'**Agenda** propone tre missioni al giorno e una alla settimana (leggere, vincere duelli, fare il check-up, camminare...). Completarle dà solo punti Conoscenza. I **traguardi** sbloccano titoli (da mostrare nel profilo e nei duelli) e oggetti con cui si arreda la casa a Borgo Semina.
+14. Gli investitori battuti chiedono la **rivincita** dopo tre giorni, con domande più difficili. Alcuni abitanti, alla seconda visita, raccontano una **storia a tappe** (sei in tutto) che porta a parlare con altri, leggere una lezione o superare una prova.
+15. Dopo ogni acquisto o vendita il **Diario dell'investitore** chiede il perché; dopo 30 giorni propone di rileggerlo con il senno di poi. In Biblioteca e in Zona Simulazione ci sono quattro **minigiochi** (grafici, interesse composto, diversificazione, bilanci), gli **scenari storici** spiegati e la **sfida della settimana** con classifica locale e codice da scambiare con gli amici.
+16. Il clima di mercato si vede anche nel cielo: pioggia con l'orso, temporale con lampi nella tempesta, scintille con il toro, lucciole e finestre accese di notte. La musica è chiptune originale, generata in codice, e cambia con il luogo, la notte, i duelli e il clima.
 
-## Conto reale Alpaca (facoltativo)
+## Conto Alpaca: Paper per giocare, reale facoltativo
 
-Le chiavi **non sono mai nel codice né nel salvataggio**. Si inseriscono nel gioco: *Clinica → Conto Alpaca*. Su Supabase ne resta solo una copia cifrata con la tua password (vedi sopra).
+Le chiavi **non sono mai nel codice né nel salvataggio**. Si inseriscono nel gioco dal menu, voce **Chiavi API** (c'è anche in Clinica). Su Supabase ne resta solo una copia cifrata con la tua password (vedi sopra).
 
 1. Crea un account su [alpaca.markets](https://alpaca.markets) e genera le chiavi **Paper** dalla dashboard.
 2. Nel gioco scegli *Collega Alpaca Paper* e incolla Key ID e Secret.
-3. Il server locale verifica le chiavi presso Alpaca. Poi le salva solo sul tuo computer, in `server/.secrets/keys.json` (permessi 600, escluso da git).
-4. Il conto **reale** si sblocca dopo la 1ª Medaglia e l'Esame di Abilitazione (9 risposte giuste su 10). Ogni ordine reale:
+3. Sul tuo computer il server locale verifica le chiavi presso Alpaca e le salva solo lì, in `server/.secrets/keys.json` (permessi 600, escluso da git). Dal sito pubblico le verifica la funzione Supabase `alpaca`, senza salvarle: resta solo la copia cifrata con la tua password.
+   - Dal sito funziona tutta la parte pratica della storia (Prove, Sigilli, Lega, Boss) sul conto Paper. Il conto reale si usa solo sul proprio computer.
+4. Il conto **reale** si sblocca dopo il 1º Attestato e l'Esame di Abilitazione (9 risposte giuste su 10). Ogni ordine reale:
    - chiede di scrivere `CONFERMO`;
-   - rispetta i limiti per ordine e per mese, che crescono con le Medaglie;
+   - rispetta i limiti per ordine e per mese, che crescono con gli Attestati;
    - viene annotato in `server/.secrets/audit.log`.
 
-Vendite allo scoperto e margine non sono ammessi. Puoi abbassare il tetto massimo per ordine con la variabile `TRADERMON_LIVE_MAX_ORDER`, che vale 2500 dollari se non la imposti. Puoi attivare una pausa di riflessione di 1, 7 o 30 giorni. Depositi e prelievi si fanno sempre dalla dashboard di Alpaca.
+Le vendite allo scoperto non sono ammesse. La progressione del gioco vive solo sul Paper: nessun premio dipende dal denaro vero. Sul conto reale i prelievi si fanno sempre dal sito di Alpaca e i depositi non passano mai dal gioco.
+
+I dati di Alpaca non si possono ridistribuire: ogni giocatore li scarica con le proprie chiavi e nel repository non c'è alcun prezzo storico. Per controllare che i periodi usati da missioni e crisi abbiano dati per tutti i titoli: `npm start` e, in un altro terminale, `node scripts/check-windows.mjs`. I test automatici usano un finto Alpaca locale con prezzi generati (`tests/helpers/fake-alpaca.ts`). Puoi abbassare il tetto massimo per ordine con la variabile `TRADERMON_LIVE_MAX_ORDER`, che vale 2500 dollari se non la imposti. Puoi attivare una pausa di riflessione di 1, 7 o 30 giorni. Depositi e prelievi si fanno sempre dalla dashboard di Alpaca.
 
 ## Struttura
 
@@ -86,6 +94,8 @@ Vendite allo scoperto e margine non sono ammessi. Puoi abbassare il tetto massim
 - `src/proto/hd2d.ts` + `hd2d.html`: pagina di prova dello stesso motore 2.5D con camera libera (`/hd2d.html?map=t0&x=11&y=9`, parametri `map`, `x`, `y`, `dist`, `tilt`, `night`, `fx`).
 - `public/assets3d/`: facoltativo, modelli `.glb` esterni che sostituiscono gli oggetti generati (vedi il README nella cartella). `npm run assets:ai` genera immagini o modelli con servizi che hanno un piano gratuito (Pollinations, Meshy) usando le tue chiavi.
 - `server/index.mjs`: il server locale che serve il gioco e fa da tramite verso Alpaca.
+- `supabase/functions/alpaca/`: lo stesso tramite per il sito pubblico (funzione Edge, solo Paper). `core.js` contiene le regole e le rotte condivise con il server locale; `index.ts` aggiunge accesso del giocatore, CORS e limite di richieste. Si pubblica con `supabase functions deploy alpaca --no-verify-jwt` (la funzione verifica da sé il token del giocatore).
+- `supabase/functions/registra-giocatore/` e `supabase/migrations/`: registrazione dei giocatori e tabelle.
 - `tests/`: i test automatici (`npm test`).
 
 ## Comandi
