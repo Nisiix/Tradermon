@@ -28,7 +28,8 @@
       <ul>
         <li>Per giocare serve solo un <b>nome a tua scelta</b> e una <b>password</b>. Non chiediamo email, nome vero, data di nascita o dati di pagamento.</li>
         <li>La partita viene salvata su <b>Supabase</b>, in un centro dati in Irlanda, per poterla riprendere da qualsiasi dispositivo.</li>
-        <li>Le <b>chiavi Alpaca</b> restano sul tuo dispositivo, cifrate con la tua password. Ordini e chiavi vanno dal tuo browser direttamente ad Alpaca: Tradermon non li riceve.</li>
+        <li>Tradermon è un gioco per imparare e usa solo un conto <b>Alpaca Paper</b>, con denaro finto: non vengono mai usati soldi reali.</li>
+        <li>Le <b>chiavi Alpaca Paper</b> restano sul tuo dispositivo, cifrate con la tua password. Ordini e chiavi vanno dal tuo browser direttamente ad Alpaca: Tradermon non li riceve.</li>
         <li>Niente pubblicità, niente statistiche sui visitatori, niente cookie di profilazione.</li>
         <li>Puoi cancellare tutto quando vuoi da <b>Opzioni → Elimina il mio giocatore</b>.</li>
       </ul>
@@ -48,18 +49,18 @@
             <tr><td>Nome del giocatore, data di creazione, identificativo interno</td><td>Riconoscerti quando entri e tenere il nome unico</td><td rowspan="3">Fornirti il servizio che chiedi creando il giocatore (art. 6.1.b GDPR)</td></tr>
             <tr><td>Password</td><td>Entrare nel gioco. Supabase la conserva solo in forma trasformata (hash): nessuno può rileggerla</td></tr>
             <tr><td>Salvataggio della partita: progressi, medaglie, tempo di gioco, impostazioni, registro delle operazioni fatte nel gioco e, se lo compili, le risposte al questionario sul rischio</td><td>Riprendere la partita da qualsiasi dispositivo</td></tr>
-            <tr><td>Chiave della cassaforte, cifrata con la tua password</td><td>Aprire su un nuovo dispositivo le chiavi Alpaca che vi tieni. Senza la password è illeggibile, anche per noi</td><td>Come sopra</td></tr>
+            <tr><td>Chiave della cassaforte, cifrata con la tua password</td><td>Aprire su un nuovo dispositivo le chiavi Alpaca Paper che vi tieni. Senza la password è illeggibile, anche per noi</td><td>Come sopra</td></tr>
             <tr><td>Indirizzo IP e dati tecnici della connessione</td><td>Far funzionare e proteggere il sito e il servizio dei salvataggi. Li registrano GitHub e Supabase nei propri sistemi</td><td>Interesse legittimo alla sicurezza del servizio (art. 6.1.f GDPR)</td></tr>
           </tbody>
         </table>
       </div>
-      <p>Se il tuo browser non riesce a raggiungere Alpaca e <b>scegli tu</b> di far passare il conto Paper dal servizio di Tradermon, le chiavi Paper transitano dalla funzione di Supabase solo per la durata della richiesta e non vengono salvate. La funzione annota ogni ordine (titolo, quantità, lato, esito) insieme all'identificativo del giocatore, mai le chiavi. Il conto reale non passa mai da lì.</p>
+      <p>Se il tuo browser non riesce a raggiungere Alpaca e <b>scegli tu</b> di far passare il conto Paper dal servizio di Tradermon, le chiavi Paper transitano dalla funzione di Supabase solo per la durata della richiesta e non vengono salvate. La funzione annota ogni ordine (titolo, quantità, lato, esito) insieme all'identificativo del giocatore, mai le chiavi.</p>
       <p>I dati servono solo a far funzionare il gioco. Non li vendiamo, non li usiamo per pubblicità e non prendiamo decisioni automatiche che ti riguardino.</p>
     </article>
 
     <article class="dex" id="alpaca">
       <header><span class="num">#3</span><h2>Alpaca</h2></header>
-      <p>Il conto Alpaca è tuo, aperto da te sul sito di Alpaca. Quando colleghi le chiavi, è il tuo browser a parlare con Alpaca: chiavi, ordini, posizioni e indirizzo IP arrivano ad Alpaca, che li tratta come titolare autonomo secondo le proprie condizioni e la propria informativa (<a href="https://alpaca.markets/disclosures" target="_blank" rel="noopener">documenti di Alpaca</a>). Tradermon non riceve queste informazioni e non ha accesso al tuo conto.</p>
+      <p>Il gioco usa solo il conto <b>Paper</b> di Alpaca, con denaro finto. Il conto è tuo, aperto da te sul sito di Alpaca. Quando colleghi le chiavi, è il tuo browser a parlare con Alpaca: chiavi, ordini, posizioni e indirizzo IP arrivano ad Alpaca, che li tratta come titolare autonomo secondo le proprie condizioni e la propria informativa (<a href="https://alpaca.markets/disclosures" target="_blank" rel="noopener">documenti di Alpaca</a>). Tradermon non riceve queste informazioni e non ha accesso al tuo conto.</p>
     </article>
 
     <article class="dex" id="destinatari">
@@ -80,8 +81,8 @@
           <tbody>
             <tr><td><code>tradermon.auth</code></td><td>La sessione del giocatore, per non chiederti la password a ogni visita. Si cancella quando esci dal giocatore</td></tr>
             <tr><td><code>tradermon.save.*</code></td><td>Copia di lavoro della partita, per non perdere progressi se la rete cade</td></tr>
-            <tr><td><code>tradermon.alpaca.*</code></td><td>Le chiavi Alpaca cifrate e la scelta del collegamento per il conto Paper</td></tr>
-            <tr><td><code>tradermon-vault</code> (IndexedDB)</td><td>La chiave che apre le chiavi Alpaca, in una forma che non si può copiare fuori dal browser</td></tr>
+            <tr><td><code>tradermon.alpaca.*</code></td><td>Le chiavi Alpaca Paper cifrate e la scelta del collegamento</td></tr>
+            <tr><td><code>tradermon-vault</code> (IndexedDB)</td><td>La chiave che apre le chiavi Alpaca Paper, in una forma che non si può copiare fuori dal browser</td></tr>
             <tr><td><code>tradermon.prefs</code>, <code>tradermon.renderer</code>, avvisi già visti</td><td>Comandi, grafica e messaggi che non vuoi rivedere</td></tr>
           </tbody>
         </table>
@@ -110,7 +111,7 @@
 
     <article class="dex" id="minori">
       <header><span class="num">#8</span><h2>Età</h2></header>
-      <p>Tradermon è pensato per chi ha almeno 14 anni. Sotto i 14 anni serve il permesso di un genitore. Il conto reale con denaro vero è solo per maggiorenni, e le regole per aprirlo sono quelle di Alpaca.</p>
+      <p>Tradermon è pensato per chi ha almeno 14 anni. Sotto i 14 anni serve il permesso di un genitore. Per aprire il conto Alpaca Paper valgono le regole di Alpaca.</p>
     </article>
 
     <article class="dex" id="sicurezza">
@@ -125,7 +126,7 @@
   </main>
 
   <footer class="foot">
-    <p class="legal">Tradermon è un gioco educativo e non fornisce consulenza finanziaria. <a href="../">Torna alla home</a></p>
+    <p class="legal">Tradermon è un gioco educativo, usa solo denaro finto e non fornisce consulenza finanziaria. <a href="../">Torna alla home</a></p>
   </footer>
   <script type="module" src="/landing/privacy.ts"></script>
 </body>

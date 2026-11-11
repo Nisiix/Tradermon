@@ -10,7 +10,7 @@ const get = async (p) => { const r = await fetch(BASE + p); const t = await r.te
 
 const st = await get('/api/status').catch(() => null);
 if (!st) { console.error(`Il server di Tradermon non risponde su ${BASE}: avvialo con "npm start".`); process.exit(1); }
-if (!st.paper.configured && !st.live.configured) { console.error('Nessuna chiave Alpaca collegata: collegala dal gioco (menu, voce "Chiavi API").'); process.exit(1); }
+if (!st.paper.configured) { console.error('Nessuna chiave Alpaca collegata: collegala dal gioco (menu, voce "Chiavi API").'); process.exit(1); }
 
 const assetsSrc = await readFile(new URL('../src/data/assets.ts', import.meta.url), 'utf8');
 const ids = [...assetsSrc.matchAll(/A\(\{ id: '([^']+)'[^\n]*?cls: '(\w+)'/g)].map((m) => ({ id: m[1], cls: m[2] }));

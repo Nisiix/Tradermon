@@ -13,7 +13,7 @@ import { reward } from '../world/scripts/common';
 import { beep } from '../systems/audio';
 import { say, choose, modal, esc, toast } from './core';
 import { runDuel } from './battle';
-import { realChart } from './live';
+import { realChart } from './alpaca';
 import { requireAccount } from './broker';
 
 const KEEPER = 'Custode della Torre';

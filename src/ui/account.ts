@@ -58,7 +58,7 @@ function registerForm(): Promise<C.Player | null> {
     const age = el('label', 'small') as HTMLLabelElement;
     age.style.display = 'block';
     age.style.marginTop = '8px';
-    age.innerHTML = '<input type="checkbox" class="age"> Ho almeno 14 anni, oppure un genitore mi ha dato il permesso. Il conto reale con denaro vero è solo per maggiorenni.';
+    age.innerHTML = '<input type="checkbox" class="age"> Ho almeno 14 anni, oppure un genitore mi ha dato il permesso.';
     const ageBox = age.querySelector('input') as HTMLInputElement;
     body.append(name.wrap, nameMsg, pw.wrap, pw2.wrap, el('p', 'small muted', NO_RESET), age, msg);
     let checkSeq = 0;

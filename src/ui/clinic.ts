@@ -8,7 +8,7 @@ import { say, choose, modal, el, esc, toast, bar, confirm } from './core';
 import { LESSONS } from '../data/lessons';
 import { BIAS_CURE_Q, BIAS_INFO } from '../data/events';
 import { beep } from '../systems/audio';
-import { openObservatory, realChart } from './live';
+import { openObservatory, realChart } from './alpaca';
 import * as Acc from '../systems/account';
 import { sellCancelsMandate } from '../systems/mandate';
 import { BOSS_BY_ID } from '../systems/boss';
@@ -38,7 +38,7 @@ export async function openClinic(townIdx: number) {
   await say(['Benvenuto alla Clinica del Portafoglio!', 'Qui curiamo le scelte, non i soldi persi. Come posso aiutarti?'], NURSE);
   if (S.flags.migratedV3) {
     delete S.flags.migratedV3;
-    await say(['Una novità importante: a Capitalia non si scambiano più titoli inventati. Da oggi si opera solo su titoli veri, con prezzi veri, attraverso un conto Alpaca Paper.', `Il tuo vecchio conto di prova è stato chiuso e ne ho aperto uno nuovo da ${fmtMoney(S.portfolio.initial)}. Attestati, Tecniche e tutto ciò che hai studiato restano tuoi; i Sigilli pratici si guadagnano ora sul conto vero.`], NURSE);
+    await say(['Una novità importante: a Capitalia non si scambiano più titoli inventati. Da oggi si opera solo su titoli veri, con prezzi veri, attraverso un conto Alpaca Paper.', `Il tuo vecchio conto di prova è stato chiuso e ne ho aperto uno nuovo da ${fmtMoney(S.portfolio.initial)}. Attestati, Tecniche e tutto ciò che hai studiato restano tuoi; i Sigilli pratici si guadagnano ora sul conto Paper, con prezzi veri e denaro finto.`], NURSE);
     save();
   }
   // il conto si allinea alla realtà a ogni visita: prezzi, ordini eseguiti, chiamate di margine
@@ -46,7 +46,7 @@ export async function openClinic(townIdx: number) {
   for (;;) {
     const opts = [
       'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Calcolo del ribilanciamento', 'Lezione sui bias',
-      'Tappe, Prove e Sigilli', 'Leva e margine', 'Dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Chiavi API e conto reale', 'Osservatorio Alpaca (sola lettura)', 'Specchio dell\'investitore', 'Arrivederci',
+      'Tappe, Prove e Sigilli', 'Leva e margine', 'Dividendi', 'Capitale del conto di gioco', 'Cartella clinica', 'Chiavi API (conto Paper)', 'Osservatorio Alpaca (sola lettura)', 'Specchio dell\'investitore', 'Arrivederci',
     ];
     const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Calcolo del ribil') && !hasTech(TECH.REBAL)));
     const c = await choose(opts, { cancel: true, title: 'CLINICA DEL PORTAFOGLIO', disabled: dis });
@@ -69,9 +69,9 @@ export async function openClinic(townIdx: number) {
       case 'Tappe, Prove e Sigilli': await stageScreen(); break;
       case 'Leva e margine': await leverageDesk(); break;
       case 'Dividendi': await dividends(); break;
-      case 'Depositi e prelievi': await deposit(); break;
+      case 'Capitale del conto di gioco': await deposit(); break;
       case 'Cartella clinica': await records(); break;
-      case 'Chiavi API e conto reale': await apiKeysMenu(); break;
+      case 'Chiavi API (conto Paper)': await apiKeysMenu(); break;
       case 'Osservatorio Alpaca (sola lettura)': await openObservatory(); break;
       case 'Specchio dell\'investitore': {
         const before = S.profile;
@@ -380,7 +380,7 @@ async function deposit() {
   const lines = [
     `Capitale del conto di gioco: ${fmtMoney(pf.initial)}, fissato dalla difficoltà ${DIFFICULTY[S.difficulty].name}. Patrimonio attuale ${fmtMoney(Acc.equity())}.`,
     'Durante il viaggio non si aggiunge e non si toglie denaro: il conto cambia solo con le tue operazioni e con il mercato. Il capitale è tutto investibile dal primo giorno: le tappe chiedono solo un minimo.',
-    'Conto reale: i PRELIEVI si possono sempre fare, dal sito di Alpaca. I DEPOSITI non passano mai dal gioco, e Tradermon non ti chiederà mai di versare denaro.',
+    'È tutto denaro finto del conto Paper di Alpaca: Tradermon è un gioco, non usa mai soldi reali e non ti chiederà mai di versarne.',
   ];
   if (!Acc.graduated()) { await say([...lines, 'Dopo la Lega potrai aumentare il capitale del conto di gioco da qui.'], NURSE); return; }
   await say([...lines, 'Sei Campione: ora puoi aumentare il capitale del conto di gioco. È sempre denaro finto del conto Paper.'], NURSE);
@@ -402,7 +402,7 @@ async function records() {
       <p class="small">Risultato realizzato dalle vendite (dentro e fuori dal gioco): <b class="${(pf.realized ?? 0) < 0 ? 'bad' : 'good'}">${(pf.realized ?? 0) < 0 ? '−' : '+'}${fmtMoney(Math.abs(pf.realized ?? 0))}</b> · costi didattici e interessi pagati: <b>${fmtMoney(pf.costs)}</b> · bancarotte: ${pf.bankruptcies}${pf.external.length ? ` · operazioni fuori dal gioco: ${pf.external.length}` : ''}</p>
       ${log.length ? `<table class="t"><tr><th>Giorno</th><th>Operazione</th><th class="n">Quote</th><th class="n">Prezzo $</th><th class="n">Costo $</th></tr>${log.slice(0, 100).map((l) => `<tr><td>${l.day}</td><td>${l.side === 'buy' ? 'Acquisto' : 'Vendita'} ${l.type} ${tk(l.asset)}</td><td class="n">${fmtQty(l.qty)}</td><td class="n">${fmtPx(l.price)}</td><td class="n">${l.fee.toFixed(2)}</td></tr>`).join('')}</table>` : '<p class="muted">Nessuna operazione.</p>'}
       ${pf.external.length ? `<p class="small muted">Fuori dal gioco: ${pf.external.slice(-5).map((e) => `${new Date(e.t).toLocaleDateString('it-IT')} ${e.asset ? esc(tk(e.asset)) + ' ' : ''}${esc(e.note)}`).join(' · ')}</p>` : ''}
-      <p class="small muted">Prezzi di esecuzione reali del conto Alpaca Paper. Nota fiscale: con un broker estero come Alpaca chi risiede in Italia deve dichiarare conto e redditi del conto reale (quadri RW e RT). Il CSV è un aiuto per il tuo commercialista, non una consulenza fiscale.</p>`;
+      <p class="small muted">Prezzi di esecuzione reali del conto Alpaca Paper, con denaro finto. Il CSV serve a rileggere le tue operazioni di gioco.</p>`;
     const cv = body.querySelector('canvas') as HTMLCanvasElement;
     const c = cv.getContext('2d')!;
     const lo = Math.min(...h) * 0.98, hi = Math.max(...h) * 1.02;

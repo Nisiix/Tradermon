@@ -18,7 +18,7 @@ describe('regole della pagina pubblicata (Content-Security-Policy)', () => {
 
   it('la pagina può chiamare solo Alpaca e il servizio dei salvataggi', () => {
     const hosts = rule(policy, 'connect-src').filter((h) => h.startsWith('http'));
-    expect(hosts.sort()).toEqual(['https://api.alpaca.markets', 'https://data.alpaca.markets', 'https://paper-api.alpaca.markets', 'https://progetto.supabase.co']);
+    expect(hosts.sort()).toEqual(['https://data.alpaca.markets', 'https://paper-api.alpaca.markets', 'https://progetto.supabase.co']);
     expect(policy).not.toMatch(/\*/);
   });
 

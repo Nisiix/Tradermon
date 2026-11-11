@@ -1,12 +1,12 @@
-// Server locale di Tradermon: serve il gioco e fa da unico intermediario verso Alpaca.
+// Server locale di Tradermon: serve il gioco e fa da unico intermediario verso il conto Alpaca Paper.
+// Tradermon è un gioco: usa solo il conto Paper di Alpaca, con denaro finto, e non usa mai denaro reale.
 // Nessuna dipendenza esterna: richiede solo Node.js 20+.
 //
 // Sicurezza:
 //  - ascolta solo su 127.0.0.1 (configurabile con TRADERMON_HOST);
-//  - le chiavi Alpaca inserite nel gioco sono salvate in server/.secrets/keys.json (permessi 600, escluso da Git)
-//    e non vengono mai restituite al browser;
-//  - solo un elenco chiuso di endpoint Alpaca è raggiungibile;
-//  - gli ordini LIVE richiedono la parola di conferma e rispettano un tetto rigido per ordine;
+//  - le chiavi Alpaca Paper inserite nel gioco sono salvate in server/.secrets/keys.json (permessi 600, escluso da
+//    Git) e non vengono mai restituite al browser;
+//  - solo un elenco chiuso di endpoint del conto Paper è raggiungibile;
 //  - niente vendite allo scoperto; gli acquisti non superano la liquidità disponibile, oppure, quando il giocatore
 //    usa la leva (intestazione x-tradermon-margin), il potere d'acquisto concesso da Alpaca;
 //  - ogni ordine è registrato in server/.secrets/audit.log.
@@ -25,12 +25,11 @@ const KEYS_FILE = path.join(SECRETS, 'keys.json');
 const AUDIT_FILE = path.join(SECRETS, 'audit.log');
 const PORT = Number(process.env.TRADERMON_PORT || process.env.PORT || 8888);
 const HOST = process.env.TRADERMON_HOST || '127.0.0.1';
-const LIVE_MAX_ORDER = Number(process.env.TRADERMON_LIVE_MAX_ORDER || 2500);
 
 // Indirizzi di Alpaca. TRADERMON_ALPACA_MOCK serve solo ai test automatici (un finto Alpaca locale):
 // è accettato soltanto se punta a questo stesso computer.
 const MOCK = /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.TRADERMON_ALPACA_MOCK || '') ? process.env.TRADERMON_ALPACA_MOCK : '';
-const TRADING = MOCK ? { paper: `${MOCK}/paper/v2`, live: `${MOCK}/live/v2` } : { paper: 'https://paper-api.alpaca.markets/v2', live: 'https://api.alpaca.markets/v2' };
+const TRADING = { paper: MOCK ? `${MOCK}/paper/v2` : 'https://paper-api.alpaca.markets/v2' };
 const DATA = MOCK ? `${MOCK}/data` : 'https://data.alpaca.markets';
 
 const MIME = {
@@ -39,10 +38,14 @@ const MIME = {
   '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8',
 };
 
-let keys = { paper: null, live: null };
+let keys = { paper: null };
 
 async function loadKeys() {
-  try { keys = { paper: null, live: null, ...JSON.parse(await readFile(KEYS_FILE, 'utf8')) }; } catch { /* nessuna chiave */ }
+  let stored;
+  try { stored = JSON.parse(await readFile(KEYS_FILE, 'utf8')); } catch { return; /* nessuna chiave */ }
+  keys = { paper: stored?.paper ?? null };
+  // il file di una versione precedente può contenere altre chiavi oltre a quelle Paper: vengono cancellate
+  if (stored && Object.keys(stored).some((k) => k !== 'paper')) await saveKeys();
 }
 
 async function saveKeys() {
@@ -73,29 +76,29 @@ async function readBody(req) {
   return raw ? JSON.parse(raw) : {};
 }
 
-function dataEnv() { return keys.live ? 'live' : 'paper'; }
 
 async function audit(entry) {
   await mkdir(SECRETS, { recursive: true });
   await appendFile(AUDIT_FILE, JSON.stringify({ t: new Date().toISOString(), ...entry }) + '\n', { mode: 0o600 });
 }
 
-// Regole e rotte verso Alpaca: le stesse della funzione Supabase del sito pubblico (che però ammette solo il Paper).
-const core = createCore({ trading: TRADING, data: DATA, keysOf: (env) => keys[env], dataEnv, audit, liveMaxOrder: LIVE_MAX_ORDER });
+// Regole e rotte verso Alpaca: le stesse del sito pubblico e della funzione Supabase.
+const core = createCore({ trading: TRADING, data: DATA, keysOf: (env) => (env === 'paper' ? keys.paper : null), dataEnv: () => 'paper', audit });
 const alpaca = core.alpaca;
 
 async function handleApi(req, res, url) {
   const parts = url.pathname.split('/').filter(Boolean); // ['api', ...]
   if (parts[1] === 'status' && req.method === 'GET') {
-    return send(res, 200, { ok: true, paper: hint(keys.paper), live: hint(keys.live), liveMaxOrder: LIVE_MAX_ORDER });
+    return send(res, 200, { ok: true, paper: hint(keys.paper) });
   }
   if (parts[1] === 'keys') {
     if (req.method === 'POST') {
       const b = await readBody(req);
-      const env = b.env === 'live' ? 'live' : b.env === 'paper' ? 'paper' : null;
+      if (b.env !== 'paper') return send(res, 403, { message: 'Tradermon è un gioco e collega solo il conto Alpaca Paper, con denaro finto.' });
+      const env = 'paper';
       const keyId = String(b.keyId || '').trim();
       const secret = String(b.secret || '').trim();
-      if (!env || !validKeys(keyId, secret)) return send(res, 400, { message: 'Chiavi non valide' });
+      if (!validKeys(keyId, secret)) return send(res, 400, { message: 'Chiavi non valide' });
       const prev = keys[env];
       keys[env] = { keyId, secret };
       try {
@@ -105,13 +108,13 @@ async function handleApi(req, res, url) {
         return send(res, 200, { ok: true, account: { status: acc.status, currency: acc.currency } });
       } catch (e) {
         keys[env] = prev;
-        return send(res, 400, { message: `Alpaca ha rifiutato le chiavi ${env === 'live' ? 'Live' : 'Paper'}: ${e.message}` });
+        return send(res, 400, { message: `Alpaca ha rifiutato le chiavi Paper: ${e.message}` });
       }
     }
-    if (req.method === 'DELETE' && (parts[2] === 'paper' || parts[2] === 'live')) {
-      keys[parts[2]] = null;
+    if (req.method === 'DELETE' && parts[2] === 'paper') {
+      keys.paper = null;
       await saveKeys();
-      await audit({ event: 'keys_deleted', env: parts[2] });
+      await audit({ event: 'keys_deleted', env: 'paper' });
       return send(res, 200, { ok: true });
     }
   }

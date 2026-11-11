@@ -9,7 +9,7 @@ export type BiasId = 'fomo' | 'panico' | 'euforia' | 'gregge';
 
 export type QuizTopic =
   | 'rischio' | 'ordini' | 'diversificazione' | 'costi' | 'bias' | 'gestione'
-  | 'macro' | 'analisi' | 'regole' | 'esame'
+  | 'macro' | 'analisi' | 'regole'
   | 'stocks_base' | 'stocks_bilanci' | 'stocks_dividendi'
   | 'etf_base' | 'etf_replica' | 'etf_obbligazioni'
   | 'crypto_base' | 'crypto_custodia' | 'crypto_stable'
@@ -196,14 +196,6 @@ export interface CardState {
   seen: number;
 }
 
-export interface LiveLimits {
-  perOrder: number;
-  perMonth: number;
-  pauseUntil: number;
-  monthKey: string;
-  spentThisMonth: number;
-}
-
 export interface SaveData {
   version: number;
   createdAt: number;
@@ -266,10 +258,6 @@ export interface SaveData {
   legends: string[];
   stepCounter: number;
   lastClinic: { map: string; x: number; y: number };
-  license: 'apprendista' | 'esame' | 'investitore';
-  examLastFail: number;
-  liveLimits: LiveLimits;
-  liveAudit: { t: number; symbol: string; side: string; notional: number; status: string; id: string }[];
   ngPlus: number;
   playMs: number;
   options: { textSpeed: number; fontScale: number; contrast: boolean; studyMode: boolean; volume: number; music: number; gfx: '2d' | '3d'; fx: 'alti' | 'bassi'; /** Prosegui anche se una Prova sul conto va male (solo Apprendista e Investitore). */ ignoreProva?: boolean };
@@ -326,6 +314,6 @@ export interface JournalEntry {
   price: number;
   reason: string;
   note: string;
-  account: 'prova' | 'paper' | 'reale';
+  account: 'prova' | 'paper';
   reviewed: boolean;
 }

@@ -67,7 +67,7 @@ export async function startFakeAlpaca(): Promise<FakeAlpaca> {
     const u = new URL(req.url ?? '/', 'http://x');
     const send = (code: number, body: unknown) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
     if (!req.headers['apca-api-key-id']) return send(401, { message: 'unauthorized' });
-    const p = u.pathname.replace(/^\/(paper|live)\/v2/, '');
+    const p = u.pathname.replace(/^\/paper\/v2/, '');
     const syms = (u.searchParams.get('symbols') ?? '').split(',').filter(Boolean);
     let raw = '';
     req.on('data', (c) => (raw += c));

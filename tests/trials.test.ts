@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { newGame } from '../src/systems/state';
 import { leagueTrial, runTrial, book, TRIAL } from '../src/systems/trials';
-import { liveQty } from '../src/ui/live';
 import type { PendingOrder } from '../src/types';
 
 const stop = (asset: string, qty: number): PendingOrder => ({ id: 's' + asset, cid: 'tm-t-1', asset, side: 'sell', type: 'stop', qty, price: 1, reserved: 0, filledQty: 0, filledCost: 0, createdAt: 0, tag: 'stop' });
@@ -97,12 +96,3 @@ describe('prove pratiche della Lega sul conto di gioco', () => {
   });
 });
 
-describe('ordini frazionati dal conto reale', () => {
-  it('limite e stop usano i decimali quando il titolo lo permette, altrimenti quote intere', () => {
-    expect(liveQty(50, 200, true)).toBeCloseTo(0.25, 9);
-    expect(liveQty(50, 200, false)).toBe(0);
-    expect(liveQty(450, 200, false)).toBe(2);
-    expect(liveQty(10, 3, true)).toBe(3.333333);
-    expect(liveQty(0, 200, true)).toBe(0);
-  });
-});

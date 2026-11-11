@@ -1,5 +1,5 @@
 // Candele: tipi, aggregazione, media mobile e lettura guidata. Le barre sono sempre quelle reali di Alpaca
-// (ui/live.ts realChart): il gioco non ricostruisce e non inventa candele.
+// (ui/alpaca.ts realChart): il gioco non ricostruisce e non inventa candele.
 
 export type Timeframe = '5m' | '15m' | '1h' | '4h' | '1g';
 export const TIMEFRAMES: Timeframe[] = ['5m', '15m', '1h', '4h', '1g'];

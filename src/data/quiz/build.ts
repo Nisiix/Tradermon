@@ -30,7 +30,6 @@ const TABLE: Record<QuizTopic, QRow[]> = {
   macro: C.MACRO,
   analisi: C.ANALISI,
   regole: C.REGOLE,
-  esame: C.ESAME,
   stocks_base: T.STOCKS_BASE,
   stocks_bilanci: T.STOCKS_BILANCI,
   stocks_dividendi: T.STOCKS_DIVIDENDI,

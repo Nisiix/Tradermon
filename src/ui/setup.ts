@@ -14,8 +14,8 @@ export async function disclaimer(): Promise<void> {
     body.innerHTML = `
       <p><b>Tradermon è un gioco educativo.</b> Non fornisce consulenza finanziaria né raccomandazioni personalizzate.</p>
       <p>Il mondo e i personaggi di Capitalia sono di fantasia. <b>Titoli, prezzi e grafici sono reali</b>: arrivano da Alpaca, un broker, attraverso un conto Paper gratuito (denaro finto) che colleghi tu. I titoli in vetrina sono scelti per insegnare, non per consigliarti. I quiz citano fonti pubbliche di educazione finanziaria (SEC Investor.gov, Investopedia, Consob, Banca d'Italia, CFA Institute, ESMA).</p>
-      <p>Tutto il gioco si completa con denaro finto. Senza conto collegato resta il percorso di studio. Il collegamento a un conto reale è facoltativo, fuori dalla storia, dopo un esame, con limiti prudenti e solo per maggiorenni. Investire comporta il rischio di perdere il capitale.</p>
-      <label><input type="checkbox" class="ck"> <span>Ho capito: è un gioco educativo, non consulenza.</span></label>`;
+      <p><b>È un gioco per imparare, con denaro finto.</b> Tradermon è pensato per aiutarti a entrare nel mondo degli investimenti e del trading, e serve solo all'apprendimento: usa esclusivamente il conto Paper di Alpaca e non usa mai soldi reali. Senza conto collegato resta il percorso di studio. Fuori dal gioco, investire denaro vero comporta il rischio di perderlo.</p>
+      <label><input type="checkbox" class="ck"> <span>Ho capito: è un gioco educativo, con denaro finto, e non è consulenza.</span></label>`;
     const b = button('Inizia', () => close(), 'primary');
     b.disabled = true;
     (body.querySelector('.ck') as HTMLInputElement).addEventListener('change', (e) => { b.disabled = !(e.target as HTMLInputElement).checked; });
@@ -76,18 +76,6 @@ export async function onboarding(playerName?: string): Promise<void> {
   applyDifficulty(await chooseDifficulty());
   S.map = 'home'; S.x = 2; S.y = 4; S.facing = 'down';
   save();
-}
-
-export async function runExam(): Promise<boolean> {
-  const qs = pickQuestions(['esame'], 10);
-  const prev = S.options.studyMode;
-  const prevFid = S.stats.fiducia;
-  S.options.studyMode = true;
-  S.stats.fiducia = 100;
-  const r = await runDuel({ foeName: 'Commissione d\'Esame', foeTitle: 'Esame di Abilitazione', foePal: PAL.PROF, questions: qs, need: 9, damage: 0 });
-  S.options.studyMode = prev;
-  S.stats.fiducia = prevFid;
-  return r.correct >= 9;
 }
 
 export function titleScreen(hasSave: boolean): Promise<'new' | 'continue' | 'import'> {

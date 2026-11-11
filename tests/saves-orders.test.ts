@@ -152,16 +152,16 @@ describe('registro del conto di gioco', () => {
     await Acc.restartAfterBankruptcy(); // un'altra ripartenza dà ancora metà del capitale di partenza, non un quarto
     expect(S.portfolio.initial).toBe(2500);
   });
-  it('la Nuova Partita+ riparte da zero e conserva solo i trofei, il giocatore e le tutele del conto reale', () => {
+  it('la Nuova Partita+ riparte da zero e conserva solo i trofei e il giocatore', () => {
     const S0 = newGame();
     S0.name = 'Nina'; S0.profile = 'audace';
-    S0.flags.starter = 'AAPL'; S0.flags.champion = true; S0.flags.bankrupt = true; S0.flags.liveBase = 800; S0.flags.liveClosed = true;
+    S0.flags.starter = 'AAPL'; S0.flags.champion = true; S0.flags.bankrupt = true;
     S0.difficulty = 'stratega'; S0.exDone = 9; S0.seals = 8; S0.badges = 8; S0.levExam = true;
     S0.portfolio.positions = [{ id: 'AAPL', qty: 1, cost: 100 }];
     S0.tower.best = 7; S0.legends = ['leg2020']; S0.achievements = ['a1']; S0.title = 'Campione'; S0.boss.beaten = ['b1'];
     S0.boss.runs = { b2: { id: 'b2', quiz: 6, quizMax: 8, plan: null, startedAt: 1 } };
     S0.cards.AAPL = { xp: 90, gold: true } as never; S0.cards.KO = { xp: 10, gold: false } as never;
-    S0.license = 'investitore'; S0.liveLimits.perOrder = 50; S0.playMs = 1234;
+    S0.playMs = 1234;
     const id = S0.saveId;
     newGamePlus('etf');
     const S1 = State.S;
@@ -179,7 +179,7 @@ describe('registro del conto di gioco', () => {
     expect(Acc.caseOpen()).toBe(false);
     expect(S1.boss.runs).toEqual({});
     expect(S1.cards.KO).toBeUndefined();
-    // trofei, giocatore, tutele del conto reale
+    // trofei e giocatore
     expect(S1.tower.best).toBe(7);
     expect(S1.legends).toEqual(['leg2020']);
     expect(S1.achievements).toEqual(['a1']);
@@ -187,32 +187,24 @@ describe('registro del conto di gioco', () => {
     expect(S1.boss.beaten).toEqual(['b1']);
     expect(S1.cards.AAPL.gold).toBe(true);
     expect([S1.name, S1.profile, S1.playMs]).toEqual(['Nina', 'audace', 1234]);
-    expect(S1.license).toBe('investitore');
-    expect(S1.liveLimits.perOrder).toBe(50);
-    expect([S1.flags.liveBase, S1.flags.liveClosed]).toEqual([800, true]);
   });
-  it('bancarotta sul conto reale: a zero, con pausa degli acquisti o chiusura secondo la difficoltà', () => {
-    const day = 86400000, t0 = Date.UTC(2026, 10, 11);
-    let S = newGame(); // Investitore: riparte dopo una pausa
-    expect(Acc.liveCheck(0, t0).state).toBe('ok'); // un conto mai finanziato non è in bancarotta
-    expect(S.flags.liveBase).toBeUndefined();
-    expect(Acc.liveCheck(1000, t0).state).toBe('ok');
-    expect(S.flags.liveBase).toBe(1000);
-    expect(Acc.liveCheck(40, t0).state).toBe('ok'); // −96%: non è ancora zero
-    const bust = Acc.liveCheck(0.4, t0);
-    expect([bust.state, bust.fresh, bust.busts]).toEqual(['paused', true, 1]);
-    expect(Acc.liveCheck(900, t0 + 3 * day).state).toBe('paused'); // la pausa non si accorcia
-    const back = Acc.liveCheck(600, t0 + 8 * day);
-    expect([back.state, back.base]).toEqual(['ok', 600]); // si riparte dal patrimonio trovato
-    S = newGame(); S.difficulty = 'stratega';
-    Acc.liveCheck(1000, t0);
-    expect(Acc.liveCheck(0, t0).state).toBe('paused');
-    Acc.liveCheck(300, t0 + 31 * day);
-    expect(Acc.liveCheck(0.5, t0 + 32 * day).state).toBe('closed'); // una sola ripartenza
-    expect(Acc.liveCheck(5000, t0 + 400 * day).state).toBe('closed');
-    S = newGame(); S.difficulty = 'leggenda';
-    Acc.liveCheck(1000, t0);
-    expect(Acc.liveCheck(0, t0).state).toBe('closed');
+  it('i salvataggi delle versioni precedenti perdono ogni dato di un conto diverso dal Paper', () => {
+    const old = JSON.parse(JSON.stringify(newGame())) as Record<string, unknown> & ReturnType<typeof newGame>;
+    Object.assign(old, { license: 'investitore', examLastFail: 5, liveLimits: { perOrder: 50 }, liveAudit: [{ t: 1 }] });
+    Object.assign(old.flags, { liveBase: 800, liveBust: 1, liveClosed: true, liveBusts: 2, starter: 'AAPL' });
+    old.achievements = ['license', 'a1']; old.decor = ['frame_license', 'trophy_gold']; old.title = 'Abilitato';
+    old.journal = [
+      { id: 'j1', day: 1, date: '', asset: 'AAPL', side: 'buy', amount: 10, price: 1, reason: 'r', note: '', account: 'paper', reviewed: false },
+      { id: 'j2', day: 1, date: '', asset: 'AAPL', side: 'buy', amount: 10, price: 1, reason: 'r', note: '', account: 'reale' as never, reviewed: false },
+    ];
+    const s = State.migrate(old) as unknown as Record<string, unknown> & ReturnType<typeof newGame>;
+    for (const k of ['license', 'examLastFail', 'liveLimits', 'liveAudit']) expect(k in s).toBe(false);
+    for (const k of ['liveBase', 'liveBust', 'liveClosed', 'liveBusts']) expect(k in s.flags).toBe(false);
+    expect(s.flags.starter).toBe('AAPL');
+    expect(s.achievements).toEqual(['a1']);
+    expect(s.decor).toEqual(['trophy_gold']);
+    expect(s.title).toBe('');
+    expect(s.journal.map((j) => j.id)).toEqual(['j1']);
   });
 });
 

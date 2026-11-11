@@ -8,18 +8,6 @@ export const SAVE_KEY = 'tradermon.save.v1';
 const KEY = SAVE_KEY;
 export const SLOTS_BY_BADGE = [3, 4, 5, 6, 6, 8, 8, 10, 10];
 
-export const LIVE_LIMITS: { order: number; month: number; cOrder: number; cMonth: number }[] = [
-  { order: 0, month: 0, cOrder: 0, cMonth: 0 },
-  { order: 100, month: 300, cOrder: 50, cMonth: 150 },
-  { order: 200, month: 600, cOrder: 100, cMonth: 300 },
-  { order: 300, month: 1000, cOrder: 150, cMonth: 500 },
-  { order: 500, month: 1500, cOrder: 250, cMonth: 750 },
-  { order: 750, month: 2500, cOrder: 350, cMonth: 1200 },
-  { order: 1000, month: 4000, cOrder: 500, cMonth: 2000 },
-  { order: 1500, month: 6000, cOrder: 750, cMonth: 3000 },
-  { order: 2500, month: 10000, cOrder: 1000, cMonth: 5000 },
-];
-
 export let S: SaveData = null as unknown as SaveData;
 
 export function newGame(): SaveData {
@@ -31,8 +19,7 @@ export function newGame(): SaveData {
     stats: { xp: 0, fiducia: 100, disciplina: 50, pazienza: 50, reputazione: 0 }, bias: null, biasSeen: [], cards: {}, lessonsRead: [], booksRead: [], tipsHeard: [], defeated: [], visited: ['t0'],
     portfolio: newPortfolio(DIFFICULTY.investitore.capital, 0, 'equilibrato'), market: emptyMarket(), saveId, difficulty: 'investitore', seals: 0, exDone: 0, exTools: { limit: false, stop: false }, levExam: false,
     lastSeen: { t: 0, value: 0 }, boss: { run: null, beaten: [], tries: {} }, review: {}, reviewDue: {}, answered: {}, daily: { lastDate: '', streak: 0 },
-    tower: { best: 0 }, legends: [], stepCounter: 0, lastClinic: { map: 'home', x: 4, y: 4 }, license: 'apprendista', examLastFail: 0,
-    liveLimits: { perOrder: 0, perMonth: 0, pauseUntil: 0, monthKey: '', spentThisMonth: 0 }, liveAudit: [], ngPlus: 0, playMs: 0,
+    tower: { best: 0 }, legends: [], stepCounter: 0, lastClinic: { map: 'home', x: 4, y: 4 }, ngPlus: 0, playMs: 0,
     options: { textSpeed: 2, fontScale: 1, contrast: false, studyMode: false, volume: 0.5, music: 0.5, gfx: '3d', fx: 'alti' },
     counters: {}, agenda: { day: '', week: '', daily: [], weekly: [], dailyDone: 0 }, achievements: [], title: '', decor: [], rematch: {},
     quests: {}, journal: [], minigames: {}, challenges: [], npcMemory: {},
@@ -127,7 +114,24 @@ export function migrate(raw: SaveData): SaveData {
   let v = Number(raw.version) || 1;
   while (v < SAVE_VERSION) { MIGRATIONS[v]?.(s); v++; }
   s.version = SAVE_VERSION;
+  dropObsolete(s);
   return s;
+}
+
+/**
+ * Campi che le versioni precedenti salvavano e che il gioco non usa più: Tradermon usa solo il conto Paper, con
+ * denaro finto, quindi ogni dato di un conto diverso esce dal salvataggio.
+ */
+const OBSOLETE = ['license', 'examLastFail', 'liveLimits', 'liveAudit'];
+const OBSOLETE_FLAGS = ['liveBase', 'liveBust', 'liveClosed', 'liveBusts'];
+function dropObsolete(s: SaveData) {
+  const rec = s as unknown as Record<string, unknown>;
+  for (const k of OBSOLETE) delete rec[k];
+  for (const k of OBSOLETE_FLAGS) delete s.flags[k];
+  s.journal = (s.journal ?? []).filter((j) => j.account === 'prova' || j.account === 'paper');
+  s.achievements = (s.achievements ?? []).filter((a) => a !== 'license');
+  s.decor = (s.decor ?? []).filter((d) => d !== 'frame_license');
+  if (s.title === 'Abilitato') s.title = '';
 }
 function newGameShape(): SaveData {
   const keep = S;
@@ -226,12 +230,11 @@ export function profileTimer(): number {
 /**
  * Nuova Partita+: tutto riparte da zero (conto di gioco con capitale nuovo, Attestati, Sigilli, Prove sul conto,
  * Esame della Leva, storia, accesso a Torre e Boss), tranne i TROFEI già guadagnati e ciò che riguarda il giocatore
- * e non la partita: nome e aspetto, opzioni, tempo di gioco, e le tutele del conto reale (Licenza, limiti, registro).
+ * e non la partita: nome e aspetto, opzioni, tempo di gioco.
  * La nuova difficoltà si sceglie subito dopo, e da qui in poi è disponibile anche la più alta.
  */
 export function newGamePlus(track: Track) {
   const old = S;
-  const liveFlags = ['liveBase', 'liveBust', 'liveClosed', 'liveBusts'];
   newGame();
   Object.assign(S, {
     // chi sei
@@ -242,11 +245,8 @@ export function newGamePlus(track: Track) {
     tower: old.tower, legends: old.legends, achievements: old.achievements, title: old.title, decor: old.decor,
     challenges: old.challenges, minigames: old.minigames, daily: old.daily, journal: old.journal,
     boss: { run: null, runs: {}, beaten: old.boss.beaten, tries: old.boss.tries },
-    // conto reale: tutele e storia non si azzerano con la partita
-    license: old.license, examLastFail: old.examLastFail, liveLimits: old.liveLimits, liveAudit: old.liveAudit,
   });
   Object.entries(old.cards).filter(([, c]) => c.gold).forEach(([id, c]) => (S.cards[id] = c));
-  for (const k of liveFlags) if (old.flags[k] !== undefined) S.flags[k] = old.flags[k];
 }
 
 /** Profilo dichiarato dal punteggio delle 3 domande sul rischio (0-6). */

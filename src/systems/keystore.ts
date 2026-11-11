@@ -1,4 +1,4 @@
-// Chiavi Alpaca (Paper e Live) tenute SOLO su questo dispositivo.
+// Chiavi del conto Alpaca Paper (denaro finto) tenute SOLO su questo dispositivo.
 //
 // Dove stanno: nella memoria locale del browser (localStorage), cifrate con AES-GCM dalla chiave della cassaforte
 // del giocatore. Quella chiave nasce dalla password, vive nel browser in forma non estraibile (systems/vault.ts) e
@@ -9,11 +9,13 @@
 import * as C from './cloud';
 import { seal, open, type Sealed } from './vault';
 
-export type KeyEnv = 'paper' | 'live';
+export type KeyEnv = 'paper';
 export interface KeyPair { keyId: string; secret: string }
 
-const ENVS: KeyEnv[] = ['paper', 'live'];
-const slot = (user: string, env: KeyEnv) => `tradermon.alpaca.${user}.${env}`;
+const ENVS: KeyEnv[] = ['paper'];
+const slot = (user: string, env: string) => `tradermon.alpaca.${user}.${env}`;
+/** Spazio che una versione precedente usava per chiavi di un conto diverso dal Paper: viene svuotato. */
+const OLD_SLOT = 'live';
 /** Il dato cifrato è legato a giocatore e conto: una copia spostata su un altro conto non si apre. */
 const aad = (user: string, env: KeyEnv) => `tradermon:alpaca:${user}:${env}`;
 
@@ -49,7 +51,9 @@ export async function loadKeys(env: KeyEnv): Promise<KeyPair | null> {
 /** Quali conti hanno chiavi salvate su questo dispositivo (senza aprirle). */
 export async function keyEnvs(): Promise<KeyEnv[]> {
   const p = await C.currentPlayer();
-  return p ? ENVS.filter((e) => read(p.id, e)) : [];
+  if (!p) return [];
+  try { localStorage.removeItem(slot(p.id, OLD_SLOT)); } catch { /* niente da cancellare */ }
+  return ENVS.filter((e) => read(p.id, e));
 }
 
 export async function removeKeys(env: KeyEnv): Promise<void> {
@@ -61,11 +65,10 @@ export async function removeKeys(env: KeyEnv): Promise<void> {
 /**
  * Le versioni precedenti tenevano una copia cifrata delle chiavi su Supabase. Qui viene portata sul dispositivo
  * (se manca) e poi cancellata da Supabase. Restituisce i conti spostati. Serve la cassaforte aperta.
- * `only` limita i conti: le chiavi Live si spostano su un dispositivo solo dopo che il giocatore ha letto l'avviso.
  */
-export async function migrateFromCloud(only: KeyEnv[] = ENVS): Promise<KeyEnv[]> {
+export async function migrateFromCloud(): Promise<KeyEnv[]> {
   const moved: KeyEnv[] = [];
-  for (const env of (await C.savedKeyEnvs()).filter((e) => only.includes(e))) {
+  for (const env of await C.savedKeyEnvs()) {
     const p = await C.currentPlayer();
     if (!p) break;
     if (!read(p.id, env)) {

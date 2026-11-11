@@ -48,11 +48,11 @@ describe('funzione Supabase per il conto Paper', () => {
     expect((await (await req('/api/alpaca/paper/clock')).json()).is_open).toBe(true);
   });
 
-  it('il conto reale non passa mai da Supabase', async () => {
+  it('passa solo il conto Paper', async () => {
     const before = fake.orders.size;
-    expect((await req('/api/alpaca/live/account')).status).toBe(403);
-    const r = await req('/api/alpaca/live/orders', { method: 'POST', body: JSON.stringify({ symbol: 'AAPL', side: 'buy', type: 'market', time_in_force: 'day', notional: 10 }), headers: { 'x-tradermon-confirm': 'CONFERMO' } });
-    expect(r.status).toBe(403);
+    expect((await req('/api/alpaca/altro/account')).status).toBe(404);
+    const r = await req('/api/alpaca/altro/orders', { method: 'POST', body: JSON.stringify({ symbol: 'AAPL', side: 'buy', type: 'market', time_in_force: 'day', notional: 10 }) });
+    expect(r.status).toBe(404);
     expect(fake.orders.size).toBe(before);
   });
 
@@ -111,7 +111,7 @@ describe('funzione Supabase per il conto Paper', () => {
     expect(JSON.parse(text).ok).toBe(true);
     expect(text).not.toContain(SECRET);
     expect(text).not.toContain(KEY);
-    expect((await req('/api/keys', { method: 'POST', body: JSON.stringify({ env: 'live' }) })).status).toBe(403);
+    expect((await req('/api/keys', { method: 'POST', body: JSON.stringify({ env: 'altro' }) })).status).toBe(403);
   });
 
   it('nessuna risposta, nemmeno di errore, contiene le chiavi; i percorsi sconosciuti danno 404', async () => {

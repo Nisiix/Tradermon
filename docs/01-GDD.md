@@ -7,9 +7,9 @@ Tradermon è un RPG 2D top-down in stile palmare a 16 bit in cui il protagonista
 Regole d'oro del progetto:
 
 1. **Si sblocca solo sapendo.** Nessun oggetto di cattura, nessuna pozione, nessun negozio. Asset, informazioni e tecniche si ottengono solo battendo Mentori e superando sfide.
-2. **Paper di default.** Tutto il gioco si completa con denaro finto. Il conto reale è opzionale, si sblocca dopo il 1° Mentore e un esame, con limiti che crescono con le Medaglie.
-3. **Nessun premio per il denaro reale.** XP, Medaglie, classifiche e carte si ottengono solo in simulazione o paper.
-4. **Educazione, non consulenza.** Il gioco non dice mai "compra X". Gli asset del mercato simulato sono di fantasia; nel conto reale il giocatore sceglie da solo.
+2. **Solo denaro finto.** Tradermon è pensato per aiutare chi vuole entrare nel mondo degli investimenti e del trading, ed è volto solo all'apprendimento. Tutto il gioco si svolge con denaro finto, sul conto Alpaca Paper: non vengono mai usati soldi reali.
+3. **Premi solo dallo studio e dal conto di gioco.** XP, Medaglie, classifiche e carte si ottengono in simulazione o sul conto Paper.
+4. **Educazione, non consulenza.** Il gioco non dice mai "compra X": il giocatore sceglie da solo.
 5. **Le chiavi non stanno nel codice.** Le chiavi Alpaca si inseriscono nel gioco e vengono custodite dal server locale, mai nel browser né nel repository.
 
 ---
@@ -21,18 +21,18 @@ Regole d'oro del progetto:
 > - Conto di gioco: registro dentro il conto Alpaca Paper, aggiornato solo dagli ordini inviati dal gioco e riconciliato con le posizioni vere. Tutto il capitale è investibile dal primo giorno; ogni tappa chiede una quota minima cumulata (5% / 7% / 8,5% / 9,5% del capitale per tappa), mai un massimo. Ordini anche frazionati.
 > - Medaglia = Attestato (duello, apre la strada) più Sigillo pratico (Prova sul conto: quota della tappa investita con ordini veri sul mercato di oggi, usando la Tecnica appena imparata). La Lega chiede otto Sigilli. I replay vivono solo nella Macchina del Tempo (Zona Simulazione: missioni facoltative, periodi liberi, crisi storiche) e nelle crisi leggendarie della Torre; i Mentori non ne propongono.
 > - Lega: duello più verifica del conto com'è adesso. Marta Macro: almeno metà del patrimonio investito, tre titoli, uno difensivo. Tito Tecnico: nessun titolo oltre il 40% dell'investito e stop attivi su almeno un quarto. Giulia Garante: lo sportello delle offerte (non passa dal conto). Fabio Freddo: quota rischiosa entro 15 punti dal proprio piano e tre decisioni motivate nel Diario. Campione: tutto insieme, senza chiamate di margine. Nessuna prova chiede un rendimento; contano solo gli ordini eseguiti (`src/systems/trials.ts`).
-> - Bancarotta: quando il conto arriva a zero (sotto 1 $), in ogni difficoltà. Le quote di tappa sono importi fissi sul capitale di partenza della difficoltà, anche dopo perdite o una ripartenza (`stageQuota`, `ZERO`). Ripartenza con metà del capitale di partenza; una sola in Stratega; nessuna in Leggenda. Sul conto reale la stessa regola ferma gli acquisti dal gioco per 7 o 30 giorni o per sempre.
+> - Bancarotta: quando il conto arriva a zero (sotto 1 $), in ogni difficoltà. Le quote di tappa sono importi fissi sul capitale di partenza della difficoltà, anche dopo perdite o una ripartenza (`stageQuota`, `ZERO`). Ripartenza con metà del capitale di partenza; una sola in Stratega; nessuna in Leggenda.
 > - Leva: esame dal 5º Attestato (vale nei replay), sul conto dall'8º, massimo 2×, interessi 6,5%, mantenimento 30%, chiamata di margine di tre giorni di mercato. Dividendi: solo teoria.
 > - Dopo la Lega: aumenti di capitale, crisi leggendarie su periodi reali, tre Boss dei Mercati (quiz più un solo piano valutato sulle candele reali dopo 2 ore, 3 giorni o 4 settimane; il piano invia ordini veri sul conto di gioco, un acquisto dimensionato sul rischio e uno stop, e in caso di sconfitta la perdita resta sul conto). Nuova Partita+: tutto da zero tranne i trofei, con la difficoltà Leggenda sbloccata.
 > - Bancarotta, come ci si arriva: con la leva oppure con le perdite realizzate. Le vendite in perdita contano sia fatte nel gioco sia fatte fuori (sito di Alpaca): il gioco le riconosce alla sincronizzazione, le registra al prezzo vero di esecuzione e ricontrolla la bancarotta. Nelle Prove sul conto si può vendere un titolo e puntare su un altro, ma decidere di vendere un titolo comprato per la Prova in corso, anche solo una parte, annulla la Prova (decisione dell'utente dell'11 novembre, 15:37Z): il gioco lo chiede in modo esplicito prima della vendita, la quota della tappa riparte da zero e il titolo venduto non conta finché la Prova non è completata con un altro. Vale anche per uno stop che scatta, per le vendite fatte fuori dal gioco, per la vendita forzata della leva e per la bancarotta (decisione delle 15:55Z; in questi ultimi due casi nessun titolo viene escluso); non per le verifiche della Lega, che guardano il conto com'è. Opzione "Prosegui anche se la Prova va male" (decisione delle 15:56Z): solo in Apprendista e Investitore, dalle Impostazioni o da Menu, Opzioni; non salta la Prova, ignora soltanto l'esito negativo e lascia proseguire, con l'avviso che è una scelta sconsigliata per chi vuole imparare. Nei mandati dei Boss la decisione di vendere prima della scadenza annulla la sfida, che si ripete da capo con un titolo diverso e non conta come sconfitta.
-> - Dove si opera: sul sito pubblico è il browser a inviare gli ordini direttamente ad Alpaca, per il conto Paper e per il conto reale (giocatore collegato, chiavi solo sul dispositivo, cifrate con la sua password, con avviso prima dell'inserimento). Se il browser non raggiunge Alpaca, il giocatore può scegliere di far passare il solo Paper dalla funzione Supabase `alpaca`. Giocando sul proprio computer le chiavi restano nel server locale.
-> - Il conto reale (Live) resta facoltativo e fuori dalla storia. Numeri in `src/systems/balance.ts`; regole in `src/systems/account.ts`, `realdata.ts`, `boss.ts`.
+> - Dove si opera: sul sito pubblico è il browser a inviare gli ordini direttamente al conto Alpaca Paper (giocatore collegato, chiavi solo sul dispositivo, cifrate con la sua password, con avviso prima dell'inserimento). Se il browser non raggiunge Alpaca, il giocatore può scegliere di far passare il conto Paper dalla funzione Supabase `alpaca`. Giocando sul proprio computer le chiavi restano nel server locale.
+> - Tradermon usa solo il conto Paper, con denaro finto: non esiste un conto con soldi reali. Numeri in `src/systems/balance.ts`; regole in `src/systems/account.ts`, `realdata.ts`, `boss.ts`.
 
 ## 1. Esperienza del giocatore in sintesi
 
 | Fase | Durata indicativa | Cosa impara | Cosa sblocca |
 |---|---|---|---|
-| Prologo e onboarding | 8-12 min | Paper trading, profilo di rischio, primo acquisto | Percorso, Valigetta iniziale, Licenza da Apprendista |
+| Prologo e onboarding | 8-12 min | Paper trading, profilo di rischio, primo acquisto | Percorso, Valigetta iniziale, tessera da Apprendista |
 | Regione (8 città) | 4-8 h | 8 moduli, uno per Mentore | 8 Medaglie, tecniche, slot di portafoglio, Asset Card |
 | Lega | 1-2 h | Macro, analisi, regole, psicologia | Titolo di Campione, Nuova Partita+ |
 | Post-game | illimitato | Crisi storiche, Torre delle Sfide | Carte dorate, record |
@@ -60,7 +60,7 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 | 9 | Risveglio in camera, si scende, si va al Laboratorio | — | Tutorial di movimento |
 | 10 | **La scelta delle Valigette** | Percorso: Titoli / ETF / Cripto (oppure Misto parlando col Professore) | Tutta la storia |
 | 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, allocazione obiettivo | Simulatore e Clinica |
-| 12 | Licenza da Apprendista | Spiegazione dello sblocco del denaro reale | Indicatore "Licenza bloccata" nel menu |
+| 12 | Si usano soldi veri? | Il Professore spiega che il gioco usa solo denaro finto, sul conto Paper | Tessera da Apprendista nel menu |
 | 13 | Primo duello col rivale (3 domande facili) | — | Tutorial del quiz |
 | 14 | Primo acquisto guidato alla Clinica di Borgo Semina | La Valigetta diventa una posizione in portafoglio | Tutorial della Clinica |
 
@@ -112,11 +112,11 @@ Schermata guidata dalla Dott.ssa Ratio (arriva al Laboratorio per l'occasione):
 
 Preset di allocazione (azioni o asset rischiosi / difensivi / liquidità): Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10. Per il percorso Cripto "difensivo" significa stablecoin simulata e la liquidità resta in Crediti.
 
-**Nessun denaro aggiunto o tolto dal gioco.** Il conto di prova cambia solo con le operazioni del giocatore e con il mercato simulato (prezzi e dividendi). Non ci sono ricariche, penalità in Crediti o versamenti automatici: lo stesso vale per il conto reale.
+**Nessun denaro aggiunto o tolto dal gioco.** Il conto di prova cambia solo con le operazioni del giocatore e con il mercato simulato (prezzi e dividendi). Non ci sono ricariche, penalità in Crediti o versamenti automatici.
 
-### 2.5 La Licenza
+### 2.5 Solo denaro finto
 
-Il Professore consegna la **Licenza da Apprendista** e spiega lo sblocco del denaro reale. Nel menu c'è la scheda Licenza con tre stati: Apprendista (bloccata) → Esame disponibile (dopo la 1ª Medaglia) → Licenza di Investitore (dopo l'esame, conto reale collegabile).
+Il Professore consegna la **tessera da Apprendista** e, a chi lo chiede ("Si usano soldi veri?"), spiega che Tradermon è un gioco per imparare: si usa solo il conto Alpaca Paper, con denaro finto e prezzi veri, e non vengono mai usati soldi reali.
 
 ---
 
@@ -135,7 +135,7 @@ Altopiano della Lega ─ P9 ─ Rocca Rischio ─ P8 ─ Mentelucida ─ P7 ─ 
 | Città | Edifici | Mentore e Medaglia | Particolarità |
 |---|---|---|---|
 | Borgo Semina | Casa, Laboratorio, Clinica | — | Scelta delle Valigette |
-| Ponte Cedola | Clinica, Biblioteca, Accademia | 1. Gaia Primo – Medaglia Seme | Esame di Abilitazione dopo la Medaglia |
+| Ponte Cedola | Clinica, Biblioteca, Accademia | 1. Gaia Primo – Medaglia Seme | Prima Prova sul conto |
 | Porto Ordini | Clinica, Biblioteca, Accademia | 2. Orazio Limite – Medaglia Ordine | Abbonamento al treno |
 | Diversia | Clinica, Biblioteca, Accademia, **Zona Simulazione** | 3. Vera Varia – Medaglia Mosaico | Sandbox Macchina del Tempo · abilità Flusso di Liquidità |
 | Interessa | Clinica, Biblioteca, Accademia, **Casinò dello Speculatore** | 4. Cosimo Composto – Medaglia Spirale | Mini-gioco sull'azzardo · abilità Trasferimento di Capitale |
@@ -269,11 +269,11 @@ Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 
 | Mente Fredda | 7 | 50% di probabilità di resistere ai bias | Attraversa il Muro del Rumore sul P7 |
 | Stop Loss | 8 | Ordini stop nella Clinica e nella Macchina del Tempo | — |
 
-Prima di "Ordine Limite" esistono solo ordini a mercato; prima di "Stop Loss" non esistono ordini stop. Vale anche per il conto reale.
+Prima di "Ordine Limite" esistono solo ordini a mercato; prima di "Stop Loss" non esistono ordini stop.
 
 ### 5.7 Bias (solo lezioni, nessuno stato alterato)
 
-I bias si imparano, non si "subiscono". Non esistono stati alterati che cambiano il duello, il patrimonio o le regole: quando si userà denaro reale, il gioco non può modificare il conto, quindi nessuna meccanica lo fa nemmeno sul conto di prova.
+I bias si imparano, non si "subiscono". Non esistono stati alterati che cambiano il duello, il patrimonio o le regole: il gioco non modifica mai il conto al posto del giocatore.
 
 | Bias | Dove si incontra | Cosa insegna |
 |---|---|---|
@@ -434,21 +434,20 @@ Ricostruzioni semplificate, con ampiezze vicine a quelle storiche, dichiarate co
 
 La Dott.ssa Ratio accoglie con: "Benvenuto alla Clinica del Portafoglio! Curiamo le scelte, non i soldi persi." Menu:
 
-| Voce | Paper (simulato) | Alpaca Paper | Denaro reale | Sblocco |
-|---|---|---|---|---|
-| Check-up | Posizioni, valore, P&L, allocazione per settore e classe, salute | Sì | Sì | Subito |
-| Compra / Vendi | Ordini guidati con riepilogo costo e rischio | Sì | Sì, con schermata seria | Subito (limite e stop con le tecniche) |
-| Ordini aperti | Vedi e annulla | Sì | Sì | Ordine Limite |
-| Depositi e prelievi | Solo informazioni: il gioco non aggiunge denaro | Saldo | Apre il sito Alpaca | Subito |
-| Salva e riposa | Salva, Fiducia al massimo | — | — | Subito |
-| Diagnosi | Spiegazione in parole semplici e lezione collegata | Sì | Sì | Subito |
-| Cura (ribilanciamento) | Propone gli ordini, il giocatore conferma ognuno | Sì | Sì | Ribilanciamento |
-| Lezione sui bias | Una domanda sul bias scelto | — | — | Subito |
-| Uova dei dividendi | Stato dei dividendi in incubazione | — | — | Subito |
-| Cartella clinica | Storico ordini, rendimento nel tempo, export CSV | Sì | Sì | Subito |
-| Collega Alpaca | Inserimento chiavi Paper | — | Chiavi Live dopo la Licenza | Paper subito, Live dopo l'esame |
-| Limiti e pausa | — | — | Limiti per ordine e al mese, pausa ≥ 24 h, scollegamento | Licenza |
-| Specchio dell'investitore | Confronta profilo dichiarato e rivelato dalle missioni, permette di rifare il questionario e di aggiornare l'allocazione obiettivo | — | — | Subito |
+| Voce | Paper (simulato) | Alpaca Paper | Sblocco |
+|---|---|---|---|
+| Check-up | Posizioni, valore, P&L, allocazione per settore e classe, salute | Sì | Subito |
+| Compra / Vendi | Ordini guidati con riepilogo costo e rischio | Sì | Subito (limite e stop con le tecniche) |
+| Ordini aperti | Vedi e annulla | Sì | Ordine Limite |
+| Capitale del conto di gioco | Solo informazioni: il gioco non aggiunge denaro, è tutto denaro finto | Saldo | Subito |
+| Salva e riposa | Salva, Fiducia al massimo | — | Subito |
+| Diagnosi | Spiegazione in parole semplici e lezione collegata | Sì | Subito |
+| Cura (ribilanciamento) | Propone gli ordini, il giocatore conferma ognuno | Sì | Ribilanciamento |
+| Lezione sui bias | Una domanda sul bias scelto | — | Subito |
+| Uova dei dividendi | Stato dei dividendi in incubazione | — | Subito |
+| Cartella clinica | Storico ordini, rendimento nel tempo, export CSV | Sì | Subito |
+| Collega Alpaca | Inserimento chiavi Paper | — | Subito |
+| Specchio dell'investitore | Confronta profilo dichiarato e rivelato dalle missioni, permette di rifare il questionario e di aggiornare l'allocazione obiettivo | — | Subito |
 
 ### 7.1 Salute del portafoglio
 
@@ -475,50 +474,22 @@ Regole che producono frasi semplici, sempre generiche (mai "compra X"):
 
 ---
 
-## 8. Il denaro reale
+## 8. Il conto Paper
 
-### 8.1 Percorso di sblocco
+Tradermon è un gioco volto solo all'apprendimento: la parte pratica usa esclusivamente il conto **Paper** di Alpaca, con denaro finto e prezzi veri. Non vengono mai usati soldi reali, e il gioco non sposta denaro né chiede di versarne.
 
-1. **Prologo**: il Professore annuncia lo sblocco; nel menu la Licenza è bloccata.
-2. **Prima regione**: cartelli e NPC ricordano l'obiettivo; uno Speculatore propone di "saltare la fila" con un falso link: se il giocatore accetta, scatta una lezione sul phishing.
-3. **Medaglia 1** → invito all'**Esame di Abilitazione**: 10 domande su rischio, perdite, costi, ordini, truffe; servono 9 risposte giuste; si può ripetere dopo 10 minuti reali.
-4. **Schermata seria** (nessuno stile di gioco, testo semplice): dichiarazioni da spuntare una per una — maggiore età; capisco che posso perdere tutto il capitale; questo è un gioco educativo e non consulenza; gli ordini sono eseguiti da Alpaca sul mio conto, che ho aperto io; nessun premio di gioco è legato al denaro reale; ho letto i limiti.
-5. **Collegamento**: inserimento delle chiavi Live di Alpaca (vedi 8.4).
-6. **Limiti**: il giocatore sceglie limiti uguali o inferiori al massimo del suo livello.
+### 8.1 Regole di ogni ordine
 
-Il giocatore può restare in paper per sempre: storia e Medaglie non cambiano.
+- Riepilogo prima dell'invio: simbolo, lato, importo, tipo, stima dei costi.
+- Solo le classi di asset del percorso (Titoli ed ETF: `us_equity`; Cripto: `crypto`; Misto: le classi scelte), niente vendite allo scoperto, acquisti entro la liquidità (o entro il potere d'acquisto di Alpaca quando il giocatore usa la leva del gioco), ordini in importo (notional) o quantità.
+- `client_order_id` unico per idempotenza; sul server locale un registro di ogni ordine.
 
-### 8.2 Limiti per Medaglia (dollari)
+### 8.2 Chiavi Alpaca
 
-| Medaglie | Max per ordine | Max al mese | Cripto (per ordine / mese) | Tipi di ordine |
-|---|---|---|---|---|
-| 1 | 100 | 300 | 50 / 150 | Mercato |
-| 2 | 200 | 600 | 100 / 300 | + Limite |
-| 3 | 300 | 1.000 | 150 / 500 | + Limite |
-| 4 | 500 | 1.500 | 250 / 750 | + Limite |
-| 5 | 750 | 2.500 | 350 / 1.200 | + Limite |
-| 6 | 1.000 | 4.000 | 500 / 2.000 | + Limite |
-| 7 | 1.500 | 6.000 | 750 / 3.000 | + Limite |
-| 8 | 2.500 | 10.000 | 1.000 / 5.000 | + Stop |
-
-Inoltre: solo le classi di asset del percorso (Titoli ed ETF: `us_equity`; Cripto: `crypto`; Misto: le classi scelte), niente vendite allo scoperto, niente margine (ordini solo entro la liquidità disponibile), ordini in importo (notional) o quantità.
-
-### 8.3 Sicurezza di ogni ordine reale
-
-- Riepilogo: simbolo, lato, importo, tipo, stima dei costi, quota del mese già usata.
-- Conferma digitando la parola **CONFERMO**.
-- Controllo dei limiti nel client e di nuovo nel server locale (tetto rigido configurabile).
-- `client_order_id` unico per idempotenza; log di audit locale di ogni ordine.
-- **Pausa di riflessione**: blocca il live per 24 h, 7 giorni o 30 giorni; non si può annullare prima della scadenza.
-- Nessuna XP, Reputazione o carta dai trade reali.
-
-### 8.4 Chiavi Alpaca
-
-- Il giocatore le crea su alpaca.markets (account Paper gratuito; Live dopo il KYC fatto da Alpaca).
-- Le inserisce nella Clinica ("Collega Alpaca"). Il browser le invia una sola volta al **server locale** di Tradermon, che le salva in `server/.secrets/keys.json` (escluso da Git, permessi 600) e non le restituisce mai al browser.
-- Ambienti separati: Paper (`paper-api.alpaca.markets`) e Live (`api.alpaca.markets`). Dati di mercato da `data.alpaca.markets`.
-- "Scollega" cancella le chiavi dal server.
-- Depositi e prelievi reali si fanno solo sul sito di Alpaca: la Clinica mostra il saldo e apre la pagina.
+- Il giocatore le crea su alpaca.markets (account Paper gratuito, basta un'email).
+- Le inserisce dal menu o dalla Clinica (voce "Chiavi API"). Dal sito restano solo sul dispositivo, cifrate con la password del giocatore; sul proprio computer il browser le invia una sola volta al **server locale** di Tradermon, che le salva in `server/.secrets/keys.json` (escluso da Git, permessi 600) e non le restituisce mai al browser.
+- Indirizzi: conto Paper (`paper-api.alpaca.markets`) e dati di mercato (`data.alpaca.markets`). Il gioco, il server locale e la funzione Supabase non accettano altri conti.
+- "Scollega" cancella le chiavi dal dispositivo o dal server.
 
 ---
 
@@ -536,7 +507,7 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 - Schermata di sfida: avversario in alto a destra su una pedana d'erba, giocatore di spalle in basso a sinistra, riquadri delle barre (Convinzione e Fiducia) verde/giallo/rosso, lampo d'ingresso e scorrimento dei personaggi.
 - Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.
 - Touch: croce direzionale e pulsanti A, B, Menu sullo schermo.
-- Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo e Licenza (con scelta del titolo), Medaglie, Tecniche, Mappa della Regione (con Trasferimento di Capitale), Salva, Opzioni (effetti, musica, velocità del testo, scala dei caratteri, contrasto alto, Comandi).
+- Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo (con scelta del titolo), Medaglie, Tecniche, Mappa della Regione (con Trasferimento di Capitale), Salva, Opzioni (effetti, musica, velocità del testo, scala dei caratteri, contrasto alto, Comandi).
 - Resa: la griglia 240×160 è disegnata a risoluzione interna 720×480 (Scale3x per tile e sprite) e adattata allo schermo con filtro lineare; la camera aggiunge vignettatura e una leggera saturazione. Niente sfocatura né scalini.
 - Musica: chiptune originale generata in codice, un brano per tipo di luogo, uno per i duelli e uno per la notte; con il clima orso o tempesta i brani maggiori passano in minore e rallentano, con il toro accelerano. Brevi motivi per vittorie, Medaglie e missioni completate. Volume separato dagli effetti nelle Opzioni.
 - Accessibilità: testo ingrandibile, nessuna informazione solo a colori, timer disattivabile in modalità "Studio" (in cambio dimezza la Reputazione dei duelli).

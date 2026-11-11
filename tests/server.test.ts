@@ -15,15 +15,18 @@ describe('server locale Alpaca', () => {
   it('stato senza chiavi', async () => {
     const r = await (await fetch(base + '/api/status')).json();
     expect(r.ok).toBe(true);
-    expect(r).toHaveProperty('liveMaxOrder');
+    expect(Object.keys(r).sort()).toEqual(['ok', 'paper']);
   });
   it('rifiuta le richieste da altre origini', async () => {
     const r = await fetch(base + '/api/keys', { method: 'POST', headers: { origin: 'https://evil.example', 'content-type': 'application/json' }, body: '{}' });
     expect(r.status).toBe(403);
   });
-  it('rifiuta un ordine reale senza parola di conferma', async () => {
-    const r = await fetch(base + '/api/alpaca/live/orders', { method: 'POST', headers: { origin: base, 'content-type': 'application/json' }, body: JSON.stringify({ symbol: 'AAPL', side: 'buy', type: 'market', time_in_force: 'day', notional: 10 }) });
-    expect(r.status).toBeGreaterThanOrEqual(400);
+  it('collega e usa solo il conto Paper', async () => {
+    const k = await fetch(base + '/api/keys', { method: 'POST', headers: { origin: base, 'content-type': 'application/json' }, body: JSON.stringify({ env: 'altro', keyId: 'AKTESTTESTTEST00', secret: 's'.repeat(40) }) });
+    expect(k.status).toBe(403);
+    expect((await k.json()).message).toMatch(/solo il conto Alpaca Paper/);
+    const r = await fetch(base + '/api/alpaca/altro/orders', { method: 'POST', headers: { origin: base, 'content-type': 'application/json' }, body: JSON.stringify({ symbol: 'AAPL', side: 'buy', type: 'market', time_in_force: 'day', notional: 10 }) });
+    expect(r.status).toBe(404);
   });
   it('rifiuta la vendita allo scoperto e i simboli non validi', async () => {
     const r = await fetch(base + '/api/alpaca/paper/orders', { method: 'POST', headers: { origin: base, 'content-type': 'application/json' }, body: JSON.stringify({ symbol: 'rm -rf', side: 'buy', type: 'market', time_in_force: 'day', qty: 1 }) });

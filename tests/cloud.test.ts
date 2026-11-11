@@ -59,7 +59,7 @@ describe('cassaforte delle chiavi', () => {
     expect(await open(again, sealed, 'tradermon:alpaca:u1:paper')).toEqual({ keyId: 'PKTEST1234', secret: 'segreto-lungo-abcdefghij' });
     await expect(unwrapDataKey(wrapped, 'password-sbagliata')).rejects.toBeTruthy();
     // dato legato a giocatore e conto: spostato su un altro conto non si apre
-    await expect(open(again, sealed, 'tradermon:alpaca:u1:live')).rejects.toBeTruthy();
+    await expect(open(again, sealed, 'tradermon:alpaca:u2:paper')).rejects.toBeTruthy();
   });
   it('la chiave dati in uso non è estraibile', async () => {
     const { key } = await createDataKey('pw-12345678', 1000);

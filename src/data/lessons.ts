@@ -43,7 +43,7 @@ export const LESSONS: Lesson[] = [
     'Esempio: capitale 10.000, rischio 1% = 100. Con uno stop a −5%, la posizione massima è 2.000.'),
   L('l_gestione_2', 'gestione', 'Leva e martingala', 'ip_leverage',
     'La leva amplifica guadagni e perdite: con leva 5 un calo del 20% azzera il capitale. La martingala (raddoppiare dopo ogni perdita) porta prima o poi alla rovina.',
-    'In Tradermon il conto reale non permette leva né vendite allo scoperto.'),
+    'In Tradermon le vendite allo scoperto non sono consentite, e la leva si apre solo dopo il suo esame e l\'ottavo Attestato.'),
   L('l_macro_1', 'macro', 'Tassi, inflazione e banche centrali', 'ip_central_bank',
     'Le banche centrali alzano i tassi per frenare l\'inflazione e li abbassano per sostenere la crescita. L\'obiettivo della BCE è un\'inflazione del 2% nel medio termine.',
     'Tassi più alti fanno scendere i prezzi delle obbligazioni esistenti e pesano sui titoli che promettono utili lontani nel tempo.'),

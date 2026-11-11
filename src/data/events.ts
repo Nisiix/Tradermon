@@ -100,7 +100,7 @@ export const TEMPTATIONS: Temptation[] = [
     accept: 'Un calo del 5% basta ad azzerare la posizione con leva 20. Lezione sulla leva imparata a caro prezzo (simulato).',
     refuse: 'Con leva 20, un movimento del 5% contro di te azzera tutto. Saggio.' },
   { id: 'phish', who: 'Speculatore', source: 'ip_phishing', bias: 'fomo', loss: 0.02,
-    text: '"Vuoi la Licenza di Investitore subito? Inserisci le tue chiavi su questo sito e salti la fila!"',
+    text: '"Vuoi gli otto Sigilli subito? Inserisci le tue chiavi su questo sito e salti la fila!"',
     accept: 'Il sito era falso: le chiavi sono finite nelle mani dello Speculatore. Per fortuna era tutto simulato.',
     refuse: 'Le chiavi API non si inseriscono mai su siti sconosciuti. E la fila non si salta.' },
   { id: 'rug', who: 'Speculatore', source: 'ip_rugpull', bias: 'fomo', loss: 0.05,

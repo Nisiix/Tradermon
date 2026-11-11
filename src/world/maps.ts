@@ -383,7 +383,7 @@ const TOWN_TALK = [
   'Le Zone di Mercato, quelle con l\'erba alta e il grafico, sono piene di sorprese.',
   'Il mio portafoglio è diversificato: azioni, obbligazioni e un po\' di liquidità. Dormo tranquillo.',
   'Dicono che nel Casinò di Interessa il banco vinca sempre. Matematicamente, è vero.',
-  'Per sfidare la Lega servono otto Medaglie complete: Attestato e Sigillo pratico, guadagnato sul conto vero.',
+  'Per sfidare la Lega servono otto Medaglie complete: Attestato e Sigillo pratico, guadagnato sul conto Paper.',
   'Un buon investitore scrive il suo piano a mente fredda.',
   'L\'Archivio di Bilancia si apre solo a chi sa leggere oltre la superficie.',
 ];

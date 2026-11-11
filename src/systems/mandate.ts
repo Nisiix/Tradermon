@@ -130,7 +130,7 @@ export async function closeMandate(id: string, why: 'annulla' | 'obiettivo' | 'm
 
 export interface MandateMoney { held: number; sold: number; realized: number; open: number; result: number }
 
-/** Quanto denaro vero ha mosso il mandato: vendite già fatte e valore della parte ancora in portafoglio, rispetto all'ingresso. */
+/** Quanto capitale del conto di gioco ha mosso il mandato: vendite già fatte e valore della parte ancora in portafoglio, rispetto all'ingresso. */
 export function mandateMoney(id: string): MandateMoney | null {
   const p = planOf(id);
   if (!p) return null;

@@ -3,13 +3,11 @@ export const SYMBOL_RE: RegExp;
 export function validKeys(keyId: unknown, secret: unknown): boolean;
 export interface CoreKeys { keyId: string; secret: string }
 export interface CoreConfig {
-  trading: Record<string, string>;
+  trading: { paper: string };
   data: string;
   keysOf: (env: string) => CoreKeys | null;
   dataEnv: () => string;
   audit?: (entry: Record<string, unknown>) => unknown;
-  liveMaxOrder?: number;
-  noEnv?: string;
   fetch?: (url: string, init?: RequestInit) => Promise<Response>;
 }
 export interface CoreRequest {
