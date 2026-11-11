@@ -97,7 +97,7 @@ I dati di Alpaca non si possono ridistribuire: ogni giocatore li scarica con le 
 - `server/index.mjs`: il server locale che serve il gioco e fa da tramite verso Alpaca.
 - `supabase/functions/alpaca/`: `core.js` contiene le regole e le rotte sugli ordini, condivise da server locale, browser (collegamento diretto del sito) e funzione Edge. La funzione Edge è la riserva del sito, solo Paper e solo se il giocatore la sceglie: `index.ts` aggiunge accesso del giocatore, CORS e limite di richieste. Si pubblica con `supabase functions deploy alpaca --no-verify-jwt` (la funzione verifica da sé il token del giocatore).
 - `supabase/functions/registra-giocatore/`, `supabase/functions/elimina-giocatore/` e `supabase/migrations/`: registrazione e cancellazione dei giocatori, tabelle.
-- `privacy/index.html` e `landing/config/titolare.json`: informativa sulla privacy e dati del titolare.
+- `privacy/index.html`: informativa sulla privacy.
 - `tests/`: i test automatici (`npm test`).
 
 ## Comandi
