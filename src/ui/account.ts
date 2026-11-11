@@ -5,7 +5,7 @@ import * as C from '../systems/cloud';
 import { formatPlayTime } from '../systems/playtime';
 import type { LegacyChoice } from '../systems/sync';
 
-const PRIVACY = 'La partita viene salvata su Supabase, legata al tuo giocatore: puoi continuarla da qualsiasi browser o dispositivo entrando con nome e password. Le chiavi Alpaca, se le colleghi, sono cifrate qui nel browser con la tua password: sul server arrivano solo in forma illeggibile.';
+const PRIVACY = 'La partita viene salvata su Supabase, legata al tuo giocatore: puoi continuarla da qualsiasi browser o dispositivo entrando con nome e password. Le chiavi Alpaca, se le colleghi, restano solo su questo dispositivo, cifrate con la tua password: non vanno su Supabase e non entrano nel salvataggio.';
 const NO_RESET = 'Non c\'è un\'email collegata, quindi la password <b>non si può recuperare</b>: scegline una che ricorderai.';
 
 function field(label: string, type: 'text' | 'password', max: number, auto: string): { wrap: HTMLElement; input: HTMLInputElement } {

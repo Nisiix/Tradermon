@@ -58,6 +58,7 @@ describe('conto Alpaca dal sito pubblico, direttamente dal browser', () => {
   it('con la cassaforte chiusa il conto non risulta collegato e nessuna chiave parte', async () => {
     store.keys.paper = PAPER;
     const st = await A.serverStatus();
+    expect(await A.lockedKeys()).toEqual(['paper']);
     expect(st).toMatchObject({ ok: true, direct: true, paper: { configured: false }, live: { configured: false } });
     await expect(A.account('paper')).rejects.toThrow(/password/i);
     expect(seen).toHaveLength(0);
@@ -68,6 +69,7 @@ describe('conto Alpaca dal sito pubblico, direttamente dal browser', () => {
     const st = await A.serverStatus();
     expect(st?.paper).toMatchObject({ configured: true, keyHint: 'PKTE…T00' });
     expect(A.directActive()).toBe(true);
+    expect(await A.lockedKeys()).toEqual([]);
     const acc = await A.account('paper');
     expect(acc.status).toBe('ACTIVE');
     const last = seen.at(-1)!;
@@ -120,7 +122,14 @@ describe('conto Alpaca dal sito pubblico, direttamente dal browser', () => {
 
   it('conto reale: stesso percorso diretto, con parola di conferma e tetto per ordine', async () => {
     await expect(A.account('live')).rejects.toThrow(/Nessuna chiave Live/);
-    expect((await A.setKeys('live', LIVE.keyId, LIVE.secret)).ok).toBe(true);
+    // con la cassaforte chiusa le chiavi verificate valgono per la sessione ma non vengono salvate
+    store.unlocked = false;
+    const first = await A.setKeys('live', LIVE.keyId, LIVE.secret);
+    expect(first).toMatchObject({ ok: true, stored: false });
+    expect(store.keys.live).toBeUndefined();
+    store.unlocked = true;
+    expect(await A.persistKeys('live')).toEqual({ stored: true });
+    expect(store.keys.live).toEqual(LIVE);
     const st = await A.serverStatus();
     expect(st?.live.configured).toBe(true);
     expect(st!.liveMaxOrder).toBeGreaterThan(0);
@@ -133,8 +142,9 @@ describe('conto Alpaca dal sito pubblico, direttamente dal browser', () => {
     const out = await A.submitOrder('live', o, 'CONFERMO');
     expect(out.symbol).toBe('AAPL');
     expect(seen.at(-1)!.url).toBe('https://api.alpaca.markets/v2/orders');
-    // scollegare: le chiavi spariscono dalla memoria
+    // scollegare: le chiavi spariscono dalla memoria e dal dispositivo
     await A.deleteKeys('live');
+    expect(store.keys.live).toBeUndefined();
     await expect(A.account('live')).rejects.toThrow(/Nessuna chiave Live/);
   });
 

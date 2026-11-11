@@ -168,18 +168,11 @@ export async function deleteSave(): Promise<void> {
 
 // ---------- vecchie copie cifrate delle chiavi Alpaca su Supabase ----------
 // Le chiavi ora restano solo sul dispositivo (systems/keystore.ts). Queste funzioni servono a portare lì le copie
-// salvate in passato e a cancellarle da Supabase; `storeAlpacaKeys` non viene più chiamata dal gioco.
+// salvate in passato e a cancellarle da Supabase: il gioco non ne scrive più di nuove.
 
 export interface AlpacaKeyPair { keyId: string; secret: string }
 /** Il dato cifrato è legato a giocatore e conto: una riga copiata su un altro conto non si apre. */
 const aad = (user: string, env: KeyEnv) => `tradermon:alpaca:${user}:${env}`;
-
-export async function storeAlpacaKeys(env: KeyEnv, k: AlpacaKeyPair): Promise<void> {
-  const { user, key } = await dataKey();
-  const s = await seal(key, { keyId: k.keyId, secret: k.secret }, aad(user, env));
-  const { error } = await client().from('alpaca_keys').upsert({ user_id: user, env, ciphertext: s.ciphertext, iv: s.iv });
-  if (error) throw new Error(netMsg(error) ?? 'Chiavi non salvate su Supabase.');
-}
 
 export async function loadAlpacaKeys(env: KeyEnv): Promise<AlpacaKeyPair | null> {
   const { user, key } = await dataKey();

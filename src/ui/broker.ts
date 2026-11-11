@@ -15,7 +15,7 @@ import { shuffle } from '../systems/rng';
 import { say, choose, modal, toast, esc } from './core';
 import { ASSET_BY_ID } from '../data/assets';
 import { runDuel } from './battle';
-import { keysForm, openAlpacaHub, restoreKeys } from './live';
+import { keysForm, offerRelay, openAlpacaHub, restoreKeys } from './live';
 
 const NURSE = 'Dott.ssa Ratio';
 const pctTxt = (x: number) => (x * 100).toFixed(2).replace('.', ',').replace(/,?0+$/, '') + '%';
@@ -26,7 +26,7 @@ const pctTxt = (x: number) => (x * 100).toFixed(2).replace('.', ',').replace(/,?
 export const GUIDE_LINES = [
   '1) Crea un account su alpaca.markets: per il conto Paper basta l\'email. È gratuito e usa denaro finto con prezzi veri.',
   '2) Nella dashboard, in modalità Paper, genera una coppia di chiavi API (Key ID e Secret) e inseriscile alla voce "Chiavi API" del menu.',
-  '3) Sul tuo computer le chiavi restano sul server locale di Tradermon: il gioco non le rilegge e non le mostra mai. Dal sito restano cifrate con la password del tuo giocatore.',
+  '3) Le chiavi restano solo sul tuo dispositivo. Dal sito sono cifrate con la password del tuo giocatore e il browser le usa per parlare direttamente con Alpaca: non vanno su Supabase e nessun server di Tradermon le riceve. Giocando sul tuo computer le custodisce il server locale di Tradermon, che non le rimanda mai al browser.',
   'Il conto Paper è il conto di gioco: capitale fissato dalla difficoltà, Prove sul conto, Sigilli e Lega vivono lì.',
   'La Medaglia ha due metà. L\'ATTESTATO si vince con il duello di conoscenza del Mentore e apre la strada verso la città successiva. Il SIGILLO pratico si guadagna con la Prova sul conto: ordini veri sul mercato di oggi, dal conto Paper. Per entrare nella Lega servono tutti e otto i Sigilli.',
   'Ogni tappa chiede una quota MINIMA da investire: un importo fisso, calcolato sul capitale di partenza e non su quello che ti resta, più alto nelle difficoltà più dure. Sopra il minimo sei libero: puoi investire tutto il capitale fin dal primo giorno.',
@@ -34,7 +34,7 @@ export const GUIDE_LINES = [
   'Le vendite fatte fuori dal gioco (per esempio dal sito di Alpaca) non sfuggono: alla sincronizzazione il gioco le registra al prezzo vero di esecuzione e aggiorna conto, perdite realizzate e controllo della bancarotta.',
   'Se in una sfida non riesci ad arrivare all\'obiettivo con un titolo puoi venderlo e puntare su un altro. Decidere di vendere il titolo di una sfida, anche solo una parte, la annulla: vale per le Prove sul conto (la quota della tappa riparte da zero e il titolo venduto non conta più) e per i mandati dei Boss (si ripete da capo, quiz compreso). Prima della vendita il gioco ti chiede di confermare che vendi per annullare la sfida e rifarla con un altro titolo. Vale anche se lo stop scatta o se vendi dal sito di Alpaca. Anche la vendita forzata della leva e la bancarotta annullano la Prova in corso. Nelle verifiche della Lega si guarda il conto com\'è: lì una vendita non annulla nulla.',
   'In Apprendista e Investitore puoi attivare, dalle Impostazioni (⚙) o da Menu, Opzioni, "Prove sul conto: prosegui anche se vanno male": la Prova non viene saltata, ma se finisce male il risultato viene ignorato e prosegui lo stesso. È una scelta sconsigliata se vuoi imparare a investire o a fare trading in modo efficiente e corretto.',
-  'DOVE SI OPERA: dal sito gli ordini del conto Paper passano da Supabase (serve essere entrati con il proprio giocatore); le chiavi restano cifrate con la tua password e la funzione che parla con Alpaca non le salva. Il conto reale si usa solo giocando sul proprio computer.',
+  'DOVE SI OPERA: dal sito è il tuo browser a inviare gli ordini direttamente ad Alpaca, sia per il conto Paper sia per il conto reale; serve essere entrati con il proprio giocatore, perché la sua password apre le chiavi. Su un altro dispositivo le chiavi vanno inserite di nuovo. Se il browser non riesce a raggiungere Alpaca, il gioco ti chiede se far passare il solo conto Paper dal servizio di Tradermon: il conto reale non segue mai quella strada.',
   'Gli ordini sono anche frazionati: scegli un importo in dollari e compri la frazione di titolo corrispondente, senza dover arrivare a una quota intera.',
   'Il conto reale (Live) è facoltativo e separato dalla storia: si collega dopo il primo Attestato e l\'Esame di Abilitazione, con chiavi Live distinte. Potrebbe non essere disponibile per tutti i Paesi: lo decide Alpaca in fase di verifica.',
   'Sul conto reale i PRELIEVI si possono sempre fare, dal sito di Alpaca. I DEPOSITI non passano mai dal gioco: Tradermon non sposta denaro e non ti chiederà mai di versarne.',
@@ -45,16 +45,18 @@ export const GUIDE_LINES = [
 
 /** Voce "Chiavi API" del menu: stato del collegamento, chiavi Paper e Live, guida. */
 export async function apiKeysMenu(): Promise<void> {
-  let askedUnlock = false;
+  let askedUnlock = false, askedRelay = false;
   for (;;) {
     const link = await Acc.checkLink(true);
     if (!link.server) { await say([...A.noServerLines('collegare il conto Alpaca'), 'Guida completa: ' + guideUrl()], 'Chiavi API'); return; }
     const st = await A.serverStatus();
-    // dal sito le chiavi Paper salvate cifrate si aprono con la password del giocatore, senza reinserirle
-    if (st?.cloud && !st.paper.configured && !askedUnlock && (askedUnlock = true) && (await restoreKeys(st))) { await Acc.checkLink(true); (await Acc.sync(true)).forEach((n) => toast(n)); continue; }
+    // dal sito le chiavi salvate cifrate sul dispositivo si aprono con la password del giocatore, senza reinserirle
+    if (st && (st.direct || st.cloud) && !askedUnlock && (askedUnlock = true) && (await restoreKeys(st))) { await Acc.checkLink(true); (await Acc.sync(true)).forEach((n) => toast(n)); continue; }
+    // il browser non raggiunge Alpaca: la riserva per il Paper la sceglie il giocatore
+    if (A.directBlocked() && !A.relayAllowed() && !askedRelay && (askedRelay = true) && (await offerRelay())) { await Acc.checkLink(true); (await Acc.sync(true)).forEach((n) => toast(n)); continue; }
     const opts = [
       st?.paper.configured ? `Conto Paper collegato (${st.paper.keyHint})` : 'Collega il conto Alpaca Paper',
-      st?.cloud ? 'Conto reale: solo giocando sul tuo computer' : S.license === 'investitore' ? (st?.live.configured ? `Conto reale collegato (${st.live.keyHint})` : 'Collega il conto reale (chiavi Live)') : 'Conto reale: dopo il 1º Attestato e l\'Esame',
+      st?.cloud ? 'Conto reale: non raggiungibile da questo browser' : S.license === 'investitore' ? (st?.live.configured ? `Conto reale collegato (${st.live.keyHint})` : 'Collega il conto reale (chiavi Live)') : 'Conto reale: dopo il 1º Attestato e l\'Esame',
       'Conto reale, limiti e scollegamento',
       'Guida: come ottenere le chiavi',
       'Indietro',
@@ -62,7 +64,7 @@ export async function apiKeysMenu(): Promise<void> {
     const c = await choose(opts, { cancel: true, title: 'CHIAVI API', disabled: [false, !!st?.cloud || S.license !== 'investitore', false, false, false] });
     if (c < 0 || c === 4) return;
     if (c === 0) {
-      if (st?.paper.configured) await say(['Il conto Paper è collegato: è il tuo conto di gioco.', 'Per cambiarlo scollega le chiavi da "Conto reale, limiti e scollegamento": il registro di gioco si riallinea al nuovo conto e riparte dal capitale iniziale.'], 'Chiavi API');
+      if (st?.paper.configured) await say(['Il conto Paper è collegato: è il tuo conto di gioco.', st.direct ? 'Collegamento: diretto, dal tuo browser ad Alpaca. Le chiavi restano cifrate su questo dispositivo.' : st.cloud ? 'Collegamento: attraverso il servizio di Tradermon, come hai scelto su questo dispositivo perché il browser non raggiungeva Alpaca. Vale solo per il conto Paper.' : 'Collegamento: server locale di Tradermon su questo computer, che custodisce le chiavi.', 'Per cambiarlo scollega le chiavi da "Conto reale, limiti e scollegamento": il registro di gioco si riallinea al nuovo conto e riparte dal capitale iniziale.'], 'Chiavi API');
       else if (await keysForm('paper')) { await Acc.checkLink(true); (await Acc.sync(true)).forEach((n) => toast(n)); toast('Conto Paper collegato: prezzi reali scaricati.'); }
     } else if (c === 1) {
       if (st?.live.configured) await openAlpacaHub();

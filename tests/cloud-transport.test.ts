@@ -1,5 +1,6 @@
 // Riserva del sito pubblico: se il browser NON riesce a raggiungere Alpaca direttamente (il controllo CORS non
-// passa), il solo conto Paper passa dalla funzione Supabase "alpaca". Il conto reale non usa mai questa strada.
+// passa) e il giocatore lo sceglie, il solo conto Paper passa dalla funzione Supabase "alpaca". Il conto reale
+// non usa mai questa strada.
 // Qui la funzione gira dentro il test contro il finto Alpaca; Supabase (sessione) e la cassaforte sono simulati.
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { startFakeAlpaca, type FakeAlpaca } from './helpers/fake-alpaca';
@@ -17,6 +18,8 @@ vi.mock('../src/systems/keystore', () => ({
   unlocked: async () => cloud.unlocked,
   loadKeys: async (env: string) => { if (!cloud.unlocked) throw new Error('LOCKED'); return env === 'paper' ? cloud.saved : null; },
   keyEnvs: async () => (cloud.saved ? ['paper'] : []),
+  storeKeys: async (env: string, k: { keyId: string; secret: string }) => { if (!cloud.unlocked) throw new Error('LOCKED'); if (env === 'paper') cloud.saved = k; },
+  removeKeys: async (env: string) => { if (env === 'paper') cloud.saved = null; },
 }));
 
 import * as A from '../src/systems/alpaca';
@@ -62,9 +65,16 @@ describe('riserva del sito pubblico: conto Paper attraverso Supabase quando il b
     const st = await A.serverStatus();
     expect(st?.paper).toMatchObject({ configured: true, keyHint: 'PKTE…T00' });
     expect(A.cloudActive()).toBe(false);
+    // la riserva non parte da sola: senza la scelta del giocatore nessuna chiave va a Supabase
+    await expect(A.account('paper')).rejects.toThrow(A.DIRECT_BLOCKED);
+    expect(blocked).toEqual(['https://paper-api.alpaca.markets/v2/account']);
+    expect(seen).toHaveLength(0);
+    expect(A.directBlocked()).toBe(true);
+    expect(A.cloudActive()).toBe(false);
+    A.allowRelay(true);
     const acc = await A.account('paper');
     expect(acc.status).toBe('ACTIVE');
-    expect(blocked).toEqual(['https://paper-api.alpaca.markets/v2/account']);
+    expect(blocked).toHaveLength(2);
     expect(A.cloudActive()).toBe(true);
     expect(await A.serverStatus()).toMatchObject({ ok: true, cloud: true, live: { configured: false }, liveMaxOrder: 0 });
     const last = seen.at(-1)!;
@@ -99,16 +109,28 @@ describe('riserva del sito pubblico: conto Paper attraverso Supabase quando il b
   }, 20_000);
 
   it('scollegare toglie le chiavi dalla memoria; ricollegarle le verifica con Alpaca senza salvarle sul server', async () => {
-    cloud.saved = null;
     await A.deleteKeys('paper');
+    expect(cloud.saved).toBeNull();
     expect((await A.serverStatus())?.paper.configured).toBe(false);
     const n = seen.length;
     await expect(A.setKeys('paper', 'no', 'corta')).rejects.toThrow();
     expect(seen.length).toBe(n);
     const r = await A.setKeys('paper', KEY, SECRET);
     expect(r.ok).toBe(true);
+    expect(r.stored).toBe(true);
+    expect(cloud.saved).toEqual({ keyId: KEY, secret: SECRET }); // sul dispositivo, non sul server
     expect(seen.at(-1)!.url).toMatch(/\/api\/alpaca\/paper\/account$/);
     expect((await A.serverStatus())?.paper.configured).toBe(true);
+  });
+
+  it('ritirata la scelta si torna al collegamento diretto e nessuna chiave passa più da Supabase', async () => {
+    A.allowRelay(false);
+    expect(A.cloudActive()).toBe(false);
+    const n = seen.length;
+    await expect(A.account('paper')).rejects.toThrow(A.DIRECT_BLOCKED);
+    expect(seen.length).toBe(n);
+    A.allowRelay(true);
+    expect((await A.account('paper')).status).toBe('ACTIVE');
   });
 
   it('senza un giocatore collegato il conto non è raggiungibile', async () => {
