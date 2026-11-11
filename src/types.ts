@@ -104,6 +104,10 @@ export interface PendingOrder {
   filledQty: number;
   filledCost: number;
   createdAt: number;
+  /** Tappa in corso quando l'acquisto è stato accettato. */
+  stage?: number;
+  /** Acquisto che non conta per le Prove: titolo già venduto nella Prova in corso, oppure Prova annullata dopo l'ordine. */
+  noCredit?: boolean;
   /** Etichetta nel registro: mercato, limite, stop, ribilanciamento, liquidazione. */
   tag: string;
   /** Acquisto fatto usando la leva. */
@@ -155,6 +159,12 @@ export interface Portfolio {
   orderSeq: number;
   /** Totale degli acquisti accettati da Alpaca dall'inizio: misura le rate di tappa. */
   bought: number;
+  /** Acquisti che non contano più: quelli delle Prove annullate da una vendita. Per le Prove vale bought − exVoid. */
+  exVoid?: number;
+  /** Acquisti che contano per la Prova in corso, titolo per titolo: vendere uno di questi titoli la annulla. */
+  exBuys?: Record<string, number>;
+  /** Titoli venduti durante la Prova in corso: non contano finché non è completata. */
+  exBarred?: string[];
   /** Costi didattici addebitati dal gioco (solo Paper), tenuti separati dai prezzi reali. */
   costs: number;
   /** Prestito per la leva e data dell'ultimo interesse calcolato (AAAA-MM-GG). */

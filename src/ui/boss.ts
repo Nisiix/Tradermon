@@ -37,7 +37,7 @@ export async function bossMenu(): Promise<void> {
       await say([
         'Ogni Boss si affronta in due tempi: un quiz di livello esperto, poi UNA sola decisione su un grafico vero. Ingresso al prezzo del momento, uno stop, un obiettivo, quanto rischi.',
         'Stop e obiettivo non si toccano più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata. I tre Boss si possono sfidare insieme: ognuno ha il suo mandato.',
-        'Se vedi che l\'obiettivo non arriva puoi decidere di vendere prima della scadenza e puntare su un altro titolo. La vendita può essere anche parziale, ma decidere di vendere annulla la sfida: la ripeti da capo, quiz compreso, scegliendo un titolo diverso. Non conta come sconfitta.',
+        'Se vedi che l\'obiettivo non arriva puoi decidere di vendere prima della scadenza e puntare su un altro titolo. La vendita può essere anche parziale, ma va dichiarata: scegli "vendo una parte per annullare la sfida". Decidere di vendere annulla la sfida in ogni caso: la ripeti da capo, quiz compreso, scegliendo un titolo diverso. Non conta come sconfitta.',
         `Il Boss ha ${BOSS_RULES.energy} punti di energia: fino a ${BOSS_RULES.quizMax} li toglie il quiz, fino a ${BOSS_RULES.planMax} la qualità del piano, fino a ${BOSS_RULES.outcomeMax} l'esito reale. Ne servono ${BOSS_RULES.win}.`,
         'Quiz e piano perfetti bastano da soli: l\'esito non lo controlla nessuno, quindi non può essere l\'unica strada. Se perdi, si rifà tutto il Boss, quiz compreso.',
         'Nessun ordine viene inviato: è un mandato su carta, valutato sui prezzi reali.',
@@ -172,12 +172,12 @@ async function sellMandate(def: BossDef): Promise<void> {
   const p = runs()[def.id]?.plan;
   if (!p) return;
   const tick = ASSET_BY_ID[p.asset]?.ticker ?? p.asset;
-  const c = await choose(['Vendo tutto', 'Vendo una parte', 'Tengo il piano'], { cancel: true, who: def.name, prompt: `Se pensi che ${tick} non arriverà all'obiettivo puoi vendere e puntare su un altro titolo. Vendere, anche solo una parte, annulla la sfida: la ripeti da capo, quiz compreso, con un titolo diverso da ${tick}.` });
+  const c = await choose(['Vendo tutto per annullare la sfida', 'Vendo una parte per annullare la sfida', 'Tengo il piano'], { cancel: true, who: def.name, prompt: `Se pensi che ${tick} non arriverà all'obiettivo puoi vendere e puntare su un altro titolo. Decidere di vendere, anche solo una parte, annulla la sfida: la ripeti da capo, quiz compreso, con un titolo diverso da ${tick}. Scegli tu come vendi: in tutti e due i casi dichiari che vendi per annullare la sfida e rifarla con un altro titolo.` });
   if (c !== 0 && c !== 1) return;
   if (!sellOut(S.boss, def.id)) return;
   save();
   beep('bad');
-  await say([`Hai deciso di vendere ${c === 1 ? 'una parte di ' : ''}${tick}: il mandato è chiuso e la sfida è annullata. Non conta come sconfitta.`, `Quando vuoi riprovare si ricomincia dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.`], def.name);
+  await say([`Hai deciso di vendere ${c === 1 ? 'una parte di ' : ''}${tick} per annullare la sfida: il mandato è chiuso${c === 1 ? ', anche se la vendita è parziale' : ''}. Non conta come sconfitta.`, `Quando vuoi riprovare si ricomincia dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.`], def.name);
 }
 
 async function resolve(def: BossDef): Promise<void> {
