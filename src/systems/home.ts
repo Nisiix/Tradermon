@@ -10,3 +10,8 @@ export function homeUrl(loc: { href: string; pathname: string } = location): str
   const dir = loc.pathname.replace(/[^/]*$/, ''); // cartella della pagina del gioco
   return new URL(dir === '/' ? '/' : '../', new URL(dir, loc.href)).href;
 }
+
+/** Sezione Guida della landing page: lì c'è la guida completa per creare e collegare un conto Alpaca. */
+export function guideUrl(loc: { href: string; pathname: string } = location): string {
+  return homeUrl(loc) + '#guida';
+}

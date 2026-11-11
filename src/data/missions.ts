@@ -39,8 +39,9 @@ export type Mission = SimMission | PickMission;
 
 const pct = (x: number) => (x * 100).toFixed(1) + '%';
 
-function ddAllow(base: number, profile: RiskProfile): number {
-  return base + (profile === 'prudente' ? -0.02 : profile === 'audace' ? 0.02 : 0);
+/** Limite di drawdown della missione: uguale per tutti i profili (il profilo non è una leva di gioco). */
+function ddAllow(base: number, _profile?: RiskProfile): number {
+  return base;
 }
 
 export function mentorMission(n: number, track: Track, profile: RiskProfile): Mission {

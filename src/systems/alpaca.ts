@@ -66,6 +66,12 @@ export function isLocalHost(): boolean {
 /** Spiegazione unica quando il server locale (e quindi Alpaca) non è raggiungibile. */
 export function noServerLines(what: string): string[] {
   return isLocalHost()
-    ? [`Per ${what} serve il server locale di Tradermon, che ora non risponde.`, 'Avvialo con "npm start" (oppure "npm run dev"): le istruzioni sono nel file LEGGIMI. Senza server il gioco funziona lo stesso con il mercato simulato.']
-    : [`La versione online di Tradermon non ha il server che collega Alpaca, quindi ${what} qui non è disponibile.`, 'Si usa solo nella versione da scaricare e avviare sul tuo computer. Tutto il resto del gioco funziona con il mercato simulato.'];
+    ? [`Per ${what} serve il server locale di Tradermon, che ora non risponde.`, 'Avvialo con "npm start" (oppure "npm run dev"): le istruzioni sono nel file LEGGIMI e nella sezione Guida della pagina iniziale.', ...ACCOUNT_LINES]
+    : [`Per ${what} serve un conto Alpaca collegato con le chiavi API, e il server locale che le custodisce: qui online non c'è.`, 'La sezione Guida della pagina iniziale spiega passo per passo come creare il conto (Paper o Live) e avviare il gioco sul tuo computer.', ...ACCOUNT_LINES];
 }
+
+/** Perché serve un conto Alpaca: senza chiavi resta solo il percorso di apprendimento con il mercato simulato. */
+export const ACCOUNT_LINES = [
+  'Senza un conto Alpaca collegato (anche solo Paper, gratuito e con denaro finto) puoi seguire tutto il percorso di apprendimento, ma non le sfide sui grafici e sui titoli reali.',
+];
+

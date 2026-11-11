@@ -2,6 +2,8 @@ import type { SaveData, AssetClass, Track, RiskProfile, BiasId } from '../types'
 import { createWorldMarket, advanceWorldMarket } from './market';
 import { newPortfolio, value, processOrders } from './portfolio';
 import { toast } from '../ui/core';
+import { ANSWER_SECONDS } from './balance';
+import { onMarketDay } from './character';
 import { ASSETS, ASSET_BY_ID } from '../data/assets';
 
 export const SAVE_KEY = 'tradermon.save.v1';
@@ -190,10 +192,10 @@ export function learnBias(b: BiasId): void {
   if (!S.biasSeen.includes(b)) S.biasSeen.push(b);
 }
 
+/** Secondi per rispondere: uguali per tutti. Il profilo di rischio descrive chi sei, non dà vantaggi di gioco. */
 export function profileTimer(): number {
   if (S.options.studyMode) return 0;
-  const base = S.profile === 'prudente' ? 30 : S.profile === 'audace' ? 20 : 25;
-  return base + Math.floor((level() - 1) / 5) * 5;
+  return ANSWER_SECONDS;
 }
 
 /** Avanza il mercato del mondo di n giorni, con ordini, dividendi e uova. */
@@ -205,6 +207,7 @@ export function advanceDays(n: number): string[] {
     const prices = S.market.prices;
     // ordini limite e stop della Clinica: si eseguono sui prezzi del giorno, oppure scadono
     for (const m of processOrders(pf, prices, S.market.day, slots())) toast(m);
+    onMarketDay(pf, S.market.day);
     for (const o of pf.orders.slice()) {
       if (o.expiresDay !== undefined && S.market.day > o.expiresDay) {
         pf.orders = pf.orders.filter((x) => x !== o);

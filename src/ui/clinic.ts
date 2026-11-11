@@ -12,6 +12,7 @@ import { openAlpacaHub, openObservatory } from './live';
 import { journalPrompt } from './journal';
 import { questionnaire } from './setup';
 import { shuffle } from '../systems/rng';
+import { onBuy, onSell } from '../systems/character';
 
 const NURSE = 'Dott.ssa Ratio';
 
@@ -125,7 +126,7 @@ export async function trade(guided = false) {
           const amt = Number(inp.value);
           if (!(await summaryOk(a.id, amt))) return;
           const r = marketBuy(S.portfolio, a.id, amt, px, S.market.day, slots());
-          if (r.ok) { card(a.id).xp += 3; beep('coin'); S.flags.firstBuy = true; }
+          if (r.ok) { card(a.id).xp += 3; beep('coin'); S.flags.firstBuy = true; onBuy(amt / Math.max(1, v)); }
           render(r.ok ? r.msg : '!' + r.msg);
           if (r.ok) void journalPrompt({ asset: a.id, side: 'buy', amount: amt, price: r.price ?? px[a.id], account: 'prova' });
         });
@@ -136,6 +137,7 @@ export async function trade(guided = false) {
             const amt = Number(inp.value);
             const qty = amt > 0 ? Math.min(pos.qty, amt / px[a.id]) : pos.qty;
             const r = marketSell(S.portfolio, a.id, qty, px, S.market.day);
+            if (r.ok) onSell(S.portfolio, a.id, !!r.atLoss, S.market.day);
             render(r.ok ? r.msg : '!' + r.msg);
             if (r.ok) void journalPrompt({ asset: a.id, side: 'sell', amount: qty * (r.price ?? px[a.id]), price: r.price ?? px[a.id], account: 'prova' });
           });

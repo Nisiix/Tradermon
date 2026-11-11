@@ -9,9 +9,11 @@ import { openClinic, trade } from '../ui/clinic';
 import { portfolioSetup } from '../ui/setup';
 import { openInvestidex, openLessons } from '../ui/menu';
 import { pickQuestions, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE } from '../systems/quiz';
-import { mentorTopics, trackTopics, LEAGUE_TOPICS, byTopic } from '../data/quiz/build';
+import { mentorTopics, trackTopics, LEAGUE_TOPICS, byTopic, BY_ID } from '../data/quiz/build';
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../data/story';
 import { mentorBooks, TOPIC_LABEL, type Book } from '../data/books';
+import { DUEL, REWARD, TRAIT_HIGH, REP_TIERS } from '../systems/balance';
+import { repTier, repGreeting, mentorCharacterLine, epilogue, TIER_MENTOR_REMATCH, TIER_ARCHIVE } from '../systems/character';
 import type { Section } from './maps';
 import { mentorMission, leagueMission, LEGENDS, SANDBOX, HISTORY, type Mission } from '../data/missions';
 import { weeklyChallenge } from '../ui/challenge';
@@ -124,6 +126,9 @@ async function resident(n: NpcDef) {
 function memoryLine(id: string, visits: number): string {
   const seen = S.npcMemory[`${id}_b`] ?? 0;
   if (S.badges > seen) { S.npcMemory[`${id}_b`] = S.badges; if (visits > 0) return S.badges === 1 ? 'Ho saputo della tua prima Medaglia. Complimenti!' : `Ho saputo che hai già ${S.badges} Medaglie. Che strada hai fatto!`; }
+  // il grado di Reputazione cambia il saluto: la prima volta che ti vedono con un grado nuovo, lo notano
+  const tier = repTier().index;
+  if (tier > (S.npcMemory[`${id}_t`] ?? 0)) { S.npcMemory[`${id}_t`] = tier; if (visits > 0) return repGreeting(); }
   if (visits === 1) return 'Di nuovo tu! Sei tornato a trovarmi.';
   if (S.title && visits % 3 === 2) return `Dicono che ora ti chiamano «${S.title}».`;
   if (S.daily.streak >= 3 && visits % 3 === 0) return `Ho sentito che rispondi alla domanda del giorno da ${S.daily.streak} giorni di fila. Bravo!`;
@@ -161,7 +166,7 @@ async function prof(w: WorldApi) {
 }
 
 async function licenseTalk() {
-  await say(['Per ora giocherai con monete di prova: denaro finto, lezioni vere.', 'Batti il primo Mentore e potrai sostenere l\'Esame di Abilitazione per la Licenza di Investitore.', A.isLocalHost() ? 'Con la Licenza potrai collegare un conto Alpaca (prima Paper, con denaro finto, poi se vorrai quello reale), con limiti che crescono insieme alle tue Medaglie.' : 'Nella versione da avviare sul tuo computer, con la Licenza potrai collegare un conto Alpaca (Paper o reale) con limiti che crescono con le Medaglie. Qui online si gioca con il mercato simulato.', 'Ma potrai anche restare in prova per sempre: la storia non cambia.'], 'Prof. Saldi');
+  await say(['Per ora giocherai con monete di prova: denaro finto, lezioni vere.', 'Batti il primo Mentore e potrai sostenere l\'Esame di Abilitazione per la Licenza di Investitore.', 'Con la Licenza potrai collegare un conto Alpaca con le chiavi API: prima Paper, con denaro finto, e se vorrai quello reale, con limiti che crescono insieme alle tue Medaglie.', 'Senza un conto collegato resta il percorso di apprendimento con il mercato simulato: le sfide sui grafici e sui titoli reali richiedono le chiavi.', 'Come creare il conto e collegarlo è spiegato nella sezione Guida della pagina iniziale.', 'Ma potrai anche restare in prova per sempre: la storia non cambia.'], 'Prof. Saldi');
 }
 
 async function chooseCase(n: NpcDef, w: WorldApi) {
@@ -231,11 +236,12 @@ async function rival(n: NpcDef, w: WorldApi) {
 
 async function rivalDuel(k: number, w: WorldApi) {
   const topics = trackTopics(S.track, S.mixedClasses, S.badges);
-  const qs = pickQuestions(topics, 5, { target: targetDiff(k === 1 ? 0 : storyStage()), preferReview: true });
-  const r = await runDuel({ foeName: S.rival, foeTitle: 'Rivale', foePal: PAL.RIVAL, questions: qs, need: k === 1 ? 3 : 4, damage: 15 });
+  const P = k === 1 ? DUEL.rivalFirst : DUEL.rival;
+  const qs = pickQuestions(topics, P.n, { target: targetDiff(k === 1 ? 0 : storyStage()), preferReview: true });
+  const r = await runDuel({ foeName: S.rival, foeTitle: 'Rivale', foePal: PAL.RIVAL, questions: qs, ...P });
   if (!r.win) { await say(['Ah! Te l\'avevo detto.', 'Ripassa un po\' e riprova.'], S.rival); return defeatRespawn(w); }
   S.defeated.push(`rival_${k}`);
-  addRep(40);
+  addRep(REWARD.rep.rival);
   beep('win');
   await say(['Uff, sai il fatto tuo...', k === 1 ? 'Ma il mercato vero è un\'altra cosa. Ci vediamo sul Percorso 2!' : 'Ma vediamo i portafogli!'], S.rival);
   if (k > 1) await comparePortfolios();
@@ -280,19 +286,19 @@ async function trainer(n: NpcDef, w: WorldApi) {
     if (!rematchReady(n.id)) return say(pick(TRAINER_TIPS), n.name);
     // rivincita: domande più difficili, anche quelle che hai sbagliato
     await say(['Rieccoti! Ho studiato dall\'ultima volta.', 'Rivincita: stavolta le domande sono più toste!'], n.name);
-    const rq = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), 3, { preferReview: true, target: targetDiff(routeStage(n) + 2) });
-    const rr = await runDuel({ foeName: n.name, foeTitle: 'Rivincita', foePal: n.pal, questions: rq, need: 2, damage: 12 });
+    const rq = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), DUEL.rematch.n, { preferReview: true, target: targetDiff(routeStage(n) + 2) });
+    const rr = await runDuel({ foeName: n.name, foeTitle: 'Rivincita', foePal: n.pal, questions: rq, ...DUEL.rematch });
     advanceDays(1);
-    if (rr.win) { addRep(15); S.stats.xp += 20; track('rematch'); scheduleRematch(n.id); await say(['Battuto di nuovo! Ci rivediamo tra qualche giorno.', pick(TRAINER_TIPS)], n.name); }
+    if (rr.win) { addRep(REWARD.rep.rematch); S.stats.xp += REWARD.xp.rematch; track('rematch'); scheduleRematch(n.id); await say(['Battuto di nuovo! Ci rivediamo tra qualche giorno.', pick(TRAINER_TIPS)], n.name); }
     else { await say('Stavolta ho vinto io! Torna quando vuoi.', n.name); scheduleRematch(n.id); await defeatRespawn(w); }
     w.refresh();
     return;
   }
   await say(n.lines ?? ['Sfida!'], n.name);
-  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), 3, { preferReview: true, target: targetDiff(routeStage(n)) });
-  const r = await runDuel({ foeName: n.name, foePal: n.pal, questions: qs, need: 2, damage: 10 });
+  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), DUEL.trainer.n, { preferReview: true, target: targetDiff(routeStage(n)) });
+  const r = await runDuel({ foeName: n.name, foePal: n.pal, questions: qs, ...DUEL.trainer });
   if (r.win) scheduleRematch(n.id);
-  await afterDuel(r.win, n.id, 20, w, n.name);
+  await afterDuel(r.win, n.id, REWARD.rep.trainer, w, n.name);
 }
 
 /** Tappa di un avversario sul Percorso r: quella in cui lo si incontra di solito (r − 1 medaglie), o più avanti se lo affronti dopo. */
@@ -341,10 +347,10 @@ async function speculator(n: NpcDef, w: WorldApi) {
     await say([`Così sei tu che ostacoli ${ant.team}!`, `Io sono ${ant.boss}. Ti offro un affare: unisciti a noi e guadagnerai senza studiare.`], ant.boss);
     const c = await choose(['Mai!', 'Dimmi di più...'], { prompt: 'Cosa rispondi?' });
     if (c === 1) { clampStat('disciplina', -10); await say('Ah ah! Ti piacerebbe, eh? Ma prima dovrai battermi.', ant.boss); }
-    const qs = pickQuestions(['regole', 'gestione', 'bias'], 6, { target: targetDiff(routeStage(n) + 1) });
-    const r = await runDuel({ foeName: ant.boss, foeTitle: `Capo di ${ant.team}`, foePal: PAL.SPEC, questions: qs, need: 5, damage: 15 });
+    const qs = pickQuestions(['regole', 'gestione', 'bias'], DUEL.boss.n, { target: targetDiff(routeStage(n) + 1) });
+    const r = await runDuel({ foeName: ant.boss, foeTitle: `Capo di ${ant.team}`, foePal: PAL.SPEC, questions: qs, ...DUEL.boss });
     if (r.win) {
-      S.defeated.push(n.id); addRep(150); clampStat('disciplina', 10);
+      S.defeated.push(n.id); addRep(REWARD.rep.boss); clampStat('disciplina', 10);
       await say(['Impossibile... Le scorciatoie non funzionano con te.', `${ant.team} si ritira. Per ora.`], ant.boss);
     } else await defeatRespawn(w);
     w.refresh();
@@ -352,18 +358,24 @@ async function speculator(n: NpcDef, w: WorldApi) {
   }
   const t = pick(TEMPTATIONS);
   await say([`Psst! Faccio parte de${ant.team.startsWith('gli') ? 'gli' : ant.team.startsWith('i ') ? 'i' : 'lla'} ${ant.team.replace(/^(gli|i|la|l') ?/, '')}.`, t.text], 'Speculatore');
-  const c = await choose(['Rifiuto', 'Accetto'], { prompt: 'Cosa fai?' });
-  if (c === 0) { clampStat('disciplina', 5); await say(t.refuse, 'Tu'); }
+  // con Disciplina alta si riconosce la trappola e la si smaschera davanti a tutti
+  const unmask = S.stats.disciplina >= TRAIT_HIGH;
+  const c = await choose(unmask ? ['Rifiuto', 'Accetto', 'Smaschero la truffa (Disciplina)'] : ['Rifiuto', 'Accetto'], { prompt: 'Cosa fai?' });
+  if (c === 2) {
+    learnBias(t.bias); addRep(20);
+    await say([`Conosco questo trucco: punta sulla ${BIAS_INFO[t.bias].name}. ${BIAS_INFO[t.bias].effect}`, 'Chi ti promette guadagni facili sta vendendo a te, non per te.'], 'Tu');
+    await say('Uff... Hai la testa fredda, eh? Vediamo se sai anche rispondere!', 'Speculatore');
+  } else if (c === 0) { clampStat('disciplina', 5); await say(t.refuse, 'Tu'); }
   else {
     // nessuna perdita applicata al conto: è una lezione, non una penalità sul patrimonio
     clampStat('disciplina', -8);
     learnBias(t.bias);
     await say([t.accept, `Nella realtà avresti potuto perdere circa il ${Math.round(t.loss * 100)}% della liquidità. Questa trappola si chiama ${BIAS_INFO[t.bias].name}: ${BIAS_INFO[t.bias].effect}`], 'Narratore');
   }
-  await say('Grr! Allora vediamo se sai anche rispondere!', 'Speculatore');
-  const qs = pickQuestions(['regole', ...trackTopics(S.track, S.mixedClasses, S.badges)], 3, { target: targetDiff(routeStage(n)) });
-  const r = await runDuel({ foeName: 'Speculatore', foeTitle: ant.team, foePal: PAL.SPEC, questions: qs, need: 2, damage: 10 });
-  await afterDuel(r.win, n.id, 30, w, 'Speculatore');
+  if (c !== 2) await say('Grr! Allora vediamo se sai anche rispondere!', 'Speculatore');
+  const qs = pickQuestions(['regole', ...trackTopics(S.track, S.mixedClasses, S.badges)], DUEL.speculator.n, { target: targetDiff(routeStage(n)) });
+  const r = await runDuel({ foeName: 'Speculatore', foeTitle: ant.team, foePal: PAL.SPEC, questions: qs, ...DUEL.speculator });
+  await afterDuel(r.win, n.id, REWARD.rep.speculator, w, 'Speculatore');
 }
 
 /** Nessuno salta gli allievi: il Mentore si sfida solo dopo averli battuti tutti. */
@@ -376,32 +388,69 @@ async function student(n: NpcDef, w: WorldApi) {
   if (S.defeated.includes(n.id)) return say(['Il Mentore è là in fondo. Buona fortuna!', pick(TRAINER_TIPS)], n.name);
   await say('Prima di arrivare al Mentore devi superare me!', n.name);
   // gli allievi sono un gradino sotto il loro Mentore
-  const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), 4, { target: targetDiff(m - 1) - 0.25 });
-  const r = await runDuel({ foeName: n.name, foeTitle: 'Allievo dell\'Accademia', foePal: n.pal, questions: qs, need: 3, damage: 10 });
+  const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.student.n, { target: targetDiff(m - 1) - 0.25 });
+  const r = await runDuel({ foeName: n.name, foeTitle: 'Allievo dell\'Accademia', foePal: n.pal, questions: qs, ...DUEL.student });
   advanceDays(1);
-  if (r.win) { S.defeated.push(n.id); addRep(25); await say('Bravo! Sei pronto per il Mentore.', n.name); }
+  if (r.win) { S.defeated.push(n.id); addRep(REWARD.rep.student); await say('Bravo! Sei pronto per il Mentore.', n.name); }
   else { await say('Studia in Biblioteca e torna!', n.name); await defeatRespawn(w); }
 }
 
 // ---------------- Mentori ----------------
 
+/** Dopo una sconfitta con un Mentore o un Superiore: si riprova solo dopo aver studiato. */
+function lockRetry(key: string, wrong: string[]) {
+  S.flags[`${key}_lock`] = `${S.counters.lesson ?? 0}|${S.counters.review ?? 0}`;
+  S.flags[`${key}_wrong`] = wrong.join(',');
+}
+function clearRetry(key: string) { delete S.flags[`${key}_lock`]; delete S.flags[`${key}_wrong`]; }
+export function retryUnlocked(key: string): boolean {
+  const lock = S.flags[`${key}_lock`];
+  if (typeof lock !== 'string') return true;
+  const [l, r] = lock.split('|').map(Number);
+  return (S.counters.lesson ?? 0) > l || (S.counters.review ?? 0) > r;
+}
+/** Le domande sbagliate nel tentativo precedente tornano (fino a metà del duello). */
+function withPreviousMistakes(key: string, qs: Question[]): Question[] {
+  const prev = String(S.flags[`${key}_wrong`] ?? '').split(',').map((id) => BY_ID[id]).filter(Boolean).slice(0, Math.floor(qs.length / 2));
+  if (!prev.length) return qs;
+  return shuffle([...prev, ...qs.filter((q) => !prev.includes(q))].slice(0, qs.length));
+}
+
+/** Medaglia già vinta: dal grado "Rinomato" il Mentore accetta una rivincita con domande di livello esperto. */
+async function mentorRematch(m: number, md: ReturnType<typeof mentor>) {
+  if (repTier().index < TIER_MENTOR_REMATCH) return say([`Hai già la ${md.badge}.`, md.win, 'Quando la tua Reputazione sarà da "Rinomato" ti concederò una rivincita da esperto.'], md.name);
+  const done = !!S.flags[`m${m}_rematch`];
+  const c = await choose(['Rivincita da esperto', 'Un\'altra volta'], { cancel: true, prompt: done ? 'Hai già vinto la mia rivincita. Vuoi rigiocarla?' : 'Sei diventato famoso. Accetti una rivincita con le domande più difficili?', who: md.name });
+  if (c !== 0) return;
+  const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentorRematch.n, { target: 3.5 });
+  const prevFid = S.stats.fiducia;
+  const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m} · rivincita`, foePal: md.palette, questions: qs, ...DUEL.mentorRematch });
+  S.stats.fiducia = Math.max(prevFid, S.stats.fiducia);
+  if (r.win && !done) { S.flags[`m${m}_rematch`] = true; addRep(REWARD.rep.mentorRematch); S.stats.xp += REWARD.xp.mentorRematch; }
+  await say(r.win ? ['Da esperto a esperto: complimenti.', mentorCharacterLine()] : 'Le domande da esperto non perdonano. Torna quando vuoi.', md.name);
+}
+
 async function mentorBattle(m: number, w: WorldApi) {
   const md = mentor(m, S.track);
   const done = S.badges >= m;
-  if (done) return say([`Hai già la ${md.badge}.`, md.win], md.name);
+  if (done) return mentorRematch(m, md);
   if (S.badges < m - 1) return say(['Sei arrivato qui troppo presto!', `Prima ti serve la Medaglia del Mentore ${S.badges + 1}.`], md.name);
   if (!allStudentsBeaten(m)) return say(['Benvenuto nella mia Accademia.', 'Prima di sfidarmi devi battere tutti i miei allievi.'], md.name);
   if (!S.flags[`m${m}_p1`]) {
     await say([md.intro, 'La sfida ha due fasi: un duello di conoscenza e una missione pratica nella Macchina del Tempo.'], md.name);
     const unread = mentorBooks(m, S.track, S.mixedClasses).filter((b) => !S.booksRead.includes(b.id)).length;
     if (unread) await say([`Un consiglio da Mentore: nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, 'Le domande del duello vengono da lì.'], md.name);
+    // dopo una sconfitta si torna solo dopo aver studiato: un libro della sezione o un ripasso in Biblioteca
+    if (!retryUnlocked(`m${m}`)) return say(['Sei tornato presto. Prima di riprovare, studia.', `Leggi un libro della mia sezione nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'}, oppure fai il Ripasso: le domande che hai sbagliato sono lì ad aspettarti.`], md.name);
+    if (S.stats.fiducia < 50) await say([`La tua Fiducia è a ${S.stats.fiducia}. Se arriva a zero durante il duello vai in tilt.`, 'Puoi riposare in Clinica prima di iniziare.'], md.name);
     const ok = (await choose(['Sono pronto!', 'Non ancora'], { prompt: 'Iniziamo?' })) === 0;
     if (!ok) return;
     // il Mentore m si affronta con m − 1 medaglie: dal livello 1 (Mentore 1) a quasi 3 (Mentore 8)
-    const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), 8, { target: targetDiff(m - 1) });
-    const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m}`, foePal: md.palette, questions: qs, need: 6, damage: 15, intro: md.intro, fixed: true });
+    const qs = withPreviousMistakes(`m${m}`, pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentor.n, { target: targetDiff(m - 1) }));
+    const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m}`, foePal: md.palette, questions: qs, ...DUEL.mentor, intro: md.intro });
     advanceDays(1);
-    if (!r.win) { await say('Non ancora. Ripassa e torna: ti aspetto.', md.name); return defeatRespawn(w); }
+    if (!r.win) { lockRetry(`m${m}`, r.wrong); await say(['Non ancora. Ripassa e torna: ti aspetto.', 'Le domande che hai sbagliato torneranno nel prossimo duello.'], md.name); return defeatRespawn(w); }
+    clearRetry(`m${m}`);
     S.flags[`m${m}_p1`] = true;
     S.flags[`m${m}_perfect`] = r.perfect;
     await say(['Ottimo duello! Ora la parte pratica.'], md.name);
@@ -428,8 +477,8 @@ async function winBadge(m: number, w: WorldApi) {
   const md = mentor(m, S.track);
   S.badges = m;
   if (!S.techniques.includes(md.technique)) S.techniques.push(md.technique);
-  addRep(200);
-  S.stats.xp += 100;
+  addRep(REWARD.rep.badge);
+  S.stats.xp += REWARD.xp.badge;
   // nuove carte sbloccate
   const newCards = unlockedAssets(S.track, S.mixedClasses, m).filter((a) => !S.cards[a.id]);
   newCards.forEach((a) => card(a.id));
@@ -444,7 +493,7 @@ async function winBadge(m: number, w: WorldApi) {
   beep('badge');
   jingle('badge');
   track('badge');
-  await say([md.win, `Hai ottenuto la ${md.badge}!`, `Nuova Tecnica: ${md.technique}. ${md.techDesc}`, `Slot di portafoglio: ${slots()}.`, newCards.length ? `Nuove Asset Card: ${newCards.map((a) => a.name).join(', ')}.` : ''].filter(Boolean), md.name);
+  await say([md.win, mentorCharacterLine(), `Hai ottenuto la ${md.badge}!`, `Nuova Tecnica: ${md.technique}. ${md.techDesc}`, `Slot di portafoglio: ${slots()}.`, newCards.length ? `Nuove Asset Card: ${newCards.map((a) => a.name).join(', ')}.` : ''].filter(Boolean), md.name);
   const extra: string[] = [];
   if (m === 1) extra.push('Ora puoi sostenere l\'Esame di Abilitazione per il conto reale, dalla Clinica (voce "Conto Alpaca"). È facoltativo.');
   if (m === 2) extra.push('Con l\'abbonamento al treno puoi viaggiare tra le città visitate dalle stazioni.');
@@ -492,7 +541,7 @@ function nextReviewLine(): string {
 async function reviewDuel() {
   const q = reviewQueue();
   if (!q.length) return say(['Oggi non hai domande in scadenza. Ottimo lavoro!', nextReviewLine()], 'Bibliotecaria');
-  const qs = shuffle(q).slice(0, 5);
+  const qs = shuffle(q.slice(0, 12)).slice(0, DUEL.review.n);
   const prevFid = S.stats.fiducia;
   await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0 });
   S.stats.fiducia = prevFid;
@@ -665,6 +714,17 @@ async function archivist() {
     beep('coin');
     await say('Ho aggiunto 40 punti di studio a tutte le tue carte sbloccate.', 'Archivista');
   }
+  // Fascicoli riservati: solo per chi ha una Reputazione da "Stimato" in su
+  if (repTier().index >= TIER_ARCHIVE) {
+    const c = await choose(['Fascicoli riservati', 'Lezioni', 'Esco'], { cancel: true, prompt: 'La tua fama ti precede: posso aprirti i fascicoli riservati.', who: 'Archivista' });
+    if (c === 0) {
+      const ids = Object.keys(S.cards).filter((id) => card(id).xp < 150);
+      ids.forEach((id) => { card(id).xp = 150; });
+      await say(ids.length ? ['Ecco i fascicoli completi: bilanci storici, rischi e curiosità di ogni carta.', `${ids.length} carte mostrano ora tutte le informazioni (livello 4) nell'Investidex, se hai la Tecnica per leggerle.`] : 'I fascicoli delle tue carte sono già completi. Torna quando ne sblocchi di nuove.', 'Archivista');
+      return;
+    }
+    if (c !== 1) return;
+  } else if (repTier().next) await say(`Con una Reputazione da "${REP_TIERS[TIER_ARCHIVE].name}" (${REP_TIERS[TIER_ARCHIVE].min} punti) ti aprirei i fascicoli riservati.`, 'Archivista');
   await openLessons();
 }
 
@@ -676,21 +736,25 @@ async function league(i: number, w: WorldApi) {
   await say([L.intro, i === 4 ? 'Sono il Campione. La prova finale: tutto ciò che hai imparato.' : `Sono ${L.title.toLowerCase()}.`], L.name);
   const topics = i < 4 ? LEAGUE_TOPICS[i] : trackTopics(S.track, S.mixedClasses, 8);
   // Lega: dal livello 3,25 del primo Superiore al livello 4 (esperto) dell'ultimo e del Campione
-  const qs = pickQuestions(topics, i === 4 ? 12 : 10, { target: targetDiff(STAGE_LEAGUE + Math.min(i, 3)) });
+  const P = i === 4 ? DUEL.champion : DUEL.league;
   if (!S.flags[`league_${i}_p1`]) {
-    const r = await runDuel({ foeName: L.name, foeTitle: L.title, foePal: L.palette, questions: qs, need: i === 4 ? 10 : 8, damage: 15, fixed: true });
-    if (!r.win) { await say('Non sei ancora pronto. Torna dopo aver ripassato.', L.name); return defeatRespawn(w); }
+    if (!retryUnlocked(`league_${i}`)) return say(['Prima di riprovare, ripassa.', 'Fai il Ripasso in Biblioteca o leggi una lezione: le domande che hai sbagliato torneranno.'], L.name);
+    const qs = withPreviousMistakes(`league_${i}`, pickQuestions(topics, P.n, { target: targetDiff(STAGE_LEAGUE + Math.min(i, 3)) }));
+    const r = await runDuel({ foeName: L.name, foeTitle: L.title, foePal: L.palette, questions: qs, ...P });
+    if (!r.win) { lockRetry(`league_${i}`, r.wrong); await say('Non sei ancora pronto. Torna dopo aver ripassato.', L.name); return defeatRespawn(w); }
+    clearRetry(`league_${i}`);
     S.flags[`league_${i}_p1`] = true;
   }
   const res = await runMission(leagueMission(i));
   if (!res || !res.ok) return say(['La prova pratica non è riuscita.' + (res ? ' ' + res.detail : ''), 'Riprova quando vuoi: ripeterai solo la prova pratica.'], L.name);
   S.defeated.push(`league_${i}`);
-  addRep(300);
+  addRep(REWARD.rep.league);
   beep('win');
   await say(i === 4 ? ['Incredibile. Hai battuto il Campione!', `${S.name}, da oggi sei il nuovo Campione della Lega degli Investitori!`] : ['Hai superato la mia prova. Prosegui!'], L.name);
   if (i === 4) {
     S.flags.champion = true;
     await say(['Congratulazioni, Campione!', 'Il titolo non ti rende infallibile: i mercati cambiano, e chi smette di imparare torna principiante.', 'Ora alla Torre delle Sfide ti aspettano le crisi leggendarie e i piani infiniti.', 'E se vuoi, puoi iniziare una Nuova Partita+ in un altro percorso, conservando avatar, record e carte dorate.'], 'Prof. Saldi');
+    await say(epilogue(), 'Epilogo');
     await credits();
   }
   w.refresh();
@@ -718,7 +782,7 @@ async function tower() {
       const diff = Math.min(4, 1 + Math.floor(floor / 3));
       const pool = trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole']);
       const qs = pickQuestions(pool, 3, { minDiff: diff, maxDiff: diff });
-      const r = await runDuel({ foeName: `Piano ${floor + 1}`, foeTitle: 'Torre delle Sfide', foePal: 13, questions: qs, need: 3, damage: 34 });
+      const r = await runDuel({ foeName: `Piano ${floor + 1}`, foeTitle: 'Torre delle Sfide', foePal: 13, questions: qs, ...DUEL.tower });
       if (!r.win) break;
       floor++;
       if ((await choose(['Sali ancora', 'Fermati qui'], { prompt: `Piano ${floor} superato!` })) === 1) break;

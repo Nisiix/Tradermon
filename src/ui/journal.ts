@@ -1,5 +1,6 @@
 // Diario dell'investitore: una riga di motivazione dopo ogni operazione e una rilettura dopo 30 giorni.
 // Il Diario non tocca mai il conto: registra solo il perché delle scelte.
+import { onJournal } from '../systems/character';
 import { S, save } from '../systems/state';
 import { modal, esc, el, toast } from './core';
 import { track } from '../systems/progress';
@@ -41,6 +42,7 @@ export async function journalPrompt(d: Draft): Promise<void> {
   S.journal.push(e);
   if (S.journal.length > 200) S.journal.splice(0, S.journal.length - 200);
   track('journal');
+  onJournal();
   save();
   await modal('Dott.ssa Ratio', ({ body, button, close }) => {
     body.innerHTML = `<p class="${reason.warn ? 'bad' : 'good'}">${esc(reason.comment)}</p>`;
