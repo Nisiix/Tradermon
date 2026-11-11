@@ -6,6 +6,11 @@ type Handler = (k: Key, ev?: KeyboardEvent) => boolean | void;
 const stack: Handler[] = [];
 export const held = new Set<Key>();
 const worldPressed: Key[] = [];
+const DIR_KEYS: Key[] = ['up', 'down', 'left', 'right'];
+/** Direzioni tenute premute in ordine di pressione: l'ultima premuta ha la priorità. */
+const dirOrder: Key[] = [];
+/** Ultima direzione premuta (anche con un tocco rapido già rilasciato), consumata dal mondo. */
+let dirTap: Key | undefined;
 
 let settingsOpener: (() => void) | null = null;
 /** Il tasto Impostazioni (O di default) apre il pannello ⚙ da qualunque schermata. */
@@ -15,11 +20,31 @@ export function onSettingsKey(fn: () => void) { settingsOpener = fn; }
 let capture: ((code: string) => void) | null = null;
 export function captureNextKey(fn: ((code: string) => void) | null) { capture = fn; }
 
-export function pushHandler(h: Handler) { stack.push(h); held.clear(); }
+function releaseAll() { held.clear(); dirOrder.length = 0; dirTap = undefined; }
+/** Pressione nel mondo: le direzioni vanno in ordine di priorità, le azioni in coda. */
+function worldDown(k: Key, repeat = false) {
+  held.add(k);
+  if (DIR_KEYS.includes(k)) {
+    if (!dirOrder.includes(k)) dirOrder.push(k);
+    if (!repeat) { dirOrder.splice(dirOrder.indexOf(k), 1); dirOrder.push(k); dirTap = k; }
+  } else if (!repeat) worldPressed.push(k);
+}
+function keyUp(k: Key) {
+  held.delete(k);
+  const i = dirOrder.indexOf(k);
+  if (i >= 0) dirOrder.splice(i, 1);
+}
+/** Direzione da seguire adesso: l'ultima tenuta premuta. */
+export function heldDir(): Key | undefined { return dirOrder[dirOrder.length - 1]; }
+/** Consuma la direzione premuta di recente (serve per i tocchi brevi rilasciati durante un passo). */
+export function takeDirTap(): Key | undefined { const d = dirTap; dirTap = undefined; return d; }
+export function hasWorldPress(): boolean { return worldPressed.length > 0; }
+
+export function pushHandler(h: Handler) { stack.push(h); releaseAll(); }
 export function popHandler(h: Handler) { const i = stack.lastIndexOf(h); if (i >= 0) stack.splice(i, 1); }
 export function uiActive(): boolean { return stack.length > 0; }
 export function takeWorldPress(): Key | undefined { return worldPressed.shift(); }
-export function clearWorld() { worldPressed.length = 0; held.clear(); }
+export function clearWorld() { worldPressed.length = 0; releaseAll(); }
 
 export function press(k: Key, ev?: KeyboardEvent) {
   if (stack.length) {
@@ -27,7 +52,8 @@ export function press(k: Key, ev?: KeyboardEvent) {
     if (consumed !== false && ev) ev.preventDefault();
     return;
   }
-  worldPressed.push(k);
+  if (DIR_KEYS.includes(k)) dirTap = k;
+  else worldPressed.push(k);
 }
 
 export function initInput() {
@@ -45,8 +71,7 @@ export function initInput() {
     const k: Key = act;
     if (!stack.length) {
       ev.preventDefault();
-      if (!ev.repeat) worldPressed.push(k);
-      held.add(k);
+      worldDown(k, ev.repeat);
       return;
     }
     if (ev.repeat && (k === 'a' || k === 'b')) return;
@@ -54,9 +79,9 @@ export function initInput() {
   });
   window.addEventListener('keyup', (ev) => {
     const k = actionFor(ev.code);
-    if (k && k !== 'settings') held.delete(k);
+    if (k && k !== 'settings') keyUp(k);
   });
-  window.addEventListener('blur', () => held.clear());
+  window.addEventListener('blur', () => releaseAll());
 }
 
 /** Controlli touch: croce direzionale e pulsanti A/B/Menu. */
@@ -90,9 +115,9 @@ export function initTouch(root: HTMLElement) {
     const down = (e: Event) => {
       e.preventDefault();
       if (stack.length) press(k);
-      else { worldPressed.push(k); held.add(k); }
+      else worldDown(k);
     };
-    const up = (e: Event) => { e.preventDefault(); held.delete(k); };
+    const up = (e: Event) => { e.preventDefault(); keyUp(k); };
     b.addEventListener('pointerdown', down);
     b.addEventListener('pointerup', up);
     b.addEventListener('pointerleave', up);

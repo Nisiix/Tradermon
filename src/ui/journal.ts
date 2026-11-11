@@ -28,10 +28,11 @@ export async function journalPrompt(d: Draft): Promise<void> {
   const r = await modal<string | null>('Diario dell\'investitore', ({ body, button, close }) => {
     body.innerHTML = `<p class="small">${d.side === 'buy' ? 'Acquisto' : 'Vendita'} di <b>${esc(name)}</b> per ${fmtMoney(d.amount)} a ${fmtPx(d.price)}${d.account !== 'prova' ? ` (conto ${d.account})` : ''}.</p>
       <p>Perché l'hai fatto? Una riga oggi vale un ripasso tra 30 giorni.</p>
-      <label>Motivo <select class="tx why">${REASONS.map((x) => `<option value="${x.id}">${esc(x.text)}</option>`).join('')}</select></label>
-      <label style="display:block;margin-top:6px">Nota (facoltativa) <input class="tx note" maxlength="120" placeholder="es. voglio tenerlo almeno 5 anni"></label>`;
+      <div class="why">${REASONS.map((x, i) => `<label style="display:block;margin:2px 0"><input type="radio" name="why" value="${x.id}"${i === 0 ? ' checked' : ''}> ${esc(x.text)}</label>`).join('')}</div>
+      <label style="display:block;margin-top:6px">Nota (facoltativa) <input class="tx note" maxlength="120" placeholder="es. voglio tenerlo almeno 5 anni"></label>
+      <p class="small muted">Frecce per scegliere il motivo, Z/A per confermare.</p>`;
     button('Salta', () => close(null));
-    button('Annota', () => close((body.querySelector('.why') as HTMLSelectElement).value + '|' + (body.querySelector('.note') as HTMLInputElement).value.trim()), 'primary');
+    button('Annota', () => close(((body.querySelector('input[name=why]:checked') as HTMLInputElement)?.value ?? REASONS[0].id) + '|' + (body.querySelector('.note') as HTMLInputElement).value.trim()), 'primary');
   });
   if (!r) return;
   const [why, note] = r.split('|');
