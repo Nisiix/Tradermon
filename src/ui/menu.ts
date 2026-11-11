@@ -26,6 +26,7 @@ import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 import { safariAtRisk, SAFARI_TEXT } from './storageNotice';
 import { cloudPlayer, flush, clearLocal } from '../systems/sync';
 import { logout } from '../systems/cloud';
+import { deletePlayerForm, PRIVACY_URL } from './account';
 import { openRegionMap } from './regionmap';
 import { ABILITY, canSwim, canTransfer } from '../world/travel';
 
@@ -178,7 +179,7 @@ async function options() {
       <label style="display:block;margin-top:6px"><input type="checkbox" class="sm"> Modalità Studio (nessun timer nei quiz, Reputazione dimezzata nei duelli)</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="ig"${Acc.ignoreAllowed() ? '' : ' disabled'}> Prove sul conto: prosegui anche se vanno male${Acc.ignoreAllowed() ? '' : ' (solo in Apprendista e Investitore)'}</label>
       <p class="small muted" style="margin:2px 0 0">Se una Prova sul conto viene annullata (vendita, stop, vendita forzata della leva, bancarotta) il risultato viene ignorato e prosegui lo stesso. Non salta la Prova: va comunque affrontata. <span class="bad">${esc(Acc.IGNORE_WARNING)}</span></p>
-      <p class="small muted">${cloudPlayer() ? `Giocatore <b>${esc(cloudPlayer()!.name)}</b>: la partita è salvata su Supabase e la ritrovi su qualsiasi dispositivo entrando con nome e password. Le chiavi Alpaca non sono mai nel salvataggio e su Supabase stanno solo cifrate con la tua password.` : 'Nessun giocatore collegato: il salvataggio resta solo in questo browser.'} Puoi sempre esportarne una copia come file.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
+      <p class="small muted">${cloudPlayer() ? `Giocatore <b>${esc(cloudPlayer()!.name)}</b>: la partita è salvata su Supabase e la ritrovi su qualsiasi dispositivo entrando con nome e password. Le chiavi Alpaca non sono mai nel salvataggio: restano solo su questo dispositivo, cifrate con la tua password.` : 'Nessun giocatore collegato: il salvataggio resta solo in questo browser.'} Puoi sempre esportarne una copia come file.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
     const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
     q<HTMLSelectElement>('.ts').value = String(S.options.textSpeed);
     q<HTMLSelectElement>('.fs').value = String(S.options.fontScale);
@@ -194,6 +195,8 @@ async function options() {
     button('Crediti e fonti', () => { close(); void credits(); });
     button('Esporta salvataggio', () => download(`tradermon-${S.name}.json`, exportSave()));
     if (cloudPlayer()) button('Esci dal giocatore', () => { close(); void leavePlayer(); });
+    if (cloudPlayer()) button('Elimina il mio giocatore', () => { close(); void deletePlayer(); });
+    button('Privacy', () => { window.open(PRIVACY_URL, '_blank', 'noopener'); });
     button('Applica', () => {
       S.options.textSpeed = Number(q<HTMLSelectElement>('.ts').value);
       S.options.fontScale = Number(q<HTMLSelectElement>('.fs').value);
@@ -225,6 +228,14 @@ async function leavePlayer() {
   await logout();
   clearLocal();
   location.reload();
+}
+
+/** Cancella il giocatore da Supabase e da questo dispositivo, poi riparte dalla schermata del giocatore. */
+async function deletePlayer() {
+  const p = cloudPlayer();
+  if (!p) return;
+  // si ricarica subito, prima che un salvataggio automatico possa riscrivere la partita appena tolta
+  if (await deletePlayerForm(p)) location.reload();
 }
 
 /** Crediti: le fonti didattiche non compaiono durante il gioco, ma restano tutte elencate qui (e in docs/02-CONTENUTI-E-FONTI.md). */

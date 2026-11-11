@@ -52,20 +52,24 @@ La **Nuova Partita+** riparte da zero (conto, Attestati e Sigilli si riguadagnan
 2. Nella dashboard, in modalità Paper, genera una coppia di chiavi API (Key ID e Secret).
 3. Nel gioco apri il menu, voce **Chiavi API**, e inseriscile.
 
-**Se giochi dal sito**, le chiavi Paper vengono cifrate nel tuo browser con la password del giocatore e su Supabase resta solo la copia cifrata, illeggibile anche per chi amministra il database. Quando operi, il gioco la apre sul tuo dispositivo e manda le chiavi, su connessione cifrata, alla funzione di Tradermon su Supabase: questa le usa per parlare con Alpaca e non le salva.
+**Se giochi dal sito**, le chiavi restano **solo sul tuo dispositivo**, cifrate con la password del giocatore. Non vanno su Supabase, non entrano nel salvataggio e nessun server di Tradermon le riceve: è il tuo browser a parlare direttamente con Alpaca, su connessione cifrata. Prima di inserirle il gioco te lo ricorda con un avviso.
+
+Che cosa comporta: su un altro dispositivo o browser le inserisci di nuovo; se cancelli i dati del sito le perdi e ne generi di nuove dalla dashboard di Alpaca; puoi revocarle in ogni momento da lì, e smettono di funzionare subito.
 
 **Se giochi sul tuo computer**, le chiavi restano sul server locale di Tradermon e il gioco non le mostra più.
 
 ### Dove funziona la parte pratica
 
-Gli ordini non partono mai direttamente dalla pagina verso Alpaca: passano sempre da un intermediario di Tradermon che applica le regole del gioco (niente vendite allo scoperto, acquisti entro la liquidità).
+Gli ordini li decidi sempre tu e prima di partire passano dalle regole del gioco (niente vendite allo scoperto, acquisti entro la liquidità).
 
-- **Sul sito** funziona tutta la storia: studio, Attestati, prove sul conto, Sigilli, Lega e Boss. Serve essere entrati con il proprio giocatore e aver collegato il conto **Paper**. Gli ordini passano da Supabase. Il conto reale sul sito non c'è.
-- **Sul tuo computer** funziona tutto, anche il conto reale: scarica il progetto da GitHub, installa Node.js 20 o più recente, poi nella cartella esegui `npm install`, `npm run build` e `npm start`, e apri l'indirizzo che compare.
+- **Sul sito** funziona tutto: studio, Attestati, prove sul conto, Sigilli, Lega, Boss e, se lo vuoi, il conto reale. Serve essere entrati con il proprio giocatore e aver collegato il conto **Paper**. Gli ordini partono dal tuo browser e vanno direttamente ad Alpaca.
+- Se il tuo browser non riesce a raggiungere Alpaca (capita con alcune reti o con un blocco di contenuti), il gioco ti chiede se vuoi far passare il **solo conto Paper** dal servizio di Tradermon, che usa le chiavi per quella richiesta e non le salva. Lo scegli tu e puoi tornare indietro. Il conto reale non segue mai quella strada.
+- **Sul tuo computer** funziona tutto allo stesso modo: scarica il progetto da GitHub, installa Node.js 20 o più recente, poi nella cartella esegui `npm install`, `npm run build` e `npm start`, e apri l'indirizzo che compare.
 
 ### Conto reale (facoltativo)
 
-- Si usa **solo giocando sul tuo computer**: le chiavi Live restano sul server locale e non passano mai dal sito.
+- Si può usare **anche dal sito**: le chiavi Live restano solo sul tuo dispositivo, cifrate con la password del giocatore, e vanno soltanto ad Alpaca. Non passano mai da un server di Tradermon.
+- Sono chiavi che muovono denaro vero: usale solo su un dispositivo tuo, aggiornato e senza estensioni del browser di cui non ti fidi. Nel dubbio revocale dalla dashboard di Alpaca.
 - Si collega dopo il primo Attestato e l'Esame di Abilitazione, con chiavi Live distinte. È fuori dalla storia: nessun premio di gioco dipende dal denaro vero. Potrebbe non essere disponibile in tutti i Paesi: lo decide Alpaca.
 - **I prelievi si possono sempre fare**, dal sito di Alpaca. **I depositi non passano mai dal gioco**: Tradermon non sposta denaro e non ti chiederà mai di versarne.
 - Ogni ordine reale chiede una conferma scritta e rispetta i tuoi limiti per ordine e per mese.
