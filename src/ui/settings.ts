@@ -9,14 +9,13 @@ import {
 import { S, save } from '../systems/state';
 import { setVolume, beep } from '../systems/audio';
 import { setMusicVolume } from '../systems/music';
+import { homeUrl } from '../systems/home';
 
 export type Phase = 'title' | 'onboarding' | 'game';
 let phase: Phase = 'title';
 /** Dove si trova il giocatore: decide cosa offre "Torna alla home". */
 export function setPhase(p: Phase) { phase = p; }
 
-/** Indirizzo della landing page, quando esiste (VITE_HOME_URL); altrimenti la home è la schermata del titolo. */
-const HOME_URL: string = (import.meta.env.VITE_HOME_URL as string | undefined) ?? '';
 
 /** Applica il volume: generale (⚙) × musica/effetti (Menu → Opzioni). */
 export function applyAudio() {
@@ -51,7 +50,7 @@ export async function openSettings() {
         <div class="set-row vol-row"><div style="flex:1"><b>2. Volume</b> <span class="vol-val"></span>
           <div class="vol-ctl"><button class="btn vmin" aria-label="Abbassa">−</button><input class="vrange" type="range" min="0" max="100" step="5" aria-label="Volume generale"><button class="btn vplus" aria-label="Alza">+</button><button class="btn vmute"></button></div>
           <p class="small muted">Portalo a zero per togliere musica ed effetti. Il bilanciamento tra musica ed effetti è in Menu → Opzioni.</p></div></div>
-        <div class="set-row"><div><b>3. Home</b><p class="small muted">${phase === 'title' ? 'Sei già nella schermata iniziale.' : HOME_URL ? 'Torna alla pagina principale di Tradermon.' : 'Torna alla schermata iniziale del gioco.'}</p></div><button class="btn home" ${phase === 'title' && !HOME_URL ? 'disabled' : ''}>Torna alla home</button></div>`;
+        <div class="set-row"><div><b>3. Home</b><p class="small muted">Esci dal gioco e torna alla pagina principale di Tradermon.</p></div><button class="btn home">Torna alla home</button></div>`;
       const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
       let before = prefs.volume || 0.8;
       const show = () => {
@@ -116,18 +115,17 @@ export async function openControls() {
 }
 
 async function goHome() {
-  if (phase === 'title') { if (HOME_URL) location.href = HOME_URL; return; }
+  if (phase === 'title') { location.href = homeUrl(); return; }
   const r = await modal<'save' | 'leave'>('Torna alla home', ({ body, button, close }) => {
     mark(body);
     body.innerHTML = phase === 'game'
-      ? '<p>Vuoi tornare alla home? I progressi dall\'ultimo salvataggio andranno persi se non salvi.</p>'
-      : '<p>La nuova partita non è ancora iniziata: se torni alla home dovrai ricominciare la presentazione.</p>';
+      ? '<p>Vuoi uscire dal gioco e tornare alla home? I progressi dall\'ultimo salvataggio andranno persi se non salvi.</p>'
+      : '<p>La nuova partita non è ancora iniziata: se esci ora dovrai ricominciare la presentazione.</p>';
     if (phase === 'game') button('Salva e torna', () => close('save'), 'primary');
     button(phase === 'game' ? 'Torna senza salvare' : 'Torna alla home', () => close('leave'), phase === 'game' ? 'danger' : 'primary');
     button('Annulla', () => close());
   });
   if (!r) return;
   if (r === 'save' && !save()) { toast('Salvataggio non riuscito: resto qui.'); return; }
-  if (HOME_URL) location.href = HOME_URL;
-  else location.reload();
+  location.href = homeUrl();
 }
