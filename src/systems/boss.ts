@@ -2,8 +2,9 @@
 // giorni o settimane e continua anche a gioco chiuso. Si vince togliendo energia al boss con tre cose:
 // quello che sai (quiz), come hai costruito il piano (qualità) e come è andata davvero (esito).
 // Quiz e piano fatti bene bastano da soli: l'esito è reale, quindi non è mai l'unica via per vincere.
-// Alla sconfitta si rifà tutto il boss, quiz compreso. Nessun ordine viene inviato: il piano è un mandato
-// valutato sulle barre reali di Alpaca.
+// Alla sconfitta si rifà tutto il boss, quiz compreso. Presentare il piano invia ordini veri sul conto di gioco
+// (systems/mandate.ts): un acquisto a mercato dimensionato sul rischio scelto e uno stop vero. Il giudizio resta
+// sulle barre reali di Alpaca; il denaro segue gli ordini, quindi una perdita resta sul conto.
 import type { BossPlan, BossState, QuizTopic } from '../types';
 import type { BarTimeframe } from './alpaca';
 
@@ -93,6 +94,26 @@ export function outcome(p: Pick<BossPlan, 'entry' | 'stop' | 'target'>, bars: { 
   // uno stop pieno non dà punti: solo quiz e piano perfetti vincono a prescindere dall'esito
   const points = r >= 1 ? BOSS_RULES.outcomeMax : r > 0 ? 20 : r >= -0.5 ? 10 : 0;
   return { exit, how, r, points, bars: bars.length };
+}
+
+/**
+ * Quanto comprare perché, se scatta lo stop, si perda la quota di capitale scelta: capitale × rischio ÷ distanza
+ * dello stop. Mai più della liquidità disponibile (`capped`: in quel caso il rischio vero è più basso).
+ */
+export function positionSize(equity: number, risk: number, entry: number, stop: number, cash: number): { amount: number; capped: boolean } {
+  const dist = (entry - stop) / entry;
+  if (!(equity > 0 && risk > 0 && dist > 0)) return { amount: 0, capped: false };
+  const cents = (v: number) => Math.floor(v * 100 + 1e-6) / 100;
+  const want = cents((equity * risk) / dist);
+  const capped = want > cash;
+  const amount = capped ? cents(cash) : want;
+  return { amount: amount >= 1 ? amount : 0, capped };
+}
+
+/** Il Boss che ha un mandato con ordini veri ancora in corso su questo titolo (prima della scadenza), o null. */
+export function mandateOn(boss: BossState, asset: string, now = Date.now()): string | null {
+  for (const r of Object.values(boss.runs ?? {})) if (r.plan?.real && r.plan.asset === asset && now <= r.plan.deadline) return r.id;
+  return null;
 }
 
 /** Danno del quiz: proporzionale alle risposte giuste. */

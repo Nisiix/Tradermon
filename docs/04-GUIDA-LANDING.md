@@ -42,7 +42,7 @@ I periodi veri del passato si rivivono solo nella Macchina del Tempo (la Zona Si
 
 ### Dopo la Lega
 
-Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati. Con un Boss presenti un piano su un titolo vero: ingresso, stop e obiettivo. Se vedi che l'obiettivo non arriva puoi **vendere prima della scadenza**, tutto o solo una parte: in tutti e due i casi dichiari che vendi per annullare la sfida, che si ripete da capo con un titolo diverso. Non conta come sconfitta.
+Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati. Con un Boss presenti un piano su un titolo vero: ingresso, stop e obiettivo. Il piano muove **ordini veri sul conto di gioco**: quando lo invii compri davvero il titolo, per un importo deciso dal rischio che scegli, e parte uno stop vero. Se il piano va male la sfida si rifà da capo e **la perdita su quella posizione resta sul conto**. Se vedi che l'obiettivo non arriva puoi **vendere prima della scadenza**, tutto o solo una parte: in tutti e due i casi dichiari che vendi per annullare la sfida, che si ripete da capo con un titolo diverso. Non conta come sconfitta.
 
 La **Nuova Partita+** riparte da zero (conto, Attestati e Sigilli si riguadagnano) conservando solo i trofei, e sblocca la difficoltà Leggenda.
 
