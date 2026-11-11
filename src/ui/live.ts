@@ -285,7 +285,10 @@ function typedConfirm(summary: string): Promise<string | undefined> {
     body.innerHTML = `<p>${esc(summary)}</p><p>Per confermare scrivi <b>CONFERMO</b>.</p><input class="tx cw" autocomplete="off">`;
     const i = body.querySelector('.cw') as HTMLInputElement;
     setTimeout(() => i.focus(), 30);
-    button('Invia', () => { if (i.value.trim() === 'CONFERMO') close('CONFERMO'); else i.style.borderColor = 'red'; }, 'danger');
+    const send = () => { if (i.value.trim() === 'CONFERMO') close('CONFERMO'); else i.style.borderColor = 'red'; };
+    // da tastiera: Invio nel campo equivale al pulsante Invia
+    i.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+    button('Invia', send, 'danger');
     button('Annulla', () => close(undefined));
   }, { serious: true, closable: false });
 }

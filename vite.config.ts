@@ -12,5 +12,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     chunkSizeWarningLimit: 2000,
+    // hd2d.html è il prototipo 2.5D (Three.js): si apre da /hd2d.html, separato dal gioco
+    rollupOptions: { input: { main: 'index.html', hd2d: 'hd2d.html' } },
   },
 });

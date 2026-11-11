@@ -67,6 +67,7 @@ Vendite allo scoperto e margine non sono ammessi. Puoi abbassare il tetto massim
 - `docs/02-CONTENUTI-E-FONTI.md`: domande, lezioni e fonti citate (generato con `npm run docs:content`).
 - `docs/03-ARCHITETTURA.md`: come è fatto il codice.
 - `src/`: il gioco (TypeScript, Phaser 4).
+- `src/proto/hd2d.ts` + `hd2d.html`: prototipo di resa 2.5D "HD-2D" con Three.js (non è il gioco: serve a valutare il passaggio a una grafica tipo Pokémon DS). Si apre su `/hd2d.html?map=t0&x=11&y=9` (parametri: `map`, `x`, `y`, `dist`, `tilt`, `night`).
 - `server/index.mjs`: il server locale che serve il gioco e fa da tramite verso Alpaca.
 - `tests/`: i test automatici (`npm test`).
 
