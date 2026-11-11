@@ -6,7 +6,8 @@
 // d'acquisto di Alpaca quando il giocatore usa la leva), conferma e tetto per gli ordini reali.
 // Chi ospita decide da dove arrivano le chiavi (keysOf) e quali conti esistono (trading).
 
-export const SYMBOL_RE = /^[A-Z0-9.]{1,12}(\/[A-Z]{3,5})?$/;
+// inizia con una lettera o una cifra e non contiene due punti di fila: "." e ".." cambierebbero il percorso della richiesta
+export const SYMBOL_RE = /^(?!.*\.\.)[A-Z0-9][A-Z0-9.]{0,11}(\/[A-Z]{3,5})?$/;
 const ORDER_ID_RE = /^[a-f0-9-]{36}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIMEFRAMES = new Set(['5Min', '15Min', '1Hour', '4Hour', '1Day']);

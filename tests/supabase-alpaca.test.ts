@@ -71,6 +71,9 @@ describe('funzione Supabase per il conto Paper', () => {
     // simboli e tipi non validi
     expect((await order({ symbol: 'rm -rf', side: 'buy', type: 'market', time_in_force: 'day', qty: 1 })).status).toBe(400);
     expect((await order({ symbol: 'BTC/USD', side: 'sell', type: 'stop', time_in_force: 'gtc', qty: 0.01, stop_price: 50000 })).status).toBe(400);
+    // un "simbolo" fatto di punti cambierebbe il percorso della richiesta ad Alpaca: non passa
+    expect((await order({ symbol: '..', side: 'sell', type: 'market', time_in_force: 'day', qty: 1 })).status).toBe(400);
+    expect((await req('/api/alpaca/paper/assets/A..B')).status).toBe(400);
     // importi negativi o non numerici non arrivano ad Alpaca
     const n = fake.orders.size;
     expect((await order({ symbol: 'AAPL', side: 'buy', type: 'market', time_in_force: 'day', notional: -50 })).status).toBe(400);
