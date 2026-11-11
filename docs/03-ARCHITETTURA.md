@@ -50,6 +50,8 @@ server/index.mjs      file statici + API /api verso Alpaca (paper e live)
 ## Flusso dei dati
 
 - Lo stato di gioco è un unico oggetto `S` (`systems/state.ts`), salvato in `localStorage` ed esportabile in JSON. Non contiene mai chiavi.
+- Tutti i dati del browser hanno il prefisso `tradermon.` e restano solo in `localStorage` (mai sessionStorage, mai un server). Su Safari un avviso una tantum (`ui/storageNotice.ts`) ricorda che i dati di siti non aperti per ~7 giorni possono essere cancellati.
+- **Cambio di indirizzo (trasloco, `systems/transfer.ts`)**: il `localStorage` è legato al dominio. Se il gioco si sposta, il vecchio indirizzo va pubblicato ancora con `VITE_MOVED_TO=<nuovo URL>`: all'apertura comprime i dati `tradermon.*` e reindirizza a `<nuovo URL>#trasloco=…`. L'hash non viene mai inviato al server; il nuovo indirizzo lo importa (vince la partita con più tempo di gioco, l'altra resta in `tradermon.save.backup`, con conferma se ce n'è già una) e pulisce la barra degli indirizzi.
 - Il mercato del mondo avanza di un giorno simulato ogni 60 passi sui percorsi e a ogni sfida. È un modello a fattori: beta × mercato + settore + componente propria + shock. Il clima (toro, orso, laterale, tempesta) cambia la tinta del mondo. Il gioco non modifica mai il patrimonio fuori dalle operazioni del giocatore e dal mercato.
 - Le missioni generano uno scenario deterministico dal seme, così lo stesso codice sfida dà lo stesso mercato a due amici.
 - I tile logici (`TILE`) decidono collisioni ed eventi. La funzione `visualTiles` li traduce in tile grafici: sceglie i bordi automatici di sentieri, acqua e tetti, le varianti e il fotogramma di animazione.

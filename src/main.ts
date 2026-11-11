@@ -7,7 +7,7 @@ import '@fontsource/dotgothic16/latin-ext-400.css';
 import './style.css';
 import { WorldScene } from './scenes/world';
 import { RS } from './art/art';
-import { initUI, el, toast } from './ui/core';
+import { initUI, el, toast, modal, esc } from './ui/core';
 import { initInput, initTouch } from './ui/input';
 import { titleScreen, onboarding } from './ui/setup';
 import { mentorMission, leagueMission } from './data/missions';
@@ -15,6 +15,8 @@ import { play, unlock } from './systems/music';
 import { refreshAgenda } from './systems/progress';
 import { applyOptions } from './ui/menu';
 import { controlsTutorial, controlsSeen } from './ui/tutorial';
+import { safariNoticeOnce } from './ui/storageNotice';
+import { leaveIfMoved, receiveTransfer } from './systems/transfer';
 import { newGame, load, hasSave, importSave } from './systems/state';
 
 function pickFile(): Promise<string | null> {
@@ -31,7 +33,18 @@ function pickFile(): Promise<string | null> {
 }
 
 async function boot() {
+  if (await leaveIfMoved()) return; // vecchio indirizzo: porta i dati al nuovo
   initUI();
+  const moved = await receiveTransfer((local, inc) => new Promise((ok) => {
+    let answer = false;
+    void modal('Salvataggio trovato', ({ body, button, close }) => {
+      body.innerHTML = `<p>Dal vecchio indirizzo del gioco è arrivata la partita di <b>${esc(inc.name)}</b> (${Math.round(inc.playMs / 60000)} min, ${inc.badges} medaglie).</p>
+        <p>In questo browser c'è già la partita di <b>${esc(local.name)}</b> (${Math.round(local.playMs / 60000)} min). Se la sostituisci, resta una copia di riserva.</p>`;
+      button('Usa quella arrivata', () => { answer = true; close(); }, 'primary');
+      button('Tieni questa', () => close());
+    }).then(() => ok(answer));
+  }));
+  if (moved === 'imported') toast('Salvataggio trasferito dal vecchio indirizzo.');
   initInput();
   initTouch(document.getElementById('app')!);
   unlock();
@@ -53,6 +66,7 @@ async function boot() {
   applyOptions();
   refreshAgenda();
   if (!controlsSeen()) await controlsTutorial();
+  await safariNoticeOnce();
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',

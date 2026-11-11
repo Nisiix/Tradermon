@@ -17,6 +17,7 @@ import { openJournal } from './journal';
 import type { BiasId } from '../types';
 import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 import { controlsTutorial } from './tutorial';
+import { safariAtRisk, SAFARI_TEXT } from './storageNotice';
 
 export async function pauseMenu(onTravel: (id: string) => void) {
   for (;;) {
@@ -150,7 +151,7 @@ async function options() {
       <label style="display:block;margin-top:6px">Musica <input class="mus" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="hc"> Contrasto alto</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="sm"> Modalità Studio (nessun timer nei quiz, Reputazione dimezzata nei duelli)</label>
-      <p class="small muted">Il salvataggio è nel browser. Esportalo per sicurezza o per spostarlo su un altro dispositivo. Le chiavi Alpaca non sono mai nel salvataggio.</p>`;
+      <p class="small muted">Il salvataggio è nel browser. Esportalo per sicurezza o per spostarlo su un altro dispositivo. Le chiavi Alpaca non sono mai nel salvataggio.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
     const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
     q<HTMLSelectElement>('.ts').value = String(S.options.textSpeed);
     q<HTMLSelectElement>('.fs').value = String(S.options.fontScale);
