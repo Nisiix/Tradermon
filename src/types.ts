@@ -300,6 +300,14 @@ export interface BossPlan {
   deadline: number;
   /** Punti di qualità del piano, calcolati all'invio (prima di conoscere l'esito). */
   quality: number;
+  /** Il piano ha inviato ordini veri sul conto di gioco (i piani precedenti erano mandati solo sulla carta). */
+  real?: boolean;
+  /** Importo comprato in dollari e quantità eseguita all'ingresso. */
+  amount?: number;
+  qty?: number;
+  /** Quantità venduta e ricavo delle vendite del mandato (stop scattato, obiettivo incassato, chiusura a scadenza). */
+  sold?: number;
+  proceeds?: number;
 }
 export interface BossRun { id: string; quiz: number; quizMax: number; plan: BossPlan | null; startedAt: number }
 /** `runs`: sfide in corso, una per Boss (i mandati corrono in parallelo). `run` resta per i salvataggi precedenti. */

@@ -16,6 +16,7 @@
 import type { Portfolio, PendingOrder, AssetDef } from '../types';
 import * as A from './alpaca';
 import { S, save, slots, addRep } from './state';
+import { BOSS_BY_ID, mandateOn, sellOut } from './boss';
 import { ASSET_BY_ID, unlockedAssets } from '../data/assets';
 import { DIFFICULTY, RATE, STAGES, STAGE_TOOL, LEVERAGE, REWARD , ZERO, PROVA_IGNORE } from './balance';
 import { value, fmtMoney, fmtPx, fmtQty } from './portfolio';
@@ -403,6 +404,11 @@ export function applyOrder(pf: Portfolio, p: PendingOrder, o: A.AlpacaOrder): { 
       notes.push(`Vendute ${fmtQty(dq)} ${tick} a ${fmtPx(avg)} $ (${p.tag}).`);
       // uno stop che scatta è una vendita decisa in anticipo: per la Prova in corso vale come ogni altra vendita
       if (p.type === 'stop' && pf === S.portfolio) { const c = voidExercise(p.asset); if (c) notes.push(c); }
+      if (pf === S.portfolio) {
+        trackMandate(p, dq, dCost - cost);
+        // lo stop del piano che scatta È il piano; uno stop diverso sullo stesso titolo è una vendita fuori dal piano
+        if (p.type === 'stop' && p.tag !== 'boss-stop') { const m = voidMandate(p.asset); if (m) notes.push(m); }
+      }
     }
     pf.costs += cost;
     logFill(pf, p, dq, avg, cost);
@@ -505,6 +511,30 @@ export async function buy(asset: string, amount: number, o: { type?: 'market' | 
 /** Vendite che non sono una decisione del giocatore: annullano la Prova in corso senza escludere titoli. */
 const FORCED = new Set(['liquidazione', 'chiusura']);
 
+// ---------------- Mandati dei Boss con ordini veri ----------------
+/** Vendite che fanno parte del piano presentato al Boss: lo stop che scatta, l'obiettivo incassato, la chiusura a scadenza. */
+const MANDATE_SELLS = new Set(['boss-stop', 'obiettivo', 'mandato']);
+
+/**
+ * Una vendita del titolo di un mandato che non fa parte del piano (dalla Clinica, dal sito di Alpaca, uno stop
+ * diverso, la vendita forzata della leva) annulla la sfida con quel Boss: si ripete da capo con un altro titolo.
+ */
+function voidMandate(asset: string): string {
+  const id = mandateOn(S.boss, asset);
+  if (!id || !sellOut(S.boss, id)) return '';
+  const tick = ASSET_BY_ID[asset]?.ticker ?? asset;
+  return `Hai venduto ${tick}, il titolo del tuo piano con ${BOSS_BY_ID[id]?.name ?? 'il Boss'}: il mandato è annullato. Non conta come sconfitta: la sfida si ripete da capo, quiz compreso, con un titolo diverso da ${tick}.`;
+}
+
+/** Registra nel piano del Boss le vendite che ne fanno parte: servono a dire quanto denaro vero ha mosso il mandato. */
+function trackMandate(p: PendingOrder, qty: number, net: number): void {
+  if (!MANDATE_SELLS.has(p.tag)) return;
+  const plan = Object.values(S.boss.runs ?? {}).find((r) => r.plan?.real && r.plan.asset === p.asset)?.plan;
+  if (!plan) return;
+  plan.sold = (plan.sold ?? 0) + qty;
+  plan.proceeds = (plan.proceeds ?? 0) + net;
+}
+
 /** Quantità già impegnata in ordini di vendita aperti. */
 function committed(pf: Portfolio, asset: string): number {
   return pf.pending.filter((p) => p.side === 'sell' && p.asset === asset && p.type !== 'stop').reduce((s, p) => s + ((p.qty ?? 0) - p.filledQty), 0);
@@ -522,6 +552,11 @@ export async function sell(asset: string, qty: number, o: { type?: 'market' | 's
   if (!pos) return { ok: false, msg: 'Non possiedi questo titolo: le vendite allo scoperto non sono consentite.' };
   const type = o.type ?? 'market';
   const crypto = isCrypto(asset);
+  // lo stop di un mandato tiene impegnata la posizione: prima di una vendita a mercato va tolto
+  if (type === 'market') {
+    const bs = pf.pending.find((p) => p.asset === asset && p.tag === 'boss-stop');
+    if (bs) await cancel(bs);
+  }
   // la quantità vera su Alpaca fa fede (le cripto pagano la commissione in quantità)
   let real = pos.qty;
   try { const ps = await A.positions(ENV); real = Number(ps.find((x) => x.symbol === asset.replace('/', ''))?.qty ?? 0); } catch (e) { return { ok: false, msg: unreachable(e) }; }
@@ -545,7 +580,7 @@ export async function sell(asset: string, qty: number, o: { type?: 'market' | 's
   pf.pending.push(p);
   // la decisione di vendere vale da subito, anche se l'ordine si esegue all'apertura; lo stop conta solo se scatta.
   // Anche la vendita forzata della leva annulla la Prova, ma senza escludere titoli: non è una scelta del giocatore.
-  const cancelled = type === 'market' ? voidExercise(asset, FORCED.has(p.tag)) : '';
+  const cancelled = type === 'market' ? [voidExercise(asset, FORCED.has(p.tag)), MANDATE_SELLS.has(p.tag) ? '' : voidMandate(asset)].filter(Boolean).join(' ') : '';
   const stopWarn = type === 'stop' && sellCancels(asset) ? ' Se scatta è una vendita: annulla la Prova sul conto in corso, che rifarai con un altro titolo.' : '';
   if (type === 'stop' && !(pf.exBarred ?? []).includes(asset)) S.exTools.stop = true;
   const r = await settle(pf, p, out);
@@ -688,7 +723,7 @@ export function reconcile(pf: Portfolio, acc: A.AlpacaAccount, real: A.AlpacaPos
       if (pf.external.length > 50) pf.external.shift();
       const tick = ASSET_BY_ID[pos.id]?.ticker ?? pos.id;
       // una vendita fatta sul sito di Alpaca vale come una fatta nel gioco: annulla la Prova di quel titolo
-      const voided = pf === S.portfolio ? voidExercise(pos.id) : '';
+      const voided = pf === S.portfolio ? [voidExercise(pos.id), voidMandate(pos.id)].filter(Boolean).join(' ') : '';
       notes.push(`Su Alpaca mancano ${fmtQty(diff)} ${tick} rispetto al registro: li registro come venduti fuori dal gioco a ${fmtPx(px)} $ (${fillPx ? 'prezzo di esecuzione letto da Alpaca' : 'prezzo attuale: l\'ordine non è tra quelli chiusi'}), con ${result < 0 ? `una perdita realizzata di ${fmtMoney(-result)}` : `un guadagno realizzato di ${fmtMoney(result)}`}.`);
       if (voided) notes.push(voided);
     }
