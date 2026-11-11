@@ -352,9 +352,14 @@ async function accountTrial(t: Trial, who: string): Promise<boolean> {
     if (r.ok) { await say(['Controllo il conto…', ...lines, 'Tutto in ordine.'], who); return true; }
     lines.push(LEAGUE_SWITCH_LINE);
     if (r.waiting) lines.push(`Hai ${r.waiting === 1 ? 'un acquisto' : `${r.waiting} acquisti`} in coda: per questa prova contano gli ordini eseguiti. A mercato chiuso torna dopo l'apertura.`);
-    const c = await choose(['Opero adesso', 'Controlla di nuovo', 'Torno più tardi'], { cancel: true, prompt: lines.join(' · '), who });
+    const lenient = Acc.ignoreOn();
+    const c = await choose(['Opero adesso', 'Controlla di nuovo', ...(lenient ? ['Proseguo lo stesso (esito ignorato)'] : []), 'Torno più tardi'], { cancel: true, prompt: lines.join(' · '), who });
     if (c === 0) { await trade(); continue; }
     if (c === 1) continue;
+    if (lenient && c === 2) {
+      await say(['Hai attivato "Prosegui anche se la Prova va male": ignoro l\'esito negativo di questa verifica e ti lascio passare.', Acc.IGNORE_WARNING], who);
+      return true;
+    }
     await say('Il duello l\'hai già vinto: quando torni ripeterai solo questa verifica.', who);
     return false;
   }

@@ -11,6 +11,7 @@ import { checkupHtml, download } from './clinic';
 import { apiKeysMenu, stageScreen } from './broker';
 import { asOfLabel } from '../systems/realdata';
 import { DIFFICULTY } from '../systems/balance';
+import * as Acc from '../systems/account';
 import { mastery } from '../systems/quiz';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { applyAudio, openControls } from './settings';
@@ -175,6 +176,8 @@ async function options() {
       <label style="display:block;margin-top:6px">Effetti 2.5D <select class="tx fx"><option value="alti">Alti (occlusione, tilt-shift, alta risoluzione)</option><option value="bassi">Bassi (per computer meno potenti)</option></select></label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="hc"> Contrasto alto</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="sm"> Modalità Studio (nessun timer nei quiz, Reputazione dimezzata nei duelli)</label>
+      <label style="display:block;margin-top:6px"><input type="checkbox" class="ig"${Acc.ignoreAllowed() ? '' : ' disabled'}> Prove sul conto: prosegui anche se vanno male${Acc.ignoreAllowed() ? '' : ' (solo in Apprendista e Investitore)'}</label>
+      <p class="small muted" style="margin:2px 0 0">Se una Prova sul conto viene annullata (vendita, stop, vendita forzata della leva, bancarotta) il risultato viene ignorato e prosegui lo stesso. Non salta la Prova: va comunque affrontata. <span class="bad">${esc(Acc.IGNORE_WARNING)}</span></p>
       <p class="small muted">${cloudPlayer() ? `Giocatore <b>${esc(cloudPlayer()!.name)}</b>: la partita è salvata su Supabase e la ritrovi su qualsiasi dispositivo entrando con nome e password. Le chiavi Alpaca non sono mai nel salvataggio e su Supabase stanno solo cifrate con la tua password.` : 'Nessun giocatore collegato: il salvataggio resta solo in questo browser.'} Puoi sempre esportarne una copia come file.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
     const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
     q<HTMLSelectElement>('.ts').value = String(S.options.textSpeed);
@@ -185,6 +188,7 @@ async function options() {
     q<HTMLSelectElement>('.fx').value = S.options.fx;
     q<HTMLInputElement>('.hc').checked = S.options.contrast;
     q<HTMLInputElement>('.sm').checked = S.options.studyMode;
+    q<HTMLInputElement>('.ig').checked = Acc.ignoreOn();
     button('Comandi', () => { close(); void openControls(); });
     button('Chiavi API', () => { close(); void apiKeysMenu(); });
     button('Crediti e fonti', () => { close(); void credits(); });
@@ -199,9 +203,12 @@ async function options() {
       S.options.fx = q<HTMLSelectElement>('.fx').value as 'alti' | 'bassi';
       S.options.contrast = q<HTMLInputElement>('.hc').checked;
       S.options.studyMode = q<HTMLInputElement>('.sm').checked;
+      const want = q<HTMLInputElement>('.ig').checked;
+      const ignMsg = want !== Acc.ignoreOn() ? Acc.setIgnore(want) : '';
       applyOptions();
       save();
       close();
+      if (ignMsg) void say(ignMsg);
     }, 'primary');
   });
 }

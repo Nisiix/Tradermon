@@ -165,6 +165,11 @@ export interface Portfolio {
   exBuys?: Record<string, number>;
   /** Titoli venduti durante la Prova in corso: non contano finché non è completata. */
   exBarred?: string[];
+  /** Tappa la cui Prova è andata male (annullata) e non è ancora stata rifatta. */
+  exFailed?: number;
+  /** Quota riconosciuta alle Prove chiuse con l'opzione "prosegui anche se va male", e quali tappe. */
+  exSkip?: number;
+  exIgnored?: number[];
   /** Costi didattici addebitati dal gioco (solo Paper), tenuti separati dai prezzi reali. */
   costs: number;
   /** Prestito per la leva e data dell'ultimo interesse calcolato (AAAA-MM-GG). */
@@ -267,7 +272,7 @@ export interface SaveData {
   liveAudit: { t: number; symbol: string; side: string; notional: number; status: string; id: string }[];
   ngPlus: number;
   playMs: number;
-  options: { textSpeed: number; fontScale: number; contrast: boolean; studyMode: boolean; volume: number; music: number; gfx: '2d' | '3d'; fx: 'alti' | 'bassi' };
+  options: { textSpeed: number; fontScale: number; contrast: boolean; studyMode: boolean; volume: number; music: number; gfx: '2d' | '3d'; fx: 'alti' | 'bassi'; /** Prosegui anche se una Prova sul conto va male (solo Apprendista e Investitore). */ ignoreProva?: boolean };
   // ---- novità: agenda, traguardi, casa, storie, diario, minigiochi, sfide ----
   counters: Record<string, number>;
   agenda: { day: string; week: string; daily: AgendaTask[]; weekly: AgendaTask[]; dailyDone: number };

@@ -246,7 +246,7 @@ export async function trade(guided = false): Promise<boolean> {
       const partial = qty < held * 0.999;
       const c = await choose([partial ? 'Vendo una parte per annullare la Prova' : 'Vendo per annullare la Prova', 'Non vendo'], {
         cancel: true, who: NURSE,
-        prompt: `${tick} è un titolo della tua Prova sul conto ${provaName(hit.stage)}. Decidere di venderlo, anche solo in parte, annulla la Prova: la quota della tappa riparte da zero e la rifai con un altro titolo (gli acquisti di ${tick} non conteranno finché non la completi). ${partial ? `Stai vendendo solo una parte (${fmtMoney(qty * S.market.prices[id])} su ${fmtMoney(held * S.market.prices[id])}): vale lo stesso.` : ''} Confermi che vendi per annullare la Prova e rifarla con un altro titolo?`,
+        prompt: `${tick} è un titolo della tua Prova sul conto ${provaName(hit.stage)}. Decidere di venderlo, anche solo in parte, annulla la Prova: la quota della tappa riparte da zero e la rifai con un altro titolo (gli acquisti di ${tick} non conteranno finché non la completi). ${partial ? `Stai vendendo solo una parte (${fmtMoney(qty * S.market.prices[id])} su ${fmtMoney(held * S.market.prices[id])}): vale lo stesso.` : ''} ${Acc.ignoreOn() ? 'Hai attivato "Prosegui anche se la Prova va male": l\'annullamento verrà ignorato e la Prova conterà come superata.' : 'Confermi che vendi per annullare la Prova e rifarla con un altro titolo?'}`,
       });
       return c === 0;
     };

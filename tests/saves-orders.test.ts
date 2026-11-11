@@ -143,10 +143,12 @@ describe('registro del conto di gioco', () => {
     spy.mockRestore();
     expect(S.portfolio.initial).toBe(2500);
     expect(S.portfolio.cash).toBe(2500);
-    expect(S.portfolio.bought).toBeCloseTo(1100, 6); // l'ordine mai eseguito non conta
+    // la bancarotta annulla la Prova in corso (tappa 3): la sua quota riparte da zero, ordine in coda compreso;
+    // le Prove già fatte e i Sigilli restano
+    expect(Acc.credited()).toBeCloseTo(Acc.exNeed(2), 6);
     expect([S.exDone, S.seals]).toEqual([3, 2]);
-    expect(Acc.exNeed(3)).toBeCloseTo(1400, 6); // alla prossima Prova mancano 300 $, non un capitale intero
-    expect(Acc.exMissing()).toBeCloseTo(300, 6);
+    expect(Acc.exNeed(3)).toBeCloseTo(1400, 6); // alla prossima Prova manca la quota di una tappa, non un capitale intero
+    expect(Acc.exMissing()).toBeCloseTo(350, 6);
     await Acc.restartAfterBankruptcy(); // un'altra ripartenza dà ancora metà del capitale di partenza, non un quarto
     expect(S.portfolio.initial).toBe(2500);
   });

@@ -17,7 +17,7 @@ import type { Portfolio, PendingOrder, AssetDef } from '../types';
 import * as A from './alpaca';
 import { S, save, slots, addRep } from './state';
 import { ASSET_BY_ID, unlockedAssets } from '../data/assets';
-import { DIFFICULTY, RATE, STAGES, STAGE_TOOL, LEVERAGE, REWARD , ZERO } from './balance';
+import { DIFFICULTY, RATE, STAGES, STAGE_TOOL, LEVERAGE, REWARD , ZERO, PROVA_IGNORE } from './balance';
 import { value, fmtMoney, fmtPx, fmtQty } from './portfolio';
 import { refreshWorld } from './realdata';
 import { tradingDaysBetween } from './market';
@@ -148,7 +148,7 @@ export function exercise(): Exercise {
 
 /** Acquisti che contano per le Prove: quelli accettati da Alpaca, meno quelli delle Prove annullate da una vendita. */
 export function credited(pf: Portfolio = S.portfolio): number {
-  return Math.max(0, pf.bought - (pf.exVoid ?? 0));
+  return Math.max(0, pf.bought - (pf.exVoid ?? 0) + (pf.exSkip ?? 0));
 }
 
 /** Titoli venduti durante la Prova in corso: i loro acquisti non contano finché la Prova non è completata. */
@@ -168,24 +168,95 @@ export function sellCancels(asset: string): { stage: number } | null {
   return (S.portfolio.exBuys?.[asset] ?? 0) > 0.005 ? { stage: ex.stage } : null;
 }
 
+/** Azzera la quota della tappa in corso (le Prove già completate restano) e segna la Prova come andata male. */
+function resetStage(k: number): number {
+  const pf = S.portfolio;
+  const base = k === 0 ? 0 : exNeed(k - 1);
+  const lost = Math.max(0, credited(pf) - base);
+  pf.exVoid = (pf.exVoid ?? 0) + lost;
+  pf.exBuys = {};
+  pf.exFailed = k;
+  // gli acquisti ancora in coda facevano parte della Prova annullata: se poi saltano non vanno tolti una seconda volta
+  for (const p of pf.pending) if (p.side === 'buy' && (p.stage ?? k) === k) p.noCredit = true;
+  S.exTools = { limit: false, stop: false };
+  return lost;
+}
+
+/** Dopo una Prova chiusa: l'elenco dei titoli venduti riparte vuoto; gli acquisti oltre la quota contano già per la tappa seguente e restano legati ai loro titoli, in proporzione. */
+function finishStage(): void {
+  const pf = S.portfolio;
+  pf.exBarred = [];
+  pf.exFailed = undefined;
+  const buys = pf.exBuys ?? {};
+  const tot = Object.values(buys).reduce((s, v) => s + v, 0);
+  const extra = S.exDone >= STAGES ? 0 : credited(pf) - exNeed(S.exDone - 1);
+  const f = tot > 0 && extra > 0.005 ? Math.min(1, extra / tot) : 0;
+  pf.exBuys = Object.fromEntries(Object.entries(buys).map(([id, v]) => [id, v * f] as [string, number]).filter(([, v]) => v > 0.005));
+}
+
+// ---- Opzione "prosegui anche se la Prova va male" (solo Apprendista e Investitore) ----
+
+/** L'opzione esiste solo nelle difficoltà normali. */
+export function ignoreAllowed(): boolean {
+  return PROVA_IGNORE.includes(S.difficulty);
+}
+
+/** Opzione attiva: una Prova sul conto andata male non blocca, il suo esito viene ignorato. */
+export function ignoreOn(): boolean {
+  return ignoreAllowed() && !!S.options.ignoreProva;
+}
+
+/** Tappe la cui Prova è stata chiusa ignorando un esito negativo. */
+export function ignored(): number[] {
+  return [...(S.portfolio.exIgnored ?? [])];
+}
+
+export const IGNORE_WARNING = 'Scelta sconsigliata se vuoi imparare a investire o a fare trading in modo efficiente e corretto: la Prova serve proprio a mettere in pratica il metodo.';
+
+/**
+ * Accende o spegne l'opzione. Non salta nessuna Prova: se quella in corso è già andata male il suo esito viene
+ * ignorato subito, altrimenti si aspetta che abbia un esito. Restituisce la frase per il giocatore ('' se non cambia nulla).
+ */
+export function setIgnore(on: boolean): string {
+  if (on && !ignoreAllowed()) return '';
+  S.options.ignoreProva = on;
+  let msg = '';
+  if (on) {
+    const ex = exercise();
+    if (!ex.allDone && ex.open && !graduated() && S.portfolio.exFailed === ex.stage) msg = passIgnored(ex.stage);
+  }
+  save();
+  return msg;
+}
+
+/** Chiude la Prova della tappa k ignorando l'esito negativo: conta come superata e la tappa seguente chiede solo la propria quota. */
+function passIgnored(k: number): string {
+  const pf = S.portfolio;
+  pf.exSkip = (pf.exSkip ?? 0) + Math.max(0, exNeed(k) - credited(pf));
+  pf.exIgnored = [...new Set([...(pf.exIgnored ?? []), k])];
+  S.exDone = k + 1;
+  S.exTools = { limit: false, stop: false };
+  finishStage();
+  const seals = grantSeals();
+  return `Hai attivato "Prosegui anche se la Prova va male": l'esito negativo viene ignorato, la Prova ${stageName(k)} conta come superata e puoi proseguire.${seals.length ? ` Sigillo pratico ${seals.join(' e ')} ottenuto.` : ''} ${IGNORE_WARNING}`;
+}
+
 /**
  * Regola delle sfide: decidere di vendere il titolo di una Prova, anche solo in parte, annulla la Prova. La quota
  * della tappa riparte da zero (le Prove già completate restano), gli attrezzi vanno riusati e il titolo venduto non
  * conta più finché la Prova non è completata con un altro titolo. Restituisce la frase per il giocatore ('' se la
  * vendita non tocca nessuna Prova).
  */
-function voidExercise(asset: string): string {
+function voidExercise(asset: string, forced = false): string {
   const hit = sellCancels(asset);
   if (!hit) return '';
   const pf = S.portfolio;
   const k = hit.stage;
-  const base = k === 0 ? 0 : exNeed(k - 1);
-  pf.exVoid = (pf.exVoid ?? 0) + Math.max(0, credited(pf) - base);
-  pf.exBuys = {};
-  // gli acquisti ancora in coda facevano parte della Prova annullata: se poi saltano non vanno tolti una seconda volta
-  for (const p of pf.pending) if (p.side === 'buy' && (p.stage ?? k) === k) p.noCredit = true;
-  S.exTools = { limit: false, stop: false };
+  resetStage(k);
   const tick = ASSET_BY_ID[asset]?.ticker ?? asset;
+  if (ignoreOn()) return `${forced ? `La vendita forzata della leva ha venduto ${tick}` : `Hai venduto ${tick}`}: la Prova sul conto ${stageName(k)} sarebbe annullata. ${passIgnored(k)}`;
+  // la vendita forzata non è una scelta del giocatore: annulla la Prova, ma non esclude nessun titolo
+  if (forced) return `La vendita forzata della leva ha venduto ${tick}: la Prova sul conto ${stageName(k)} è annullata e riparte da zero.`;
   const barred = new Set([...(pf.exBarred ?? []), asset]);
   const others = unlockedAssets(S.track, S.mixedClasses, S.badges, Object.keys(S.cards)).some((a) => !barred.has(a.id));
   pf.exBarred = others ? [...barred] : [];
@@ -205,17 +276,7 @@ function closeExercises(): string {
     S.exTools = { limit: false, stop: false };
     msg = `Esercizio ${ex.stage === 0 ? 'della Valigetta' : 'della tappa ' + ex.stage} completato: l'ordine è stato accettato da Alpaca.`;
   }
-  if (msg) {
-    // Prova completata: l'elenco dei titoli venduti riparte vuoto. Gli acquisti oltre la quota contano già per la
-    // tappa seguente e restano legati ai loro titoli, in proporzione.
-    const pf = S.portfolio;
-    pf.exBarred = [];
-    const buys = pf.exBuys ?? {};
-    const tot = Object.values(buys).reduce((s, v) => s + v, 0);
-    const extra = S.exDone >= STAGES ? 0 : credited(pf) - exNeed(S.exDone - 1);
-    const f = tot > 0 && extra > 0.005 ? Math.min(1, extra / tot) : 0;
-    pf.exBuys = Object.fromEntries(Object.entries(buys).map(([id, v]) => [id, v * f] as [string, number]).filter(([, v]) => v > 0.005));
-  }
+  if (msg) finishStage();
   const seals = grantSeals();
   if (seals.length) msg += ` Sigillo pratico ${seals.join(' e ')} ottenuto: la Medaglia è completa!`;
   return msg;
@@ -441,7 +502,7 @@ export async function buy(asset: string, amount: number, o: { type?: 'market' | 
   return { ok: true, msg: head, filled: r.done && r.qty > 0, price: r.price || o.price || S.market.prices[asset], qty: r.qty, exercise: ex };
 }
 
-/** Vendite che non sono una decisione del giocatore: non annullano nessuna Prova. */
+/** Vendite che non sono una decisione del giocatore: annullano la Prova in corso senza escludere titoli. */
 const FORCED = new Set(['liquidazione', 'chiusura']);
 
 /** Quantità già impegnata in ordini di vendita aperti. */
@@ -482,9 +543,9 @@ export async function sell(asset: string, qty: number, o: { type?: 'market' | 's
   pf.orderSeq++;
   const p: PendingOrder = { id: out.id, cid: req.client_order_id, asset, side: 'sell', type, qty, price: o.price, reserved: 0, filledQty: 0, filledCost: 0, createdAt: Date.now(), tag: o.tag ?? (type === 'stop' ? 'stop' : 'mercato') };
   pf.pending.push(p);
-  // la decisione di vendere vale da subito, anche se l'ordine si esegue all'apertura. Non è una decisione del
-  // giocatore la vendita forzata della leva né la chiusura dopo una bancarotta; lo stop conta solo se scatta.
-  const cancelled = type === 'market' && !FORCED.has(p.tag) ? voidExercise(asset) : '';
+  // la decisione di vendere vale da subito, anche se l'ordine si esegue all'apertura; lo stop conta solo se scatta.
+  // Anche la vendita forzata della leva annulla la Prova, ma senza escludere titoli: non è una scelta del giocatore.
+  const cancelled = type === 'market' ? voidExercise(asset, FORCED.has(p.tag)) : '';
   const stopWarn = type === 'stop' && sellCancels(asset) ? ' Se scatta è una vendita: annulla la Prova sul conto in corso, che rifarai con un altro titolo.' : '';
   if (type === 'stop' && !(pf.exBarred ?? []).includes(asset)) S.exTools.stop = true;
   const r = await settle(pf, p, out);
@@ -725,6 +786,7 @@ export async function liquidate(): Promise<string[]> {
   for (const pos of pf.positions.slice()) {
     const r = await sell(pos.id, pos.qty * f, { tag: 'liquidazione' });
     notes.push(r.msg);
+    if (r.cancelled) notes.push(r.cancelled);
   }
   pf.marginCallAt = 0;
   save();
@@ -741,6 +803,14 @@ export async function restartAfterBankruptcy(): Promise<string[]> {
   const pf = S.portfolio;
   const notes: string[] = [];
   for (const p of pf.pending.slice()) notes.push(await cancel(p));
+  // la bancarotta annulla la Prova sul conto in corso: la quota della tappa riparte da zero, le Prove già fatte restano
+  const ex = exercise();
+  if (!ex.allDone && ex.open && !graduated() && credited(pf) > (ex.stage === 0 ? 0 : exNeed(ex.stage - 1)) + 0.005) {
+    resetStage(ex.stage);
+    notes.push(ignoreOn()
+      ? `Con la bancarotta la Prova sul conto ${stageName(ex.stage)} sarebbe annullata. ${passIgnored(ex.stage)}`
+      : `Con la bancarotta anche la Prova sul conto ${stageName(ex.stage)} è annullata: la quota della tappa riparte da zero.`);
+  }
   for (const pos of pf.positions.slice()) notes.push((await sell(pos.id, pos.qty, { tag: 'chiusura' })).msg);
   const half = Math.round(startCapital() * LEVERAGE.restart);
   pf.bankruptcies += 1;

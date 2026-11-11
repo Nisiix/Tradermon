@@ -142,13 +142,63 @@ describe('vendere il titolo di una Prova sul conto annulla la Prova', () => {
     expect(Acc.exBarred()).toEqual([]);
   }, 20_000);
 
-  it('la vendita forzata della leva non è una decisione del giocatore: non annulla la Prova', async () => {
+  it('anche la vendita forzata della leva annulla la Prova, senza escludere titoli', async () => {
     expect((await Acc.buy('NEE', 70)).filled).toBe(true);
-    const before = got();
-    expect(Acc.sellCancels('NEE')).toEqual({ stage: 0 });
+    expect(got()).toBeCloseTo(70, 6);
     const r = await Acc.sell('NEE', 0.5, { tag: 'liquidazione' });
     expect(r.ok).toBe(true);
-    expect(r.cancelled).toBeFalsy();
-    expect(got()).toBeCloseTo(before, 6);
+    expect(r.cancelled).toContain('annullata');
+    expect(r.cancelled).toContain('vendita forzata');
+    expect(got()).toBe(0);
+    expect(Acc.exBarred()).toEqual([]); // non è stata una scelta del giocatore: nessun titolo escluso
+  }, 20_000);
+
+  it('opzione "prosegui anche se la Prova va male": non salta la Prova, ignora solo l\'esito negativo; solo in Apprendista e Investitore', async () => {
+    expect(S.exDone).toBe(0); // la Prova della Valigetta è appena stata annullata dalla vendita forzata
+    S.difficulty = 'stratega';
+    expect(Acc.ignoreAllowed()).toBe(false);
+    expect(Acc.setIgnore(true)).toBe('');
+    expect(Acc.ignoreOn()).toBe(false);
+    S.difficulty = 'leggenda';
+    expect(Acc.ignoreAllowed()).toBe(false);
+    S.difficulty = 'investitore';
+    expect(Acc.ignoreAllowed()).toBe(true);
+    // attivata con una Prova già andata male: l'esito viene ignorato e si prosegue
+    const msg = Acc.setIgnore(true);
+    expect(msg).toContain('ignorato');
+    expect(msg).toContain('sconsigliata');
+    expect(Acc.ignoreOn()).toBe(true);
+    expect(S.exDone).toBe(1);
+    expect(Acc.ignored()).toEqual([0]);
+    expect(got()).toBeCloseTo(Acc.exNeed(0), 6); // la tappa seguente chiede solo la propria quota
+    // non salta nulla: la Prova seguente resta da fare finché non ha un esito
+    S.badges = 1;
+    expect(Acc.exercise().open).toBe(true);
+    expect(S.exDone).toBe(1);
+    expect((await Acc.buy('XOM', 110)).filled).toBe(true);
+    expect(S.exDone).toBe(1);
+    // esito negativo (vendita del titolo della Prova): ignorato, la Prova conta come superata e arriva il Sigillo
+    const r = await Acc.sell('XOM', 0.5);
+    expect(r.cancelled).toContain('ignorato');
+    expect(S.exDone).toBe(2);
+    expect(S.seals).toBe(1);
+    expect(Acc.ignored()).toEqual([0, 1]);
+    expect(Acc.exBarred()).toEqual([]);
+    expect(got()).toBeCloseTo(Acc.exNeed(1), 6);
+    expect(Acc.setIgnore(false)).toBe('');
+    expect(Acc.ignoreOn()).toBe(false);
+  }, 20_000);
+
+  it('la bancarotta annulla la Prova in corso; le Prove già fatte restano', async () => {
+    S.badges = 2;
+    expect((await Acc.buy('NEE', 140)).filled).toBe(true);
+    expect(got()).toBeCloseTo(Acc.exNeed(1) + 140, 6);
+    const notes = (await Acc.restartAfterBankruptcy()).join(' ');
+    expect(notes).toContain('bancarotta');
+    expect(notes).toContain('annullata');
+    expect(got()).toBeCloseTo(Acc.exNeed(1), 6);
+    expect(S.exDone).toBe(2);
+    expect(S.seals).toBe(1);
+    expect(Acc.exBarred()).toEqual([]);
   }, 20_000);
 });
