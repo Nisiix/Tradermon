@@ -10,6 +10,8 @@ import { BIAS_CURE_Q, BIAS_INFO } from '../data/events';
 import { beep } from '../systems/audio';
 import { openObservatory, realChart } from './live';
 import * as Acc from '../systems/account';
+import { sellCancelsMandate } from '../systems/mandate';
+import { BOSS_BY_ID } from '../systems/boss';
 import { asOfLabel, hasPrices } from '../systems/realdata';
 import { marketClock } from '../systems/market';
 import { DIFFICULTY } from '../systems/balance';
@@ -218,6 +220,7 @@ export async function trade(guided = false): Promise<boolean> {
             const st = el('button', 'btn', 'Stop −10%');
             st.title = 'Ordine stop reale: vende se il prezzo scende del 10%';
             st.addEventListener('click', async () => {
+              if (sellCancelsMandate(a.id)) { await say(`${a.ticker} ha già lo stop vero del piano che hai presentato al Boss: si gestisce dalla Torre, non da qui.`, NURSE); return; }
               const hit = Acc.sellCancels(a.id);
               if (hit && !(await confirm(`${a.ticker} è un titolo della tua Prova sul conto ${provaName(hit.stage)}. Mettere lo stop non annulla nulla, ma se lo stop scatta è una vendita: la Prova viene annullata e la rifai con un altro titolo. Metto lo stop?`, NURSE))) return;
               void run(() => Acc.sell(a.id, pos.qty, { type: 'stop', price: px[a.id] * 0.9 }));
@@ -240,6 +243,13 @@ export async function trade(guided = false): Promise<boolean> {
     };
     // la vendita del titolo di una Prova la annulla: il giocatore deve dirlo in modo esplicito, anche per una parte
     const sellOk = async (id: string, qty: number, held: number) => {
+      // il titolo del piano presentato a un Boss: venderlo, anche in parte, annulla quella sfida
+      const boss = sellCancelsMandate(id);
+      if (boss) {
+        const t = ASSET_BY_ID[id].ticker;
+        const c = await choose(['Vendo per annullare la sfida', 'Non vendo'], { cancel: true, who: NURSE, prompt: `${t} è il titolo del tuo piano con ${BOSS_BY_ID[boss]?.name ?? 'un Boss'}. Venderlo adesso, anche solo in parte, annulla la sfida: lo stop del piano viene tolto e la ripeti da capo, quiz compreso, con un altro titolo. Non conta come sconfitta.` });
+        if (c !== 0) return false;
+      }
       const hit = Acc.sellCancels(id);
       if (!hit) return true;
       const tick = ASSET_BY_ID[id].ticker;
