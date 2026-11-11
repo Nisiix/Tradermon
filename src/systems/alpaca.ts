@@ -1,22 +1,35 @@
-// Client verso l'intermediario di Tradermon, l'unico che parla con Alpaca. Sono due, con le stesse regole:
+// Client verso Alpaca. Tre strade, con le stesse regole sugli ordini (supabase/functions/alpaca/core.js):
 //  - in locale il server sul computer del giocatore (server/index.mjs): custodisce le chiavi Paper e Live, che il
 //    browser invia una volta e non rilegge mai;
-//  - dal sito pubblico la funzione Supabase "alpaca" (supabase/functions/alpaca): solo conto Paper. Lì le chiavi
-//    non sono salvate: il browser apre la copia cifrata del giocatore (cassaforte, systems/vault.ts), la tiene in
-//    memoria per la sessione e la manda a ogni richiesta su connessione cifrata. Il conto reale non passa mai dal sito.
-// Un backend diverso si può indicare alla compilazione con VITE_API_BASE, senza toccare il resto del gioco.
+//  - dal sito pubblico il browser parla DIRETTAMENTE con Alpaca (Paper e conto reale). Le chiavi restano solo sul
+//    dispositivo, cifrate (systems/keystore.ts): vengono aperte con la password del giocatore, tenute in memoria
+//    per la sessione e inviate soltanto ad Alpaca, su connessione cifrata. Nessun server di Tradermon le vede;
+//  - riserva, solo Paper: se il browser non riesce a raggiungere Alpaca direttamente (il controllo CORS non
+//    passa), le chiamate del conto Paper passano dalla funzione Supabase "alpaca", che non salva le chiavi.
+//    Il conto reale non usa mai questa strada.
+// Gli indirizzi di Alpaca sono fissi nel codice. Un backend diverso si può indicare alla compilazione con
+// VITE_API_BASE, senza toccare il resto del gioco.
 import * as C from './cloud';
+import * as K from './keystore';
 import { SUPABASE_URL, SUPABASE_KEY } from '../config/supabase';
+import { createCore, validKeys } from '../../supabase/functions/alpaca/core.js';
 
 const API_BASE = String((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_API_BASE ?? '').replace(/\/$/, '');
 
 export type Env = 'paper' | 'live';
 
 export interface KeyStatus { configured: boolean; keyHint?: string }
-/** `cloud`: le chiamate passano dalla funzione Supabase (sito pubblico), dove esiste solo il conto Paper. */
-export interface ServerStatus { ok: boolean; paper: KeyStatus; live: KeyStatus; liveMaxOrder: number; cloud?: boolean }
+/**
+ * `direct`: il browser parla direttamente con Alpaca (sito pubblico), le chiavi sono solo sul dispositivo.
+ * `cloud`: riserva del sito pubblico, le chiamate Paper passano dalla funzione Supabase e il conto reale non c'è.
+ */
+export interface ServerStatus { ok: boolean; paper: KeyStatus; live: KeyStatus; liveMaxOrder: number; cloud?: boolean; direct?: boolean }
 
-export const LIVE_LOCAL_ONLY = 'Il conto reale non passa mai dal sito: si usa solo giocando sul tuo computer, dove le chiavi Live restano sul server locale.';
+export const LIVE_LOCAL_ONLY = 'Questo browser non riesce a raggiungere Alpaca direttamente, quindi dal sito il conto reale non è disponibile: le chiavi Live non passano mai da un server di Tradermon. Puoi usarlo giocando sul tuo computer.';
+/** Tetto in dollari per un singolo ordine reale inviato dal browser (lo stesso valore predefinito del server locale). */
+export const DIRECT_LIVE_MAX = 2500;
+
+const ALPACA = { paper: 'https://paper-api.alpaca.markets/v2', live: 'https://api.alpaca.markets/v2', data: 'https://data.alpaca.markets' } as const;
 
 async function parse<T>(res: Response): Promise<T> {
   const text = await res.text();
@@ -29,12 +42,13 @@ async function parse<T>(res: Response): Promise<T> {
   return data as T;
 }
 
-// ---------- quale intermediario: server locale o funzione Supabase ----------
+// ---------- quale strada: server locale, browser diretto, riserva Supabase ----------
 
-let mode: 'local' | 'cloud' | null = null;
+type Mode = 'local' | 'direct' | 'cloud';
+let mode: Mode | null = null;
 
-/** Decide una volta per sessione: se la pagina non è servita da un server Tradermon (sito pubblico) si passa da Supabase. */
-async function transport(): Promise<'local' | 'cloud'> {
+/** Decide una volta per sessione: se la pagina non è servita da un server Tradermon (sito pubblico) il browser chiama Alpaca. */
+async function transport(): Promise<Mode> {
   if (mode) return mode;
   if (API_BASE || typeof location === 'undefined' || isLocalHost() || !C.cloudEnabled()) return (mode = 'local');
   try {
@@ -43,46 +57,132 @@ async function transport(): Promise<'local' | 'cloud'> {
     const d = (await r.json()) as { ok?: boolean };
     if (r.ok && d?.ok) return (mode = 'local');
   } catch { /* sito statico: nessun server */ }
-  return (mode = 'cloud');
+  return (mode = 'direct');
 }
 
-/** Le chiamate stanno passando dalla funzione Supabase? (vale dopo la prima chiamata, per esempio serverStatus) */
+/** Le chiamate Paper stanno passando dalla funzione Supabase? (riserva: il browser non raggiunge Alpaca) */
 export function cloudActive(): boolean { return mode === 'cloud'; }
+/** Il browser sta parlando direttamente con Alpaca? (vale dopo la prima chiamata, per esempio serverStatus) */
+export function directActive(): boolean { return mode === 'direct'; }
 
-/** Chiavi Paper aperte dalla cassaforte: solo in memoria, per questa sessione. Mai in localStorage. */
-let paperKeys: C.AlpacaKeyPair | null = null;
-const hintOf = (k: C.AlpacaKeyPair) => `${k.keyId.slice(0, 4)}…${k.keyId.slice(-3)}`;
+/** Chiavi aperte dalla cassaforte del dispositivo: solo in memoria, per questa sessione. */
+const mem: Partial<Record<Env, K.KeyPair>> = {};
+const hintOf = (k: K.KeyPair) => `${k.keyId.slice(0, 4)}…${k.keyId.slice(-3)}`;
+const envName = (env: Env) => (env === 'live' ? 'Live' : 'Paper');
+
+/** Porta in memoria le chiavi del conto, se sul dispositivo ci sono e la cassaforte è aperta. */
+async function recall(env: Env, quiet = false): Promise<void> {
+  if (mem[env]) return;
+  try { const k = await K.loadKeys(env); if (k) mem[env] = k; } catch (e) {
+    if (quiet) return;
+    if ((e as Error).message === 'LOCKED') throw new Error(`Le chiavi ${envName(env)} sono salvate cifrate su questo dispositivo: per usarle serve la password del giocatore. Aprile dalla voce "Chiavi API".`);
+    throw e;
+  }
+}
+
+// ---- browser → Alpaca ----
+
+/** Il browser ha già ricevuto una risposta da Alpaca in questa sessione (quindi il controllo CORS passa). */
+let reached = false;
+/** Gli ordini partono con Content-Type JSON finché il browser non lo rifiuta; poi come testo semplice. */
+let jsonBody = true;
+
+/**
+ * Chiamata dal browser ad Alpaca. Le letture non portano Content-Type (Alpaca non lo ammette tra le intestazioni
+ * delle chiamate dal browser). Se un invio con Content-Type JSON viene bloccato prima di partire (TypeError) si
+ * riprova una volta come testo semplice: l'ordine non può raddoppiare, perché ha un client_order_id unico che
+ * Alpaca accetta una volta sola.
+ */
+async function alpacaFetch(url: string, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  const hasBody = init?.body != null;
+  if (!hasBody) headers.delete('Content-Type');
+  else if (!jsonBody) headers.set('Content-Type', 'text/plain');
+  const send = () => fetch(url, { ...init, headers, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer' });
+  try { const r = await send(); reached = true; return r; } catch (e) {
+    if (!(hasBody && jsonBody && e instanceof TypeError)) throw e;
+    headers.set('Content-Type', 'text/plain');
+    const r = await send();
+    jsonBody = false; reached = true;
+    return r;
+  }
+}
+
+const core = createCore({
+  trading: { paper: ALPACA.paper, live: ALPACA.live },
+  data: ALPACA.data,
+  keysOf: (env) => mem[env as Env] ?? null,
+  dataEnv: () => (mem.paper || !mem.live ? 'paper' : 'live'),
+  liveMaxOrder: DIRECT_LIVE_MAX,
+  fetch: alpacaFetch,
+});
+
+const UNREACHABLE = 'Il browser non riesce a raggiungere Alpaca: controlla la connessione e riprova. Se usi un blocco di contenuti o una rete aziendale, potrebbe impedire le chiamate verso alpaca.markets.';
+
+async function directCall<T>(path: string, init?: RequestInit): Promise<T> {
+  const u = new URL(path, 'https://tradermon.invalid');
+  const segs = u.pathname.split('/').filter(Boolean);
+  if (segs[0] !== 'api') throw new Error('Endpoint non disponibile');
+  const parts = segs.slice(1);
+  const env: Env | null = parts[0] === 'alpaca' && (parts[1] === 'paper' || parts[1] === 'live') ? parts[1] : null;
+  if (env) await recall(env);
+  else { await recall('paper', true); if (!mem.paper) await recall('live', true); if (!mem.paper && !mem.live) await recall('paper'); }
+  const h = new Headers(init?.headers);
+  try {
+    const out = await core.handle({
+      method: (init?.method ?? 'GET').toUpperCase(), parts, query: u.searchParams,
+      header: (n) => h.get(n),
+      body: async () => { try { return init?.body ? JSON.parse(String(init.body)) : {}; } catch { throw new Error('Richiesta non valida'); } },
+    });
+    if (!out) throw new Error('Endpoint non disponibile');
+    if (out.status >= 400) throw new Error(out.body?.message ?? `Errore ${out.status}`);
+    return out.body as T;
+  } catch (e) {
+    if (!(e instanceof TypeError)) throw e;
+    if (reached) throw new Error(UNREACHABLE);
+    // mai una risposta da Alpaca in questa sessione: il browser non può chiamarlo. Riserva solo per il Paper.
+    if (env === 'live') throw new Error(LIVE_LOCAL_ONLY);
+    mode = 'cloud';
+    return cloudCall<T>(path, init);
+  }
+}
+
+// ---- riserva: funzione Supabase, solo Paper ----
 
 async function cloudCall<T>(path: string, init?: RequestInit): Promise<T> {
-  if (path.startsWith('/api/alpaca/live/') || path === '/api/keys/live') throw new Error(LIVE_LOCAL_ONLY);
+  if (path.startsWith('/api/alpaca/live/')) throw new Error(LIVE_LOCAL_ONLY);
   const token = await C.accessToken();
   if (!token) throw new Error('Per usare il conto Paper dal sito entra con il tuo giocatore Tradermon (ricarica la pagina).');
-  if (!paperKeys) {
-    try { paperKeys = await C.loadAlpacaKeys('paper'); } catch (e) {
-      if ((e as Error).message === 'LOCKED') throw new Error('Le chiavi Paper sono salvate cifrate: per usarle su questo dispositivo serve la password del giocatore. Aprile dalla voce "Chiavi API".');
-      throw e;
-    }
-  }
-  if (!paperKeys) throw new Error('Le chiavi del conto Alpaca Paper non sono collegate.');
+  await recall('paper');
+  const k = mem.paper;
+  if (!k) throw new Error('Le chiavi del conto Alpaca Paper non sono collegate.');
   const res = await fetch(`${SUPABASE_URL}/functions/v1/alpaca${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, 'x-alpaca-key': paperKeys.keyId, 'x-alpaca-secret': paperKeys.secret, ...(init?.headers ?? {}) },
+    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, 'x-alpaca-key': k.keyId, 'x-alpaca-secret': k.secret, ...(init?.headers ?? {}) },
   });
   return parse<T>(res);
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
-  if ((await transport()) === 'cloud') return cloudCall<T>(path, init);
+  const m = await transport();
+  if (m === 'direct') return directCall<T>(path, init);
+  if (m === 'cloud') return cloudCall<T>(path, init);
   const res = await fetch(API_BASE + path, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) } });
   return parse<T>(res);
 }
 
 export async function serverStatus(): Promise<ServerStatus | null> {
-  if ((await transport()) === 'cloud') {
-    // dal sito lo stato si legge qui: giocatore collegato e chiavi Paper aperte dalla cassaforte
+  const m = await transport();
+  if (m !== 'local') {
+    // dal sito lo stato si legge qui: giocatore collegato e chiavi aperte dalla cassaforte del dispositivo
     if (!(await C.currentPlayer())) return null;
-    if (!paperKeys) { try { if (await C.vaultUnlocked()) paperKeys = await C.loadAlpacaKeys('paper'); } catch { /* rete assente o cassaforte chiusa */ } }
-    return { ok: true, cloud: true, paper: paperKeys ? { configured: true, keyHint: hintOf(paperKeys) } : { configured: false }, live: { configured: false }, liveMaxOrder: 0 };
+    let open = false;
+    try { open = await K.unlocked(); } catch { open = false; }
+    if (open) { await recall('paper', true); if (m === 'direct') await recall('live', true); }
+    const st = (env: Env): KeyStatus => (mem[env] ? { configured: true, keyHint: hintOf(mem[env]!) } : { configured: false });
+    return m === 'direct'
+      ? { ok: true, direct: true, paper: st('paper'), live: st('live'), liveMaxOrder: DIRECT_LIVE_MAX }
+      : { ok: true, cloud: true, paper: st('paper'), live: { configured: false }, liveMaxOrder: 0 };
   }
   try { return await call<ServerStatus>('/api/status'); } catch { return null; }
 }
@@ -90,20 +190,25 @@ export async function serverStatus(): Promise<ServerStatus | null> {
 type KeysResult = { ok: boolean; account?: { status: string; currency: string } };
 
 export async function setKeys(env: Env, keyId: string, secret: string): Promise<KeysResult> {
-  if ((await transport()) === 'cloud') {
-    if (env === 'live') throw new Error(LIVE_LOCAL_ONLY);
-    if (!/^[A-Z0-9]{10,40}$/i.test(keyId) || secret.length < 20 || secret.length > 120) throw new Error('Chiavi non valide');
-    // la funzione le verifica con Alpaca e non le salva: restano in memoria qui, e cifrate su Supabase (cassaforte)
-    const prev = paperKeys;
-    paperKeys = { keyId, secret };
-    try { return await cloudCall<KeysResult>('/api/keys', { method: 'POST', body: JSON.stringify({ env }) }); }
-    catch (e) { paperKeys = prev; throw e; }
+  if ((await transport()) !== 'local') {
+    if (!validKeys(keyId, secret)) throw new Error('Chiavi non valide');
+    // la verifica è una lettura del conto fatta con le chiavi nuove; se Alpaca le rifiuta tornano quelle di prima
+    const prev = mem[env];
+    mem[env] = { keyId, secret };
+    try {
+      const acc = await call<{ status: string; currency: string }>(`/api/alpaca/${env}/account`);
+      return { ok: true, account: { status: acc.status, currency: acc.currency } };
+    } catch (e) {
+      if (prev) mem[env] = prev; else delete mem[env];
+      const msg = (e as Error).message;
+      throw new Error(msg === LIVE_LOCAL_ONLY || msg === UNREACHABLE ? msg : `Alpaca ha rifiutato le chiavi ${envName(env)}: ${msg}`);
+    }
   }
   return call<KeysResult>('/api/keys', { method: 'POST', body: JSON.stringify({ env, keyId, secret }) });
 }
 
 export async function deleteKeys(env: Env): Promise<{ ok: boolean }> {
-  if ((await transport()) === 'cloud') { if (env === 'paper') paperKeys = null; return { ok: true }; }
+  if ((await transport()) !== 'local') { delete mem[env]; return { ok: true }; }
   return call<{ ok: boolean }>(`/api/keys/${env}`, { method: 'DELETE' });
 }
 

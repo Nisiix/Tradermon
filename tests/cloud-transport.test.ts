@@ -1,5 +1,6 @@
-// Dal sito pubblico (nessun server locale) il gioco parla con Alpaca attraverso la funzione Supabase "alpaca".
-// Qui la funzione gira dentro il test contro il finto Alpaca; Supabase (sessione, cassaforte) è simulato.
+// Riserva del sito pubblico: se il browser NON riesce a raggiungere Alpaca direttamente (il controllo CORS non
+// passa), il solo conto Paper passa dalla funzione Supabase "alpaca". Il conto reale non usa mai questa strada.
+// Qui la funzione gira dentro il test contro il finto Alpaca; Supabase (sessione) e la cassaforte sono simulati.
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { startFakeAlpaca, type FakeAlpaca } from './helpers/fake-alpaca';
 import { handleRequest, type Deps } from '../supabase/functions/alpaca/index';
@@ -11,9 +12,11 @@ vi.mock('../src/systems/cloud', () => ({
   cloudEnabled: () => true,
   accessToken: async () => cloud.token,
   currentPlayer: async () => cloud.player,
-  vaultUnlocked: async () => cloud.unlocked,
-  loadAlpacaKeys: async (env: string) => { if (!cloud.unlocked) throw new Error('LOCKED'); return env === 'paper' ? cloud.saved : null; },
-  savedKeyEnvs: async () => (cloud.saved ? ['paper'] : []),
+}));
+vi.mock('../src/systems/keystore', () => ({
+  unlocked: async () => cloud.unlocked,
+  loadKeys: async (env: string) => { if (!cloud.unlocked) throw new Error('LOCKED'); return env === 'paper' ? cloud.saved : null; },
+  keyEnvs: async () => (cloud.saved ? ['paper'] : []),
 }));
 
 import * as A from '../src/systems/alpaca';
@@ -23,6 +26,7 @@ import { newGame, S } from '../src/systems/state';
 let fake: FakeAlpaca;
 const realFetch = globalThis.fetch;
 const seen: { url: string; headers: Headers }[] = [];
+const blocked: string[] = [];
 
 beforeAll(async () => {
   fake = await startFakeAlpaca();
@@ -34,6 +38,8 @@ beforeAll(async () => {
       seen.push({ url, headers: new Headers(init?.headers) });
       return handleRequest(new Request(url, init), deps);
     }
+    // questo browser non può chiamare Alpaca: la richiesta viene bloccata prima di partire
+    if (/^https:\/\/(paper-api|api|data)\.alpaca\.markets\//.test(url)) { blocked.push(url); throw new TypeError('Failed to fetch'); }
     // il sito statico non ha "/api": risponde con una pagina 404
     if (url.startsWith('/')) return new Response('<html>404</html>', { status: 404 });
     return realFetch(u, init);
@@ -42,32 +48,39 @@ beforeAll(async () => {
 });
 afterAll(async () => { vi.unstubAllGlobals(); await fake?.close(); });
 
-describe('conto Paper dal sito pubblico, attraverso Supabase', () => {
+describe('riserva del sito pubblico: conto Paper attraverso Supabase quando il browser non raggiunge Alpaca', () => {
   it('con la cassaforte chiusa il conto non risulta collegato e nessuna chiave parte', async () => {
     const st = await A.serverStatus();
-    expect(st).toMatchObject({ ok: true, cloud: true, paper: { configured: false }, live: { configured: false } });
+    expect(st).toMatchObject({ ok: true, direct: true, paper: { configured: false }, live: { configured: false } });
     await expect(A.account('paper')).rejects.toThrow(/password/i);
     expect(seen).toHaveLength(0);
+    expect(blocked).toHaveLength(0);
   });
 
-  it('sbloccata la cassaforte, le chiamate passano dalla funzione con il token del giocatore e le chiavi Paper', async () => {
+  it('il browser prova Alpaca direttamente; bloccato, il Paper passa dalla funzione con il token del giocatore', async () => {
     cloud.unlocked = true;
     const st = await A.serverStatus();
     expect(st?.paper).toMatchObject({ configured: true, keyHint: 'PKTE…T00' });
+    expect(A.cloudActive()).toBe(false);
     const acc = await A.account('paper');
     expect(acc.status).toBe('ACTIVE');
+    expect(blocked).toEqual(['https://paper-api.alpaca.markets/v2/account']);
+    expect(A.cloudActive()).toBe(true);
+    expect(await A.serverStatus()).toMatchObject({ ok: true, cloud: true, live: { configured: false }, liveMaxOrder: 0 });
     const last = seen.at(-1)!;
     expect(last.url).toBe(`${SUPABASE_URL}/functions/v1/alpaca/api/alpaca/paper/account`);
     expect(last.headers.get('authorization')).toBe('Bearer buono');
     expect(last.headers.get('x-alpaca-key')).toBe(KEY);
   });
 
-  it('il conto reale resta fuori dal sito: nessuna richiesta parte', async () => {
+  it('il conto reale non usa mai la riserva: nessuna richiesta parte, né verso Supabase né verso Alpaca', async () => {
     const n = seen.length;
+    const b = blocked.length;
     await expect(A.account('live')).rejects.toThrow(/tuo computer/);
     await expect(A.setKeys('live', 'AKTESTTESTTEST00', SECRET)).rejects.toThrow(/tuo computer/);
     await expect(A.submitOrder('live', { symbol: 'AAPL', side: 'buy', type: 'market', notional: '10', time_in_force: 'day', client_order_id: 'x' }, 'CONFERMO')).rejects.toThrow(/tuo computer/);
     expect(seen.length).toBe(n);
+    expect(blocked.length).toBe(b);
   });
 
   it('un ordine del conto di gioco arriva ad Alpaca e torna nel registro', async () => {
@@ -94,7 +107,7 @@ describe('conto Paper dal sito pubblico, attraverso Supabase', () => {
     expect(seen.length).toBe(n);
     const r = await A.setKeys('paper', KEY, SECRET);
     expect(r.ok).toBe(true);
-    expect(seen.at(-1)!.url).toMatch(/\/api\/keys$/);
+    expect(seen.at(-1)!.url).toMatch(/\/api\/alpaca\/paper\/account$/);
     expect((await A.serverStatus())?.paper.configured).toBe(true);
   });
 

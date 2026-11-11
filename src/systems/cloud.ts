@@ -131,6 +131,9 @@ export async function unlockVault(password: string): Promise<void> {
   }
 }
 
+/** Chiave della cassaforte del giocatore collegato (per cifrare ciò che resta sul dispositivo). Lancia 'LOCKED' se serve la password. */
+export function vaultKey(): Promise<{ user: string; key: CryptoKey }> { return dataKey(); }
+
 async function dataKey(): Promise<{ user: string; key: CryptoKey }> {
   const p = await currentPlayer();
   if (!p) throw new Error('Nessun giocatore collegato.');
@@ -163,7 +166,9 @@ export async function deleteSave(): Promise<void> {
   await client().from('saves').delete().eq('user_id', p.id);
 }
 
-// ---------- chiavi Alpaca (Paper e Live), sempre cifrate ----------
+// ---------- vecchie copie cifrate delle chiavi Alpaca su Supabase ----------
+// Le chiavi ora restano solo sul dispositivo (systems/keystore.ts). Queste funzioni servono a portare lì le copie
+// salvate in passato e a cancellarle da Supabase; `storeAlpacaKeys` non viene più chiamata dal gioco.
 
 export interface AlpacaKeyPair { keyId: string; secret: string }
 /** Il dato cifrato è legato a giocatore e conto: una riga copiata su un altro conto non si apre. */
