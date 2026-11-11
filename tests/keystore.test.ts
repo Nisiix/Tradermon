@@ -72,6 +72,15 @@ describe('chiavi Alpaca solo sul dispositivo', () => {
     expect(await K.migrateFromCloud()).toEqual([]);
   });
 
+  it('si può portare sul dispositivo solo il conto Paper: la copia Live resta dov\'è finché il giocatore non decide', async () => {
+    await K.removeKeys('paper'); await K.removeKeys('live');
+    cloud.remote = { paper: PAPER, live: LIVE };
+    expect(await K.migrateFromCloud(['paper'])).toEqual(['paper']);
+    expect(await K.loadKeys('live')).toBeNull();
+    expect(cloud.remote).toEqual({ live: LIVE });
+    cloud.remote = {};
+  });
+
   it('se sul dispositivo c\'è già una chiave, la copia su Supabase viene solo cancellata', async () => {
     const other = { keyId: 'PKALTRAALTRA0000', secret: 'z'.repeat(40) };
     cloud.remote = { paper: other };

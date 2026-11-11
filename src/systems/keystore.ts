@@ -61,10 +61,11 @@ export async function removeKeys(env: KeyEnv): Promise<void> {
 /**
  * Le versioni precedenti tenevano una copia cifrata delle chiavi su Supabase. Qui viene portata sul dispositivo
  * (se manca) e poi cancellata da Supabase. Restituisce i conti spostati. Serve la cassaforte aperta.
+ * `only` limita i conti: le chiavi Live si spostano su un dispositivo solo dopo che il giocatore ha letto l'avviso.
  */
-export async function migrateFromCloud(): Promise<KeyEnv[]> {
+export async function migrateFromCloud(only: KeyEnv[] = ENVS): Promise<KeyEnv[]> {
   const moved: KeyEnv[] = [];
-  for (const env of await C.savedKeyEnvs()) {
+  for (const env of (await C.savedKeyEnvs()).filter((e) => only.includes(e))) {
     const p = await C.currentPlayer();
     if (!p) break;
     if (!read(p.id, env)) {

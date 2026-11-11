@@ -109,6 +109,7 @@ describe('conto Alpaca dal sito pubblico, direttamente dal browser', () => {
     const bad = { keyId: 'PKBADBADBADBAD00', secret: 'b'.repeat(40) };
     const calls = seen.length;
     await expect(A.setKeys('paper', 'corta', 'x')).rejects.toThrow(/non valide/);
+    await expect(A.setKeys('paper', PAPER.keyId, 'è'.repeat(40))).rejects.toThrow(/non valide/);
     expect(seen.length).toBe(calls);
     const realStub = globalThis.fetch;
     vi.stubGlobal('fetch', async (u: string | URL | Request, init?: RequestInit) => (new Headers(init?.headers).get('apca-api-key-id') === bad.keyId ? new Response(JSON.stringify({ message: 'forbidden' }), { status: 403 }) : realStub(u, init)));

@@ -146,7 +146,7 @@ function keysNotice(env: A.Env, site: boolean): string {
     <div class="small keys-notice">
       <p><b>Dove restano le chiavi.</b> Solo su questo dispositivo, cifrate (AES-256) con la password del tuo giocatore. Non vanno su Supabase, non entrano nel salvataggio della partita e nessun server di Tradermon le riceve o le conserva.</p>
       <p><b>A chi vengono inviate.</b> Soltanto ad Alpaca: è il tuo browser a parlare direttamente con Alpaca, su connessione cifrata, ogni volta che il gioco legge il conto o invia un ordine deciso da te.</p>
-      <p><b>Che cosa comporta.</b> Su un altro dispositivo o browser dovrai inserirle di nuovo. Se cancelli i dati del sito le perdi: ne generi di nuove dalla dashboard di Alpaca. Chi usa questo browser conoscendo la password del tuo giocatore può usarle. Puoi revocarle in ogni momento dalla dashboard di Alpaca: smettono di funzionare subito.</p>
+      <p><b>Che cosa comporta.</b> Su un altro dispositivo o browser dovrai inserirle di nuovo. Se cancelli i dati del sito le perdi: ne generi di nuove dalla dashboard di Alpaca. Chi usa questo browser mentre il tuo giocatore è collegato può usarle: su un dispositivo condiviso esci dal giocatore quando hai finito. Puoi revocarle in ogni momento dalla dashboard di Alpaca: smettono di funzionare subito.</p>
       ${env === 'live'
         ? '<p><b>Queste chiavi muovono denaro vero.</b> Usale solo su un dispositivo tuo, aggiornato e senza estensioni del browser di cui non ti fidi: un programma malevolo sul dispositivo potrebbe leggerle mentre il gioco è aperto. Nel dubbio, revocale dalla dashboard di Alpaca. Ogni ordine reale chiede comunque la parola di conferma e rispetta i tuoi limiti.</p>'
         : '<p>Il conto Paper usa denaro finto: le chiavi Paper non danno accesso a denaro reale.</p>'}
@@ -229,7 +229,16 @@ export async function restoreKeys(st: A.ServerStatus): Promise<boolean> {
   if (!(await C.vaultUnlocked()) && !(await unlockForm(site ? `Le tue chiavi Alpaca ${names} sono salvate cifrate: per usarle su questo dispositivo serve la password del giocatore.` : `Una versione precedente del gioco ha salvato su Supabase una copia cifrata delle tue chiavi Alpaca ${names}: per riportarle su questo computer serve la password del giocatore.`))) return false;
   let done = 0;
   if (site) {
-    try { await K.migrateFromCloud(); } catch (e) { toast(`Copia delle chiavi su Supabase non spostata: ${(e as Error).message}`); }
+    // le chiavi Live di una versione precedente arrivano su questo dispositivo solo se il giocatore lo vuole
+    let only: A.Env[] = ['paper', 'live'];
+    if (legacy.includes('live') && !st.cloud && !(await K.keyEnvs()).includes('live')) {
+      await say(['Una versione precedente del gioco ha salvato su Supabase una copia cifrata delle tue chiavi Live, quelle del conto reale.', 'Da ora le chiavi restano solo sul dispositivo: se le porti qui, questo browser potrà operare con denaro vero. Fallo solo su un dispositivo tuo, aggiornato e senza estensioni di cui non ti fidi. In ogni caso la copia su Supabase viene cancellata.'], NURSE);
+      if ((await choose(['Porta le chiavi Live su questo dispositivo', 'No, cancella solo la copia'], { cancel: true, who: NURSE })) !== 0) {
+        only = ['paper'];
+        try { await C.removeAlpacaKeys('live'); } catch { /* resta lì, cifrata: verrà tolta al prossimo accesso */ }
+      }
+    }
+    try { await K.migrateFromCloud(only); } catch (e) { toast(`Copia delle chiavi su Supabase non spostata: ${(e as Error).message}`); }
     const now = await A.serverStatus();
     done = missing.filter((e) => now?.[e].configured).length;
     if (done) toast(`Chiavi Alpaca ${names} aperte su questo dispositivo.`);

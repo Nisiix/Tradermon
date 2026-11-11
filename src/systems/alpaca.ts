@@ -216,7 +216,8 @@ type KeysResult = { ok: boolean; account?: { status: string; currency: string };
 
 export async function setKeys(env: Env, keyId: string, secret: string): Promise<KeysResult> {
   if ((await transport()) !== 'local') {
-    if (!validKeys(keyId, secret)) throw new Error('Chiavi non valide');
+    // solo caratteri che possono stare in un'intestazione: una chiave incollata male non deve sembrare un blocco di rete
+    if (!validKeys(keyId, secret) || !/^[\x21-\x7e]+$/.test(secret)) throw new Error('Chiavi non valide');
     // la verifica è una lettura del conto fatta con le chiavi nuove; se Alpaca le rifiuta tornano quelle di prima
     const prev = mem[env];
     mem[env] = { keyId, secret };

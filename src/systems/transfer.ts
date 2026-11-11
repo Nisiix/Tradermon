@@ -9,6 +9,8 @@
 // legge, la importa e la cancella dalla barra degli indirizzi.
 
 const PREFIX = 'tradermon.';
+/** Chiavi Alpaca cifrate e scelte sul collegamento: restano sul dispositivo, non viaggiano in un link e un link non le può scrivere. */
+const DEVICE_ONLY = 'tradermon.alpaca.';
 const SAVE_KEY = 'tradermon.save.v1';
 export const BACKUP_KEY = 'tradermon.save.backup';
 const HASH = '#trasloco=';
@@ -19,7 +21,7 @@ export function collect(storage: Storage = localStorage): Bundle {
   const keys: Record<string, string> = {};
   for (let i = 0; i < storage.length; i++) {
     const k = storage.key(i);
-    if (k && k.startsWith(PREFIX) && k !== BACKUP_KEY) keys[k] = storage.getItem(k) ?? '';
+    if (k && k.startsWith(PREFIX) && !k.startsWith(DEVICE_ONLY) && k !== BACKUP_KEY) keys[k] = storage.getItem(k) ?? '';
   }
   return { v: 1, at: Date.now(), keys };
 }
@@ -87,7 +89,7 @@ export async function merge(b: Bundle, confirmReplace: (local: SaveInfo, incomin
     } else result = 'kept-local';
   }
   for (const [k, v] of Object.entries(b.keys)) {
-    if (k === SAVE_KEY || !k.startsWith(PREFIX) || k === BACKUP_KEY) continue;
+    if (k === SAVE_KEY || !k.startsWith(PREFIX) || k.startsWith(DEVICE_ONLY) || k === BACKUP_KEY) continue;
     if (storage.getItem(k) === null) storage.setItem(k, v);
   }
   return result;
