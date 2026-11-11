@@ -42,8 +42,19 @@ export function hasSave(): boolean {
   try { return !!localStorage.getItem(KEY); } catch { return false; }
 }
 
+// Il salvataggio vive solo in questo browser (localStorage, non sessionStorage): resta dopo la
+// chiusura della scheda e del browser, non viene mai inviato a un server e non è visibile da
+// altri dispositivi (per spostarlo si usa Esporta/Importa salvataggio).
+let persistAsked = false;
+function askPersistentStorage() {
+  if (persistAsked) return;
+  persistAsked = true;
+  // chiede al browser di non cancellare i dati del sito quando lo spazio scarseggia
+  try { void navigator.storage?.persist?.().catch(() => undefined); } catch { /* non supportato */ }
+}
+
 export function save(): boolean {
-  try { localStorage.setItem(KEY, JSON.stringify(S)); return true; } catch { return false; }
+  try { localStorage.setItem(KEY, JSON.stringify(S)); askPersistentStorage(); return true; } catch { return false; }
 }
 
 export function load(): SaveData | null {
