@@ -1,4 +1,4 @@
-import { getMap, type NpcDef } from './maps';
+import { getMap, townOf, type NpcDef } from './maps';
 import type { AssetClass, AssetDef, Question, Sector } from '../types';
 import { S, save, slots, addRep, card, learnBias, clampStat, advanceDays, level, TECH, hasTech, classes, LIVE_LIMITS, newGamePlus } from '../systems/state';
 import { say, choose, modal, toast, esc, wait } from '../ui/core';
@@ -72,7 +72,7 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
     case 'rival': return rival(n, w);
     case 'trainer': return trainer(n, w);
     case 'speculator': return speculator(n, w);
-    case 'student': return student(n);
+    case 'student': return student(n, w);
     case 'mentor': return mentorBattle(n.data?.n as number, w);
     case 'guard': return guard(n, w);
     case 'nurse': return openClinic(w.town());
@@ -224,7 +224,7 @@ async function rivalDuel(k: number, w: WorldApi) {
   const topics = trackTopics(S.track, S.mixedClasses, S.badges);
   const qs = pickQuestions(topics, 5, { maxDiff: k === 1 ? 1 : 3, preferReview: true });
   const r = await runDuel({ foeName: S.rival, foeTitle: 'Rivale', foePal: PAL.RIVAL, questions: qs, need: k === 1 ? 3 : 4, damage: 15 });
-  if (!r.win) { await say(['Ah! Te l\'avevo detto.', 'Ripassa un po\' e riprova.'], S.rival); return tiltCheck(w); }
+  if (!r.win) { await say(['Ah! Te l\'avevo detto.', 'Ripassa un po\' e riprova.'], S.rival); return defeatRespawn(w); }
   S.defeated.push(`rival_${k}`);
   addRep(40);
   beep('win');
@@ -275,7 +275,7 @@ async function trainer(n: NpcDef, w: WorldApi) {
     const rr = await runDuel({ foeName: n.name, foeTitle: 'Rivincita', foePal: n.pal, questions: rq, need: 2, damage: 12 });
     advanceDays(1);
     if (rr.win) { addRep(15); S.stats.xp += 20; track('rematch'); scheduleRematch(n.id); await say(['Battuto di nuovo! Ci rivediamo tra qualche giorno.', pick(TRAINER_TIPS)], n.name); }
-    else { await say('Stavolta ho vinto io! Torna quando vuoi.', n.name); scheduleRematch(n.id); await tiltCheck(w); }
+    else { await say('Stavolta ho vinto io! Torna quando vuoi.', n.name); scheduleRematch(n.id); await defeatRespawn(w); }
     w.refresh();
     return;
   }
@@ -294,18 +294,31 @@ async function afterDuel(win: boolean, id: string, rep: number, w: WorldApi, who
     await say(['Complimenti, sei preparato!', pick(TRAINER_TIPS)], who);
   } else {
     await say('Ah! Ripassa e riprova.', who);
-    await tiltCheck(w);
+    await defeatRespawn(w);
   }
   w.refresh();
 }
 
-async function tiltCheck(w: WorldApi) {
-  if (S.stats.fiducia > 0) return;
+/**
+ * Sconfitta in un duello: come nei classici, il giocatore si risveglia nella Clinica della città in cui si trova
+ * (sui Percorsi, nell'ultima Clinica visitata; a casa se non ne ha ancora visitata una) con la Fiducia al massimo.
+ */
+async function defeatRespawn(w: WorldApi) {
   beep('lose');
-  await say([`${S.name} ha perso tutta la Fiducia ed è andato in tilt!`, 'Torni di corsa all\'ultima Clinica visitata.'], 'Sistema');
-  S.stats.reputazione = Math.round(S.stats.reputazione * 0.95);
+  const tilt = S.stats.fiducia <= 0;
+  const town = townOf(S.map);
+  const dest = town !== undefined ? { map: `clinic_${town}`, x: 5, y: 4 } : S.lastClinic;
+  const atHome = !dest.map.startsWith('clinic_');
+  await say([
+    tilt ? `${S.name} ha perso tutta la Fiducia ed è andato in tilt!` : `${S.name} non è riuscito a rispondere alle domande e ha perso la sfida.`,
+    atHome ? 'Torni di corsa a casa per riprenderti.' : town !== undefined ? 'Torni di corsa alla Clinica della città per riprenderti.' : 'Torni di corsa all\'ultima Clinica visitata per riprenderti.',
+  ], 'Sistema');
+  if (tilt) S.stats.reputazione = Math.round(S.stats.reputazione * 0.95);
   S.stats.fiducia = 100;
-  w.warp(S.lastClinic.map, S.lastClinic.x, S.lastClinic.y, 0);
+  S.lastClinic = { ...dest };
+  w.warp(dest.map, dest.x, dest.y, atHome ? 0 : 1);
+  save();
+  if (!atHome) await say(['Ecco fatto: la tua Fiducia è tornata al massimo.', 'Ripassa con calma e ritenta la sfida quando vuoi!'], 'Dott.ssa Ratio');
 }
 
 async function speculator(n: NpcDef, w: WorldApi) {
@@ -319,7 +332,7 @@ async function speculator(n: NpcDef, w: WorldApi) {
     if (r.win) {
       S.defeated.push(n.id); addRep(150); clampStat('disciplina', 10);
       await say(['Impossibile... Le scorciatoie non funzionano con te.', `${ant.team} si ritira. Per ora.`], ant.boss);
-    } else await tiltCheck(w);
+    } else await defeatRespawn(w);
     w.refresh();
     return;
   }
@@ -344,7 +357,7 @@ export function allStudentsBeaten(m: number): boolean {
   return getMap(`academy_${m}`).npcs.filter((x) => x.kind === 'student').every((x) => S.defeated.includes(x.id));
 }
 
-async function student(n: NpcDef) {
+async function student(n: NpcDef, w: WorldApi) {
   const m = n.data?.n as number;
   if (S.defeated.includes(n.id)) return say(['Il Mentore è là in fondo. Buona fortuna!', pick(TRAINER_TIPS)], n.name);
   await say('Prima di arrivare al Mentore devi superare me!', n.name);
@@ -352,7 +365,7 @@ async function student(n: NpcDef) {
   const r = await runDuel({ foeName: n.name, foeTitle: 'Allievo dell\'Accademia', foePal: n.pal, questions: qs, need: 3, damage: 10 });
   advanceDays(1);
   if (r.win) { S.defeated.push(n.id); addRep(25); await say('Bravo! Sei pronto per il Mentore.', n.name); }
-  else await say('Studia in Biblioteca e torna!', n.name);
+  else { await say('Studia in Biblioteca e torna!', n.name); await defeatRespawn(w); }
 }
 
 // ---------------- Mentori ----------------
@@ -368,9 +381,9 @@ async function mentorBattle(m: number, w: WorldApi) {
     const ok = (await choose(['Sono pronto!', 'Non ancora'], { prompt: 'Iniziamo?' })) === 0;
     if (!ok) return;
     const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), 8, { minDiff: m >= 4 ? 2 : 1 });
-    const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m}`, foePal: md.palette, questions: qs, need: 6, damage: 15, intro: md.intro });
+    const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m}`, foePal: md.palette, questions: qs, need: 6, damage: 15, intro: md.intro, fixed: true });
     advanceDays(1);
-    if (!r.win) { await say('Non ancora. Ripassa e torna: ti aspetto.', md.name); return tiltCheck(w); }
+    if (!r.win) { await say('Non ancora. Ripassa e torna: ti aspetto.', md.name); return defeatRespawn(w); }
     S.flags[`m${m}_p1`] = true;
     S.flags[`m${m}_perfect`] = r.perfect;
     await say(['Ottimo duello! Ora la parte pratica.'], md.name);
@@ -597,8 +610,8 @@ async function league(i: number, w: WorldApi) {
   const topics = i < 4 ? LEAGUE_TOPICS[i] : trackTopics(S.track, S.mixedClasses, 8);
   const qs = pickQuestions(topics, i === 4 ? 12 : 10, { minDiff: 2 });
   if (!S.flags[`league_${i}_p1`]) {
-    const r = await runDuel({ foeName: L.name, foeTitle: L.title, foePal: L.palette, questions: qs, need: i === 4 ? 10 : 8, damage: 15 });
-    if (!r.win) { await say('Non sei ancora pronto. Torna dopo aver ripassato.', L.name); S.stats.fiducia = Math.max(S.stats.fiducia, 1); return tiltCheck(w); }
+    const r = await runDuel({ foeName: L.name, foeTitle: L.title, foePal: L.palette, questions: qs, need: i === 4 ? 10 : 8, damage: 15, fixed: true });
+    if (!r.win) { await say('Non sei ancora pronto. Torna dopo aver ripassato.', L.name); return defeatRespawn(w); }
     S.flags[`league_${i}_p1`] = true;
   }
   const res = await runMission(leagueMission(i));

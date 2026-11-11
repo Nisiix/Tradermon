@@ -26,6 +26,8 @@ export interface NpcDef {
 
 export interface Warp { x: number; y: number; to: string; tx: number; ty: number; dir?: 0 | 1 | 2 | 3; lock?: 'archive' | 'tower' | 'badge' }
 export interface Sign { x: number; y: number; text: string[] }
+/** Insegna sul muro frontale di un edificio pubblico: centrata sulla porta (x), appesa al bordo tra tetto e muro (y = riga del muro). */
+export interface Plaque { x: number; y: number; text: string; kind: 'clinic' | 'gym' | 'public' }
 
 export interface MapDef {
   id: string;
@@ -36,6 +38,8 @@ export interface MapDef {
   npcs: NpcDef[];
   warps: Warp[];
   signs: Sign[];
+  /** Insegne degli edifici speciali (le case normali non ne hanno). */
+  plaques?: Plaque[];
   interior: boolean;
   town?: number;
   route?: number;
@@ -58,6 +62,31 @@ function building(t: number[][], x: number, y: number, w: number, roofTile: numb
   const dx = x + Math.floor(w / 2);
   t[y + 3][dx] = TILE.DOOR;
   return { dx, dy: y + 3 };
+}
+
+/** Insegna per un edificio costruito con building(): b.dy è la riga della porta, il muro inizia una riga sopra. */
+function plaque(b: { dx: number; dy: number }, text: string, kind: Plaque['kind'] = 'public'): Plaque {
+  return { x: b.dx, y: b.dy - 1, text, kind };
+}
+
+/**
+ * Edifici con insegna: la fila alta del muro resta libera per l'insegna, quindi le finestre
+ * scendono nella fila bassa (quella della porta), alle stesse colonne, saltando la porta.
+ */
+function clearUnderPlaques(m: MapDef) {
+  const isWall = (v: number | undefined) => v === TILE.WALL || v === TILE.WINDOW;
+  for (const p of m.plaques ?? []) {
+    const up = m.tiles[p.y], low = m.tiles[p.y + 1];
+    if (!up || !low) continue;
+    let x0 = p.x, x1 = p.x;
+    while (isWall(up[x0 - 1])) x0--;
+    while (isWall(up[x1 + 1])) x1++;
+    for (let x = x0; x <= x1; x++) {
+      if (up[x] !== TILE.WINDOW) continue;
+      up[x] = TILE.WALL;
+      if (low[x] === TILE.WALL) low[x] = TILE.WINDOW;
+    }
+  }
 }
 
 function interior(id: string, name: string, w: number, h: number, back: string, bx: number, by: number): MapDef {
@@ -181,7 +210,9 @@ function buildHomeTown() {
       ...(t0House ? [t0House] : []),
     ],
     signs: [{ x: 11, y: 8, text: ['BORGO SEMINA', 'Dove ogni investitore pianta il primo seme.'] }],
+    plaques: [plaque(lab, 'LABORATORIO'), plaque(clinic, 'CLINICA', 'clinic')],
   };
+  clearUnderPlaques(m);
   MAPS.t0 = m;
 
   const hm = interior('home', 'Casa', 10, 8, 't0', home.dx, home.dy);
@@ -263,6 +294,7 @@ function buildTown(n: number) {
       ...houseWarps,
     ],
     signs: [{ x: 2, y: 8, text: [def.name.toUpperCase(), `Accademia di ${def.name}: Mentore n. ${n}.`] }],
+    plaques: [plaque(clinic, 'CLINICA', 'clinic'), plaque(lib, 'BIBLIOTECA'), plaque(acad, 'PALESTRA', 'gym')],
   };
   if (n === 3) m.npcs.push({ id: 't3_rival', x: 15, y: 10, pal: 5, dir: 2, name: 'Rivale', kind: 'rival', data: { n: 3 } });
   addClinic(n, clinic.dx, clinic.dy, id);
@@ -290,12 +322,14 @@ function buildTown(n: number) {
   if (special && def.special) {
     if (def.special === 'simzone') {
       m.warps.push({ x: special.dx, y: special.dy, to: 'simzone', tx: 5, ty: 7, dir: 1 });
+      m.plaques!.push(plaque(special, 'SIMULAZIONE'));
       const sz = interior('simzone', 'Zona Simulazione', 11, 9, id, special.dx, special.dy);
       rect(sz.tiles, 2, 2, 7, 1, TILE.PC);
       sz.npcs.push({ id: 'simop', x: 5, y: 4, pal: 11, dir: 0, name: 'Operatrice', kind: 'simop' });
       MAPS.simzone = sz;
     } else if (def.special === 'casino') {
       m.warps.push({ x: special.dx, y: special.dy, to: 'casino', tx: 5, ty: 7, dir: 1 });
+      m.plaques!.push(plaque(special, 'CASINÒ'));
       const cs = interior('casino', 'Casinò dello Speculatore', 11, 9, id, special.dx, special.dy);
       for (let y = 2; y < 8; y++) for (let x = 0; x < 11; x++) if (cs.tiles[y][x] === TILE.FLOOR) cs.tiles[y][x] = TILE.RUG;
       cs.tiles[8][5] = TILE.MAT;
@@ -304,12 +338,14 @@ function buildTown(n: number) {
       MAPS.casino = cs;
     } else if (def.special === 'archive') {
       m.warps.push({ x: special.dx, y: special.dy, to: 'archive', tx: 5, ty: 7, dir: 1, lock: 'archive' });
+      m.plaques!.push(plaque(special, 'ARCHIVIO'));
       const ar = interior('archive', 'Archivio di Bilancia', 11, 9, id, special.dx, special.dy);
       rect(ar.tiles, 1, 2, 9, 1, TILE.SHELF); rect(ar.tiles, 1, 4, 3, 1, TILE.SHELF); rect(ar.tiles, 7, 4, 3, 1, TILE.SHELF);
       ar.npcs.push({ id: 'archivist', x: 5, y: 3, pal: 8, dir: 0, name: 'Archivista', kind: 'archivist' });
       MAPS.archive = ar;
     }
   }
+  clearUnderPlaques(m);
   MAPS[id] = m;
 }
 
@@ -356,7 +392,9 @@ function buildLeagueTown() {
       { x: clinic.dx, y: clinic.dy, to: 'clinic_9', tx: 5, ty: 7, dir: 1 },
       { x: tower.dx, y: tower.dy, to: 'tower', tx: 5, ty: 7, dir: 1, lock: 'tower' },
     ],
-    signs: [] };
+    signs: [],
+    plaques: [plaque(league, 'LEGA'), plaque(clinic, 'CLINICA', 'clinic'), plaque(tower, 'TORRE')] };
+  clearUnderPlaques(m);
   MAPS.t9 = m;
   addClinic(9, clinic.dx, clinic.dy, 't9');
   const lg = interior('league', 'Lega degli Investitori', 15, 20, 't9', league.dx, league.dy);
@@ -424,6 +462,16 @@ function buildRoute(r: number) {
       { x: w - 1, y: 6, to: next, tx: 1, ty: next === 't9' ? 11 : 9, dir: 3 },
     ] };
   if (prev === 't0') MAPS[`r${r}`].warps[0].tx = 22;
+}
+
+/** Città a cui appartiene una mappa: le mappe interne risalgono all'esterno da cui si entra. I percorsi non hanno città. */
+export function townOf(id: string): number | undefined {
+  let m: MapDef | undefined = getMap(id);
+  for (let i = 0; m && i < 4; i++) {
+    if (!m.interior) return m.town;
+    m = m.warps[0] ? getMap(m.warps[0].to) : undefined;
+  }
+  return undefined;
 }
 
 export function allMapIds(): string[] {
