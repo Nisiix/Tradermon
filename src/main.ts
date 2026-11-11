@@ -19,6 +19,8 @@ import { initSettings, setPhase } from './ui/settings';
 import { safariNoticeOnce } from './ui/storageNotice';
 import { leaveIfMoved, receiveTransfer } from './systems/transfer';
 import { newGame, load, hasSave, importSave } from './systems/state';
+import { initMobile } from './ui/mobile';
+import { rendererType, guardRendering } from './systems/render';
 
 function pickFile(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -36,6 +38,7 @@ function pickFile(): Promise<string | null> {
 async function boot() {
   if (await leaveIfMoved()) return; // vecchio indirizzo: porta i dati al nuovo
   initUI();
+  initMobile();
   const moved = await receiveTransfer((local, inc) => new Promise((ok) => {
     let answer = false;
     void modal('Salvataggio trovato', ({ body, button, close }) => {
@@ -72,7 +75,8 @@ async function boot() {
   if (!controlsSeen()) await controlsTutorial();
   await safariNoticeOnce();
   const game = new Phaser.Game({
-    type: Phaser.AUTO,
+    // WebGL se possibile; Canvas 2D se su questo dispositivo WebGL ha già dato schermo nero
+    type: rendererType(),
     parent: 'game',
     // risoluzione interna 720×480 (tre volte la griglia logica 240×160): i pixel art vengono
     // smussati in fase di disegno (Scale3x) e il canvas è poi adattato allo schermo con filtro lineare
@@ -86,6 +90,7 @@ async function boot() {
     scene: [WorldScene],
   });
   (window as unknown as { __game: Phaser.Game }).__game = game;
+  game.events.once(Phaser.Core.Events.READY, () => guardRendering(game, 'world'));
 }
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

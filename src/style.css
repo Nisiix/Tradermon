@@ -12,8 +12,15 @@
   --bad: #d03838;
   --gold: #d8a000;
   --fs-scale: 1;
+  /* altezza utile reale (su telefono 100vh include la barra del browser) */
+  --vh: 100vh;
+  /* margini laterali riservati ai comandi touch sugli schermi bassi (vedi "Telefono in orizzontale") */
+  --gut: 0px;
+  /* larghezza dell'area di gioco (3:2) */
+  --stage-w: min(calc(100vw - 2 * var(--gut)), calc(var(--vh) * 3 / 2));
+  --fs-min: 14px;
   /* il testo cresce con lo schermo di gioco, senza mai scendere sotto una misura leggibile */
-  --fs: calc(clamp(14px, calc(min(100vw, 150vh) / 62), 22px) * var(--fs-scale));
+  --fs: calc(clamp(var(--fs-min), calc(var(--stage-w) / 62), 22px) * var(--fs-scale));
   --font-title: 'Press Start 2P', ui-monospace, 'Courier New', monospace;
   /* DotGothic16: carattere a pixel pulito e molto leggibile, simile ai testi delle console portatili */
   --font: 'DotGothic16', 'Pixelify Sans', ui-monospace, 'Courier New', monospace;
@@ -22,13 +29,14 @@
 .contrast { --panel: #ffffff; --panel-2: #f0f0f0; --ink: #000; --muted: #222; }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; overscroll-behavior: none; }
+@supports (height: 100dvh) { :root { --vh: 100dvh; } }
 body { font-family: var(--font-body); font-weight: 400; font-variant-ligatures: none; font-feature-settings: "liga" 0, "clig" 0, "calt" 0; letter-spacing: .01em; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-size: calc(var(--fs) * 1.2); line-height: 1.3; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
 #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-#game { position: relative; width: 100%; height: 100%; }
+#game { position: absolute; top: 0; bottom: 0; left: var(--gut); right: var(--gut); }
 #game canvas { image-rendering: auto; }
-#ui { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
-#stage { position: relative; pointer-events: none; width: min(100vw, calc(100vh * 3 / 2)); height: min(100vh, calc(100vw * 2 / 3)); }
+#ui { position: absolute; top: 0; bottom: 0; left: var(--gut); right: var(--gut); pointer-events: none; display: flex; align-items: center; justify-content: center; }
+#stage { position: relative; pointer-events: none; width: var(--stage-w); height: calc(var(--stage-w) * 2 / 3); }
 #stage:empty { display: none; }
 #stage > * { pointer-events: auto; }
 
@@ -168,7 +176,7 @@ body.touch-on .touch { display: flex; }
 
 .title-screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: #fff; overflow: hidden;
   background: #202858 center / cover no-repeat; image-rendering: pixelated; }
-.title-screen .opts .btn { font-size: 10px; }
+.title-screen .opts .btn { font-size: clamp(10px, calc(var(--fs) * .8), 14px); }
 .title-screen > * { position: relative; }
 .title-screen h1 { font-family: var(--font-title); font-size: clamp(26px, 7vw, 60px); margin: 0; color: #f8d040; text-shadow: 3px 3px 0 #c83830, 6px 6px 0 #301818; letter-spacing: 3px; -webkit-text-stroke: 1px #803010; animation: logo 1.2s steps(8) both; }
 @keyframes logo { from { transform: translateY(-60vh); } }
@@ -285,3 +293,108 @@ button, input, select, textarea { font-variant-ligatures: none; font-feature-set
 .region-svg .rg-here { animation: rg-pulse 1s ease-in-out infinite; }
 @keyframes rg-pulse { 50% { opacity: .35; } }
 .region-dest { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ======================================================================
+   Telefono in orizzontale e schermi bassi
+   ====================================================================== */
+body { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.touch button { touch-action: none; -webkit-user-select: none; user-select: none; }
+
+/* pannello "ruota il telefono": solo su schermi touch tenuti in verticale */
+.rotate-ov { display: none; position: fixed; inset: 0; z-index: 1000; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px;
+  background: #101830; color: #f8f8f8; text-align: center; font-family: var(--font); font-size: 18px; text-shadow: 1px 1px 0 #000; }
+.rotate-ov p { margin: 0; }
+.rotate-ov .small { color: #b8c8e8; }
+.rotate-ov .btn { margin-top: 10px; font-size: 14px; }
+.rot-phone { width: 46px; height: 80px; border: 4px solid #f8f8f8; border-radius: 9px; position: relative; margin-bottom: 12px; animation: rotphone 2.4s ease-in-out infinite; }
+.rot-phone i { position: absolute; left: 50%; bottom: 4px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #f8f8f8; }
+@keyframes rotphone { 0%, 20% { transform: rotate(0); } 50%, 80% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+@media (orientation: portrait) and (pointer: coarse), (orientation: portrait) and (hover: none) {
+  .rotate-ov { display: flex; }
+  #app { visibility: hidden; }
+}
+
+/* notch e bordi arrotondati in orizzontale */
+.touch { left: calc(10px + env(safe-area-inset-left)); right: calc(10px + env(safe-area-inset-right)); bottom: calc(10px + env(safe-area-inset-bottom)); }
+
+/* Schermi bassi (telefono in orizzontale, finestre piccole): testo più compatto, finestre a tutto schermo */
+@media (max-height: 540px) {
+  :root { --fs-min: 10.5px; }
+  /* con i comandi touch la mappa sta al centro e croce/pulsanti nei margini: niente si sovrappone */
+  body.touch-on { --pad: clamp(100px, 30vh, 132px); --gut: calc(var(--pad) + 14px + max(env(safe-area-inset-left), env(safe-area-inset-right))); }
+  body.touch-on .touch { left: calc(7px + env(safe-area-inset-left)); right: calc(7px + env(safe-area-inset-right)); bottom: calc(8px + env(safe-area-inset-bottom)); }
+  body.touch-on .touch .pad { width: var(--pad); height: var(--pad); }
+  body.touch-on .touch .pad button { width: calc(var(--pad) / 3); height: calc(var(--pad) / 3); }
+  body.touch-on .touch .pad button[data-k=up] { left: calc(var(--pad) / 3) !important; top: 0 !important; }
+  body.touch-on .touch .pad button[data-k=left] { left: 0 !important; top: calc(var(--pad) / 3) !important; }
+  body.touch-on .touch .pad button[data-k=right] { left: calc(var(--pad) * 2 / 3) !important; top: calc(var(--pad) / 3) !important; }
+  body.touch-on .touch .pad button[data-k=down] { left: calc(var(--pad) / 3) !important; top: calc(var(--pad) * 2 / 3) !important; }
+  /* A e B in diagonale, MENU sopra: tutto nella stessa colonna larga quanto la croce */
+  body.touch-on .touch .ab { display: block; width: var(--pad); height: calc(var(--pad) + 40px); }
+  body.touch-on .touch .ab button { position: absolute; width: calc(var(--pad) * .44); height: calc(var(--pad) * .44); margin: 0 !important; }
+  body.touch-on .touch .ab button[data-k=a] { right: 0; top: 40px; }
+  body.touch-on .touch .ab button[data-k=b] { left: 0; bottom: 0; }
+  body.touch-on .touch .ab button.menu-b { left: 0; top: 0; width: calc(var(--pad) * .5); height: 28px; border-radius: 14px; font-size: 9px; }
+  /* l'icona ⚙ va nell'angolo dello schermo, sopra i pulsanti */
+  .gear-btn { position: fixed; top: calc(6px + env(safe-area-inset-top)); right: calc(6px + env(safe-area-inset-right)); width: 34px; height: 34px; padding: 5px; }
+  body:not(.touch-on) .hud { right: 46px; }
+  body.touch-on .hud { right: 6px; }
+  .hud { font-size: calc(var(--fs) * 1.05); gap: 4px; left: 4px; top: 4px; }
+  .hud .pill { padding: 3px 6px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .locsign { top: 26px; padding: 5px 10px 4px; }
+  /* dialoghi e menu più compatti */
+  .dialog { left: 4px; right: 4px; bottom: 4px; min-height: 0; padding: 12px 14px 10px; font-size: calc(var(--fs) * 1.4); }
+  .dialog .who { top: -14px; padding: 3px 7px 2px; }
+  .menu { padding: 6px 6px; min-width: 150px; font-size: calc(var(--fs) * 1.3); }
+  .menu .opt { padding: 2px 10px 2px 22px; }
+  .menu .title { padding: 0 8px 4px; }
+  /* finestre, duelli e schermata del titolo usano tutto lo schermo del telefono (anche i margini) */
+  .modal-wrap, .battle, .title-screen, .bt-trans { position: fixed; }
+  .modal-wrap, .modal-wrap:not(.settings-wrap) { padding: 4px calc(46px + env(safe-area-inset-right)) 4px calc(4px + env(safe-area-inset-left)); }
+  .modal .head { padding: 5px 10px; }
+  .modal .head .btn { padding: 3px 8px; }
+  .modal .body { padding: 8px 10px; }
+  .modal .body p { margin: 6px 0; }
+  .modal .foot { padding: 6px 10px; gap: 6px; }
+  .btn { padding: 6px 10px 5px; }
+  .tutorial { padding: 4px; }
+  .tut-box { max-height: 100%; padding: 8px 10px; }
+  .tut-box h3 { margin: 4px 0; }
+  .toast { top: 8px; }
+  /* titolo */
+  .title-screen { gap: 6px; }
+  .title-screen h1 { font-size: clamp(22px, 10vh, 46px); }
+  .title-screen .opts { margin-top: 6px !important; gap: 6px !important; }
+  .title-screen .opts .btn { font-size: 12px; padding: 7px 10px 6px; }
+  /* le finestre a tutto schermo si usano toccandole: i comandi touch spariscono finché sono aperte */
+  body.has-modal .touch { visibility: hidden; }
+  input.tx, select.tx { font-size: calc(var(--fs) * 1.4); padding: 3px 6px; }
+  .title-screen .foot { bottom: 4px; font-size: 11px; }
+  /* duello: arena più bassa, domanda e risposte sempre visibili */
+  .battle .arena { min-height: 0; }
+  .battle .foe img.sprite { height: 24vh; }
+  .battle .me img.sprite { height: 30vh; margin-bottom: -8vh; }
+  .battle .foe::before { width: 130px; height: 30px; }
+  .battle .me::before { width: 140px; height: 32px; }
+  .battle .plate { padding: 4px 10px 3px; min-width: 170px; }
+  .battle .q { margin: 0 4px 4px; padding: 8px 12px; max-height: 70%; overflow-y: auto; }
+  .battle .qt { font-size: calc(var(--fs) * 1.3); }
+  .battle .opts { margin-top: 6px; gap: 4px; grid-template-columns: 1fr 1fr; }
+  .grid2 { grid-template-columns: 1fr 1fr; }
+  .battle .opts .btn { padding: 5px 8px 5px 22px; font-size: calc(var(--fs) * 1.2); }
+  .battle .exp p { margin: 4px 0 0; }
+  .intro-stage img { height: 34vh; margin-top: -30px; }
+  /* Macchina del Tempo */
+  .tm { grid-template-columns: 1fr minmax(180px, 38%); gap: 6px; }
+  .tm canvas { height: 30vh; }
+  .tm .assets { max-height: 34vh; }
+  .region-svg { max-height: 52vh; }
+  .cards { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+}
+/* sullo schermo basso una sola colonna nei layout stretti resta fino a 640px di larghezza di gioco */
+@media (max-height: 540px) and (max-width: 640px) {
+  .tm { grid-template-columns: 1fr; }
+}
+.touch .pad { touch-action: none; }
+.touch .pad button { pointer-events: none; }
+.touch .pad button.on { background: rgba(255,255,255,.55); }

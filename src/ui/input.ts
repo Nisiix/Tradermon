@@ -109,8 +109,38 @@ export function initTouch(root: HTMLElement) {
   // Su telefono i pulsanti A/B coprirebbero quelli delle finestre: mentre una finestra è aperta
   // si toccano direttamente i suoi pulsanti e i comandi touch diventano trasparenti.
   const stageEl = document.getElementById('stage');
-  if (stageEl) new MutationObserver(() => document.body.classList.toggle('has-modal', !!stageEl.querySelector('.modal-wrap, .battle'))).observe(stageEl, { childList: true });
-  wrap.querySelectorAll('button').forEach((b) => {
+  if (stageEl) new MutationObserver(() => document.body.classList.toggle('has-modal', !!stageEl.querySelector('.modal-wrap, .battle, .title-screen'))).observe(stageEl, { childList: true });
+  // Croce direzionale: si può far scivolare il pollice da una freccia all'altra senza staccarlo.
+  const pad = wrap.querySelector('.pad') as HTMLElement;
+  let padDir: Key | undefined;
+  let padPointer = -1;
+  const dirAt = (e: PointerEvent): Key | undefined => {
+    const r = pad.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    if (Math.hypot(dx, dy) < r.width * 0.12) return padDir; // zona morta al centro: resta la direzione attuale
+    return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+  };
+  const showDir = () => pad.querySelectorAll('button').forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.k === padDir));
+  const setDir = (k: Key | undefined) => {
+    if (k === padDir) return;
+    if (padDir) keyUp(padDir);
+    padDir = k;
+    if (k) { if (stack.length) press(k); else worldDown(k); }
+    showDir();
+  };
+  pad.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    padPointer = e.pointerId;
+    try { pad.setPointerCapture(e.pointerId); } catch { /* niente */ }
+    setDir(dirAt(e) ?? undefined);
+  });
+  pad.addEventListener('pointermove', (e) => { if (e.pointerId === padPointer) setDir(dirAt(e)); });
+  const padUp = (e: PointerEvent) => { if (e.pointerId !== padPointer) return; padPointer = -1; setDir(undefined); };
+  pad.addEventListener('pointerup', padUp);
+  pad.addEventListener('pointercancel', padUp);
+  pad.addEventListener('lostpointercapture', padUp);
+  pad.addEventListener('contextmenu', (e) => e.preventDefault());
+  wrap.querySelectorAll('.ab button').forEach((b) => {
     const k = (b as HTMLElement).dataset.k as Key;
     const down = (e: Event) => {
       e.preventDefault();

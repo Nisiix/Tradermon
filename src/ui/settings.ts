@@ -1,4 +1,5 @@
 // Pannello impostazioni ⚙ (in alto a destra, o tasto Impostazioni: Esc di default): comandi e touch, volume, ritorno alla home.
+import { fullscreenSupported, isFullscreen, enterFullscreen, exitFullscreen } from './mobile';
 import { modal, el, esc, getStage, toast } from './core';
 import { captureNextKey, onSettingsKey, press } from './input';
 import { controlsTutorial } from './tutorial';
@@ -54,6 +55,7 @@ export async function openSettings() {
         <div class="set-row vol-row"><div style="flex:1"><b>2. Volume</b> <span class="vol-val"></span>
           <div class="vol-ctl"><button class="btn vmin" aria-label="Abbassa">−</button><input class="vrange" type="range" min="0" max="100" step="5" aria-label="Volume generale"><button class="btn vplus" aria-label="Alza">+</button><button class="btn vmute"></button></div>
           <p class="small muted">Portalo a zero per togliere musica ed effetti. Il bilanciamento tra musica ed effetti è in Menu → Opzioni.</p></div></div>
+        ${fullscreenSupported() ? `<div class="set-row"><div><b>Schermo intero</b><p class="small muted">Nasconde le barre del browser; sul telefono blocca anche lo schermo in orizzontale.</p></div><button class="btn fs">${isFullscreen() ? 'Esci' : 'Attiva'}</button></div>` : ''}
         <div class="set-row"><div><b>3. Home</b><p class="small muted">Esci dal gioco e torna alla pagina principale di Tradermon.</p></div><button class="btn home">Torna alla home</button></div>`;
       const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
       let before = prefs.volume || 0.8;
@@ -70,6 +72,11 @@ export async function openSettings() {
       q('.vmute').addEventListener('click', () => setV(prefs.volume > 0 ? 0 : before));
       q('.ctl').addEventListener('click', () => close('controls'));
       q('.home').addEventListener('click', () => close('home'));
+      body.querySelector('.fs')?.addEventListener('click', async (e) => {
+        const b = e.currentTarget as HTMLButtonElement;
+        if (isFullscreen()) await exitFullscreen(); else await enterFullscreen();
+        b.textContent = isFullscreen() ? 'Esci' : 'Attiva';
+      });
       show();
       button('Chiudi', () => close(), 'primary');
     });
