@@ -243,6 +243,8 @@ export async function trade(guided = false): Promise<boolean> {
     button('Chiudi', () => close(), 'primary');
   }, { wide: true });
   save();
+  // una vendita in perdita può aver portato il conto a zero: il controllo si fa subito, sui dati appena aggiornati
+  await accountAlerts();
   return bought;
 }
 
@@ -352,7 +354,7 @@ async function records() {
     const h = pf.valueHistory;
     const tk = (id: string) => ASSET_BY_ID[id]?.ticker ?? id;
     body.innerHTML = `<canvas width="640" height="140" style="width:100%;height:140px;border:2px solid #1d1d2b;border-radius:4px;background:#fff"></canvas>
-      <p class="small">Costi didattici e interessi pagati: <b>${fmtMoney(pf.costs)}</b> · bancarotte: ${pf.bankruptcies}${pf.external.length ? ` · operazioni fuori dal gioco: ${pf.external.length}` : ''}</p>
+      <p class="small">Risultato realizzato dalle vendite (dentro e fuori dal gioco): <b class="${(pf.realized ?? 0) < 0 ? 'bad' : 'good'}">${(pf.realized ?? 0) < 0 ? '−' : '+'}${fmtMoney(Math.abs(pf.realized ?? 0))}</b> · costi didattici e interessi pagati: <b>${fmtMoney(pf.costs)}</b> · bancarotte: ${pf.bankruptcies}${pf.external.length ? ` · operazioni fuori dal gioco: ${pf.external.length}` : ''}</p>
       ${log.length ? `<table class="t"><tr><th>Giorno</th><th>Operazione</th><th class="n">Quote</th><th class="n">Prezzo $</th><th class="n">Costo $</th></tr>${log.slice(0, 100).map((l) => `<tr><td>${l.day}</td><td>${l.side === 'buy' ? 'Acquisto' : 'Vendita'} ${l.type} ${tk(l.asset)}</td><td class="n">${fmtQty(l.qty)}</td><td class="n">${fmtPx(l.price)}</td><td class="n">${l.fee.toFixed(2)}</td></tr>`).join('')}</table>` : '<p class="muted">Nessuna operazione.</p>'}
       ${pf.external.length ? `<p class="small muted">Fuori dal gioco: ${pf.external.slice(-5).map((e) => `${new Date(e.t).toLocaleDateString('it-IT')} ${e.asset ? tk(e.asset) + ' ' : ''}${e.note}`).join(' · ')}</p>` : ''}
       <p class="small muted">Prezzi di esecuzione reali del conto Alpaca Paper. Nota fiscale: con un broker estero come Alpaca chi risiede in Italia deve dichiarare conto e redditi del conto reale (quadri RW e RT). Il CSV è un aiuto per il tuo commercialista, non una consulenza fiscale.</p>`;

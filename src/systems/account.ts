@@ -38,7 +38,7 @@ export async function checkLink(force = false): Promise<Link> {
   if (!force && Date.now() - linkAt < 20_000) return link;
   const st = await A.serverStatus();
   linkAt = Date.now();
-  if (!st) link = { server: false, paper: false, live: false, reason: A.isLocalHost() ? 'Il server locale di Tradermon non risponde: avvialo con "npm start".' : 'Questa versione online non ha un server che custodisce le chiavi: il conto si collega giocando sul tuo computer.' };
+  if (!st) link = { server: false, paper: false, live: false, reason: A.isLocalHost() ? 'Il server locale di Tradermon non risponde: avvialo con "npm start".' : 'Dal sito il conto Paper si collega dopo essere entrati con il proprio giocatore: ricarica la pagina ed entra con nome e password.' };
   else link = { server: true, paper: st.paper.configured, live: st.live.configured, reason: st.paper.configured ? '' : 'Le chiavi del conto Alpaca Paper non sono collegate.' };
   return link;
 }
@@ -269,6 +269,8 @@ export function applyOrder(pf: Portfolio, p: PendingOrder, o: A.AlpacaOrder): { 
       if (pos) {
         atLoss = avg < pos.cost / Math.max(pos.qty, 1e-12);
         const q = Math.min(dq, pos.qty);
+        // risultato realizzato: ricavo vero (al netto del costo didattico) meno il prezzo di carico della parte venduta
+        pf.realized = (pf.realized ?? 0) + (dCost - cost) - pos.cost * (q / pos.qty);
         pos.cost *= 1 - q / pos.qty;
         pos.qty -= q;
         if (pos.qty < 1e-9) pf.positions = pf.positions.filter((x) => x !== pos);
@@ -447,8 +449,9 @@ export function sync(force = false): Promise<string[]> {
           if (/404|not found/i.test((e as Error).message)) { pf.pending = pf.pending.filter((x) => x !== p); notes.push(`Un ordine su ${ASSET_BY_ID[p.asset]?.ticker ?? p.asset} non esiste più su Alpaca: l'ho tolto dal registro.`); }
         }
       }
-      const [acc, real] = await Promise.all([A.account(ENV), A.positions(ENV)]);
-      notes.push(...reconcile(pf, acc, real));
+      // gli ordini chiusi servono solo a dare il prezzo vero alle vendite fatte fuori dal gioco: se mancano si prosegue
+      const [acc, real, closed] = await Promise.all([A.account(ENV), A.positions(ENV), A.closedOrders(ENV).catch(() => [] as A.AlpacaOrder[])]);
+      notes.push(...reconcile(pf, acc, real, closed));
       accrue(pf);
       const day = today();
       if (S.flags.vhDay !== day) {
@@ -482,7 +485,31 @@ function tagOf(acc: A.AlpacaAccount): string {
  * pagate in quantità) si correggono in silenzio; quelle grandi sono operazioni fatte fuori dal gioco e vengono
  * annotate al prezzo attuale. Se il conto è un altro (azzerato o sostituito) il registro riparte dal capitale.
  */
-export function reconcile(pf: Portfolio, acc: A.AlpacaAccount, real: A.AlpacaPosition[]): string[] {
+/**
+ * Prezzo medio a cui Alpaca ha eseguito le vendite NON partite da questa partita (dashboard di Alpaca, app, altri
+ * programmi) su un simbolo, dopo l'ultima riconciliazione. 0 se tra gli ordini chiusi non ce n'è nessuna.
+ */
+function externalSellPrice(asset: string, closed: A.AlpacaOrder[], since: number): number {
+  const sym = asset.replace('/', '');
+  const mine = `tm-${S.saveId}-`;
+  let qty = 0, total = 0;
+  for (const o of closed) {
+    if (o.side !== 'sell' || o.symbol.replace('/', '') !== sym || (o.client_order_id ?? '').startsWith(mine)) continue;
+    const q = Number(o.filled_qty ?? 0), px = Number(o.filled_avg_price ?? 0);
+    const at = Date.parse(o.filled_at ?? o.submitted_at ?? '') || 0;
+    if (!(q > 0) || !(px > 0) || at <= since) continue;
+    qty += q; total += q * px;
+  }
+  return qty > 0 ? total / qty : 0;
+}
+
+/**
+ * Allinea il registro alle posizioni vere. Una posizione che su Alpaca è più piccola del registro è stata venduta
+ * fuori dal gioco: la vendita entra nel registro al prezzo vero di esecuzione (letto dagli ordini chiusi di Alpaca,
+ * `closed`), il ricavo rimborsa prima il prestito e la perdita o il guadagno finiscono nel risultato realizzato.
+ * Se l'ordine non si trova vale il prezzo attuale. La bancarotta si controlla dopo, sui dati aggiornati.
+ */
+export function reconcile(pf: Portfolio, acc: A.AlpacaAccount, real: A.AlpacaPosition[], closed: A.AlpacaOrder[] = []): string[] {
   const notes: string[] = [];
   const tag = tagOf(acc);
   if (pf.accountTag && pf.accountTag !== tag) {
@@ -495,6 +522,7 @@ export function reconcile(pf: Portfolio, acc: A.AlpacaAccount, real: A.AlpacaPos
     }
   }
   pf.accountTag = tag;
+  const since = pf.reconAt ?? 0;
   const qtyOf = new Map(real.map((p) => [p.symbol, Number(p.qty)]));
   const busy = new Set(pf.pending.map((p) => p.asset));
   for (const pos of pf.positions.slice()) {
@@ -503,17 +531,25 @@ export function reconcile(pf: Portfolio, acc: A.AlpacaAccount, real: A.AlpacaPos
     if (pos.qty <= have * (1 + 1e-9) + 1e-12) continue;
     const diff = pos.qty - have;
     const rel = diff / pos.qty;
+    const basis = pos.cost * rel;
     pos.cost *= have / pos.qty;
     pos.qty = have;
     if (rel > 0.01) {
-      const px = S.market.prices[pos.id] ?? 0;
-      pf.cash += diff * px;
-      pf.external.push({ t: Date.now(), asset: pos.id, qty: diff, note: 'venduto fuori dal gioco' });
+      const fillPx = externalSellPrice(pos.id, closed, since);
+      const px = fillPx || (S.market.prices[pos.id] ?? 0);
+      let proceeds = diff * px;
+      const result = proceeds - basis;
+      pf.realized = (pf.realized ?? 0) + result;
+      if (pf.loan > 0) { const repay = Math.min(pf.loan, proceeds); pf.loan -= repay; proceeds -= repay; }
+      pf.cash += proceeds;
+      pf.external.push({ t: Date.now(), asset: pos.id, qty: diff, note: `venduto fuori dal gioco a ${fmtPx(px)} $` });
       if (pf.external.length > 50) pf.external.shift();
-      notes.push(`Su Alpaca mancano ${fmtQty(diff)} ${ASSET_BY_ID[pos.id]?.ticker ?? pos.id} rispetto al registro: li annoto come venduti fuori dal gioco, al prezzo attuale.`);
+      const tick = ASSET_BY_ID[pos.id]?.ticker ?? pos.id;
+      notes.push(`Su Alpaca mancano ${fmtQty(diff)} ${tick} rispetto al registro: li registro come venduti fuori dal gioco a ${fmtPx(px)} $ (${fillPx ? 'prezzo di esecuzione letto da Alpaca' : 'prezzo attuale: l\'ordine non è tra quelli chiusi'}), con ${result < 0 ? `una perdita realizzata di ${fmtMoney(-result)}` : `un guadagno realizzato di ${fmtMoney(result)}`}.`);
     }
     if (pos.qty < 1e-9) pf.positions = pf.positions.filter((x) => x !== pos);
   }
+  pf.reconAt = Date.now();
   return notes;
 }
 

@@ -44,40 +44,44 @@ export async function openAlpacaHub() {
     const licensed = S.license === 'investitore';
     const opts = [
       st.paper.configured ? `Conto Alpaca Paper (${st.paper.keyHint})` : 'Collega Alpaca Paper (chiavi)',
-      licensed ? (st.live.configured ? `Conto REALE (${st.live.keyHint})` : 'Collega conto REALE (chiavi Live)') : S.badges >= 1 ? 'Esame di Abilitazione (sblocca il conto reale)' : 'Conto reale: dopo il 1º Attestato',
+      st.cloud ? 'Conto reale: solo giocando sul tuo computer' : licensed ? (st.live.configured ? `Conto REALE (${st.live.keyHint})` : 'Collega conto REALE (chiavi Live)') : S.badges >= 1 ? 'Esame di Abilitazione (sblocca il conto reale)' : 'Conto reale: dopo il 1º Attestato',
       'Limiti e pausa di riflessione',
       'Scollega chiavi',
       'Come ottenere le chiavi',
       'Indietro',
     ];
-    const dis = [false, !licensed && S.badges < 1, !licensed, false, false, false];
+    const dis = [false, !st.cloud && !licensed && S.badges < 1, !licensed, false, false, false];
     const c = await choose(opts, { cancel: true, title: 'ALPACA', disabled: dis });
     if (c < 0 || c === 5) return;
     if (c === 0) {
       if (!st.paper.configured) { if (await keysForm('paper')) Object.assign(st, await A.serverStatus()); }
       else await accountScreen('paper');
     } else if (c === 1) {
+      if (st.cloud) { await say([A.LIVE_LOCAL_ONLY, 'Dal sito si opera sul conto Paper, con denaro finto: è quello della storia, delle Prove e dei Sigilli. Per il conto reale scarica il gioco e avvialo sul tuo computer: la Guida della pagina iniziale spiega come.'], NURSE); continue; }
       if (!licensed) { await licenseFlow(); continue; }
       if (S.liveLimits.pauseUntil > Date.now()) { await say(`Pausa di riflessione attiva fino al ${new Date(S.liveLimits.pauseUntil).toLocaleString('it-IT')}. Il conto reale è bloccato.`, NURSE); continue; }
       if (!st.live.configured) { if (await keysForm('live')) Object.assign(st, await A.serverStatus()); }
       else await accountScreen('live');
     } else if (c === 2) await limitsScreen();
     else if (c === 3) {
-      const e = await choose(['Scollega Paper', 'Scollega Reale', 'Annulla'], { cancel: true });
-      if (e === 0 || e === 1) {
+      const e = await choose(st.cloud ? ['Scollega Paper', 'Annulla'] : ['Scollega Paper', 'Scollega Reale', 'Annulla'], { cancel: true });
+      if (e === 0 || (e === 1 && !st.cloud)) {
         const env: A.Env = e === 0 ? 'paper' : 'live';
         await A.deleteKeys(env);
         let cloudMsg = '';
         if (cloudPlayer()) { try { await C.removeAlpacaKeys(env); cloudMsg = ' e da Supabase'; } catch { cloudMsg = ' (non da Supabase: riprova quando sei online)'; } }
         Object.assign(st, await A.serverStatus());
-        toast(`Chiavi rimosse dal server locale${cloudMsg}.`);
+        toast(st.cloud ? `Chiavi Paper rimosse da questo dispositivo${cloudMsg}.` : `Chiavi rimosse dal server locale${cloudMsg}.`);
       }
     } else if (c === 4) {
       await say([
         '1) Crea un account su alpaca.markets. Il conto Paper è gratuito e usa denaro finto.',
         '2) Nella dashboard Paper genera una coppia di chiavi API (Key ID e Secret).',
-        '3) Inseriscile qui: il gioco le manda al server locale, che le salva sul tuo computer e non le rimanda mai al browser.',
-        'Una copia viaggia anche su Supabase, cifrata nel browser con la password del tuo giocatore: sul server è illeggibile e ti permette di ritrovarle su un altro computer.',
+        ...(st.cloud
+          ? ['3) Inseriscile qui: il gioco le cifra nel browser con la password del tuo giocatore e salva su Supabase solo la copia cifrata, illeggibile anche per chi amministra il database.',
+            'Quando operi, il gioco apre la copia su questo dispositivo e manda le chiavi, su connessione cifrata, alla funzione di Tradermon su Supabase, che le usa per parlare con Alpaca e non le salva. Dal sito si collega solo il conto Paper.']
+          : ['3) Inseriscile qui: il gioco le manda al server locale, che le salva sul tuo computer e non le rimanda mai al browser.',
+            'Una copia viaggia anche su Supabase, cifrata nel browser con la password del tuo giocatore: sul server è illeggibile e ti permette di ritrovarle su un altro computer.']),
         '4) Il conto reale richiede la verifica d\'identità fatta da Alpaca, la Licenza di Investitore e chiavi Live separate.',
         'Non condividere mai le chiavi con nessuno: chi le ha può operare sul tuo conto.',
       ], NURSE);
@@ -131,8 +135,10 @@ export async function keysForm(env: A.Env): Promise<boolean> {
   const res = await modal<boolean>(env === 'live' ? 'Collega il conto REALE' : 'Collega Alpaca Paper', ({ body, button, close }) => {
     body.innerHTML = `
       <p>${env === 'live' ? '<b>Attenzione: queste chiavi operano con denaro reale.</b> ' : ''}Inserisci le chiavi API generate nella dashboard di Alpaca ${env === 'live' ? '(conto Live)' : '(conto Paper)'}.</p>
-      <p class="small">Le chiavi vengono inviate una sola volta al server locale di Tradermon in esecuzione sul tuo computer, che le verifica con Alpaca e le salva in <code>server/.secrets/keys.json</code>. Il gioco non le salva nel browser.</p>
-      ${cloudPlayer() ? '<p class="small">Una copia va anche su Supabase, <b>cifrata qui nel browser con la password del tuo giocatore</b> (AES-256): sul server è illeggibile, anche per chi amministra il database, e ti permette di ritrovarle su un altro computer.</p>' : ''}
+      ${A.cloudActive()
+        ? '<p class="small">Stai giocando dal sito: le chiavi vengono verificate con Alpaca attraverso la funzione di Tradermon su Supabase, che <b>non le salva</b>. Su Supabase resta solo una copia <b>cifrata qui nel browser con la password del tuo giocatore</b> (AES-256), illeggibile anche per chi amministra il database. Quando operi, il gioco la apre su questo dispositivo e manda le chiavi alla funzione a ogni richiesta, su connessione cifrata. Qui si collega solo il conto Paper, che usa denaro finto.</p>'
+        : `<p class="small">Le chiavi vengono inviate una sola volta al server locale di Tradermon in esecuzione sul tuo computer, che le verifica con Alpaca e le salva in <code>server/.secrets/keys.json</code>. Il gioco non le salva nel browser.</p>
+      ${cloudPlayer() ? '<p class="small">Una copia va anche su Supabase, <b>cifrata qui nel browser con la password del tuo giocatore</b> (AES-256): sul server è illeggibile, anche per chi amministra il database, e ti permette di ritrovarle su un altro computer.</p>' : ''}`}
       <label>Key ID<input class="tx kid" autocomplete="off" spellcheck="false"></label>
       <label style="display:block;margin-top:8px">Secret Key<input class="tx sec" type="password" autocomplete="off" spellcheck="false"></label>
       <p class="msg small"></p>`;
@@ -159,19 +165,24 @@ export async function keysForm(env: A.Env): Promise<boolean> {
 /** Copia cifrata delle chiavi su Supabase. Restituisce una nota per il giocatore ('' se tutto ok o senza giocatore). */
 async function keepCloudCopy(env: A.Env, keyId: string, secret: string): Promise<string> {
   if (!cloudPlayer()) return '';
-  if (!(await C.vaultUnlocked()) && !(await unlockForm('Per salvare una copia cifrata delle chiavi su Supabase serve la password del giocatore.'))) return 'Copia su Supabase non salvata: le chiavi restano solo sul server locale.';
+  // dal sito non c'è un server che le custodisce: senza la copia cifrata le chiavi valgono solo finché la pagina resta aperta
+  const only = A.cloudActive() ? 'le chiavi valgono solo finché questa pagina resta aperta, poi andranno inserite di nuovo.' : 'le chiavi restano solo sul server locale.';
+  if (!(await C.vaultUnlocked()) && !(await unlockForm('Per salvare una copia cifrata delle chiavi su Supabase serve la password del giocatore.'))) return `Copia su Supabase non salvata: ${only}`;
   try { await C.storeAlpacaKeys(env, { keyId, secret }); return 'Copia cifrata salvata su Supabase.'; }
-  catch (e) { return `Copia su Supabase non salvata: ${(e as Error).message}`; }
+  catch (e) { return `Copia su Supabase non salvata (${(e as Error).message}): ${only}`; }
 }
 
-/** Il server locale non ha le chiavi ma su Supabase c'è la copia cifrata: le riporta sul computer (per esempio su un PC nuovo). */
-async function restoreKeys(st: A.ServerStatus): Promise<boolean> {
+/**
+ * Su Supabase c'è la copia cifrata delle chiavi ma qui non sono pronte: in locale le riporta sul server del computer
+ * (per esempio su un PC nuovo); dal sito le apre in memoria per questa sessione (solo Paper).
+ */
+export async function restoreKeys(st: A.ServerStatus): Promise<boolean> {
   if (!cloudPlayer()) return false;
   const saved = await C.savedKeyEnvs();
-  const missing = saved.filter((e) => !st[e].configured);
+  const missing = saved.filter((e) => !st[e].configured && !(st.cloud && e === 'live'));
   if (!missing.length) return false;
   const names = missing.map((e) => (e === 'live' ? 'Live' : 'Paper')).join(' e ');
-  if (!(await C.vaultUnlocked()) && !(await unlockForm(`Su Supabase ci sono le tue chiavi Alpaca ${names}, ma questo computer non le ha ancora.`))) return false;
+  if (!(await C.vaultUnlocked()) && !(await unlockForm(st.cloud ? `Le tue chiavi Alpaca ${names} sono salvate cifrate su Supabase: per usarle su questo dispositivo serve la password del giocatore.` : `Su Supabase ci sono le tue chiavi Alpaca ${names}, ma questo computer non le ha ancora.`))) return false;
   let done = 0;
   for (const env of missing) {
     try {
@@ -179,7 +190,7 @@ async function restoreKeys(st: A.ServerStatus): Promise<boolean> {
       if (k) { await A.setKeys(env, k.keyId, k.secret); done++; }
     } catch (e) { toast(`Chiavi ${env === 'live' ? 'Live' : 'Paper'} non ripristinate: ${(e as Error).message}`); }
   }
-  if (done) toast(`Chiavi Alpaca ${names} ripristinate da Supabase sul server locale.`);
+  if (done) toast(st.cloud ? `Chiavi Alpaca ${names} aperte su questo dispositivo.` : `Chiavi Alpaca ${names} ripristinate da Supabase sul server locale.`);
   return done > 0;
 }
 

@@ -158,6 +158,9 @@ export async function mentorBattle(m: number, w: WorldApi) {
  * Parte pratica della Medaglia: la Prova sul conto, cioè l'esercizio di tappa fatto con ordini veri sul mercato di oggi.
  * I Mentori non propongono replay: i periodi del passato si rivivono solo nella Macchina del Tempo (Zona Simulazione).
  */
+/** Promemoria delle sfide sul conto: se con un titolo non ci si arriva, si può vendere e puntare su un altro. */
+export const SWITCH_LINE = 'Se con un titolo non riesci ad arrivare all\'obiettivo della prova puoi venderlo, anche solo in parte, da "Compra / Vendi" e puntare su un altro titolo. Una vendita in perdita però è una perdita vera sul conto di gioco.';
+
 async function sealChallenge(m: number, w: WorldApi) {
   const md = mentor(m, S.track);
   if (S.flags.bankrupt) return say(['Dopo la bancarotta la parte pratica di questa partita è chiusa.', 'Il tuo Attestato resta valido, e la strada è aperta.'], md.name);
@@ -177,6 +180,7 @@ async function sealChallenge(m: number, w: WorldApi) {
         `Prova sul conto, tappa ${m}: ${STAGE_TOOL[m].text}`,
         `In tutto servono ${Acc.exNeed(m).toFixed(0)} $ di acquisti sul tuo conto (finora ${ex.got.toFixed(0)} $). È il minimo: se vuoi investire di più, sei libero di farlo.`,
         'Sono ordini veri sul mercato di oggi: nessuno ti chiede un rendimento, si guarda il metodo. A mercato chiuso l\'ordine vale quando Alpaca lo accetta e si esegue all\'apertura.',
+        SWITCH_LINE,
       ];
     const c = await choose(['Opero adesso', 'Più tardi'], { cancel: true, prompt: lines.join(' '), who: md.name });
     if (c !== 0) return say('Si fa anche da qualsiasi Clinica: il Sigillo arriva da solo, non serve tornare qui.', md.name);
@@ -344,6 +348,7 @@ async function accountTrial(t: Trial, who: string): Promise<boolean> {
     const r = runTrial(t);
     const lines = r.checks.map((c) => `${c.ok ? '✓' : '✗'} ${c.label} (ora: ${c.now})`);
     if (r.ok) { await say(['Controllo il conto…', ...lines, 'Tutto in ordine.'], who); return true; }
+    lines.push(SWITCH_LINE);
     if (r.waiting) lines.push(`Hai ${r.waiting === 1 ? 'un acquisto' : `${r.waiting} acquisti`} in coda: per questa prova contano gli ordini eseguiti. A mercato chiuso torna dopo l'apertura.`);
     const c = await choose(['Opero adesso', 'Controlla di nuovo', 'Torno più tardi'], { cancel: true, prompt: lines.join(' · '), who });
     if (c === 0) { await trade(); continue; }

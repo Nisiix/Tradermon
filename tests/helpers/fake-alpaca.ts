@@ -4,7 +4,7 @@
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 
-export interface FakeOrder { id: string; client_order_id: string; symbol: string; side: string; type: string; qty: string | null; notional: string | null; status: string; limit_price: string | null; stop_price: string | null; submitted_at: string; filled_avg_price: string | null; filled_qty: string; time_in_force: string }
+export interface FakeOrder { id: string; client_order_id: string; symbol: string; side: string; type: string; qty: string | null; notional: string | null; status: string; limit_price: string | null; stop_price: string | null; submitted_at: string; filled_avg_price: string | null; filled_qty: string; time_in_force: string; filled_at?: string | null }
 
 export interface FakeAlpaca {
   url: string;
@@ -59,7 +59,7 @@ export async function startFakeAlpaca(): Promise<FakeAlpaca> {
     const qty = o.notional ? Number(o.notional) / px : Number(o.qty);
     if (o.side === 'buy') { st.cash -= qty * px; st.positions[key(o.symbol)] = (st.positions[key(o.symbol)] ?? 0) + qty; }
     else { st.cash += qty * px; st.positions[key(o.symbol)] = (st.positions[key(o.symbol)] ?? 0) - qty; if (st.positions[key(o.symbol)] < 1e-9) delete st.positions[key(o.symbol)]; }
-    o.status = 'filled'; o.filled_qty = String(qty); o.filled_avg_price = String(px);
+    o.status = 'filled'; o.filled_qty = String(qty); o.filled_avg_price = String(px); o.filled_at = new Date().toISOString();
   }
   const bySym = (k: string) => Object.keys(st.prices).find((s) => key(s) === k) ?? k;
   const posJson = (k: string) => { const px = st.prices[bySym(k)] ?? 0; const q = st.positions[k]; return { symbol: k, qty: String(q), market_value: String(q * px), unrealized_pl: '0', unrealized_plpc: '0', avg_entry_price: String(px), current_price: String(px), asset_class: k.endsWith('USD') ? 'crypto' : 'us_equity' }; };
@@ -105,7 +105,10 @@ export async function startFakeAlpaca(): Promise<FakeAlpaca> {
         if (req.method === 'DELETE') { if (o.status === 'new') o.status = 'canceled'; res.writeHead(204); return res.end(); }
         return send(200, o);
       }
-      if (p === '/orders') return send(200, [...st.orders.values()].filter((o) => o.status === 'new'));
+      if (p === '/orders') {
+        const want = u.searchParams.get('status') ?? 'open';
+        return send(200, [...st.orders.values()].filter((o) => want === 'all' || (want === 'closed' ? o.status !== 'new' : o.status === 'new')));
+      }
       return send(404, { message: 'not found' });
     });
   });

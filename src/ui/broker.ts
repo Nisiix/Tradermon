@@ -14,7 +14,7 @@ import { PAL } from '../art/art';
 import { shuffle } from '../systems/rng';
 import { say, choose, modal, toast } from './core';
 import { runDuel } from './battle';
-import { keysForm, openAlpacaHub } from './live';
+import { keysForm, openAlpacaHub, restoreKeys } from './live';
 
 const NURSE = 'Dott.ssa Ratio';
 const pctTxt = (x: number) => (x * 100).toFixed(2).replace('.', ',').replace(/,?0+$/, '') + '%';
@@ -25,11 +25,14 @@ const pctTxt = (x: number) => (x * 100).toFixed(2).replace('.', ',').replace(/,?
 export const GUIDE_LINES = [
   '1) Crea un account su alpaca.markets: per il conto Paper basta l\'email. È gratuito e usa denaro finto con prezzi veri.',
   '2) Nella dashboard, in modalità Paper, genera una coppia di chiavi API (Key ID e Secret) e inseriscile alla voce "Chiavi API" del menu.',
-  '3) Le chiavi restano sul server locale di Tradermon, sul tuo computer: il gioco non le rilegge e non le mostra mai.',
+  '3) Sul tuo computer le chiavi restano sul server locale di Tradermon: il gioco non le rilegge e non le mostra mai. Dal sito restano cifrate con la password del tuo giocatore.',
   'Il conto Paper è il conto di gioco: capitale fissato dalla difficoltà, Prove sul conto, Sigilli e Lega vivono lì.',
   'La Medaglia ha due metà. L\'ATTESTATO si vince con il duello di conoscenza del Mentore e apre la strada verso la città successiva. Il SIGILLO pratico si guadagna con la Prova sul conto: ordini veri sul mercato di oggi, dal conto Paper. Per entrare nella Lega servono tutti e otto i Sigilli.',
   'Ogni tappa chiede una quota MINIMA da investire: un importo fisso, calcolato sul capitale di partenza e non su quello che ti resta, più alto nelle difficoltà più dure. Sopra il minimo sei libero: puoi investire tutto il capitale fin dal primo giorno.',
-  'BANCAROTTA: quando il conto arriva a zero, in ogni difficoltà. Chi opera con metodo arriva alla Lega con capitale in tasca; quanti errori ti puoi permettere dipende dalla difficoltà.',
+  'BANCAROTTA: quando il conto arriva a zero, in ogni difficoltà. Ci si arriva con la leva oppure vendendo in perdita: finché tieni un titolo la perdita è sulla carta, quando lo vendi diventa vera. Chi opera con metodo arriva alla Lega con capitale in tasca; quanti errori ti puoi permettere dipende dalla difficoltà.',
+  'Le vendite fatte fuori dal gioco (per esempio dal sito di Alpaca) non sfuggono: alla sincronizzazione il gioco le registra al prezzo vero di esecuzione e aggiorna conto, perdite realizzate e controllo della bancarotta.',
+  'Se in una prova non riesci ad arrivare all\'obiettivo con un titolo puoi venderlo, anche solo in parte, e puntare su un altro. Nei mandati dei Boss la decisione di vendere annulla la sfida: si ripete da capo con un titolo diverso.',
+  'DOVE SI OPERA: dal sito gli ordini del conto Paper passano da Supabase (serve essere entrati con il proprio giocatore); le chiavi restano cifrate con la tua password e la funzione che parla con Alpaca non le salva. Il conto reale si usa solo giocando sul proprio computer.',
   'Gli ordini sono anche frazionati: scegli un importo in dollari e compri la frazione di titolo corrispondente, senza dover arrivare a una quota intera.',
   'Il conto reale (Live) è facoltativo e separato dalla storia: si collega dopo il primo Attestato e l\'Esame di Abilitazione, con chiavi Live distinte. Potrebbe non essere disponibile per tutti i Paesi: lo decide Alpaca in fase di verifica.',
   'Sul conto reale i PRELIEVI si possono sempre fare, dal sito di Alpaca. I DEPOSITI non passano mai dal gioco: Tradermon non sposta denaro e non ti chiederà mai di versarne.',
@@ -40,18 +43,21 @@ export const GUIDE_LINES = [
 
 /** Voce "Chiavi API" del menu: stato del collegamento, chiavi Paper e Live, guida. */
 export async function apiKeysMenu(): Promise<void> {
+  let askedUnlock = false;
   for (;;) {
     const link = await Acc.checkLink(true);
     if (!link.server) { await say([...A.noServerLines('collegare il conto Alpaca'), 'Guida completa: ' + guideUrl()], 'Chiavi API'); return; }
     const st = await A.serverStatus();
+    // dal sito le chiavi Paper salvate cifrate si aprono con la password del giocatore, senza reinserirle
+    if (st?.cloud && !st.paper.configured && !askedUnlock && (askedUnlock = true) && (await restoreKeys(st))) { await Acc.checkLink(true); (await Acc.sync(true)).forEach((n) => toast(n)); continue; }
     const opts = [
       st?.paper.configured ? `Conto Paper collegato (${st.paper.keyHint})` : 'Collega il conto Alpaca Paper',
-      S.license === 'investitore' ? (st?.live.configured ? `Conto reale collegato (${st.live.keyHint})` : 'Collega il conto reale (chiavi Live)') : 'Conto reale: dopo il 1º Attestato e l\'Esame',
+      st?.cloud ? 'Conto reale: solo giocando sul tuo computer' : S.license === 'investitore' ? (st?.live.configured ? `Conto reale collegato (${st.live.keyHint})` : 'Collega il conto reale (chiavi Live)') : 'Conto reale: dopo il 1º Attestato e l\'Esame',
       'Conto reale, limiti e scollegamento',
       'Guida: come ottenere le chiavi',
       'Indietro',
     ];
-    const c = await choose(opts, { cancel: true, title: 'CHIAVI API', disabled: [false, S.license !== 'investitore', false, false, false] });
+    const c = await choose(opts, { cancel: true, title: 'CHIAVI API', disabled: [false, !!st?.cloud || S.license !== 'investitore', false, false, false] });
     if (c < 0 || c === 4) return;
     if (c === 0) {
       if (st?.paper.configured) await say(['Il conto Paper è collegato: è il tuo conto di gioco.', 'Per cambiarlo scollega le chiavi da "Conto reale, limiti e scollegamento": il registro di gioco si riallinea al nuovo conto e riparte dal capitale iniziale.'], 'Chiavi API');
@@ -173,7 +179,7 @@ export function stageHtml(): string {
     <p class="small">Capitale ${fmtMoney(pf.initial)} (${D.name}) · puoi investire ancora ${fmtMoney(Acc.usableCash())} · patrimonio ${fmtMoney(eq)} · bancarotta se il conto arriva a zero.</p>
     ${ex.allDone ? '<p class="good">Tutte le Prove sul conto sono completate.</p>' : `<p class="small">${ex.open ? `<b>Prova in corso (${ex.stage === 0 ? 'Valigetta' : 'tappa ' + ex.stage}):</b> acquisti ${fmtMoney(ex.got)} su un minimo di ${fmtMoney(ex.need)} in totale${ex.toolOk ? '' : ' · manca: ' + ex.tool}` : `La prossima Prova si apre con l'Attestato del Mentore ${ex.stage}.`}</p>`}
     <table class="t"><tr><th>Tappa</th><th>Prova sul conto</th><th class="n">Acquisti minimi in totale</th><th></th></tr>${rows}</table>
-    <p class="small muted">${nextSealLine()} La quota di tappa è un minimo fisso (${fmtMoney(Acc.stageQuota())} per tappa in ${D.name}), calcolato sul capitale di partenza di ${fmtMoney(Acc.startCapital())} e non su quello che ti resta: sopra il minimo investi quanto vuoi.${!ex.allDone && ex.open && missing > Math.max(0, eq) ? ' Il tuo patrimonio è sotto la quota che manca: per la Prova contano gli acquisti fatti, quindi puoi arrivarci reinvestendo ciò che vendi.' : ''} Una Prova vale quando Alpaca accetta l'ordine, anche a mercato chiuso; se poi l'ordine viene annullato o scade senza essere eseguito, la Prova torna da fare.</p>`;
+    <p class="small muted">${nextSealLine()} La quota di tappa è un minimo fisso (${fmtMoney(Acc.stageQuota())} per tappa in ${D.name}), calcolato sul capitale di partenza di ${fmtMoney(Acc.startCapital())} e non su quello che ti resta: sopra il minimo investi quanto vuoi.${!ex.allDone && ex.open && missing > Math.max(0, eq) ? ' Il tuo patrimonio è sotto la quota che manca: per la Prova contano gli acquisti fatti, quindi puoi arrivarci reinvestendo ciò che vendi.' : ''}${!ex.allDone && ex.open ? ' Se con un titolo non riesci ad arrivare all\'obiettivo della Prova puoi venderlo, anche solo in parte, e puntare su un altro: per la quota contano gli acquisti fatti. Una vendita in perdita resta una perdita vera, e le perdite realizzate sono la strada che porta il conto verso lo zero.' : ''} Una Prova vale quando Alpaca accetta l'ordine, anche a mercato chiuso; se poi l'ordine viene annullato o scade senza essere eseguito, la Prova torna da fare.</p>`;
 }
 
 export async function stageScreen(): Promise<void> {

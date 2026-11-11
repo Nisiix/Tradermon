@@ -108,6 +108,8 @@
       <article class="dex" id="g-bancarotta">
         <header><span class="num">#05</span><h3>Bancarotta</h3></header>
         <p>È bancarotta quando il conto arriva a <b>zero</b>, in ogni difficoltà. Le quote di tappa sono importi fissi, calcolati sul capitale di partenza e non su quello che ti resta: se perdi, pesano di più. Chi opera con metodo arriva alla Lega con capitale in tasca; quanti errori ti puoi permettere dipende dalla difficoltà. Cosa succede dopo lo dice la tabella del conto di gioco.</p>
+        <p>Al conto a zero si arriva in due modi: usando la <b>leva</b>, oppure <b>vendendo in perdita</b>. Finché tieni un titolo la perdita è sulla carta; quando lo vendi diventa vera e il capitale non torna. Vale per le vendite fatte nel gioco e per quelle fatte fuori, per esempio dal sito di Alpaca: alla sincronizzazione successiva il gioco se ne accorge, le registra al prezzo vero di esecuzione e aggiorna conto, perdite realizzate e controllo della bancarotta.</p>
+        <p>Se in una prova sul conto non riesci ad arrivare all'obiettivo con un titolo, puoi venderlo, anche solo in parte, e puntare su un altro.</p>
       </article>
 
       <article class="dex" id="g-lega">
@@ -119,7 +121,8 @@
 
       <article class="dex" id="g-dopo">
         <header><span class="num">#07</span><h3>Dopo la Lega</h3></header>
-        <p>Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati. La <b>Nuova Partita+</b> riparte da zero (conto, Attestati e Sigilli si riguadagnano) conservando solo i trofei, e sblocca la difficoltà <b>Leggenda</b>.</p>
+        <p>Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati. Con un Boss presenti un piano su un titolo vero: ingresso, stop e obiettivo. Se vedi che l'obiettivo non arriva puoi <b>vendere prima della scadenza</b>, anche solo una parte: la decisione di vendere annulla la sfida, che si ripete da capo con un titolo diverso. Non conta come sconfitta.</p>
+        <p>La <b>Nuova Partita+</b> riparte da zero (conto, Attestati e Sigilli si riguadagnano) conservando solo i trofei, e sblocca la difficoltà <b>Leggenda</b>.</p>
       </article>
 
       <article class="dex" id="g-alpaca">
@@ -127,22 +130,25 @@
         <ol>
           <li>Crea un account su <a href="https://alpaca.markets" target="_blank" rel="noopener">alpaca.markets</a>: per il conto Paper basta l'email.</li>
           <li>Nella dashboard, in modalità <b>Paper</b>, genera una coppia di chiavi API (Key ID e Secret).</li>
-          <li>Avvia Tradermon sul tuo computer (vedi <a href="#g-locale">Dove funziona la parte pratica</a>), apri il menu del gioco, voce <b>Chiavi API</b>, e inseriscile. Restano sul server locale di Tradermon, sul tuo computer; il gioco non le mostra più.</li>
+          <li>Apri il menu del gioco, voce <b>Chiavi API</b>, e inseriscile.</li>
         </ol>
+        <p><b>Se giochi da questo sito</b>, le chiavi Paper vengono cifrate nel tuo browser con la password del giocatore e su Supabase resta solo la copia cifrata, illeggibile anche per chi amministra il database. Quando operi, il gioco la apre sul tuo dispositivo e manda le chiavi, su connessione cifrata, alla funzione di Tradermon su Supabase: questa le usa per parlare con Alpaca e non le salva.</p>
+        <p><b>Se giochi sul tuo computer</b>, le chiavi restano sul server locale di Tradermon e il gioco non le mostra più.</p>
       </article>
 
       <article class="dex key" id="g-locale">
         <header><span class="num">#09</span><h3>Dove funziona la parte pratica</h3></header>
-        <p>Le chiavi Alpaca non possono stare in una pagina web pubblica, quindi gli ordini passano da un piccolo server che gira sul tuo computer.</p>
+        <p>Gli ordini non partono mai direttamente dalla pagina verso Alpaca: passano sempre da un intermediario di Tradermon che applica le regole del gioco (niente vendite allo scoperto, acquisti entro la liquidità).</p>
         <ul>
-          <li><b>Su questo sito</b> puoi giocare, studiare e vincere gli Attestati. Le prove sul conto e la Lega qui restano chiuse.</li>
-          <li><b>Sul tuo computer</b> funziona tutto: scarica il progetto da <a href="https://github.com/Nisiix/Tradermon" target="_blank" rel="noopener">GitHub</a>, installa <a href="https://nodejs.org" target="_blank" rel="noopener">Node.js</a> 20 o più recente, poi nella cartella esegui <code>npm install</code>, <code>npm run build</code> e <code>npm start</code>, e apri l'indirizzo che compare.</li>
+          <li><b>Su questo sito</b> funziona tutta la storia: studio, Attestati, prove sul conto, Sigilli, Lega e Boss. Serve essere entrati con il proprio giocatore e aver collegato il conto <b>Paper</b>. Gli ordini passano da Supabase. Il conto reale qui non c'è.</li>
+          <li><b>Sul tuo computer</b> funziona tutto, anche il conto reale: scarica il progetto da <a href="https://github.com/Nisiix/Tradermon" target="_blank" rel="noopener">GitHub</a>, installa <a href="https://nodejs.org" target="_blank" rel="noopener">Node.js</a> 20 o più recente, poi nella cartella esegui <code>npm install</code>, <code>npm run build</code> e <code>npm start</code>, e apri l'indirizzo che compare.</li>
         </ul>
       </article>
 
       <article class="dex" id="g-reale">
         <header><span class="num">#10</span><h3>Conto reale (facoltativo)</h3></header>
         <ul>
+          <li>Si usa <b>solo giocando sul tuo computer</b>: le chiavi Live restano sul server locale e non passano mai dal sito.</li>
           <li>Si collega dopo il primo Attestato e l'Esame di Abilitazione, con chiavi <b>Live</b> distinte. È fuori dalla storia: nessun premio di gioco dipende dal denaro vero. Potrebbe non essere disponibile in tutti i Paesi: lo decide Alpaca.</li>
           <li><b>I prelievi si possono sempre fare</b>, dal sito di Alpaca. <b>I depositi non passano mai dal gioco</b>: Tradermon non sposta denaro e non ti chiederà mai di versarne.</li>
           <li>Ogni ordine reale chiede una conferma scritta e rispetta i tuoi limiti per ordine e per mese.</li>

@@ -2,7 +2,7 @@ import type { BossRun } from '../types';
 // Boss dei Mercati: interfaccia della sfida (regole e punteggi in systems/boss.ts).
 import * as A from '../systems/alpaca';
 import { S, save } from '../systems/state';
-import { BOSSES, BOSS_RULES, type BossDef, planError, planScore, outcome, quizPoints, bossWon } from '../systems/boss';
+import { BOSSES, BOSS_RULES, type BossDef, planError, planScore, outcome, quizPoints, bossWon, sellOut, planPool, endRun } from '../systems/boss';
 import { ASSET_BY_ID, unlockedAssets } from '../data/assets';
 import { pickQuestions } from '../systems/quiz';
 import { fmtPx, fmtPct } from '../systems/portfolio';
@@ -36,7 +36,8 @@ export async function bossMenu(): Promise<void> {
     if (c === BOSSES.length) {
       await say([
         'Ogni Boss si affronta in due tempi: un quiz di livello esperto, poi UNA sola decisione su un grafico vero. Ingresso al prezzo del momento, uno stop, un obiettivo, quanto rischi.',
-        'Il piano non si tocca più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata. I tre Boss si possono sfidare insieme: ognuno ha il suo mandato.',
+        'Stop e obiettivo non si toccano più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata. I tre Boss si possono sfidare insieme: ognuno ha il suo mandato.',
+        'Se vedi che l\'obiettivo non arriva puoi decidere di vendere prima della scadenza e puntare su un altro titolo. La vendita può essere anche parziale, ma decidere di vendere annulla la sfida: la ripeti da capo, quiz compreso, scegliendo un titolo diverso. Non conta come sconfitta.',
         `Il Boss ha ${BOSS_RULES.energy} punti di energia: fino a ${BOSS_RULES.quizMax} li toglie il quiz, fino a ${BOSS_RULES.planMax} la qualità del piano, fino a ${BOSS_RULES.outcomeMax} l'esito reale. Ne servono ${BOSS_RULES.win}.`,
         'Quiz e piano perfetti bastano da soli: l\'esito non lo controlla nessuno, quindi non può essere l\'unica strada. Se perdi, si rifà tutto il Boss, quiz compreso.',
         'Nessun ordine viene inviato: è un mandato su carta, valutato sui prezzi reali.',
@@ -48,7 +49,8 @@ export async function bossMenu(): Promise<void> {
 }
 
 function lose(def: BossDef, lines: string[]): Promise<void> {
-  delete runs()[def.id];
+  runs();
+  endRun(S.boss, def.id);
   S.boss.tries[def.id] = (S.boss.tries[def.id] ?? 0) + 1;
   save();
   beep('lose');
@@ -97,9 +99,14 @@ async function planForm(def: BossDef): Promise<void> {
     }
   }
   pool = pool.filter((a) => a.sector !== 'stable');
+  // dopo una vendita la sfida si ripete con un titolo diverso
+  const sold = S.boss.barred?.[def.id];
+  pool = planPool(pool, S.boss, def.id);
+  if (!pool.length) { await say('In questo momento non ci sono altri titoli tra cui scegliere per questo mandato. Il tuo quiz resta valido: torna più tardi.', def.name); return; }
   const res = await modal<{ asset: string; stop: number; target: number; risk: number } | null>(`${def.name} · il piano`, ({ body, button, close }) => {
     body.innerHTML = `
-      <p class="small">Una sola decisione, su un grafico vero: compri al prezzo del momento, fissi lo stop e l'obiettivo, decidi quanto rischi. Durata del mandato: <b>${def.durationLabel}</b>. Dopo l'invio non si cambia nulla.</p>
+      <p class="small">Una sola decisione, su un grafico vero: compri al prezzo del momento, fissi lo stop e l'obiettivo, decidi quanto rischi. Durata del mandato: <b>${def.durationLabel}</b>. Dopo l'invio stop e obiettivo non si cambiano.</p>
+      <p class="small">Se l'obiettivo non arriva puoi vendere prima della scadenza e puntare su un altro titolo: anche una vendita parziale annulla la sfida, che si ripete da capo con un titolo diverso.${sold ? ` Hai venduto <b>${esc(ASSET_BY_ID[sold]?.ticker ?? sold)}</b> nell'ultimo mandato: questa volta scegli un altro titolo.` : ''}</p>
       <label>Titolo <select class="tx as">${pool.map((a) => `<option value="${esc(a.id)}">${esc(a.ticker)} · ${esc(a.name)}</option>`).join('')}</select></label>
       <p class="px small muted">Prezzo: …</p>
       <div class="grid2">
@@ -153,10 +160,24 @@ async function planForm(def: BossDef): Promise<void> {
       body.innerHTML = `<p>Ingresso <b>${fmtPx(plan.entry)} $</b> su ${esc(ASSET_BY_ID[plan.asset].ticker)} · stop ${fmtPx(plan.stop)} · obiettivo ${fmtPx(plan.target)} · rischio ${(plan.risk * 100).toFixed(1)}%.</p>
         <p><b>Qualità del piano: ${sc.points}/${BOSS_RULES.planMax}</b> <span class="small muted">(giudicata adesso, prima di sapere come va)</span></p>
         <ul class="small">${sc.notes.map((n) => `<li class="${n.ok ? 'good' : 'bad'}">${esc(n.text)}</li>`).join('')}</ul>
-        <p class="small">Scadenza: <b>${when(plan.deadline)}</b>. Torna alla Torre dopo quell'ora (i dati arrivano con un quarto d'ora di ritardo). Nel frattempo puoi chiudere il gioco.</p>`;
+        <p class="small">Scadenza: <b>${when(plan.deadline)}</b>. Torna alla Torre dopo quell'ora (i dati arrivano con un quarto d'ora di ritardo). Nel frattempo puoi chiudere il gioco.</p>
+        <p class="small">Se l'obiettivo non arriva, torna da me prima della scadenza: puoi vendere e ripetere la sfida con un altro titolo.</p>`;
       button('Ok', () => close(), 'primary');
     });
   } catch (e) { await say(`Non riesco a registrare il piano: ${(e as Error).message}`, KEEPER); }
+}
+
+/** Vendere prima della scadenza: la sfida è annullata e si ripete da capo con un titolo diverso. */
+async function sellMandate(def: BossDef): Promise<void> {
+  const p = runs()[def.id]?.plan;
+  if (!p) return;
+  const tick = ASSET_BY_ID[p.asset]?.ticker ?? p.asset;
+  const c = await choose(['Vendo tutto', 'Vendo una parte', 'Tengo il piano'], { cancel: true, who: def.name, prompt: `Se pensi che ${tick} non arriverà all'obiettivo puoi vendere e puntare su un altro titolo. Vendere, anche solo una parte, annulla la sfida: la ripeti da capo, quiz compreso, con un titolo diverso da ${tick}.` });
+  if (c !== 0 && c !== 1) return;
+  if (!sellOut(S.boss, def.id)) return;
+  save();
+  beep('bad');
+  await say([`Hai deciso di vendere ${c === 1 ? 'una parte di ' : ''}${tick}: il mandato è chiuso e la sfida è annullata. Non conta come sconfitta.`, `Quando vuoi riprovare si ricomincia dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.`], def.name);
 }
 
 async function resolve(def: BossDef): Promise<void> {
@@ -165,8 +186,9 @@ async function resolve(def: BossDef): Promise<void> {
   const a = ASSET_BY_ID[p.asset];
   const ready = p.deadline + BOSS_RULES.evalDelayMs;
   if (Date.now() < ready) {
-    const c = await choose(['Guardo il grafico', 'Torno più tardi'], { cancel: true, who: def.name, prompt: `Il tuo piano su ${a?.ticker ?? p.asset} è in corso: ingresso ${fmtPx(p.entry)}, stop ${fmtPx(p.stop)}, obiettivo ${fmtPx(p.target)}. Si chiude il ${when(p.deadline)}; l'esito si legge dal ${when(ready)}.` });
+    const c = await choose(['Guardo il grafico', 'Vendo e cambio titolo', 'Torno più tardi'], { cancel: true, who: def.name, prompt: `Il tuo piano su ${a?.ticker ?? p.asset} è in corso: ingresso ${fmtPx(p.entry)}, stop ${fmtPx(p.stop)}, obiettivo ${fmtPx(p.target)}. Si chiude il ${when(p.deadline)}; l'esito si legge dal ${when(ready)}.` });
     if (c === 0) await realChart(p.asset, { price: p.entry, label: 'ingresso' });
+    else if (c === 1) await sellMandate(def);
     return;
   }
   let bars: A.Bar[];
@@ -194,7 +216,7 @@ async function resolve(def: BossDef): Promise<void> {
     button('Continua', () => close(), 'primary');
   }, { closable: false });
   if (!won) return lose(def, ['Non è bastato.']);
-  delete runs()[def.id];
+  endRun(S.boss, def.id);
   const first = !S.boss.beaten.includes(def.id);
   if (first) { S.boss.beaten.push(def.id); reward({ rep: REWARD.rep.boss, xp: REWARD.xp.legend, save: false }); }
   save();

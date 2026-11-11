@@ -4,7 +4,7 @@
 // Quiz e piano fatti bene bastano da soli: l'esito è reale, quindi non è mai l'unica via per vincere.
 // Alla sconfitta si rifà tutto il boss, quiz compreso. Nessun ordine viene inviato: il piano è un mandato
 // valutato sulle barre reali di Alpaca.
-import type { BossPlan, QuizTopic } from '../types';
+import type { BossPlan, BossState, QuizTopic } from '../types';
 import type { BarTimeframe } from './alpaca';
 
 export interface BossDef {
@@ -102,4 +102,32 @@ export function quizPoints(correct: number, total: number): number {
 
 export function bossWon(quiz: number, plan: number, out: number): boolean {
   return quiz + plan + out >= BOSS_RULES.win;
+}
+
+// ---------------- Vendere durante il mandato ----------------
+// Se l'obiettivo non arriva il giocatore può decidere di vendere prima della scadenza. La vendita può anche essere
+// parziale, ma la decisione di vendere annulla la sfida: si ripete da capo (quiz compreso) con un titolo diverso.
+// Non conta come sconfitta.
+
+/** Annulla la sfida in corso con quel Boss perché il giocatore vende. Restituisce il titolo venduto, o null se non c'è un piano in corso. */
+export function sellOut(boss: BossState, id: string): string | null {
+  const run = boss.runs?.[id];
+  if (!run?.plan) return null;
+  const asset = run.plan.asset;
+  (boss.barred ??= {})[id] = asset;
+  delete boss.runs![id];
+  return asset;
+}
+
+/** Titoli tra cui scegliere per il piano: senza quello venduto nell'ultimo mandato annullato con questo Boss. */
+export function planPool<T extends { id: string }>(pool: T[], boss: BossState, id: string): T[] {
+  const out = boss.barred?.[id];
+  return out ? pool.filter((a) => a.id !== out) : pool;
+}
+
+/** Chiude la sfida (vinta o persa). Se un piano era stato presentato, il titolo escluso torna disponibile. */
+export function endRun(boss: BossState, id: string): void {
+  const run = boss.runs?.[id];
+  if (run?.plan && boss.barred) delete boss.barred[id];
+  if (boss.runs) delete boss.runs[id];
 }

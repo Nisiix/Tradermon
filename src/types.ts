@@ -168,6 +168,10 @@ export interface Portfolio {
   accountTag: string;
   /** Operazioni fatte fuori dal gioco e scoperte dalla riconciliazione. */
   external: { t: number; asset: string; qty: number; note: string }[];
+  /** Risultato realizzato dalle vendite (dentro e fuori dal gioco), ai prezzi veri di esecuzione: negativo = perdite. */
+  realized?: number;
+  /** Momento dell'ultima riconciliazione con Alpaca: le vendite esterne più vecchie sono già nel registro. */
+  reconAt?: number;
 }
 
 export interface CardState {
@@ -284,7 +288,8 @@ export interface BossPlan {
 }
 export interface BossRun { id: string; quiz: number; quizMax: number; plan: BossPlan | null; startedAt: number }
 /** `runs`: sfide in corso, una per Boss (i mandati corrono in parallelo). `run` resta per i salvataggi precedenti. */
-export interface BossState { run: BossRun | null; runs?: Record<string, BossRun>; beaten: string[]; tries: Record<string, number> }
+/** `barred`: per ogni Boss, il titolo venduto durante l'ultimo mandato (la sfida annullata si ripete con un titolo diverso). */
+export interface BossState { run: BossRun | null; runs?: Record<string, BossRun>; beaten: string[]; tries: Record<string, number>; barred?: Record<string, string> }
 
 export interface AgendaTask { id: string; ev: string; need: number; got: number; done: boolean }
 
