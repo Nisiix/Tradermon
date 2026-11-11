@@ -143,6 +143,7 @@ a { color: var(--accent); }
 .battle .timer { font-family: var(--font); font-size: calc(var(--fs) * 1); color: #f8d850; }
 .battle .herd { font-family: var(--font); font-size: calc(var(--fs) * .9); color: var(--bad); margin-left: 6px; }
 .battle .exp p { margin: 8px 0 0; }
+.battle .exp p.hint { font-size: .9em; opacity: .85; }
 .shake { animation: shake .3s steps(4); }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 

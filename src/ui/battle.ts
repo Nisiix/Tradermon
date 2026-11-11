@@ -10,6 +10,7 @@ import { portrait, portraitBack, playerPal } from '../art/art';
 import { beep } from '../systems/audio';
 import { markDuelDone } from './savebtn';
 import { FIDUCIA_PER_CORRECT } from '../systems/balance';
+import { studyHint } from '../data/quiz/hint';
 
 export interface DuelOpts {
   foeName: string;
@@ -137,7 +138,8 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         $('.fv').textContent = String(S.stats.fiducia);
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
         const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(q.options[q.answer])}`;
-        $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}</p>`;
+        const hint = ok ? '' : studyHint(q);
+        $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
         const cont = el('button', 'btn primary', 'Continua ▶');
         cont.style.marginTop = '6px';
         $('.exp').appendChild(cont);
