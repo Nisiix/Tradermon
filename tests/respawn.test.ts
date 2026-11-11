@@ -38,8 +38,19 @@ describe('insegne degli edifici', () => {
     expect(getMap('t0').plaques!.map((p) => p.text)).toContain('CLINICA');
     expect(getMap('t9').plaques!.map((p) => p.text)).toContain('CLINICA');
   });
-  it('sotto l\'insegna non c\'è la finestra centrale', () => {
-    for (const id of allMapIds()) for (const p of getMap(id).plaques ?? []) expect(getMap(id).tiles[p.y][p.x], `${id} ${p.text}`).toBe(TILE.WALL);
+  it('negli edifici con insegna le finestre stanno nella fila bassa, mai sulla porta', () => {
+    for (const id of allMapIds()) {
+      const m = getMap(id);
+      for (const p of m.plaques ?? []) {
+        let x0 = p.x, x1 = p.x;
+        while ([TILE.WALL, TILE.WINDOW].includes(m.tiles[p.y][x0 - 1])) x0--;
+        while ([TILE.WALL, TILE.WINDOW].includes(m.tiles[p.y][x1 + 1])) x1++;
+        const up = m.tiles[p.y].slice(x0, x1 + 1), low = m.tiles[p.y + 1].slice(x0, x1 + 1);
+        expect(up.includes(TILE.WINDOW), `${id} ${p.text} fila alta`).toBe(false);
+        expect(low.includes(TILE.WINDOW), `${id} ${p.text} fila bassa`).toBe(true);
+        expect(m.tiles[p.y + 1][p.x], `${id} ${p.text} porta`).toBe(TILE.DOOR);
+      }
+    }
   });
   it('ogni insegna è disegnabile ed entra nella facciata', () => {
     for (const id of allMapIds()) for (const p of getMap(id).plaques ?? []) {

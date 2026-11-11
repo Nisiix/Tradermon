@@ -66,9 +66,24 @@ function plaque(b: { dx: number; dy: number }, text: string, kind: Plaque['kind'
   return { x: b.dx, y: b.dy - 1, text, kind };
 }
 
-/** Sotto l'insegna il muro resta pieno: toglie la finestra centrale (quella sopra la porta) che l'insegna coprirebbe. */
+/**
+ * Edifici con insegna: la fila alta del muro resta libera per l'insegna, quindi le finestre
+ * scendono nella fila bassa (quella della porta), alle stesse colonne, saltando la porta.
+ */
 function clearUnderPlaques(m: MapDef) {
-  for (const p of m.plaques ?? []) if (m.tiles[p.y]?.[p.x] === TILE.WINDOW) m.tiles[p.y][p.x] = TILE.WALL;
+  const isWall = (v: number | undefined) => v === TILE.WALL || v === TILE.WINDOW;
+  for (const p of m.plaques ?? []) {
+    const up = m.tiles[p.y], low = m.tiles[p.y + 1];
+    if (!up || !low) continue;
+    let x0 = p.x, x1 = p.x;
+    while (isWall(up[x0 - 1])) x0--;
+    while (isWall(up[x1 + 1])) x1++;
+    for (let x = x0; x <= x1; x++) {
+      if (up[x] !== TILE.WINDOW) continue;
+      up[x] = TILE.WALL;
+      if (low[x] === TILE.WALL) low[x] = TILE.WINDOW;
+    }
+  }
 }
 
 function interior(id: string, name: string, w: number, h: number, back: string, bx: number, by: number): MapDef {
