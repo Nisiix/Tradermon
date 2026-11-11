@@ -3,7 +3,8 @@ import { createWorldMarket, advanceWorldMarket } from './market';
 import { newPortfolio, value } from './portfolio';
 import { ASSETS, ASSET_BY_ID } from '../data/assets';
 
-const KEY = 'tradermon.save.v1';
+export const SAVE_KEY = 'tradermon.save.v1';
+const KEY = SAVE_KEY;
 export const SLOTS_BY_BADGE = [3, 4, 5, 6, 6, 8, 8, 10, 10];
 
 export const LIVE_LIMITS: { order: number; month: number; cOrder: number; cMonth: number }[] = [
