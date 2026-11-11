@@ -7,7 +7,7 @@ import '@fontsource/dotgothic16/latin-ext-400.css';
 import './style.css';
 import { WorldScene } from './scenes/world';
 import { RS } from './art/art';
-import { initUI, el, toast, modal, esc } from './ui/core';
+import { initUI, el, toast, modal, esc, confirm } from './ui/core';
 import { initInput, initTouch } from './ui/input';
 import { titleScreen, onboarding } from './ui/setup';
 import { mentorMission, leagueMission } from './data/missions';
@@ -21,6 +21,9 @@ import { leaveIfMoved, receiveTransfer } from './systems/transfer';
 import { newGame, load, hasSave, importSave } from './systems/state';
 import { initMobile } from './ui/mobile';
 import { rendererType, guardRendering } from './systems/render';
+import { cloudEnabled, currentPlayer } from './systems/cloud';
+import { syncAtBoot, startCloudSync, cloudPlayer } from './systems/sync';
+import { accountScreen, legacyPrompt } from './ui/account';
 
 function pickFile(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -54,6 +57,13 @@ async function boot() {
   initSettings();
   unlock();
   play('title');
+  // Giocatore (nome univoco + password) prima di tutto, tutorial compreso: la partita vive su Supabase.
+  if (cloudEnabled()) {
+    const player = (await currentPlayer()) ?? (await accountScreen());
+    const r = await syncAtBoot(player, legacyPrompt);
+    if (r === 'offline') toast('Supabase non è raggiungibile: giochi con la copia di questo dispositivo e la invio appena torna la rete.');
+    startCloudSync(() => toast('Salvato su questo dispositivo: lo invio a Supabase appena torna la connessione.'));
+  }
   for (;;) {
     const choice = await titleScreen(hasSave());
     if (choice === 'continue') { if (load()) break; toast('Salvataggio non leggibile.'); continue; }
@@ -63,10 +73,11 @@ async function boot() {
       toast('File di salvataggio non valido.');
       continue;
     }
+    if (hasSave() && !(await confirm('Iniziare una nuova partita? Al primo salvataggio sostituirà quella che hai adesso.'))) continue;
     newGame();
     applyOptions();
     setPhase('onboarding');
-    await onboarding();
+    await onboarding(cloudPlayer()?.name);
     break;
   }
   setPhase('game');

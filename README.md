@@ -24,6 +24,19 @@ La porta predefinita del server locale è **8888**. Per usarne un'altra imposta 
 
 Il gioco è una PWA: dal browser si può "installare" e giocare anche offline. Le funzioni Alpaca richiedono il server locale e la rete.
 
+## Giocatore e salvataggi (Supabase)
+
+Al primo avvio, prima del tutorial, il gioco chiede di creare un **giocatore**: un nome unico (3-15 caratteri, nessun altro può usarlo, maiuscole comprese) e una password di almeno 8 caratteri. Chi ha già un giocatore sceglie *Ho già un giocatore* ed entra con nome e password da qualsiasi browser o dispositivo.
+
+- La partita (tutto l'oggetto di gioco: posizione, storia, portafoglio, opzioni) è salvata su **Supabase**, tabella `saves`, una riga per giocatore. Il gioco la invia a ogni salvataggio (pulsante, menu, entrata e uscita dagli edifici, dopo ogni sfida) e il tempo di gioco ogni minuto.
+- Sul dispositivo resta solo una copia di lavoro: serve a giocare senza rete. Quello che salvi offline parte appena torna la connessione.
+- Le **chiavi Alpaca** restano sul server locale come prima. In più ne va una copia su Supabase (tabella `alpaca_keys`), **cifrata nel browser** con AES-256-GCM. La chiave che la apre è derivata dalla password del giocatore (PBKDF2-SHA256, 600.000 iterazioni) e non lascia mai il dispositivo: sul server ci sono solo dati illeggibili, anche per chi amministra il database. Su un altro computer il gioco le ripristina nel server locale dopo aver chiesto la password.
+- Non c'è un'email collegata, quindi **la password non si recupera**: se la dimentichi, la partita resta su Supabase ma non puoi rientrare.
+- *Opzioni → Esci dal giocatore* toglie la sessione e la copia locale da questo dispositivo (la partita resta online). *Esporta salvataggio* scarica comunque un file JSON.
+- Le partite fatte prima di questo aggiornamento restano nel browser: al primo accesso il gioco chiede se portarle nel giocatore.
+
+Configurazione: `src/config/supabase.ts` contiene l'indirizzo del progetto e la chiave **pubblica** (publishable), che può stare nel codice perché la protezione è data dalle regole RLS. Per un altro progetto imposta `VITE_SUPABASE_URL` e `VITE_SUPABASE_KEY` in fase di build. Lo schema è in `supabase/migrations/`, la funzione di registrazione in `supabase/functions/registra-giocatore/`.
+
 ## Come si gioca
 
 | Azione | Tastiera | Touch |
@@ -35,7 +48,7 @@ Il gioco è una PWA: dal browser si può "installare" e giocare anche offline. L
 
 All'inizio un mini tutorial fa provare i comandi, con la versione per tastiera o per touch a seconda del dispositivo. Si riapre da *Menu → Opzioni → Comandi*. Nelle finestre, le frecce spostano la selezione e Z/A conferma.
 
-1. All'inizio il Prof. Saldi ti chiede nome e aspetto. Poi fai un breve questionario sul profilo di rischio.
+1. All'inizio crei il tuo giocatore (nome e password); il Prof. Saldi ti chiama con quel nome e ti chiede l'aspetto. Poi fai un breve questionario sul profilo di rischio.
 2. Nel Laboratorio scegli una delle tre Valigette: Titoli (azioni), Indici (ETF) o Cripto. Parlando con il Prof puoi scegliere anche il Sentiero Misto.
 3. La Dott.ssa Ratio apre il tuo **Conto di Prova**. Scegli il capitale virtuale e l'allocazione obiettivo. Il gioco non aggiunge né toglie mai denaro da solo: il conto cambia solo con le tue operazioni e con il mercato.
 4. Ogni Mentore si batte in due fasi: un duello di conoscenza e una missione nella **Macchina del Tempo**, un mercato simulato con ordini, costi, dividendi e notizie.
@@ -49,7 +62,7 @@ All'inizio un mini tutorial fa provare i comandi, con la versione per tastiera o
 
 ## Conto reale Alpaca (facoltativo)
 
-Le chiavi **non sono mai nel codice né nel salvataggio**. Si inseriscono nel gioco: *Clinica → Conto Alpaca*.
+Le chiavi **non sono mai nel codice né nel salvataggio**. Si inseriscono nel gioco: *Clinica → Conto Alpaca*. Su Supabase ne resta solo una copia cifrata con la tua password (vedi sopra).
 
 1. Crea un account su [alpaca.markets](https://alpaca.markets) e genera le chiavi **Paper** dalla dashboard.
 2. Nel gioco scegli *Collega Alpaca Paper* e incolla Key ID e Secret.

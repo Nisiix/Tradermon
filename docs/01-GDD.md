@@ -37,7 +37,7 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 |---|---|---|---|
 | 1 | Schermata titolo | Nuova partita / Continua / Importa salvataggio | — |
 | 2 | Avviso iniziale (schermata seria) | Presa visione: "gioco educativo, non consulenza finanziaria" | Obbligatorio per proseguire |
-| 3 | Il Prof. Bruno Saldi si presenta | Nome dell'investitore (max 10 caratteri) | Dialoghi, salvataggio |
+| 3 | Il Prof. Bruno Saldi si presenta | Nome del giocatore (scelto alla creazione dell'account, 3-15 caratteri) | Dialoghi, salvataggio |
 | 4 | "Qual è il tuo colore preferito?" (8 colori, anteprima dal vivo sulla pedana) | Vestiti e cappellino del protagonista di quel colore, ovunque: mappa e sfide (nessuna implicazione di gameplay; i vecchi salvataggi 0-2 restano rosso, blu, verde) | Sprite del protagonista |
 | 5 | Questionario del Professore (5 domande) | Profilo di rischio: Prudente / Equilibrato / Audace | Tono dei consigli, durata timer, difficoltà missioni |
 | 6 | "Quale obiettivo hai?" | Obiettivo: Imparare le basi / Costruire un piano di lungo periodo / Capire il trading | Testi del diario e messaggi motivazionali |
@@ -525,8 +525,8 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 
 ## 11. Salvataggio
 
-Salvataggio automatico alla Clinica e manuale dal menu, in `localStorage`. Esporta/Importa come file JSON. Il salvataggio contiene: profilo, percorso, posizione, flag della storia, statistiche, Medaglie, tecniche, carte e livelli, portafoglio simulato, stato del mercato simulato, coda di ripasso, record, contatori ed agenda, traguardi e titolo, oggetti della casa, rivincite programmate, storie, Diario, record dei minigiochi, sfide e classifica, memoria dei dialoghi. Non contiene mai le chiavi.
+Al primo avvio, prima del tutorial, si crea un giocatore (nome univoco + password) o si entra con uno esistente. Il salvataggio (automatico all'entrata e uscita dagli edifici e dopo le sfide, manuale dal pulsante e dal menu) va su Supabase, una riga per giocatore; sul dispositivo resta una copia di lavoro per giocare senza rete, inviata appena la connessione torna. Esporta/Importa come file JSON. Il salvataggio contiene: profilo, percorso, posizione, flag della storia, statistiche, Medaglie, tecniche, carte e livelli, portafoglio simulato, stato del mercato simulato, coda di ripasso, record, contatori ed agenda, traguardi e titolo, oggetti della casa, rivincite programmate, storie, Diario, record dei minigiochi, sfide e classifica, memoria dei dialoghi. Non contiene mai le chiavi: le chiavi Alpaca stanno su Supabase in una tabella separata, solo cifrate nel browser con la password del giocatore.
 
 ## 12. Fuori dall'ambito della versione 1.0
 
-Classifiche online, account utente, OAuth di Alpaca per app di terzi (servirebbe un backend pubblico e un parere legale), app desktop Tauri, musica completa. La struttura dei dati è pronta per aggiungerli.
+Classifiche online, OAuth di Alpaca per app di terzi (servirebbe un backend pubblico e un parere legale), app desktop Tauri, musica completa. La struttura dei dati è pronta per aggiungerli.
