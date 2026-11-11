@@ -173,7 +173,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 
 | Statistica | Come sale | Come scende | Effetto |
 |---|---|---|---|
-| **Conoscenza** (XP e livello) | Risposte giuste (5/10/15 XP per difficoltà 1/2/3), lezioni lette (+5), sfide vinte | — | Livello = soglia 50·n^1,5 XP. Ogni 5 livelli +5 s al timer e una spiegazione extra |
+| **Conoscenza** (XP e livello) | Risposte giuste (5/10/15/20 XP per difficoltà 1/2/3/4), lezioni lette (+5), sfide vinte | — | Livello = soglia 50·n^1,5 XP. Ogni 5 livelli +5 s al timer e una spiegazione extra |
 | **Fiducia** (i "PV") | Clinica, vittorie | Risposte sbagliate (−10/−20 nei duelli col Mentore), eventi sbagliati | A 0 si "va in tilt" e si perde il 5% della Reputazione. Dopo ogni sconfitta in un duello (tilt o risposte giuste insufficienti) si rinasce nella Clinica della città in cui ci si trova (sui Percorsi nell'ultima Clinica visitata) con la Fiducia al massimo |
 | **Disciplina** (0-100) | Rifiutare truffe, rispettare limiti nelle missioni, curarsi alla Clinica | Cedere agli Speculatori, superare il drawdown limite | Moltiplicatore del punteggio missioni (0,8-1,2) |
 | **Diversificazione** (0-100) | Calcolata dal portafoglio simulato: 100 − indice di concentrazione | — | Statistica visibile e input della salute |
@@ -295,6 +295,7 @@ Dal menu Profilo si genera un **codice sfida** (seed). Un amico che inserisce lo
 ### 5.14 Post-game: crisi leggendarie e Torre
 
 - **Crisi leggendarie**: 5 scenari ricostruiti (1929, 2000, 2008, 2020, 2022) con obiettivi difficili. Battendole si ottengono le carte "leggendarie" (cosmetiche).
+- **Difficoltà progressiva delle domande** (src/systems/quiz.ts, `targetDiff`): quattro livelli (1 base, 2 intermedio, 3 avanzato, 4 esperto). Ogni tappa della storia alza la difficoltà media di un quarto di livello: Mentore 1 = 1, Mentore 8 = 2,75, Superiori della Lega 3,25 → 4, Campione 4. Un duello mescola i due livelli vicini (es. 1,5 = metà livello 1 e metà livello 2). Gli allievi sono un quarto sotto il loro Mentore; gli avversari dei Percorsi seguono la tappa del Percorso (r − 1 medaglie) o quella raggiunta, se più avanti. Il livello 4 compare solo nella Lega, nella Torre e negli incontri facoltativi più duri.
 - **Torre delle Sfide**: piani infiniti, ogni piano 3 domande casuali di difficoltà crescente; record personale salvato.
 - **Nuova Partita+**: si ricomincia in un altro percorso conservando avatar, record e carte dorate.
 
@@ -310,7 +311,7 @@ La Biblioteca propone ogni giorno reale una domanda; rispondere ogni giorno aume
 
 - **Agenda**: ogni giorno reale tre missioni (lezione, duelli, check-up, consigli, domanda del giorno, passi, Diario, minigioco, ripasso) e ogni settimana ISO una missione più lunga. Le missioni sono estratte con un seme dalla data e dal nome, così sono uguali per tutti i giocatori con lo stesso nome. Ricompensa: solo punti Conoscenza (+25 extra se si completa tutta l'agenda del giorno).
 - **Traguardi**: circa 40 obiettivi (duelli, Medaglie, consigli, lezioni, serie, Diario, minigiochi, storie, passi, Torre...). Alcuni danno un **titolo** (scelto dal Profilo, mostrato sulla targhetta dei duelli) e un **oggetto per la casa**.
-- **Rivincite**: tre giorni dopo averlo battuto, un investitore del percorso chiede la rivincita con domande di difficoltà 2-3 pescando dalle sbagliate; vincere dà Reputazione e conta per agenda e traguardi.
+- **Rivincite**: tre giorni dopo averlo battuto, un investitore del percorso chiede la rivincita con domande di mezzo livello più difficili del primo incontro, pescando dalle sbagliate; vincere dà Reputazione e conta per agenda e traguardi.
 - **Dialoghi che ricordano**: gli abitanti contano le visite e commentano Medaglie nuove, titolo e serie della domanda del giorno.
 - **Storie a tappe** (`src/world/quests.ts`): sei abitanti, alla seconda visita, chiedono un favore in 2-3 tappe (parlare con un altro abitante, leggere una lezione, fare un check-up, giocare un minigioco, avere N Medaglie, superare una piccola prova). Ricompensa: Conoscenza e un oggetto (radio, acquario, quadro).
 - **Casa arredabile**: gli oggetti sbloccati compaiono nella casa di Borgo Semina (bacheca, calendario, cornici sui muri; trofei, scrivania, cabinato, mappamondo, pianta, libreria, radio, acquario a terra).
