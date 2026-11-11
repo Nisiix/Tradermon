@@ -305,7 +305,12 @@ async function serveStatic(req, res, url) {
   const file = path.resolve(DIST, '.' + p);
   if (!file.startsWith(DIST)) { res.writeHead(403); return res.end(); }
   let target = file;
-  try { if (!(await stat(target)).isFile()) target = path.join(DIST, 'index.html'); } catch { target = path.join(DIST, 'index.html'); }
+  try {
+    const st = await stat(target);
+    // cartella senza barra finale (es. /gioca): come GitHub Pages, reindirizza a /gioca/
+    if (st.isDirectory() && existsSync(path.join(file, 'index.html'))) { res.writeHead(301, { Location: p + '/' + url.search }); return res.end(); }
+    if (!st.isFile()) target = path.join(DIST, 'index.html');
+  } catch { target = path.join(DIST, 'index.html'); }
   try {
     const data = await readFile(target);
     res.writeHead(200, { 'Content-Type': MIME[path.extname(target)] || 'application/octet-stream' });
