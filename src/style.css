@@ -35,6 +35,7 @@ body { font-family: var(--font-body); font-weight: 400; font-variant-ligatures: 
 .hud { position: absolute; left: 6px; right: 6px; top: 6px; display: flex; gap: 6px; justify-content: space-between; pointer-events: none; font-family: var(--font); font-size: calc(var(--fs) * .95); }
 .hud .pill { background: rgba(24,28,40,.72); color: #f8f8f8; padding: 4px 7px; border-radius: 3px; border: 1px solid rgba(255,255,255,.25); white-space: nowrap; text-shadow: 1px 1px 0 #000; }
 .hud .pill b { color: #f8d850; font-weight: normal; }
+.hud .playtime b { font-variant-numeric: tabular-nums; }
 .hud .bias { background: #a03080; padding: 1px 4px; border-radius: 2px; margin-left: 4px; }
 .hud .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #a0a0a8; margin-right: 5px; vertical-align: 1px; }
 .hud .dot.on { background: #48e070; box-shadow: 0 0 4px #48e070; }

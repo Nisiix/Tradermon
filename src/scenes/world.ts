@@ -11,6 +11,7 @@ import { say, toast, getStage, el, esc } from '../ui/core';
 import { pauseMenu } from '../ui/menu';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { beep } from '../systems/audio';
+import { addPlayTime, formatPlayTime, startPlayTimeAutosave } from '../systems/playtime';
 
 const DIRS: Record<string, [number, number, 0 | 1 | 2 | 3]> = { down: [0, 1, 0], up: [0, -1, 1], left: [-1, 0, 2], right: [1, 0, 3] };
 const DIR_NAME = ['down', 'up', 'left', 'right'] as const;
@@ -96,6 +97,7 @@ export class WorldScene extends Phaser.Scene {
     this.time.addEvent({ delay: 550, loop: true, callback: () => this.animateTiles() });
     this.time.addEvent({ delay: 250, loop: true, callback: () => this.idleNpcs() });
     this.lastMs = performance.now();
+    startPlayTimeAutosave();
   }
 
   api(): WorldApi {
@@ -245,7 +247,7 @@ export class WorldScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     const now = performance.now();
-    S.playMs += now - this.lastMs;
+    addPlayTime(now - this.lastMs);
     this.lastMs = now;
     this.updateWeather(delta);
     if (this.walk) return void this.advanceWalk(Math.min(delta, 100));
@@ -528,7 +530,7 @@ export class WorldScene extends Phaser.Scene {
       getStage().appendChild(sign);
       setTimeout(() => sign.remove(), 3200);
     }
-    this.hud.innerHTML = `<span></span>
+    this.hud.innerHTML = `<span class="pill playtime" title="Tempo di gioco totale">Tempo <b>${formatPlayTime(S.playMs)}</b></span>
       <span class="pill">${clk.open ? '<i class="dot on"></i>' : '<i class="dot"></i>'}${clk.label} · ${CLIMATE_LABEL[S.market.climate]}</span>
       <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Medaglie <b>${S.badges}</b></span>`;
     if (force) this.applyTint();
