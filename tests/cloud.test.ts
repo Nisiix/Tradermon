@@ -128,3 +128,12 @@ describe('sincronizzazione del salvataggio', () => {
     expect(mem.get(PENDING_KEY)).toBeUndefined();
   });
 });
+
+describe('cancellazione del giocatore su questo dispositivo', () => {
+  it('toglie partita e chiavi del giocatore, lascia preferenze e chiavi di altri giocatori', async () => {
+    const { forgetPlayerOnDevice } = await import('../src/systems/sync');
+    for (const k of [SAVE_KEY, OWNER_KEY, PENDING_KEY, 'tradermon.alpaca.u1.paper', 'tradermon.alpaca.u1.live', 'tradermon.alpaca.relay', 'tradermon.alpaca.u2.paper', 'tradermon.prefs']) mem.set(k, 'x');
+    forgetPlayerOnDevice('u1');
+    expect([...mem.keys()].sort()).toEqual(['tradermon.alpaca.u2.paper', 'tradermon.prefs']);
+  });
+});

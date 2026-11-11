@@ -26,6 +26,7 @@ import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 import { safariAtRisk, SAFARI_TEXT } from './storageNotice';
 import { cloudPlayer, flush, clearLocal } from '../systems/sync';
 import { logout } from '../systems/cloud';
+import { deletePlayerForm, PRIVACY_URL } from './account';
 import { openRegionMap } from './regionmap';
 import { ABILITY, canSwim, canTransfer } from '../world/travel';
 
@@ -194,6 +195,8 @@ async function options() {
     button('Crediti e fonti', () => { close(); void credits(); });
     button('Esporta salvataggio', () => download(`tradermon-${S.name}.json`, exportSave()));
     if (cloudPlayer()) button('Esci dal giocatore', () => { close(); void leavePlayer(); });
+    if (cloudPlayer()) button('Elimina il mio giocatore', () => { close(); void deletePlayer(); });
+    button('Privacy', () => { window.open(PRIVACY_URL, '_blank', 'noopener'); });
     button('Applica', () => {
       S.options.textSpeed = Number(q<HTMLSelectElement>('.ts').value);
       S.options.fontScale = Number(q<HTMLSelectElement>('.fs').value);
@@ -225,6 +228,14 @@ async function leavePlayer() {
   await logout();
   clearLocal();
   location.reload();
+}
+
+/** Cancella il giocatore da Supabase e da questo dispositivo, poi riparte dalla schermata del giocatore. */
+async function deletePlayer() {
+  const p = cloudPlayer();
+  if (!p) return;
+  // si ricarica subito, prima che un salvataggio automatico possa riscrivere la partita appena tolta
+  if (await deletePlayerForm(p)) location.reload();
 }
 
 /** Crediti: le fonti didattiche non compaiono durante il gioco, ma restano tutte elencate qui (e in docs/02-CONTENUTI-E-FONTI.md). */

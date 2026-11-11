@@ -55,6 +55,6 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     // index.html è la landing page; il gioco vive in gioca/index.html (Accedi a Tradermon).
     // hd2d.html è il prototipo 2.5D (Three.js): si apre da /hd2d.html, separato dal gioco
-    rollupOptions: { input: { landing: 'index.html', main: 'gioca/index.html', hd2d: 'hd2d.html' } },
+    rollupOptions: { input: { landing: 'index.html', main: 'gioca/index.html', hd2d: 'hd2d.html', privacy: 'privacy/index.html' } },
   },
 });

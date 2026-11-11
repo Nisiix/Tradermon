@@ -183,3 +183,25 @@ kbd { display: inline-block; font: 13px var(--font); background: #fff; border: 2
   .hero-text { padding: 16px; }
   .btn.big { display: block; text-align: center; margin: 8px 0 0; }
 }
+
+/* ---------- Pagine di testo (informativa sulla privacy) ---------- */
+.doc { max-width: 860px; margin: 0 auto; padding: calc(var(--bar-h) + 40px) 16px 24px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.doc:focus { outline: none; }
+.doc > h1 { font: clamp(16px, 3vw, 22px)/1.5 var(--font-title); color: #f8d860; text-align: center; text-shadow: 3px 3px 0 #000; margin: 0; }
+.doc > .center { margin-bottom: 4px; }
+.dex h2 { font: 11px/1.6 var(--font-title); margin: 0; color: var(--ink); }
+.doc .diff td { vertical-align: top; }
+.missing { background: #ffe0e0; border: 2px solid var(--bad); padding: 0 4px; }
+.bar.simple .menu { margin-left: auto; }
+.foot .legal a { color: #a8c8ff; }
+@media (max-width: 900px) {
+  .bar.simple .menu { position: static; display: flex; flex-direction: row; align-items: center; background: none; border: 0; box-shadow: none; padding: 0; min-width: 0; }
+  .bar.simple .menu-item { color: #fff; }
+  .bar.simple .btn { white-space: nowrap; }
+}
+@media (max-width: 480px) {
+  .bar.simple .menu-item { display: none; }
+  .bar.simple { gap: 8px; }
+  .bar.simple .btn { font-size: 9px; padding: 8px 9px; }
+  .doc .diff { min-width: 540px; }
+}

@@ -93,6 +93,25 @@ export async function logout(): Promise<void> {
   await forgetKeys();
 }
 
+/**
+ * Cancella il giocatore da Supabase (profilo, salvataggio, vecchie copie delle chiavi) e libera il nome.
+ * Chiede la password: si rientra subito, così la funzione riceve una sessione appena aperta.
+ */
+export async function deletePlayer(password: string): Promise<void> {
+  const p = await currentPlayer();
+  if (!p) throw new Error('Nessun giocatore collegato.');
+  await login(p.name, password);
+  const token = await accessToken();
+  if (!token) throw new Error('Sessione non valida: rientra e riprova.');
+  let res: Response;
+  try {
+    res = await fetch(`${SUPABASE_URL}/functions/v1/elimina-giocatore`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_KEY } });
+  } catch (e) { throw new Error(netMsg(e) ?? 'Cancellazione non riuscita.'); }
+  const body = await res.json().catch(() => ({})) as { error?: string };
+  if (!res.ok) throw new Error(body.error ?? `Cancellazione non riuscita (${res.status}).`);
+  await logout();
+}
+
 // ---------- cassaforte (chiave dati per le chiavi Alpaca) ----------
 
 async function readWrapped(user: string): Promise<Wrapped | null> {

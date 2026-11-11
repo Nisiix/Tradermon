@@ -3,9 +3,11 @@
 import { modal, el, esc } from './core';
 import * as C from '../systems/cloud';
 import { formatPlayTime } from '../systems/playtime';
-import type { LegacyChoice } from '../systems/sync';
+import { forgetPlayerOnDevice, type LegacyChoice } from '../systems/sync';
 
 const PRIVACY = 'La partita viene salvata su Supabase, legata al tuo giocatore: puoi continuarla da qualsiasi browser o dispositivo entrando con nome e password. Le chiavi Alpaca, se le colleghi, restano solo su questo dispositivo, cifrate con la tua password: non vanno su Supabase e non entrano nel salvataggio.';
+export const PRIVACY_URL = '../privacy/';
+const PRIVACY_LINK = `<a href="${PRIVACY_URL}" target="_blank" rel="noopener">Informativa sulla privacy</a>`;
 const NO_RESET = 'Non c\'è un\'email collegata, quindi la password <b>non si può recuperare</b>: scegline una che ricorderai.';
 
 function field(label: string, type: 'text' | 'password', max: number, auto: string): { wrap: HTMLElement; input: HTMLInputElement } {
@@ -25,13 +27,21 @@ function field(label: string, type: 'text' | 'password', max: number, auto: stri
 }
 
 /** Mostra la scelta Nuovo giocatore / Accedi finché il giocatore non è dentro. */
+const DELETED = 'tradermon.deleted';
+/** Il giocatore è appena stato cancellato da questo browser? (si legge una volta sola) */
+function justDeleted(): boolean {
+  try { const v = sessionStorage.getItem(DELETED) === '1'; sessionStorage.removeItem(DELETED); return v; } catch { return false; }
+}
+
 export async function accountScreen(): Promise<C.Player> {
+  let gone = justDeleted();
   for (;;) {
     const mode = await modal<'new' | 'login'>('Il tuo giocatore', ({ body, button, close }) => {
-      body.innerHTML = `<p>Benvenuto in Tradermon! Per salvare i progressi serve un <b>giocatore</b>: un nome unico (nessun altro potrà usarlo) e una password.</p><p class="small muted">${PRIVACY}</p>`;
+      body.innerHTML = `${gone ? '<p class="good">Il giocatore è stato cancellato, da Supabase e da questo browser.</p>' : ''}<p>Benvenuto in Tradermon! Per salvare i progressi serve un <b>giocatore</b>: un nome unico (nessun altro potrà usarlo) e una password.</p><p class="small muted">${PRIVACY} ${PRIVACY_LINK}.</p>`;
       button('Nuovo giocatore', () => close('new'), 'primary');
       button('Ho già un giocatore', () => close('login'));
     }, { closable: false });
+    gone = false;
     const p = mode === 'login' ? await loginForm() : await registerForm();
     if (p) return p;
   }
@@ -45,7 +55,12 @@ function registerForm(): Promise<C.Player | null> {
     const pw2 = field('Ripeti la password', 'password', C.PASSWORD_MAX, 'new-password');
     const nameMsg = el('p', 'small');
     const msg = el('p', 'msg small');
-    body.append(name.wrap, nameMsg, pw.wrap, pw2.wrap, el('p', 'small muted', NO_RESET), msg);
+    const age = el('label', 'small') as HTMLLabelElement;
+    age.style.display = 'block';
+    age.style.marginTop = '8px';
+    age.innerHTML = '<input type="checkbox" class="age"> Ho almeno 14 anni, oppure un genitore mi ha dato il permesso. Il conto reale con denaro vero è solo per maggiorenni.';
+    const ageBox = age.querySelector('input') as HTMLInputElement;
+    body.append(name.wrap, nameMsg, pw.wrap, pw2.wrap, el('p', 'small muted', NO_RESET), age, msg);
     let checkSeq = 0;
     const checkName = async () => {
       const v = name.input.value;
@@ -62,7 +77,7 @@ function registerForm(): Promise<C.Player | null> {
     let t = 0;
     name.input.addEventListener('input', () => { clearTimeout(t); t = window.setTimeout(() => void checkName(), 400); });
     const go = async () => {
-      const bad = C.nameProblem(name.input.value) ?? C.passwordProblem(pw.input.value) ?? (pw.input.value !== pw2.input.value ? 'Le due password non coincidono.' : null);
+      const bad = C.nameProblem(name.input.value) ?? C.passwordProblem(pw.input.value) ?? (pw.input.value !== pw2.input.value ? 'Le due password non coincidono.' : null) ?? (!ageBox.checked ? 'Conferma l\'età per creare il giocatore.' : null);
       if (bad) { msg.innerHTML = `<span class="bad">${esc(bad)}</span>`; return; }
       b.disabled = true;
       msg.textContent = 'Creo il giocatore...';
@@ -133,4 +148,36 @@ export function legacyPrompt(c: LegacyChoice): Promise<boolean> {
     button('Porta questa partita', () => close(true), 'primary');
     button(c.cloud ? 'Tieni quella online' : 'No, ricomincia', () => close(false));
   }, { closable: false }).then((v) => !!v);
+}
+
+/**
+ * Cancella il giocatore per sempre: su Supabase (profilo, salvataggio, nome) e su questo dispositivo.
+ * Restituisce true se è stato cancellato (la pagina va ricaricata).
+ */
+export function deletePlayerForm(player: C.Player): Promise<boolean> {
+  return modal<boolean>('Elimina il mio giocatore', ({ body, button, close }) => {
+    body.innerHTML = `<p>Cancelli <b>${esc(player.name)}</b> per sempre: il salvataggio della partita, il profilo e le chiavi Alpaca salvate su questo dispositivo. Il nome torna libero e la partita <b>non si potrà recuperare</b>.</p>
+      <p class="small muted">Se vuoi tenerne una copia, prima usa "Esporta salvataggio". Il tuo conto su Alpaca non cambia: posizioni e denaro restano lì, e per chiuderlo si usa il sito di Alpaca. ${PRIVACY_LINK}.</p>`;
+    const name = field(`Scrivi il nome del giocatore (${player.name})`, 'text', C.NAME_MAX, 'off');
+    const pw = field('Password del giocatore', 'password', C.PASSWORD_MAX, 'current-password');
+    const msg = el('p', 'msg small');
+    body.append(name.wrap, pw.wrap, msg);
+    const go = async () => {
+      if (C.normName(name.input.value).toLowerCase() !== C.normName(player.name).toLowerCase()) { msg.innerHTML = '<span class="bad">Il nome non corrisponde.</span>'; return; }
+      if (!pw.input.value) { msg.innerHTML = '<span class="bad">Inserisci la password.</span>'; return; }
+      b.disabled = true;
+      msg.textContent = 'Cancello il giocatore...';
+      try {
+        await C.deletePlayer(pw.input.value);
+        pw.input.value = '';
+        forgetPlayerOnDevice(player.id);
+        try { sessionStorage.setItem(DELETED, '1'); } catch { /* niente */ }
+        close(true);
+      } catch (e) { msg.innerHTML = `<span class="bad">${esc((e as Error).message)}</span>`; b.disabled = false; }
+    };
+    pw.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); void go(); } });
+    const b = button('Elimina per sempre', () => void go(), 'primary');
+    button('Annulla', () => close(false));
+    setTimeout(() => name.input.focus(), 30);
+  }).then((v) => !!v);
 }
