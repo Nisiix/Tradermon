@@ -4,7 +4,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_KEY } from '../config/supabase';
 import { createDataKey, unwrapDataKey, rememberKey, recallKey, forgetKeys, seal, open, type Wrapped } from './vault';
 
-export type KeyEnv = 'paper' | 'live';
+export type KeyEnv = 'paper';
 export interface Player { id: string; name: string }
 export interface CloudSave { data: Record<string, unknown>; playMs: number; updatedAt: string }
 
@@ -204,9 +204,9 @@ export async function loadAlpacaKeys(env: KeyEnv): Promise<AlpacaKeyPair | null>
 /** Quali conti hanno chiavi salvate (senza aprirle). */
 export async function savedKeyEnvs(): Promise<KeyEnv[]> {
   if (!(await currentPlayer())) return [];
-  const { data, error } = await client().from('alpaca_keys').select('env');
+  const { data, error } = await client().from('alpaca_keys').select('env').eq('env', 'paper');
   if (error) return [];
-  return (data ?? []).map((r) => r.env as KeyEnv);
+  return (data ?? []).map(() => 'paper' as const);
 }
 
 export async function removeAlpacaKeys(env: KeyEnv): Promise<void> {

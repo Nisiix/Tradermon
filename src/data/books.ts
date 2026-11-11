@@ -8,7 +8,7 @@ export interface Book { id: string; topic: QuizTopic; title: string; pages: stri
 
 export const TOPIC_LABEL: Record<QuizTopic, string> = {
   rischio: 'Rischio e rendimento', ordini: 'Ordini di borsa', diversificazione: 'Diversificazione', costi: 'Costi e interesse composto',
-  bias: 'Bias e psicologia', gestione: 'Gestione del rischio', macro: 'Macroeconomia', analisi: 'Analisi', regole: 'Regole e truffe', esame: 'Esame',
+  bias: 'Bias e psicologia', gestione: 'Gestione del rischio', macro: 'Macroeconomia', analisi: 'Analisi', regole: 'Regole e truffe',
   stocks_base: 'Le azioni', stocks_bilanci: 'I bilanci', stocks_dividendi: 'I dividendi',
   etf_base: 'Gli ETF', etf_replica: 'Replica e tracking', etf_obbligazioni: 'Le obbligazioni',
   crypto_base: 'Le cripto', crypto_custodia: 'La custodia', crypto_stable: 'Stablecoin e DeFi',

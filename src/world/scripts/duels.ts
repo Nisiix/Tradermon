@@ -1,7 +1,7 @@
 // Duelli di conoscenza e missioni: allenatori, allievi, Mentori, Lega, Torre, eremiti, duelli condivisi e del giorno.
 import { recordMission, mirrorEpilogue } from '../../systems/mirror';
 import { getMap, type NpcDef } from '../maps';
-import { S, save, slots, addRep, card, learnBias, clampStat, classes, LIVE_LIMITS, newGamePlus } from '../../systems/state';
+import { S, save, slots, addRep, card, learnBias, clampStat, classes, newGamePlus } from '../../systems/state';
 import { say, choose, modal } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { runSim } from '../../ui/timemachine';
@@ -208,7 +208,7 @@ export async function missionDesk(who = 'Operatrice') {
     if (!res) { await say('Missione interrotta. Torna quando vuoi.', who); continue; }
     if (!res.ok) { await say(['Stavolta non è riuscita: ' + res.detail, 'Nessun problema: la Macchina del Tempo serve proprio a questo.'], who); continue; }
     if (!S.flags[`m${m}_mission`]) { track('mission'); reward({ flag: `m${m}_mission`, xp: REWARD.xp.badge / 4 }); }
-    await say('Missione riuscita. Sul conto vero il passato non si conosce: lì conta lo stesso metodo, sul mercato di oggi.', who);
+    await say('Missione riuscita. Sul conto Paper il passato non si conosce: lì conta lo stesso metodo, sul mercato di oggi.', who);
   }
 }
 
@@ -248,13 +248,8 @@ async function winBadge(m: number, w: WorldApi) {
   // nuove carte sbloccate
   const newCards = unlockedAssets(S.track, S.mixedClasses, m).filter((a) => !S.cards[a.id]);
   newCards.forEach((a) => card(a.id));
-  if (m === 1) S.license = S.license === 'apprendista' ? 'esame' : S.license;
   if (S.flags[`m${m}_perfect`]) {
     for (const p of S.portfolio.positions) { const c = card(p.id); if (c.xp >= 80) c.gold = true; }
-  }
-  if (S.license === 'investitore') {
-    const L = LIVE_LIMITS[m];
-    await say(`I tuoi limiti massimi per il conto reale salgono a ${L.order} $ per ordine e ${L.month} $ al mese. I tuoi limiti attuali restano quelli che hai scelto: puoi alzarli dalla Clinica.`, 'Dott.ssa Ratio');
   }
   beep('badge');
   jingle('badge');
@@ -262,7 +257,6 @@ async function winBadge(m: number, w: WorldApi) {
   await say([md.win, mentorCharacterLine(), `Hai ottenuto l'Attestato della ${md.badge}!`, `Nuova Tecnica: ${md.technique}. ${md.techDesc}`, `Slot di portafoglio: ${slots()}.`, newCards.length ? `Nuove Asset Card: ${newCards.map((a) => a.name).join(', ')}.` : '',
     S.flags.bankrupt ? '' : `Si apre la Prova sul conto della tappa ${m}, quella che vale il Sigillo. ${STAGE_TOOL[m].text} Il minimo in tutto è ${Acc.exNeed(m).toFixed(0)} $ di acquisti: sopra il minimo decidi tu.`].filter(Boolean), md.name);
   const extra: string[] = [];
-  if (m === 1) extra.push('Ora puoi sostenere l\'Esame di Abilitazione per il conto reale, dal menu (voce "Chiavi API"). È facoltativo e fuori dalla storia.');
   if (m === 2) extra.push('Con l\'abbonamento al treno puoi viaggiare tra le città visitate dalle stazioni.');
   if (m === 5) extra.push('L\'Archivio di Bilancia ora è aperto. E in Clinica puoi sostenere l\'Esame della Leva: per ora vale solo nei replay.');
   if (m === SWIM_BADGE) extra.push(`Nuova abilità: ${ABILITY.swim.name}. Cammina verso l'acqua e la attraverserai su una zattera. Sui Percorsi 3, 5 e 7 ci sono isole da raggiungere.`);

@@ -1,7 +1,7 @@
 // Cassaforte delle chiavi Alpaca: cifratura fatta nel browser, il server vede solo dati illeggibili.
 //
 // Schema (Web Crypto, nessuna libreria):
-//  - chiave dati (DEK): AES-GCM 256 casuale, creata alla registrazione; cifra le chiavi Alpaca (Paper e Live).
+//  - chiave dati (DEK): AES-GCM 256 casuale, creata alla registrazione; cifra le chiavi del conto Alpaca Paper.
 //  - chiave della password (KEK): PBKDF2-SHA256 (600.000 iterazioni, sale casuale) dalla password del giocatore.
 //  - su Supabase va solo la DEK "avvolta" dalla KEK (profiles.crypto) e le chiavi Alpaca cifrate con la DEK.
 //    Senza la password nessuno, nemmeno chi amministra il database, può aprirle.

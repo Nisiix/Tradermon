@@ -122,7 +122,7 @@ async function historical() {
 async function realReplay() {
   const st = await A.serverStatus();
   if (!st) return say(A.noServerLines('il replay di dati reali'), 'Operatrice');
-  if (!st.paper.configured && !st.live.configured) return say(['Per i dati reali serve il conto Alpaca collegato (basta il Paper).', 'Collegalo dal menu, voce "Chiavi API".'], 'Operatrice');
+  if (!st.paper.configured) return say(['Per i prezzi veri serve il conto Alpaca Paper collegato.', 'Collegalo dal menu, voce "Chiavi API".'], 'Operatrice');
   const res = await modal<{ sym: string; start: string; end: string }>('Replay di dati reali', ({ body, button, close }) => {
     const y = new Date().getFullYear();
     body.innerHTML = `<p class="small">Riproduci le barre giornaliere reali di un simbolo scelto da te (dati Alpaca, dal 2016). Qui nulla è nascosto: sei tu a scegliere che cosa guardare. Nessun consiglio: è solo un esercizio.</p>

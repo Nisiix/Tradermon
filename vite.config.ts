@@ -16,7 +16,7 @@ const origin = (u: string | undefined) => { try { return u ? new URL(u).origin :
 export function contentPolicy(env: Record<string, string | undefined> = process.env): string {
   const fallback = /VITE_SUPABASE_URL \?\? '([^']+)'/.exec(readFileSync(new URL('./src/config/supabase.ts', import.meta.url), 'utf8'))?.[1];
   const supabase = origin(env.VITE_SUPABASE_URL ?? fallback);
-  const connect = ["'self'", 'data:', 'blob:', 'https://paper-api.alpaca.markets', 'https://api.alpaca.markets', 'https://data.alpaca.markets', supabase, origin(env.VITE_API_BASE)].filter(Boolean);
+  const connect = ["'self'", 'data:', 'blob:', 'https://paper-api.alpaca.markets', 'https://data.alpaca.markets', supabase, origin(env.VITE_API_BASE)].filter(Boolean);
   return [
     "default-src 'self'",
     "script-src 'self'",

@@ -40,7 +40,7 @@ async function loadSim(o: SimOpts): Promise<SimData | string> {
   const sc = o.mission?.scenario ?? o.scenario!;
   const link = await checkLink();
   if (!link.server) return link.reason;
-  if (!link.paper && !link.live) return 'La Macchina del Tempo usa solo dati reali di mercato: collega il conto Alpaca Paper dal menu, voce "Chiavi API".';
+  if (!link.paper) return 'La Macchina del Tempo usa solo dati reali di mercato: collega il conto Alpaca Paper dal menu, voce "Chiavi API".';
   const cls = o.classes ?? classes();
   try {
     const w = await loadWindow(sc.window, ASSETS.filter((a) => cls.includes(a.cls)));

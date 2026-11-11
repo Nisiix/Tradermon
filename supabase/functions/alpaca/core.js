@@ -1,10 +1,9 @@
-// Cuore dell'intermediario verso Alpaca, condiviso da due ospiti:
-//  - il server locale (server/index.mjs), per chi gioca sul proprio computer (Paper e conto reale);
-//  - la funzione Supabase "alpaca" (index.ts in questa cartella), per chi gioca dal sito pubblico (solo Paper).
-// JavaScript puro, senza dipendenze: gira identico su Node e su Deno. Le regole sono le stesse per entrambi:
-// elenco chiuso di endpoint, niente vendite allo scoperto, acquisti entro la liquidità (o entro il potere
-// d'acquisto di Alpaca quando il giocatore usa la leva), conferma e tetto per gli ordini reali.
-// Chi ospita decide da dove arrivano le chiavi (keysOf) e quali conti esistono (trading).
+// Cuore del collegamento al conto Alpaca Paper (denaro finto): Tradermon è un gioco e non usa mai denaro reale.
+// Condiviso da tre ospiti: il server locale (server/index.mjs), il browser dal sito pubblico (src/systems/alpaca.ts)
+// e la funzione Supabase "alpaca" (index.ts in questa cartella), la riserva che il giocatore può scegliere.
+// JavaScript puro, senza dipendenze: gira identico su Node, Deno e nel browser. Le regole sono le stesse per tutti:
+// solo il conto Paper, elenco chiuso di endpoint, niente vendite allo scoperto, acquisti entro la liquidità (o entro
+// il potere d'acquisto di Alpaca quando il giocatore usa la leva). Chi ospita decide da dove arrivano le chiavi (keysOf).
 
 // inizia con una lettera o una cifra e non contiene due punti di fila: "." e ".." cambierebbero il percorso della richiesta
 export const SYMBOL_RE = /^(?!.*\.\.)[A-Z0-9][A-Z0-9.]{0,11}(\/[A-Z]{3,5})?$/;
@@ -21,13 +20,11 @@ const fail = (status, message) => Object.assign(new Error(message), { status });
 
 /**
  * @param {object} cfg
- * @param {Record<string, string>} cfg.trading  indirizzo delle API di trading per ogni conto ammesso ({ paper, live? })
+ * @param {{ paper: string }} cfg.trading       indirizzo delle API di trading del conto Paper
  * @param {string} cfg.data                     indirizzo delle API dei dati di mercato
  * @param {(env: string) => ({ keyId: string, secret: string } | null)} cfg.keysOf  chiavi del conto, o null
  * @param {() => string} cfg.dataEnv            conto le cui chiavi leggono i dati di mercato
  * @param {(entry: object) => unknown} [cfg.audit]  registro degli ordini (senza chiavi)
- * @param {number} [cfg.liveMaxOrder]           tetto in dollari per un ordine reale
- * @param {string} [cfg.noEnv]                  messaggio per un conto non ammesso da questo ospite
  * @param {typeof fetch} [cfg.fetch]
  */
 export function createCore(cfg) {
@@ -38,7 +35,7 @@ export function createCore(cfg) {
 
   async function alpaca(env, method, url, body) {
     const k = cfg.keysOf(env);
-    if (!k) throw fail(400, `Nessuna chiave ${env === 'live' ? 'Live' : 'Paper'} configurata. Inseriscila nella Clinica.`);
+    if (!k) throw fail(400, 'Nessuna chiave Paper configurata. Inseriscila dalla voce "Chiavi API".');
     const r = await doFetch(url, {
       method,
       headers: { 'APCA-API-KEY-ID': k.keyId, 'APCA-API-SECRET-KEY': k.secret, 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -61,7 +58,7 @@ export function createCore(cfg) {
     return { price: d.trade?.p ?? 0 };
   }
 
-  async function validateOrder(env, o, confirm, margin = false) {
+  async function validateOrder(env, o, margin = false) {
     if (!o || typeof o !== 'object') throw fail(400, 'Ordine non valido');
     const symbol = String(o.symbol || '').toUpperCase();
     if (!SYMBOL_RE.test(symbol)) throw fail(400, 'Simbolo non valido');
@@ -69,7 +66,6 @@ export function createCore(cfg) {
     if (!['market', 'limit', 'stop', 'stop_limit'].includes(o.type)) throw fail(400, 'Tipo di ordine non consentito');
     if (!['day', 'gtc', 'ioc'].includes(o.time_in_force)) throw fail(400, 'Validità non consentita');
     if (!o.notional && !o.qty) throw fail(400, 'Serve un importo o una quantità');
-    if (env === 'live' && confirm !== 'CONFERMO') throw fail(403, 'Per gli ordini reali serve la parola di conferma CONFERMO');
 
     const clean = {
       symbol, side: o.side, type: o.type, time_in_force: o.time_in_force,
@@ -97,8 +93,6 @@ export function createCore(cfg) {
     }
     const estimate = clean.notional ? Number(clean.notional) : Number(clean.qty) * price;
 
-    if (env === 'live' && estimate > (cfg.liveMaxOrder ?? 0)) throw fail(403, `L'ordine supera il tetto del server (${cfg.liveMaxOrder ?? 0} $)`);
-
     if (o.side === 'buy') {
       const acc = await alpaca(env, 'GET', `${TRADING[env]}/account`);
       const cash = Number(acc.cash);
@@ -119,7 +113,7 @@ export function createCore(cfg) {
   }
 
   /**
-   * Gestisce le rotte "alpaca/<conto>/..." e "data/...".
+   * Gestisce le rotte "alpaca/paper/..." e "data/...".
    * @param {{ method: string, parts: string[], query: URLSearchParams, header: (name: string) => (string | null | undefined), body: () => Promise<any> }} rq
    *        `parts` sono i segmenti del percorso dopo "/api".
    * @returns {Promise<{ status: number, body: any } | null>} null se la rotta non è tra quelle ammesse
@@ -129,10 +123,10 @@ export function createCore(cfg) {
     const ok = (body) => ({ status: 200, body });
     const bad = (message) => ({ status: 400, body: { message } });
 
-    if (parts[0] === 'alpaca' && (parts[1] === 'paper' || parts[1] === 'live')) {
-      const env = parts[1];
-      const base = TRADING[env];
-      if (!base) throw fail(403, cfg.noEnv ?? 'Questo conto non è disponibile qui.');
+    if (parts[0] === 'alpaca' && parts[1] === 'paper') {
+      const env = 'paper';
+      const base = TRADING.paper;
+      if (!base) throw fail(403, 'Il conto Paper non è disponibile qui.');
       const rest = parts.slice(2);
       if (method === 'GET' && rest.length === 1 && ['account', 'positions', 'clock'].includes(rest[0])) {
         return ok(await alpaca(env, 'GET', `${base}/${rest[0]}`));
@@ -149,7 +143,7 @@ export function createCore(cfg) {
       }
       if (method === 'POST' && rest[0] === 'orders' && rest.length === 1) {
         const body = await rq.body();
-        const { clean, estimate } = await validateOrder(env, body, rq.header('x-tradermon-confirm'), rq.header('x-tradermon-margin') === '1');
+        const { clean, estimate } = await validateOrder(env, body, rq.header('x-tradermon-margin') === '1');
         try {
           const out = await alpaca(env, 'POST', `${base}/orders`, clean);
           await audit({ event: 'order', env, symbol: clean.symbol, side: clean.side, type: clean.type, estimate, id: out.id, client_order_id: clean.client_order_id, status: out.status });

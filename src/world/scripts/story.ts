@@ -38,8 +38,8 @@ export async function prof(w: WorldApi) {
       await say(['Prima che tu scelga, la regola che regge tutto il viaggio.', 'In ogni città c\'è un Mentore, e la sua Medaglia ha due metà. L\'ATTESTATO si vince con un duello di conoscenza: basta quello per proseguire verso la città successiva.', 'Il SIGILLO pratico si guadagna con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che il Mentore ti ha appena insegnato.', 'Puoi viaggiare con i soli Attestati, ma nella Lega degli Investitori entra solo chi ha tutti e otto i Sigilli. Studiare apre la strada; saper fare apre la Lega.'], 'Prof. Saldi');
       S.flags.profIntro = true;
     }
-    const c = await choose(['Guardo le Valigette', 'Vorrei il Sentiero Misto', 'Cos\'è la Licenza?'], { cancel: true, prompt: 'Allora, hai deciso?', who: 'Prof. Saldi' });
-    if (c === 2) return licenseTalk();
+    const c = await choose(['Guardo le Valigette', 'Vorrei il Sentiero Misto', 'Si usano soldi veri?'], { cancel: true, prompt: 'Allora, hai deciso?', who: 'Prof. Saldi' });
+    if (c === 2) return moneyTalk();
     if (c !== 1) return;
     await say(['Il Sentiero Misto! Combinerai due o tre classi di attivo.', 'I Mentori 5 e 6 ti parleranno di asset allocation. Scegli le classi.'], 'Prof. Saldi');
     const sets: AssetClass[][] = [['stocks', 'etf'], ['stocks', 'crypto'], ['etf', 'crypto'], ['stocks', 'etf', 'crypto']];
@@ -53,13 +53,12 @@ export async function prof(w: WorldApi) {
   return say([`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8 · Sigilli pratici: ${S.seals}/8.`, S.badges === 0 ? 'Il primo Mentore, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.' : 'Continua così, e ricorda di passare dalle Cliniche.', 'E non fidarti di chi ti promette guadagni garantiti!'], 'Prof. Saldi');
 }
 
-async function licenseTalk() {
+async function moneyTalk() {
   await say([
-    'Ci sono due cose diverse, e conviene non confonderle.',
-    'La prima è il conto di gioco: un conto Alpaca Paper, gratuito, con denaro finto e prezzi veri. Lo colleghi con le chiavi API dal menu, voce "Chiavi API". Lì fai le Prove sul conto e guadagni i Sigilli pratici.',
+    'No, mai. Tradermon è un gioco per imparare a muovere i primi passi negli investimenti e nel trading.',
+    'Il conto di gioco è un conto Alpaca Paper, gratuito, con denaro finto e prezzi veri. Lo colleghi con le chiavi API dal menu, voce "Chiavi API". Lì fai le Prove sul conto e guadagni i Sigilli pratici.',
+    'Puoi sbagliare quanto vuoi: le perdite costano capitale di gioco, non soldi tuoi. È proprio per questo che qui si impara.',
     'Senza quel conto puoi comunque studiare tutto: storia, biblioteche, duelli e Attestati dei Mentori. Ti mancheranno i Sigilli, la Lega e le sfide sui grafici veri.',
-    'La seconda è la Licenza di Investitore, per chi vuole collegare anche un conto reale. Si ottiene con un esame, dopo il primo Attestato. È facoltativa e non fa parte della storia: nessun premio del gioco dipende dal denaro vero.',
-    'Sul conto reale i prelievi si fanno sempre dal sito di Alpaca; i depositi non passano mai dal gioco.',
   ], 'Prof. Saldi');
 }
 
@@ -116,7 +115,7 @@ async function startTrack(track: S_Track, w: WorldApi) {
     if (await trade(true)) { await say('Valigetta aperta: il tuo primo titolo vero è nel conto, o in coda per l\'apertura dei mercati.', 'Dott.ssa Ratio'); }
     else await say('Nessun acquisto per ora: la Valigetta resta sigillata. La apri quando vuoi, da una Clinica.', 'Dott.ssa Ratio');
   }
-  await licenseTalk();
+  await moneyTalk();
   await say(['Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu (tasto M), insieme all\'Investidex, al tuo Profilo e alle Chiavi API.'], 'Prof. Saldi');
   await say(['Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.', 'Gli scaffali in alto a sinistra sono la Sezione del Mentore: libri sull\'argomento su cui il Mentore di quella città ti interrogherà nel duello.', 'Leggili prima di sfidarlo: in questo gioco si vince studiando, non indovinando.'], 'Prof. Saldi');
   save();

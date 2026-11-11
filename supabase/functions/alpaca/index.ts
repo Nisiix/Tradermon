@@ -1,11 +1,11 @@
-// Tradermon: intermediario verso Alpaca per chi gioca dal sito pubblico (senza server locale).
+// Tradermon: riserva verso il conto Alpaca Paper per chi gioca dal sito pubblico, quando il browser non riesce a
+// raggiungere Alpaca e il giocatore sceglie di passare da qui.
 //
 // Che cosa fa: riceve dal gioco le stesse chiamate "/api/..." del server locale e le inoltra ad Alpaca, con le
 // stesse regole (core.js): elenco chiuso di endpoint, niente vendite allo scoperto, acquisti entro la liquidità.
 //
 // Sicurezza:
-//  - SOLO conto Paper (denaro finto): l'indirizzo del conto reale non è nemmeno configurato. Il conto reale si
-//    usa soltanto giocando sul proprio computer, dove le chiavi Live restano sul server locale;
+//  - solo conto Paper (denaro finto): Tradermon è un gioco e non usa mai denaro reale;
 //  - serve un giocatore Tradermon collegato (token di sessione Supabase, verificato a ogni richiesta);
 //  - le chiavi Paper NON sono salvate qui: arrivano a ogni richiesta nelle intestazioni x-alpaca-key e
 //    x-alpaca-secret (su Supabase resta solo la copia cifrata nel browser con la password del giocatore),
@@ -36,7 +36,7 @@ const cors: Record<string, string> = {
 };
 const reply = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
 
-const LIVE_LOCAL_ONLY = 'Il conto reale non passa mai dal sito: si usa solo giocando sul tuo computer, dove le chiavi Live restano sul server locale.';
+const PAPER_ONLY = 'Tradermon è un gioco e collega solo il conto Alpaca Paper, con denaro finto.';
 const MAX_BODY = 64 * 1024;
 
 // Limite di richieste per giocatore (al minuto). Vive nella memoria dell'istanza: frena gli abusi, non è un contatore esatto.
@@ -66,7 +66,7 @@ export async function handleRequest(req: Request, deps: Deps): Promise<Response>
     if (!user) return reply(401, { message: 'Entra con il tuo giocatore Tradermon per usare il conto Paper dal sito.' });
     if (tooMany(user, deps.limitPerMinute ?? 240)) return reply(429, { message: 'Troppe richieste in poco tempo: aspetta un minuto e riprova.' });
 
-    if (parts[0] === 'status' && req.method === 'GET') return reply(200, { ok: true, cloud: true, liveMaxOrder: 0 });
+    if (parts[0] === 'status' && req.method === 'GET') return reply(200, { ok: true, cloud: true });
 
     const keyId = (req.headers.get('x-alpaca-key') ?? '').trim();
     const secret = (req.headers.get('x-alpaca-secret') ?? '').trim();
@@ -78,8 +78,6 @@ export async function handleRequest(req: Request, deps: Deps): Promise<Response>
       keysOf: (env: string) => (env === 'paper' ? { keyId, secret } : null),
       dataEnv: () => 'paper',
       audit: (entry: Record<string, unknown>) => deps.log({ ...entry, user }),
-      liveMaxOrder: 0,
-      noEnv: LIVE_LOCAL_ONLY,
     });
     const readBody = async () => {
       const raw = await req.text();
@@ -90,7 +88,7 @@ export async function handleRequest(req: Request, deps: Deps): Promise<Response>
     // verifica delle chiavi appena inserite: una lettura del conto, nessun salvataggio
     if (parts[0] === 'keys' && req.method === 'POST') {
       const b = await readBody();
-      if (b?.env !== 'paper') return reply(403, { message: LIVE_LOCAL_ONLY });
+      if (b?.env !== 'paper') return reply(403, { message: PAPER_ONLY });
       try {
         const acc = await core.alpaca('paper', 'GET', `${deps.trading}/account`);
         return reply(200, { ok: true, account: { status: acc.status, currency: acc.currency } });

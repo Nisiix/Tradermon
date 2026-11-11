@@ -1,5 +1,5 @@
 import { revealedProfile } from '../systems/mirror';
-import { S, save, level, xpToNext, cardLevel, slots, exportSave, LIVE_LIMITS } from '../systems/state';
+import { S, save, level, xpToNext, cardLevel, slots, exportSave } from '../systems/state';
 import { choose, modal, esc, say, el, toast, bar } from './core';
 import { ASSETS, SECTOR_LABEL, SECTOR_COLOR, classesOf } from '../data/assets';
 import { LESSONS, lessonsFor } from '../data/lessons';
@@ -33,7 +33,7 @@ import { ABILITY, canSwim, canTransfer } from '../world/travel';
 export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) {
   for (;;) {
     const pending = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length;
-    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Giornale dei Mercati', 'Cartella dello studente', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Tappe, Prove e Sigilli', 'Chiavi API', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
+    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Giornale dei Mercati', 'Cartella dello studente', 'Profilo', 'Medaglie e Tecniche', 'Tappe, Prove e Sigilli', 'Chiavi API', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
     const c = await choose(opts, { cancel: true, title: 'MENU' });
     if (c < 0 || c === opts.length - 1) return;
     const o = opts[c];
@@ -45,7 +45,7 @@ export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) 
     else if (o === 'Tappe, Prove e Sigilli') await stageScreen();
     else if (o === 'Chiavi API') await apiKeysMenu();
     else if (o === 'Cartella dello studente') await openStudentFolder();
-    else if (o === 'Profilo e Licenza') await profile();
+    else if (o === 'Profilo') await profile();
     else if (o === 'Medaglie e Tecniche') await badges();
     else if (o === 'Lezioni') await openLessons();
     else if (o === 'Mappa della Regione') {
@@ -110,8 +110,7 @@ async function openGazette() {
 async function profile() {
   const { cur, need } = xpToNext();
   const clk = marketClock();
-  const L = LIVE_LIMITS[Math.min(8, S.badges)];
-  const r = await modal<string>('Profilo e Licenza', ({ body, button, close }) => {
+  const r = await modal<string>('Profilo', ({ body, button, close }) => {
     body.innerHTML = `
       <div class="grid2">
         <div><b>${esc(S.name)}</b>${S.title ? ` <span class="muted">«${esc(S.title)}»</span>` : ''} · ${({ stocks: 'Sentiero dei Titoli', etf: 'Sentiero degli Indici', crypto: 'Sentiero Cripto', mixed: 'Sentiero Misto' } as Record<string, string>)[S.track]}${S.ngPlus ? ` · Nuova Partita+ ${S.ngPlus}` : ''}<br>
@@ -121,9 +120,8 @@ async function profile() {
         Disciplina ${S.stats.disciplina} · Pazienza ${S.stats.pazienza} · Reputazione ${S.stats.reputazione}<br>
         Slot di portafoglio ${slots()}<br>
         Serie della domanda del giorno: ${S.daily.streak} · Torre: piano ${S.tower.best}</div>
-        <div><b>Licenza:</b> ${S.license === 'apprendista' ? 'Apprendista (conto reale: dopo il 1º Attestato e l\'Esame; è facoltativo)' : S.license === 'esame' ? 'Esame di Abilitazione disponibile (menu → Chiavi API)' : '<span class="good">Licenza di Investitore</span>'}<br>
-        <b>Difficoltà:</b> ${DIFFICULTY[S.difficulty].name} · <b>Attestati</b> ${S.badges}/8 · <b>Sigilli</b> ${S.seals}/8${S.levExam ? ' · Esame della Leva superato' : ''}<br>
-        ${S.license === 'investitore' ? `Limiti scelti: ${S.liveLimits.perOrder} $/ordine, ${S.liveLimits.perMonth} $/mese (massimi del livello ${L.order}/${L.month})<br>${S.liveLimits.pauseUntil > Date.now() ? `<span class="bad">Pausa di riflessione fino al ${new Date(S.liveLimits.pauseUntil).toLocaleString('it-IT')}</span><br>` : ''}` : ''}
+        <div><b>Difficoltà:</b> ${DIFFICULTY[S.difficulty].name} · <b>Attestati</b> ${S.badges}/8 · <b>Sigilli</b> ${S.seals}/8${S.levExam ? ' · Esame della Leva superato' : ''}<br>
+        <span class="small muted">Conto di gioco: Alpaca Paper, denaro finto. Tradermon non usa mai soldi reali.</span><br>
         <b>Orologio di mercato:</b> ${clk.label}<br><b>Clima dei mercati:</b> ${CLIMATE_LABEL[S.market.climate]} <span class="small muted">(${asOfLabel()})</span><br>
         <b>Giorni di mercato dall'inizio:</b> ${S.market.day}<br>
         <b>Traguardi:</b> ${S.achievements.length} · <b>Titoli sbloccati:</b> ${availableTitles().length}</div>

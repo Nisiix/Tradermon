@@ -10,7 +10,7 @@ export interface Book {
 
 /**
  * Spread stimato nei replay storici (i dati giornalieri non contengono denaro e lettera): 0,1% per azioni
- * ed ETF, 0,5% per le cripto. Sul conto reale lo spread è quello vero dell'esecuzione di Alpaca.
+ * ed ETF, 0,5% per le cripto. Sul conto Paper lo spread è quello dell'esecuzione di Alpaca.
  */
 export function spreadOf(a: AssetDef): number {
   return a.cls === 'crypto' ? 0.005 : 0.001;

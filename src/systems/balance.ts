@@ -95,7 +95,7 @@ export const PROVA_IGNORE: Difficulty[] = ['apprendista', 'investitore'];
 export const STAGES = 9;
 export const RATE = 0.1;
 
-/** Attrezzo richiesto dall'esercizio di ogni tappa: è la Tecnica appena imparata, usata sul conto vero. */
+/** Attrezzo richiesto dall'esercizio di ogni tappa: è la Tecnica appena imparata, usata sul conto Paper. */
 export const STAGE_TOOL: { key: 'any' | 'second' | 'limit' | 'sectors' | 'stop'; text: string }[] = [
   { key: 'any', text: 'Compra il titolo della tua Valigetta.' },
   { key: 'second', text: 'Aggiungi almeno un secondo titolo: le nuove Asset Card sono in vetrina.' },
@@ -115,7 +115,7 @@ export const STAGE_TOOL: { key: 'any' | 'second' | 'limit' | 'sectors' | 'stop';
 export const LEVERAGE = { max: 2, fromBadge: 8, examBadge: 5, interest: 0.065, maintenance: 0.3, callDays: 3, restart: 0.5 } as const;
 
 /**
- * Bancarotta: quando il conto arriva a ZERO, in ogni difficoltà, sul conto di gioco e su quello reale.
+ * Bancarotta: quando il conto di gioco arriva a ZERO, in ogni difficoltà.
  * Lo zero operativo è 1 $: sotto quella cifra Alpaca non accetta più nemmeno l'ordine minimo, quindi non si può
  * più investire nulla. Le quote di tappa sono importi fissi, calcolati sul capitale di PARTENZA della difficoltà e
  * mai sul patrimonio del momento: chi perde troppo le finanzia sempre più a fatica, chi opera bene arriva alla

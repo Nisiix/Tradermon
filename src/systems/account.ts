@@ -30,8 +30,8 @@ const ENV: A.Env = 'paper';
 
 // ---------------- Collegamento ----------------
 
-export interface Link { server: boolean; paper: boolean; live: boolean; reason: string }
-let link: Link = { server: false, paper: false, live: false, reason: 'Collegamento non ancora verificato.' };
+export interface Link { server: boolean; paper: boolean; reason: string }
+let link: Link = { server: false, paper: false, reason: 'Collegamento non ancora verificato.' };
 let linkAt = 0;
 
 /** Verifica server e chiavi. Il risultato resta valido per 20 secondi, salvo `force`. */
@@ -39,8 +39,8 @@ export async function checkLink(force = false): Promise<Link> {
   if (!force && Date.now() - linkAt < 20_000) return link;
   const st = await A.serverStatus();
   linkAt = Date.now();
-  if (!st) link = { server: false, paper: false, live: false, reason: A.isLocalHost() ? 'Il server locale di Tradermon non risponde: avvialo con "npm start".' : 'Dal sito il conto Alpaca si collega dopo essere entrati con il proprio giocatore: ricarica la pagina ed entra con nome e password.' };
-  else link = { server: true, paper: st.paper.configured, live: st.live.configured, reason: st.paper.configured ? '' : 'Le chiavi del conto Alpaca Paper non sono collegate.' };
+  if (!st) link = { server: false, paper: false, reason: A.isLocalHost() ? 'Il server locale di Tradermon non risponde: avvialo con "npm start".' : 'Dal sito il conto Alpaca si collega dopo essere entrati con il proprio giocatore: ricarica la pagina ed entra con nome e password.' };
+  else link = { server: true, paper: st.paper.configured, reason: st.paper.configured ? '' : 'Le chiavi del conto Alpaca Paper non sono collegate.' };
   return link;
 }
 
@@ -489,7 +489,7 @@ export async function buy(asset: string, amount: number, o: { type?: 'market' | 
     o.price = px;
   }
   let out: A.AlpacaOrder;
-  try { out = await A.submitOrder(ENV, req, undefined, lev); } catch (e) { return { ok: false, msg: unreachable(e) }; }
+  try { out = await A.submitOrder(ENV, req, lev); } catch (e) { return { ok: false, msg: unreachable(e) }; }
   pf.orderSeq++;
   // un titolo venduto durante la Prova in corso si può ricomprare, ma per quella Prova non conta più
   const noCredit = (pf.exBarred ?? []).includes(asset);
@@ -526,7 +526,7 @@ function voidMandate(asset: string): string {
   return `Hai venduto ${tick}, il titolo del tuo piano con ${BOSS_BY_ID[id]?.name ?? 'il Boss'}: il mandato è annullato. Non conta come sconfitta: la sfida si ripete da capo, quiz compreso, con un titolo diverso da ${tick}.`;
 }
 
-/** Registra nel piano del Boss le vendite che ne fanno parte: servono a dire quanto denaro vero ha mosso il mandato. */
+/** Registra nel piano del Boss le vendite che ne fanno parte: servono a dire quanto capitale del conto di gioco ha mosso il mandato. */
 function trackMandate(p: PendingOrder, qty: number, net: number): void {
   if (!MANDATE_SELLS.has(p.tag)) return;
   const plan = Object.values(S.boss.runs ?? {}).find((r) => r.plan?.real && r.plan.asset === p.asset)?.plan;
@@ -760,48 +760,6 @@ export function margin(pf: Portfolio = S.portfolio, now = Date.now()): MarginSta
   // bancarotta solo a conto azzerato, e solo se ogni titolo ha un prezzo vero: un prezzo mancante non è una perdita
   const priced = pf.positions.every((p) => (S.market.prices[p.id] ?? 0) > 0);
   return { loan: pf.loan, ratio, call, daysLeft, bankrupt: S.market.asOf > 0 && !!S.flags.starter && priced && eq < ZERO };
-}
-
-// ---------------- Conto reale: bancarotta ----------------
-
-export const LIVE_BUST = { pauseDays: { riparti: 7, 'una-volta': 30 } as Record<string, number> } as const;
-export interface LiveState { state: 'ok' | 'paused' | 'closed'; base: number; floor: number; until: number; fresh: boolean; busts: number }
-
-/**
- * Bancarotta sul conto REALE: come sul conto di gioco, quando il conto arriva a zero (sotto ZERO) dopo aver avuto
- * del denaro. Il gioco smette di inviare ACQUISTI dal suo sportello: per qualche giorno, o per sempre, secondo la
- * difficoltà. Vendere, prelevare e operare dal sito di Alpaca resta sempre possibile: il gioco non tocca il denaro e
- * non chiude nulla da solo. Nessun premio o penalità di gioco dipende da questo stato: è una tutela, e segue il
- * giocatore anche in Nuova Partita+.
- */
-export function liveCheck(equity: number, now = Date.now()): LiveState {
-  const f = S.flags;
-  const out = (state: LiveState['state'], fresh = false): LiveState => {
-    const base = Number(f.liveBase ?? 0);
-    return { state, base, floor: ZERO, until: Number(f.liveBust ?? 0), fresh, busts: Number(f.liveBusts ?? 0) };
-  };
-  if (f.liveClosed) return out('closed');
-  const until = Number(f.liveBust ?? 0);
-  if (until) {
-    if (now < until) return out('paused');
-    // pausa finita: si riparte dal patrimonio che c'è adesso
-    f.liveBust = 0;
-    f.liveBase = equity >= ZERO ? equity : 0;
-    save();
-    return out('ok');
-  }
-  if (!(Number(f.liveBase ?? 0) > 0)) {
-    if (equity >= ZERO) { f.liveBase = equity; save(); }
-    return out('ok');
-  }
-  if (equity >= ZERO) return out('ok');
-  const busts = Number(f.liveBusts ?? 0) + 1;
-  f.liveBusts = busts;
-  const rule = DIFFICULTY[S.difficulty].bankrupt;
-  if (rule === 'game-over' || (rule === 'una-volta' && busts > 1)) f.liveClosed = true;
-  else f.liveBust = now + LIVE_BUST.pauseDays[rule] * 86400000;
-  save();
-  return out(f.liveClosed ? 'closed' : 'paused', true);
 }
 
 /** La chiamata di margine parte quando il giocatore la vede: nessuna scadenza corre mentre il gioco è chiuso. */

@@ -6,12 +6,18 @@ Testo della sezione Guida della landing (`index.html`, schede `g-...`). Il gioco
 
 Tradermon è un gioco di ruolo per imparare a investire. Si studia, si sfidano gli altri investitori a quiz e si opera su titoli veri con denaro finto, attraverso un conto Alpaca Paper.
 
+### Un gioco per imparare (riassunto in cima alla landing, sezione `#imparare`)
+
+- Tradermon è pensato per aiutarti a **entrare nel mondo degli investimenti e del trading** giocando: lezioni, quiz e Mentori ti accompagnano dai primi concetti fino alla gestione di un portafoglio.
+- **Nel gioco usi solo denaro finto.** La parte pratica passa da un conto Alpaca Paper, gratuito, con prezzi e orari veri dei mercati ma soldi che non esistono. Tradermon non usa mai denaro reale e non ti chiederà mai di versare nulla.
+- È uno strumento **solo di apprendimento**: puoi sbagliare quanto vuoi, perché un errore costa capitale di gioco e non i tuoi risparmi. Non è consulenza finanziaria e non ti dice che cosa comprare.
+
 ### Attestati e Sigilli: la regola da sapere prima di partire
 
 In ogni città c'è un Mentore, e la sua Medaglia ha due metà.
 
 - **L'Attestato** si vince con un duello di conoscenza. Basta l'Attestato per proseguire verso la città successiva.
-- **Il Sigillo pratico** si guadagna con la **Prova sul conto**: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando la Tecnica che il Mentore ti ha appena insegnato.
+- **Il Sigillo pratico** si guadagna con la **Prova sul conto**: ordini sul mercato di oggi, dal tuo conto di gioco con denaro finto, usando la Tecnica che il Mentore ti ha appena insegnato.
 
 Puoi viaggiare con i soli Attestati, ma **nella Lega degli Investitori entra solo chi ha tutti e otto i Sigilli**. Studiare apre la strada; saper fare apre la Lega.
 
@@ -42,7 +48,7 @@ I periodi veri del passato si rivivono solo nella Macchina del Tempo (la Zona Si
 
 ### Dopo la Lega
 
-Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati. Con un Boss presenti un piano su un titolo vero: ingresso, stop e obiettivo. Il piano muove **ordini veri sul conto di gioco**: quando lo invii compri davvero il titolo, per un importo deciso dal rischio che scegli, e parte uno stop vero. Se il piano va male la sfida si rifà da capo e **la perdita su quella posizione resta sul conto**. Se vedi che l'obiettivo non arriva puoi **vendere prima della scadenza**, tutto o solo una parte: in tutti e due i casi dichiari che vendi per annullare la sfida, che si ripete da capo con un titolo diverso. Non conta come sconfitta.
+Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati. Con un Boss presenti un piano su un titolo vero: ingresso, stop e obiettivo. Il piano muove **ordini sul conto di gioco**, con denaro finto: quando lo invii compri il titolo sul conto Paper, per un importo deciso dal rischio che scegli, e parte uno stop vero. Se il piano va male la sfida si rifà da capo e **la perdita su quella posizione resta sul conto**. Se vedi che l'obiettivo non arriva puoi **vendere prima della scadenza**, tutto o solo una parte: in tutti e due i casi dichiari che vendi per annullare la sfida, che si ripete da capo con un titolo diverso. Non conta come sconfitta.
 
 La **Nuova Partita+** riparte da zero (conto, Attestati e Sigilli si riguadagnano) conservando solo i trofei, e sblocca la difficoltà Leggenda.
 
@@ -58,22 +64,14 @@ Che cosa comporta: su un altro dispositivo o browser le inserisci di nuovo; se c
 
 **Se giochi sul tuo computer**, le chiavi restano sul server locale di Tradermon e il gioco non le mostra più.
 
+Il gioco collega **solo il conto Paper**: è un gioco, e non vengono mai usati soldi reali.
+
 ### Dove funziona la parte pratica
 
 Gli ordini li decidi sempre tu e prima di partire passano dalle regole del gioco (niente vendite allo scoperto, acquisti entro la liquidità).
 
-- **Sul sito** funziona tutto: studio, Attestati, prove sul conto, Sigilli, Lega, Boss e, se lo vuoi, il conto reale. Serve essere entrati con il proprio giocatore e aver collegato il conto **Paper**. Gli ordini partono dal tuo browser e vanno direttamente ad Alpaca.
-- Se il tuo browser non riesce a raggiungere Alpaca (capita con alcune reti o con un blocco di contenuti), il gioco ti chiede se vuoi far passare il **solo conto Paper** dal servizio di Tradermon, che usa le chiavi per quella richiesta e non le salva. Lo scegli tu e puoi tornare indietro. Il conto reale non segue mai quella strada.
+- **Sul sito** funziona tutto: studio, Attestati, prove sul conto, Sigilli, Lega e Boss. Serve essere entrati con il proprio giocatore e aver collegato il conto **Paper**. Gli ordini partono dal tuo browser e vanno direttamente ad Alpaca.
+- Se il tuo browser non riesce a raggiungere Alpaca (capita con alcune reti o con un blocco di contenuti), il gioco ti chiede se vuoi far passare il conto Paper dal servizio di Tradermon, che usa le chiavi per quella richiesta e non le salva. Lo scegli tu e puoi tornare indietro.
 - **Sul tuo computer** funziona tutto allo stesso modo: scarica il progetto da GitHub, installa Node.js 20 o più recente, poi nella cartella esegui `npm install`, `npm run build` e `npm start`, e apri l'indirizzo che compare.
 
-### Conto reale (facoltativo)
-
-- Si può usare **anche dal sito**: le chiavi Live restano solo sul tuo dispositivo, cifrate con la password del giocatore, e vanno soltanto ad Alpaca. Non passano mai da un server di Tradermon.
-- Sono chiavi che muovono denaro vero: usale solo su un dispositivo tuo, aggiornato e senza estensioni del browser di cui non ti fidi. Nel dubbio revocale dalla dashboard di Alpaca.
-- Si collega dopo il primo Attestato e l'Esame di Abilitazione, con chiavi Live distinte. È fuori dalla storia: nessun premio di gioco dipende dal denaro vero. Potrebbe non essere disponibile in tutti i Paesi: lo decide Alpaca.
-- **I prelievi si possono sempre fare**, dal sito di Alpaca. **I depositi non passano mai dal gioco**: Tradermon non sposta denaro e non ti chiederà mai di versarne.
-- Ogni ordine reale chiede una conferma scritta e rispetta i tuoi limiti per ordine e per mese.
-- La bancarotta esiste anche qui: se il conto arriva a zero, il gioco ferma gli acquisti dal suo sportello (per 7 giorni, per 30 o per sempre, secondo la difficoltà). Vendere e prelevare resta sempre possibile.
-- Il conto è in dollari. Chi risiede in Italia e usa un broker estero deve dichiarare conto e redditi.
-
-Tradermon è un gioco educativo e non fornisce consulenza finanziaria.
+Tradermon è un gioco educativo, usa solo denaro finto e non fornisce consulenza finanziaria.

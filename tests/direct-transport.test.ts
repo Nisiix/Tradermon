@@ -1,4 +1,4 @@
-// Dal sito pubblico (nessun server locale) il browser parla direttamente con Alpaca: le chiavi Paper e Live
+// Dal sito pubblico (nessun server locale) il browser parla direttamente con il conto Alpaca Paper: le chiavi
 // restano sul dispositivo (cassaforte locale, qui simulata) e nessun servizio di Tradermon le vede.
 // Gli indirizzi veri di Alpaca vengono deviati sul finto Alpaca di prova.
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
@@ -6,7 +6,6 @@ import { startFakeAlpaca, type FakeAlpaca } from './helpers/fake-alpaca';
 import { SUPABASE_URL } from '../src/config/supabase';
 
 const PAPER = { keyId: 'PKTESTTESTTEST00', secret: 's'.repeat(40) };
-const LIVE = { keyId: 'AKLIVELIVELIVE00', secret: 'v'.repeat(40) };
 type Pair = { keyId: string; secret: string };
 const store = vi.hoisted(() => ({ unlocked: false, keys: {} as Record<string, { keyId: string; secret: string } | undefined> }));
 vi.mock('../src/systems/keystore', () => ({
@@ -39,7 +38,6 @@ beforeAll(async () => {
     const url = String(u);
     const headers = new Headers(init?.headers);
     const to = url.startsWith('https://paper-api.alpaca.markets/v2') ? url.replace('https://paper-api.alpaca.markets/v2', `${fake.url}/paper/v2`)
-      : url.startsWith('https://api.alpaca.markets/v2') ? url.replace('https://api.alpaca.markets/v2', `${fake.url}/live/v2`)
       : url.startsWith('https://data.alpaca.markets') ? url.replace('https://data.alpaca.markets', `${fake.url}/data`) : '';
     if (to) {
       seen.push({ url, method: init?.method ?? 'GET', headers });
@@ -49,6 +47,7 @@ beforeAll(async () => {
     }
     if (url.startsWith('/')) return new Response('<html>404</html>', { status: 404 }); // sito statico: niente "/api"
     if (url.startsWith(SUPABASE_URL)) throw new Error(`nessuna chiamata deve passare da Supabase: ${url}`);
+    if (url.includes('alpaca.markets')) throw new Error(`solo il conto Paper e i dati di mercato: ${url}`);
     return realFetch(u, init);
   });
 });
@@ -59,7 +58,7 @@ describe('conto Alpaca dal sito pubblico, direttamente dal browser', () => {
     store.keys.paper = PAPER;
     const st = await A.serverStatus();
     expect(await A.lockedKeys()).toEqual(['paper']);
-    expect(st).toMatchObject({ ok: true, direct: true, paper: { configured: false }, live: { configured: false } });
+    expect(st).toMatchObject({ ok: true, direct: true, paper: { configured: false } });
     await expect(A.account('paper')).rejects.toThrow(/password/i);
     expect(seen).toHaveLength(0);
   });
@@ -121,32 +120,14 @@ describe('conto Alpaca dal sito pubblico, direttamente dal browser', () => {
     expect(ok).toMatchObject({ ok: true, account: { status: 'ACTIVE' } });
   });
 
-  it('conto reale: stesso percorso diretto, con parola di conferma e tetto per ordine', async () => {
-    await expect(A.account('live')).rejects.toThrow(/Nessuna chiave Live/);
-    // con la cassaforte chiusa le chiavi verificate valgono per la sessione ma non vengono salvate
-    store.unlocked = false;
-    const first = await A.setKeys('live', LIVE.keyId, LIVE.secret);
-    expect(first).toMatchObject({ ok: true, stored: false });
-    expect(store.keys.live).toBeUndefined();
-    store.unlocked = true;
-    expect(await A.persistKeys('live')).toEqual({ stored: true });
-    expect(store.keys.live).toEqual(LIVE);
+  it('esiste solo il conto Paper: ogni altro conto è rifiutato prima che parta una richiesta', async () => {
+    const n = seen.length;
+    await expect(A.setKeys('altro' as never, PAPER.keyId, PAPER.secret)).rejects.toThrow(/solo il conto Alpaca Paper/);
+    await expect(A.account('altro' as never)).rejects.toThrow(/Endpoint non disponibile/);
+    await expect(A.submitOrder('altro' as never, { symbol: 'AAPL', side: 'buy', type: 'market', notional: '10', time_in_force: 'day', client_order_id: 'x' })).rejects.toThrow(/Endpoint non disponibile/);
+    expect(seen.length).toBe(n);
     const st = await A.serverStatus();
-    expect(st?.live.configured).toBe(true);
-    expect(st!.liveMaxOrder).toBeGreaterThan(0);
-    await A.account('live');
-    expect(seen.at(-1)!.url).toBe('https://api.alpaca.markets/v2/account');
-    expect(seen.at(-1)!.headers.get('apca-api-key-id')).toBe(LIVE.keyId);
-    const o = { symbol: 'AAPL', side: 'buy' as const, type: 'market' as const, notional: '50', time_in_force: 'day' as const, client_order_id: 'tm-live-1' };
-    await expect(A.submitOrder('live', o)).rejects.toThrow(/CONFERMO/);
-    await expect(A.submitOrder('live', { ...o, notional: String(st!.liveMaxOrder + 1) }, 'CONFERMO')).rejects.toThrow(/tetto/);
-    const out = await A.submitOrder('live', o, 'CONFERMO');
-    expect(out.symbol).toBe('AAPL');
-    expect(seen.at(-1)!.url).toBe('https://api.alpaca.markets/v2/orders');
-    // scollegare: le chiavi spariscono dalla memoria e dal dispositivo
-    await A.deleteKeys('live');
-    expect(store.keys.live).toBeUndefined();
-    await expect(A.account('live')).rejects.toThrow(/Nessuna chiave Live/);
+    expect(Object.keys(st!).sort()).toEqual(['direct', 'ok', 'paper']);
   });
 
   it('se Alpaca non ammette Content-Type JSON dal browser, l\'ordine viene inviato come testo semplice, una volta sola', async () => {

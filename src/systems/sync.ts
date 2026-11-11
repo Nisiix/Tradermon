@@ -72,6 +72,7 @@ export function clearLocal(): void { del(SAVE_KEY); del(OWNER_KEY); del(PENDING_
 export function forgetPlayerOnDevice(user: string): void {
   clearLocal();
   del('tradermon.alpaca.relay');
+  // anche lo spazio di un conto diverso dal Paper, che una versione precedente poteva aver lasciato
   for (const env of ['paper', 'live']) del(`tradermon.alpaca.${user}.${env}`);
 }
 
