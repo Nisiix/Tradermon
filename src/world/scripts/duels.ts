@@ -156,7 +156,7 @@ export async function mentorBattle(m: number, w: WorldApi) {
 
 /**
  * Parte pratica della Medaglia: la Prova sul conto, cioè l'esercizio di tappa fatto con ordini veri sul mercato di oggi.
- * I replay della Macchina del Tempo restano come allenamento facoltativo: non servono per il Sigillo.
+ * I Mentori non propongono replay: i periodi del passato si rivivono solo nella Macchina del Tempo (Zona Simulazione).
  */
 async function sealChallenge(m: number, w: WorldApi) {
   const md = mentor(m, S.track);
@@ -178,34 +178,41 @@ async function sealChallenge(m: number, w: WorldApi) {
         `In tutto servono ${Acc.exNeed(m).toFixed(0)} $ di acquisti sul tuo conto (finora ${ex.got.toFixed(0)} $). È il minimo: se vuoi investire di più, sei libero di farlo.`,
         'Sono ordini veri sul mercato di oggi: nessuno ti chiede un rendimento, si guarda il metodo. A mercato chiuso l\'ordine vale quando Alpaca lo accetta e si esegue all\'apertura.',
       ];
-    const c = await choose(['Opero adesso', 'Allenamento nella Macchina del Tempo', 'Più tardi'], { cancel: true, prompt: lines.join(' '), who: md.name });
-    if (c === 1) { await training(m); continue; }
+    const c = await choose(['Opero adesso', 'Più tardi'], { cancel: true, prompt: lines.join(' '), who: md.name });
     if (c !== 0) return say('Si fa anche da qualsiasi Clinica: il Sigillo arriva da solo, non serve tornare qui.', md.name);
     if (!(await trade())) return;
   }
 }
 
-/** Allenamento facoltativo: la missione del Mentore su un periodo vero del passato, con i nomi dei titoli nascosti. */
-async function training(m: number) {
-  const md = mentor(m, S.track);
-  const mission = mentorMission(m, S.track, S.profile);
-  if (mission.kind === 'sim' && !(await requireAccount('i dati reali della Macchina del Tempo', md.name))) return;
-  await say(['Un allenamento: un periodo vero del passato, con i nomi dei titoli nascosti. Si giudica il metodo.', 'Non serve per il Sigillo e non tocca il tuo conto: è una palestra.'], md.name);
-  const res = await runMission(mission);
-  if (!res) return say('Allenamento interrotto. Torna quando vuoi.', md.name);
-  if (!res.ok) return say(['Stavolta non è riuscito: ' + res.detail, 'Nessun problema: la palestra serve a sbagliare senza conseguenze.'], md.name);
-  if (!S.flags[`m${m}_mission`]) { track('mission'); reward({ flag: `m${m}_mission`, xp: REWARD.xp.badge / 4 }); }
-  await say('Allenamento riuscito. Adesso lo stesso metodo, sul mercato di oggi.', md.name);
+/**
+ * Missioni della Macchina del Tempo: i periodi veri del passato legati agli argomenti dei Mentori, con i nomi dei
+ * titoli nascosti. Si giocano solo qui, nella Zona Simulazione: sono facoltative, non servono né per i Sigilli né
+ * per la Lega, e non toccano il conto. Si sbloccano con l'Attestato del Mentore corrispondente.
+ */
+export async function missionDesk(who = 'Operatrice') {
+  if (S.badges < 1) return say(['Le missioni della Macchina del Tempo si sbloccano una alla volta, con gli Attestati dei Mentori.', 'Torna dopo il primo Attestato.'], who);
+  for (;;) {
+    const ms = Array.from({ length: S.badges }, (_, k) => ({ m: k + 1, mission: mentorMission(k + 1, S.track, S.profile) }));
+    const label = (x: { m: number; mission: Mission }) => `${x.m}. ${x.mission.title}${S.flags[`m${x.m}_mission`] ? ' ✓' : ''}${x.mission.kind === 'sim' && S.flags[`${x.mission.id}_stars`] ? ' ' + '★'.repeat(Number(S.flags[`${x.mission.id}_stars`])) : ''}`;
+    const c = await choose([...ms.map(label), 'Indietro'], { cancel: true, prompt: 'Missioni facoltative su periodi veri del passato. Non valgono per Sigilli e Lega e non toccano il tuo conto: qui si sbaglia senza conseguenze.', who });
+    if (c < 0 || c >= ms.length) return;
+    const { m, mission } = ms[c];
+    if (mission.kind === 'sim' && !(await requireAccount('i dati reali della Macchina del Tempo', who))) continue;
+    const res = await runMission(mission);
+    if (!res) { await say('Missione interrotta. Torna quando vuoi.', who); continue; }
+    if (!res.ok) { await say(['Stavolta non è riuscita: ' + res.detail, 'Nessun problema: la Macchina del Tempo serve proprio a questo.'], who); continue; }
+    if (!S.flags[`m${m}_mission`]) { track('mission'); reward({ flag: `m${m}_mission`, xp: REWARD.xp.badge / 4 }); }
+    await say('Missione riuscita. Sul conto vero il passato non si conosce: lì conta lo stesso metodo, sul mercato di oggi.', who);
+  }
 }
 
 /** Periodo reale di riserva per le prove che chiedono di reggere un calo; per le altre vale un anno tranquillo. */
-const ALT_PERIOD: Record<string, string> = { m6: 'sb_bear', m8: 'sb_storm', l2: 'sb_storm', l5: 'sb_bear' };
+const ALT_PERIOD: Record<string, string> = { m6: 'sb_bear', m8: 'sb_storm' };
 
 async function runMission(m: Mission): Promise<{ ok: boolean; detail: string } | null> {
   if (m.kind === 'pick') return runPick(m);
   await say(['Benvenuto nella Macchina del Tempo!', 'Usa il pulsante ▶ per far scorrere i giorni, compra e vendi quando vuoi. I prezzi sono quelli veri di quel periodo, riportati a base 100; i nomi li scoprirai alla fine.'], 'Macchina del Tempo');
-  // valvola: dopo tre tentativi falliti sullo stesso periodo si può provare la stessa prova su un altro periodo reale,
-  // così un periodo sfortunato non blocca mai un Sigillo o la Lega
+  // dopo tre tentativi falliti sullo stesso periodo si può provare la stessa missione su un altro periodo reale
   const failKey = `${m.id}_fails`;
   let mission = m;
   if (Number(S.flags[failKey] ?? 0) >= 3) {

@@ -18,7 +18,7 @@ import * as A from '../../systems/alpaca';
 import { track } from '../../systems/progress';
 import { playMinigame } from '../../ui/minigames';
 import { reward, type WorldApi } from './common';
-import { linkDuel, reviewDuel } from './duels';
+import { linkDuel, reviewDuel, missionDesk } from './duels';
 import { tick } from '../../systems/account';
 
 export async function librarian(n: NpcDef) {
@@ -85,11 +85,12 @@ export function travelTo(id: string, w: WorldApi) {
 
 export async function simzone() {
   const legendsBeaten = LEGENDS.filter((l) => S.legends.includes(l.id));
-  const opts = [...SANDBOX.map((s) => s.name), ...legendsBeaten.map((l) => `Leggenda: ${l.title}`), 'Crisi storiche (cosa successe davvero)', 'Minigiochi didattici', 'Sfida della settimana', 'Dati reali Alpaca (un simbolo a scelta)', 'Duello con codice (cavo link)', 'Esci'];
-  const c = await choose(opts, { cancel: true, prompt: 'Zona Simulazione: rivivi periodi veri di mercato, senza punteggio. Quale?', who: 'Operatrice' });
+  const opts = ['Missioni della Macchina del Tempo', ...SANDBOX.map((s) => s.name), ...legendsBeaten.map((l) => `Leggenda: ${l.title}`), 'Crisi storiche (cosa successe davvero)', 'Minigiochi didattici', 'Sfida della settimana', 'Dati reali Alpaca (un simbolo a scelta)', 'Duello con codice (cavo link)', 'Esci'];
+  const c = await choose(opts, { cancel: true, prompt: 'Zona Simulazione, la casa della Macchina del Tempo: qui si rivivono periodi veri di mercato. Sigilli e Lega si guadagnano invece sul conto, con il mercato di oggi. Che cosa vuoi fare?', who: 'Operatrice' });
   if (c < 0 || c === opts.length - 1) return;
-  if (c < SANDBOX.length) { await runSim({ scenario: SANDBOX[c], sandbox: true }); return; }
-  if (c < SANDBOX.length + legendsBeaten.length) { await runSim({ scenario: legendsBeaten[c - SANDBOX.length].scenario, sandbox: true, classes: ['stocks', 'etf', 'crypto'] }); return; }
+  if (c === 0) return missionDesk();
+  if (c - 1 < SANDBOX.length) { await runSim({ scenario: SANDBOX[c - 1], sandbox: true }); return; }
+  if (c - 1 < SANDBOX.length + legendsBeaten.length) { await runSim({ scenario: legendsBeaten[c - 1 - SANDBOX.length].scenario, sandbox: true, classes: ['stocks', 'etf', 'crypto'] }); return; }
   if (opts[c].startsWith('Crisi storiche')) return historical();
   if (opts[c].startsWith('Minigiochi')) return playMinigame('Operatrice');
   if (opts[c].startsWith('Sfida della settimana')) return weeklyChallenge();

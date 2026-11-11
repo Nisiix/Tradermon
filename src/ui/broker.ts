@@ -28,11 +28,12 @@ export const GUIDE_LINES = [
   '3) Le chiavi restano sul server locale di Tradermon, sul tuo computer: il gioco non le rilegge e non le mostra mai.',
   'Il conto Paper è il conto di gioco: capitale fissato dalla difficoltà, Prove sul conto, Sigilli e Lega vivono lì.',
   'La Medaglia ha due metà. L\'ATTESTATO si vince con il duello di conoscenza del Mentore e apre la strada verso la città successiva. Il SIGILLO pratico si guadagna con la Prova sul conto: ordini veri sul mercato di oggi, dal conto Paper. Per entrare nella Lega servono tutti e otto i Sigilli.',
-  'Ogni tappa chiede una quota MINIMA da investire, più alta nelle difficoltà più dure. Sopra il minimo sei libero: puoi investire tutto il capitale fin dal primo giorno. Se il patrimonio scende sotto il 40% del capitale è bancarotta, in ogni difficoltà.',
+  'Ogni tappa chiede una quota MINIMA da investire: un importo fisso, calcolato sul capitale di partenza e non su quello che ti resta, più alto nelle difficoltà più dure. Sopra il minimo sei libero: puoi investire tutto il capitale fin dal primo giorno.',
+  'BANCAROTTA: quando il conto arriva a zero, in ogni difficoltà. Chi opera con metodo arriva alla Lega con capitale in tasca; quanti errori ti puoi permettere dipende dalla difficoltà.',
   'Gli ordini sono anche frazionati: scegli un importo in dollari e compri la frazione di titolo corrispondente, senza dover arrivare a una quota intera.',
   'Il conto reale (Live) è facoltativo e separato dalla storia: si collega dopo il primo Attestato e l\'Esame di Abilitazione, con chiavi Live distinte. Potrebbe non essere disponibile per tutti i Paesi: lo decide Alpaca in fase di verifica.',
   'Sul conto reale i PRELIEVI si possono sempre fare, dal sito di Alpaca. I DEPOSITI non passano mai dal gioco: Tradermon non sposta denaro e non ti chiederà mai di versarne.',
-  'Anche sul conto reale esiste la bancarotta: se il patrimonio scende sotto il 40% di quello che avevi quando l\'hai collegato, il gioco ferma i nuovi acquisti dal suo sportello. Vendere e prelevare resta sempre possibile.',
+  'Anche sul conto reale esiste la bancarotta: se il conto arriva a zero, il gioco ferma i nuovi acquisti dal suo sportello, per qualche giorno o per sempre secondo la difficoltà. Vendere e prelevare resta sempre possibile.',
   'Il conto è in dollari. Chi risiede in Italia e usa un broker estero deve dichiarare conto e redditi: il gioco esporta un CSV, non fa consulenza fiscale.',
   'Limiti di Alpaca da conoscere: gli stop su quote frazionarie valgono solo per la giornata; il Paper non paga dividendi, che nel gioco restano un argomento di teoria; le cripto non hanno leva.',
 ];
@@ -89,7 +90,7 @@ export async function chooseDifficulty(who = 'Prof. Saldi'): Promise<Difficulty>
     const d = DIFFICULTIES[Math.max(0, c)];
     if (d === 'leggenda' && lockedTop) continue;
     const D = DIFFICULTY[d];
-    const ok = await choose(['Scelgo questa', 'Fammi vedere le altre'], { prompt: `${D.name}: ${D.desc} Capitale ${fmtMoney(D.capital)}, quota minima di ${fmtMoney(D.capital * RATE * (1 - D.tolerance))} per tappa.`, who });
+    const ok = await choose(['Scelgo questa', 'Fammi vedere le altre'], { prompt: `${D.name}: ${D.desc} Capitale ${fmtMoney(D.capital)}, quota minima di ${fmtMoney(D.capital * RATE * (1 - D.tolerance))} per tappa, fissa per tutta la partita.`, who });
     if (ok === 0) return d;
   }
 }
@@ -110,7 +111,7 @@ export async function openGameAccount(): Promise<boolean> {
     'Il Professore mi ha chiesto di aprirti il conto di gioco. A Capitalia si studia; i titoli veri si comprano sui Mercati di Fuori, attraverso un broker che si chiama Alpaca.',
     `Il tuo conto parte da ${fmtMoney(D.capital)}: è la difficoltà ${D.name}, e non cambia più. È denaro finto su un conto Paper, ma prezzi, orari e ordini sono quelli veri.`,
     `Il capitale è tutto tuo da subito. Ogni tappa ti chiede solo un minimo da investire: ${fmtMoney(D.capital * RATE * (1 - D.tolerance))} adesso, con la Valigetta, e altrettanto a ogni Attestato. Sopra il minimo decidi tu, anche tutto il capitale.`,
-    `Attenzione, però: se il patrimonio del conto scende sotto il ${Math.round(LEVERAGE.bankrupt * 100)}% del capitale è bancarotta. Più investi, più ci puoi arrivare vicino.`,
+    `Le quote si calcolano sempre sul capitale di partenza, non su quello che ti resta: se perdi, pesano di più. Se il conto arriva a zero è bancarotta. Chi opera con metodo arriva alla Lega con capitale in tasca.`,
     'E ricorda come funziona la Medaglia. L\'Attestato lo vinci dal Mentore, con il duello di conoscenza, e ti apre la strada. Il Sigillo pratico lo guadagni qui, con la Prova sul conto: ordini veri sul mercato di oggi. Per la Lega servono tutti e otto i Sigilli.',
   ], NURSE);
   const res = await modal<{ risky: number; def: number; cash: number }>('Il tuo conto di gioco', ({ body, button, close }) => {
@@ -166,13 +167,13 @@ export function stageHtml(): string {
     return `<tr><td>${k === 0 ? 'Valigetta' : `Tappa ${k}`}</td><td>${STAGE_TOOL[k].text}</td><td class="n">${fmtMoney(Acc.exNeed(k))}</td><td>${done ? '<span class="good">fatto</span>' : open ? '<b>da fare</b>' : `<span class="muted">con l'Attestato ${k}</span>`}</td></tr>`;
   }).join('');
   const eq = Acc.equity();
-  const floor = pf.initial * LEVERAGE.bankrupt;
+  const missing = Acc.exMissing();
   return `
     <p><b>Attestati</b> ${S.badges}/8 · <b>Sigilli pratici</b> ${S.seals}/8 · <b>Prove sul conto</b> ${S.exDone}/${STAGES}</p>
-    <p class="small">Capitale ${fmtMoney(pf.initial)} (${D.name}) · puoi investire ancora ${fmtMoney(Acc.usableCash())} · patrimonio ${fmtMoney(eq)} · soglia di bancarotta ${fmtMoney(floor)} (${Math.round(LEVERAGE.bankrupt * 100)}% del capitale).</p>
+    <p class="small">Capitale ${fmtMoney(pf.initial)} (${D.name}) · puoi investire ancora ${fmtMoney(Acc.usableCash())} · patrimonio ${fmtMoney(eq)} · bancarotta se il conto arriva a zero.</p>
     ${ex.allDone ? '<p class="good">Tutte le Prove sul conto sono completate.</p>' : `<p class="small">${ex.open ? `<b>Prova in corso (${ex.stage === 0 ? 'Valigetta' : 'tappa ' + ex.stage}):</b> acquisti ${fmtMoney(ex.got)} su un minimo di ${fmtMoney(ex.need)} in totale${ex.toolOk ? '' : ' · manca: ' + ex.tool}` : `La prossima Prova si apre con l'Attestato del Mentore ${ex.stage}.`}</p>`}
     <table class="t"><tr><th>Tappa</th><th>Prova sul conto</th><th class="n">Acquisti minimi in totale</th><th></th></tr>${rows}</table>
-    <p class="small muted">${nextSealLine()} La quota di tappa è un minimo (${fmtMoney(pf.initial * RATE * (1 - D.tolerance))} per tappa in ${D.name}): sopra il minimo investi quanto vuoi, anche tutto il capitale. Una Prova vale quando Alpaca accetta l'ordine, anche a mercato chiuso; se poi l'ordine viene annullato o scade senza essere eseguito, la Prova torna da fare.</p>`;
+    <p class="small muted">${nextSealLine()} La quota di tappa è un minimo fisso (${fmtMoney(Acc.stageQuota())} per tappa in ${D.name}), calcolato sul capitale di partenza di ${fmtMoney(Acc.startCapital())} e non su quello che ti resta: sopra il minimo investi quanto vuoi.${!ex.allDone && ex.open && missing > Math.max(0, eq) ? ' Il tuo patrimonio è sotto la quota che manca: per la Prova contano gli acquisti fatti, quindi puoi arrivarci reinvestendo ciò che vendi.' : ''} Una Prova vale quando Alpaca accetta l'ordine, anche a mercato chiuso; se poi l'ordine viene annullato o scade senza essere eseguito, la Prova torna da fare.</p>`;
 }
 
 export async function stageScreen(): Promise<void> {
@@ -241,7 +242,7 @@ async function bankruptcy(): Promise<void> {
   const pf = S.portfolio;
   const D = DIFFICULTY[S.difficulty];
   const eq = Acc.equity();
-  await say([`BANCAROTTA: il patrimonio del conto di gioco è sceso a ${fmtMoney(Math.max(0, eq))}, sotto il ${Math.round(LEVERAGE.bankrupt * 100)}% del capitale.`, 'È il punto in cui un investitore vero ha perso più di metà di quello che aveva, e risalire richiede di più che raddoppiare. Fermiamoci a capire come ci siamo arrivati: guarda la Cartella clinica.'], NURSE);
+  await say([`BANCAROTTA: il conto di gioco è arrivato a zero (${fmtMoney(Math.max(0, eq))}).`, 'Non resta abbastanza nemmeno per l\'ordine più piccolo. È il punto in cui un investitore vero ha perso tutto. Fermiamoci a capire come ci siamo arrivati: guarda la Cartella clinica.'], NURSE);
   const canRestart = D.bankrupt === 'riparti' || (D.bankrupt === 'una-volta' && pf.bankruptcies < 1);
   if (!canRestart) {
     S.flags.bankrupt = true; save();
@@ -250,7 +251,7 @@ async function bankruptcy(): Promise<void> {
   }
   if (!(await requireAccount('chiudere le posizioni e ripartire'))) return;
   (await Acc.restartAfterBankruptcy()).forEach((n) => toast(n));
-  await say([`Chiudo tutto e riparti con ${fmtMoney(S.portfolio.initial)}: metà del capitale di prima. Attestati, Sigilli ed esercizi già fatti restano tuoi.`, 'Nessun versamento aggiuntivo: nella realtà rincorrere le perdite con altro denaro è l\'errore che le raddoppia.'], NURSE);
+  await say([`Chiudo tutto e riparti con ${fmtMoney(S.portfolio.initial)}: metà del capitale di partenza. Attestati, Sigilli e Prove già fatte restano tuoi, e le quote di tappa non cambiano.`, 'Nessun versamento aggiuntivo: nella realtà rincorrere le perdite con altro denaro è l\'errore che le raddoppia.'], NURSE);
 }
 
 // ---------------- Mentre eri via ----------------

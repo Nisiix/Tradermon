@@ -82,7 +82,7 @@ export interface DifficultyDef {
 }
 
 export const DIFFICULTY: Record<Difficulty, DifficultyDef> = {
-  apprendista: { name: 'Apprendista', capital: 10000, fee: 0, tolerance: 0.5, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale ampio, nessun costo didattico. A ogni tappa devi investire almeno il 5% del capitale: molta liquidità di scorta, bancarotta lontana. Per chi parte da zero.' },
+  apprendista: { name: 'Apprendista', capital: 10000, fee: 0, tolerance: 0.5, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale ampio, nessun costo didattico. A ogni tappa devi investire almeno il 5% del capitale: molta liquidità di scorta, tanti errori concessi. Per chi parte da zero.' },
   investitore: { name: 'Investitore', capital: 5000, fee: 0.001, tolerance: 0.3, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale medio, costo dello 0,10% per ordine. A ogni tappa devi investire almeno il 7% del capitale.' },
   stratega: { name: 'Stratega', capital: 2500, fee: 0.0025, tolerance: 0.15, replayLeverage: 3, bankrupt: 'una-volta', desc: 'Capitale ridotto, costo dello 0,25% per ordine. A ogni tappa devi investire almeno l\'8,5% del capitale: poca liquidità di scorta. Una sola ripartenza dopo una bancarotta.' },
   leggenda: { name: 'Leggenda', capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', desc: 'Capitale minimo, costo dello 0,50% per ordine. A ogni tappa devi investire almeno il 9,5% del capitale: quasi tutto resta esposto al mercato. Alla bancarotta la parte pratica finisce. Si sblocca con la Nuova Partita+.' },
@@ -108,7 +108,15 @@ export const STAGE_TOOL: { key: 'any' | 'second' | 'limit' | 'sectors' | 'stop';
 
 /**
  * Leva sul conto di gioco: tetto di Alpaca oltre la giornata, interesse annuo e margine di mantenimento di Alpaca.
- * `bankrupt`: bancarotta quando il patrimonio scende sotto questa parte del capitale (hai perso il 60%). Vale in ogni
- * difficoltà e in ogni momento; la difficoltà la avvicina o la allontana con la quota minima da investire.
+ * `restart`: dopo una bancarotta si riparte con questa parte del capitale di partenza.
  */
-export const LEVERAGE = { max: 2, fromBadge: 8, examBadge: 5, interest: 0.065, maintenance: 0.3, callDays: 3, bankrupt: 0.4, restart: 0.5 } as const;
+export const LEVERAGE = { max: 2, fromBadge: 8, examBadge: 5, interest: 0.065, maintenance: 0.3, callDays: 3, restart: 0.5 } as const;
+
+/**
+ * Bancarotta: quando il conto arriva a ZERO, in ogni difficoltà, sul conto di gioco e su quello reale.
+ * Lo zero operativo è 1 $: sotto quella cifra Alpaca non accetta più nemmeno l'ordine minimo, quindi non si può
+ * più investire nulla. Le quote di tappa sono importi fissi, calcolati sul capitale di PARTENZA della difficoltà e
+ * mai sul patrimonio del momento: chi perde troppo le finanzia sempre più a fatica, chi opera bene arriva alla
+ * Lega con capitale in tasca. Quanti errori sono concessi lo decide la difficoltà, con il capitale e la quota minima.
+ */
+export const ZERO = 1;

@@ -26,13 +26,13 @@ Puoi viaggiare con i soli Attestati, ma **nella Lega degli Investitori entra sol
 
 ### Bancarotta
 
-Se il patrimonio del conto scende sotto il **40% del capitale** è bancarotta, in ogni difficoltà. Più investi, più ti ci puoi avvicinare; nelle difficoltà alte la quota minima da investire è maggiore, quindi il rischio è più vicino. In Apprendista e Investitore si riparte con metà capitale; in Stratega una volta sola; in Leggenda la parte pratica finisce.
+È bancarotta quando il conto arriva a **zero**, in ogni difficoltà. Le quote di tappa sono importi fissi, calcolati sul capitale di partenza e non su quello che ti resta: se perdi, pesano di più. Chi opera con metodo arriva alla Lega con capitale in tasca; quanti errori ti puoi permettere dipende dalla difficoltà. In Apprendista e Investitore si riparte con metà del capitale di partenza; in Stratega una volta sola; in Leggenda la parte pratica finisce.
 
 ### La Lega
 
 Ogni Superiore ti sfida a un duello di conoscenza e poi guarda il tuo conto com'è adesso: quanto è investito, come è diviso tra i titoli, se è protetto da ordini stop, se somiglia al piano che ti sei dato. **Nessuno ti chiede un rendimento**: si giudica il metodo. Se la verifica non riesce, operi e la ripeti senza rifare il duello. Contano gli ordini eseguiti, quindi a mercato chiuso può servire aspettare l'apertura.
 
-I periodi storici della Macchina del Tempo restano come allenamento facoltativo: una palestra dove sbagliare non costa nulla.
+I periodi veri del passato si rivivono solo nella Macchina del Tempo (la Zona Simulazione di Diversia) e nelle crisi leggendarie della Torre: sono facoltativi e non contano per Sigilli e Lega.
 
 ### Dopo la Lega
 
@@ -49,7 +49,7 @@ Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati
 - Si collega dopo il primo Attestato e l'Esame di Abilitazione, con chiavi Live distinte. È fuori dalla storia: nessun premio di gioco dipende dal denaro vero. Potrebbe non essere disponibile in tutti i Paesi: lo decide Alpaca.
 - **I prelievi si possono sempre fare**, dal sito di Alpaca. **I depositi non passano mai dal gioco**: Tradermon non sposta denaro e non ti chiederà mai di versarne.
 - Ogni ordine reale chiede una conferma scritta e rispetta i tuoi limiti per ordine e per mese.
-- La bancarotta esiste anche qui: se il patrimonio scende sotto il 40% di quello che il conto aveva quando l'hai collegato, il gioco ferma gli acquisti dal suo sportello (per 7 giorni, per 30 o per sempre, secondo la difficoltà). Vendere e prelevare resta sempre possibile.
+- La bancarotta esiste anche qui: se il conto arriva a zero, il gioco ferma gli acquisti dal suo sportello (per 7 giorni, per 30 o per sempre, secondo la difficoltà). Vendere e prelevare resta sempre possibile.
 - Il conto è in dollari. Chi risiede in Italia e usa un broker estero deve dichiarare conto e redditi.
 
 Tradermon è un gioco educativo e non fornisce consulenza finanziaria.

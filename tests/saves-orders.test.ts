@@ -3,7 +3,7 @@ import { newGame, migrate, validSave, SAVE_VERSION, setState, newGamePlus } from
 import * as State from '../src/systems/state';
 import { marketBuy, marketSell } from '../src/systems/portfolio';
 import * as Acc from '../src/systems/account';
-import { DIFFICULTY, LEVERAGE } from '../src/systems/balance';
+import { DIFFICULTY, LEVERAGE, ZERO } from '../src/systems/balance';
 import type { AssetDef, PendingOrder, SaveData } from '../src/types';
 import type { AlpacaOrder } from '../src/systems/alpaca';
 
@@ -97,30 +97,58 @@ describe('registro del conto di gioco', () => {
     pf.interestDay = new Date(mon).toISOString().slice(0, 10);
     const interest = Acc.accrue(pf, mon + 7 * 86400000);
     expect(interest).toBeCloseTo(5000 * (LEVERAGE.interest / 252) * 5, 4);
-    S.market.prices.AAPL = 71; // 7100 di titoli, ~5000 di prestito: margine sotto il 30%, patrimonio ancora sopra il 40%
+    S.market.prices.AAPL = 70; // 7000 di titoli, ~5000 di prestito: margine sotto il 30%
     expect(Acc.margin().call).toBe(true);
+    expect(Acc.margin().bankrupt).toBe(false); // la chiamata di margine arriva molto prima dello zero
+    S.market.prices.AAPL = 51; // resta ancora qualcosa: non è bancarotta
     expect(Acc.margin().bankrupt).toBe(false);
-    S.market.prices.AAPL = 69; // patrimonio netto sotto il 40% del capitale
+    S.market.prices.AAPL = 50; // i titoli valgono quanto il prestito: il conto è a zero
     expect(Acc.margin().bankrupt).toBe(true);
   });
-  it('la bancarotta è possibile in ogni difficoltà e senza leva: basta investire più del minimo', () => {
+  it('la bancarotta arriva solo a conto azzerato, in ogni difficoltà; un prezzo mancante non è una perdita', () => {
     for (const d of Object.keys(DIFFICULTY) as (keyof typeof DIFFICULTY)[]) {
       const S = newGame();
       S.flags.starter = 'BTC/USD'; S.difficulty = d;
       const cap = DIFFICULTY[d].capital;
       S.portfolio.initial = cap; S.portfolio.contributed = cap;
       S.market.asOf = Date.now(); S.market.prices = { 'BTC/USD': 100 };
-      // tutto il capitale in un titolo solo: scelta libera del giocatore
       S.portfolio.cash = 0; S.portfolio.positions = [{ id: 'BTC/USD', qty: cap / 100, cost: cap }];
       expect(Acc.margin().bankrupt).toBe(false);
-      S.market.prices['BTC/USD'] = 39;
+      S.market.prices['BTC/USD'] = 5; // −95%: quasi tutto perso, ma il conto non è a zero
+      expect(Acc.margin().bankrupt).toBe(false);
+      S.market.prices['BTC/USD'] = 0.00001; // sotto 1 $: non si può più inviare nemmeno l'ordine minimo
+      expect(Acc.equity()).toBeLessThan(ZERO);
       expect(Acc.margin().bankrupt).toBe(true);
-      // chi investe solo il minimo di tutte le tappe ci arriva tanto più facilmente quanto più dura è la difficoltà
-      const min = Acc.exNeed(8);
-      S.portfolio.cash = cap - min; S.portfolio.positions = [{ id: 'BTC/USD', qty: min / 100, cost: min }];
-      S.market.prices['BTC/USD'] = 20; // −80% sulla parte investita
-      expect(Acc.margin().bankrupt).toBe(d === 'stratega' || d === 'leggenda');
+      delete S.market.prices['BTC/USD']; // prezzo non scaricato: nessuna bancarotta finta
+      expect(Acc.margin().bankrupt).toBe(false);
     }
+  });
+  it('le quote di tappa sono importi fissi sul capitale di partenza, anche dopo perdite o una ripartenza', async () => {
+    const S = newGame();
+    S.flags.starter = 'AAPL'; S.difficulty = 'investitore';
+    const q = Acc.stageQuota();
+    expect(q).toBeCloseTo(350, 6); // 7% di 5.000 $
+    expect(Acc.exNeed(3)).toBeCloseTo(4 * 350, 6);
+    // il patrimonio si è dimezzato: le quote non scendono con lui
+    S.portfolio.cash = 2500;
+    expect(Acc.stageQuota()).toBeCloseTo(350, 6);
+    // ripartenza dopo una bancarotta: metà del capitale di PARTENZA, acquisti già fatti ancora contati
+    S.badges = 3; S.exDone = 3; S.seals = 2; S.portfolio.bought = 1100; S.portfolio.cash = 0.2;
+    S.portfolio.pending = [{ id: 'p', cid: 'tm-x-9', asset: 'AAPL', side: 'buy', type: 'limit', qty: 1, price: 50, reserved: 50, filledQty: 0, filledCost: 0, createdAt: 0, tag: 'limite' }];
+    S.portfolio.bought += 50; // accredito provvisorio dell'ordine in coda
+    const A = await import('../src/systems/alpaca');
+    const { vi } = await import('vitest');
+    const spy = vi.spyOn(A, 'cancelOrder').mockRejectedValue(new Error('offline'));
+    await Acc.restartAfterBankruptcy();
+    spy.mockRestore();
+    expect(S.portfolio.initial).toBe(2500);
+    expect(S.portfolio.cash).toBe(2500);
+    expect(S.portfolio.bought).toBeCloseTo(1100, 6); // l'ordine mai eseguito non conta
+    expect([S.exDone, S.seals]).toEqual([3, 2]);
+    expect(Acc.exNeed(3)).toBeCloseTo(1400, 6); // alla prossima Prova mancano 300 $, non un capitale intero
+    expect(Acc.exMissing()).toBeCloseTo(300, 6);
+    await Acc.restartAfterBankruptcy(); // un'altra ripartenza dà ancora metà del capitale di partenza, non un quarto
+    expect(S.portfolio.initial).toBe(2500);
   });
   it('la Nuova Partita+ riparte da zero e conserva solo i trofei, il giocatore e le tutele del conto reale', () => {
     const S0 = newGame();
@@ -161,26 +189,28 @@ describe('registro del conto di gioco', () => {
     expect(S1.liveLimits.perOrder).toBe(50);
     expect([S1.flags.liveBase, S1.flags.liveClosed]).toEqual([800, true]);
   });
-  it('bancarotta sul conto reale: stessa soglia, pausa degli acquisti o chiusura secondo la difficoltà', () => {
+  it('bancarotta sul conto reale: a zero, con pausa degli acquisti o chiusura secondo la difficoltà', () => {
     const day = 86400000, t0 = Date.UTC(2026, 10, 11);
     let S = newGame(); // Investitore: riparte dopo una pausa
+    expect(Acc.liveCheck(0, t0).state).toBe('ok'); // un conto mai finanziato non è in bancarotta
+    expect(S.flags.liveBase).toBeUndefined();
     expect(Acc.liveCheck(1000, t0).state).toBe('ok');
     expect(S.flags.liveBase).toBe(1000);
-    expect(Acc.liveCheck(450, t0).state).toBe('ok');
-    const bust = Acc.liveCheck(399, t0);
+    expect(Acc.liveCheck(40, t0).state).toBe('ok'); // −96%: non è ancora zero
+    const bust = Acc.liveCheck(0.4, t0);
     expect([bust.state, bust.fresh, bust.busts]).toEqual(['paused', true, 1]);
     expect(Acc.liveCheck(900, t0 + 3 * day).state).toBe('paused'); // la pausa non si accorcia
     const back = Acc.liveCheck(600, t0 + 8 * day);
     expect([back.state, back.base]).toEqual(['ok', 600]); // si riparte dal patrimonio trovato
     S = newGame(); S.difficulty = 'stratega';
     Acc.liveCheck(1000, t0);
-    expect(Acc.liveCheck(300, t0).state).toBe('paused');
+    expect(Acc.liveCheck(0, t0).state).toBe('paused');
     Acc.liveCheck(300, t0 + 31 * day);
-    expect(Acc.liveCheck(100, t0 + 32 * day).state).toBe('closed'); // una sola ripartenza
+    expect(Acc.liveCheck(0.5, t0 + 32 * day).state).toBe('closed'); // una sola ripartenza
     expect(Acc.liveCheck(5000, t0 + 400 * day).state).toBe('closed');
     S = newGame(); S.difficulty = 'leggenda';
     Acc.liveCheck(1000, t0);
-    expect(Acc.liveCheck(399, t0).state).toBe('closed');
+    expect(Acc.liveCheck(0, t0).state).toBe('closed');
   });
 });
 

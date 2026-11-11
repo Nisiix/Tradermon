@@ -17,7 +17,7 @@ import type { Portfolio, PendingOrder, AssetDef } from '../types';
 import * as A from './alpaca';
 import { S, save, slots, addRep } from './state';
 import { ASSET_BY_ID, unlockedAssets } from '../data/assets';
-import { DIFFICULTY, RATE, STAGES, STAGE_TOOL, LEVERAGE, REWARD } from './balance';
+import { DIFFICULTY, RATE, STAGES, STAGE_TOOL, LEVERAGE, REWARD , ZERO } from './balance';
 import { value, fmtMoney, fmtPx, fmtQty } from './portfolio';
 import { refreshWorld } from './realdata';
 import { tradingDaysBetween } from './market';
@@ -103,9 +103,19 @@ export function credit(pf: Portfolio = S.portfolio): number {
 
 export interface Exercise { stage: number; open: boolean; need: number; got: number; toolOk: boolean; tool: string; allDone: boolean }
 
-/** Acquisti accettati necessari, in totale, per completare la Prova sul conto della tappa k (le quote minime si sommano). */
+/** Acquisti accettati necessari, in totale, per completare la Prova sul conto della tappa k (le quote minime si sommano). Contano gli acquisti fatti: restano validi anche dopo una ripartenza. */
 export function exNeed(k: number): number {
-  return (k + 1) * S.portfolio.initial * RATE * (1 - DIFFICULTY[S.difficulty].tolerance);
+  return (k + 1) * stageQuota();
+}
+
+/** Capitale di partenza della difficoltà: tutte le quote si misurano su questo, mai sul patrimonio del momento. */
+export function startCapital(): number {
+  return DIFFICULTY[S.difficulty].capital;
+}
+
+/** Quota minima di una tappa, in dollari: fissa per tutta la partita, anche dopo una ripartenza. */
+export function stageQuota(): number {
+  return startCapital() * RATE * (1 - DIFFICULTY[S.difficulty].tolerance);
 }
 
 function heldIds(pf: Portfolio): string[] {
@@ -477,7 +487,9 @@ export function reconcile(pf: Portfolio, acc: A.AlpacaAccount, real: A.AlpacaPos
   const tag = tagOf(acc);
   if (pf.accountTag && pf.accountTag !== tag) {
     if (pf.positions.length || pf.pending.length || pf.loan > 0) {
-      pf.positions = []; pf.pending = []; pf.loan = 0; pf.cash = pf.initial; pf.bought = 0; pf.marginCallAt = 0;
+      // gli acquisti già fatti restano contati per le Prove; quelli ancora in coda non sono mai avvenuti
+      pf.bought = Math.max(0, pf.bought - unfilledBuys(pf));
+      pf.positions = []; pf.pending = []; pf.loan = 0; pf.cash = pf.initial; pf.marginCallAt = 0;
       pf.external.push({ t: Date.now(), asset: '', qty: 0, note: 'conto Paper azzerato o sostituito' });
       notes.push('Il conto Paper su Alpaca è stato azzerato o sostituito: il registro di gioco riparte dal capitale iniziale. Tappe, Attestati e Sigilli restano tuoi.');
     }
@@ -529,7 +541,9 @@ export function margin(pf: Portfolio = S.portfolio, now = Date.now()): MarginSta
   const ratio = pf.loan > 0 && pv > 0 ? (pv - pf.loan) / pv : 1;
   const call = pf.loan > 0 && ratio < LEVERAGE.maintenance;
   const daysLeft = call && pf.marginCallAt ? Math.max(0, LEVERAGE.callDays - tradingDaysBetween(pf.marginCallAt, now)) : LEVERAGE.callDays;
-  return { loan: pf.loan, ratio, call, daysLeft, bankrupt: S.market.asOf > 0 && !!S.flags.starter && eq < pf.initial * LEVERAGE.bankrupt };
+  // bancarotta solo a conto azzerato, e solo se ogni titolo ha un prezzo vero: un prezzo mancante non è una perdita
+  const priced = pf.positions.every((p) => (S.market.prices[p.id] ?? 0) > 0);
+  return { loan: pf.loan, ratio, call, daysLeft, bankrupt: S.market.asOf > 0 && !!S.flags.starter && priced && eq < ZERO };
 }
 
 // ---------------- Conto reale: bancarotta ----------------
@@ -538,17 +552,17 @@ export const LIVE_BUST = { pauseDays: { riparti: 7, 'una-volta': 30 } as Record<
 export interface LiveState { state: 'ok' | 'paused' | 'closed'; base: number; floor: number; until: number; fresh: boolean; busts: number }
 
 /**
- * Bancarotta sul conto REALE. Il riferimento è il patrimonio che il conto aveva la prima volta che il gioco l'ha
- * visto; sotto la stessa soglia del conto di gioco (LEVERAGE.bankrupt) il gioco smette di inviare ACQUISTI dal suo
- * sportello: per qualche giorno, o per sempre, secondo la difficoltà. Vendere, prelevare e operare dal sito di Alpaca
- * resta sempre possibile: il gioco non tocca il denaro e non chiude nulla da solo. Nessun premio o penalità di
- * gioco dipende da questo stato: è una tutela, e segue il giocatore anche in Nuova Partita+.
+ * Bancarotta sul conto REALE: come sul conto di gioco, quando il conto arriva a zero (sotto ZERO) dopo aver avuto
+ * del denaro. Il gioco smette di inviare ACQUISTI dal suo sportello: per qualche giorno, o per sempre, secondo la
+ * difficoltà. Vendere, prelevare e operare dal sito di Alpaca resta sempre possibile: il gioco non tocca il denaro e
+ * non chiude nulla da solo. Nessun premio o penalità di gioco dipende da questo stato: è una tutela, e segue il
+ * giocatore anche in Nuova Partita+.
  */
 export function liveCheck(equity: number, now = Date.now()): LiveState {
   const f = S.flags;
   const out = (state: LiveState['state'], fresh = false): LiveState => {
     const base = Number(f.liveBase ?? 0);
-    return { state, base, floor: base * LEVERAGE.bankrupt, until: Number(f.liveBust ?? 0), fresh, busts: Number(f.liveBusts ?? 0) };
+    return { state, base, floor: ZERO, until: Number(f.liveBust ?? 0), fresh, busts: Number(f.liveBusts ?? 0) };
   };
   if (f.liveClosed) return out('closed');
   const until = Number(f.liveBust ?? 0);
@@ -556,15 +570,15 @@ export function liveCheck(equity: number, now = Date.now()): LiveState {
     if (now < until) return out('paused');
     // pausa finita: si riparte dal patrimonio che c'è adesso
     f.liveBust = 0;
-    f.liveBase = equity > 0 ? equity : 0;
+    f.liveBase = equity >= ZERO ? equity : 0;
     save();
     return out('ok');
   }
   if (!(Number(f.liveBase ?? 0) > 0)) {
-    if (equity > 0) { f.liveBase = equity; save(); }
+    if (equity >= ZERO) { f.liveBase = equity; save(); }
     return out('ok');
   }
-  if (equity >= Number(f.liveBase) * LEVERAGE.bankrupt) return out('ok');
+  if (equity >= ZERO) return out('ok');
   const busts = Number(f.liveBusts ?? 0) + 1;
   f.liveBusts = busts;
   const rule = DIFFICULTY[S.difficulty].bankrupt;
@@ -597,16 +611,23 @@ export async function liquidate(): Promise<string[]> {
   return notes;
 }
 
-/** Chiude tutte le posizioni e riparte con metà del capitale: la ripartenza dopo una bancarotta. */
+/** Parte non eseguita degli acquisti ancora in coda: accreditata in via provvisoria, da togliere se l'ordine sparisce. */
+function unfilledBuys(pf: Portfolio): number {
+  return pf.pending.filter((p) => p.side === 'buy').reduce((s, p) => s + Math.max(0, (p.notional ?? (p.qty ?? 0) * (p.price ?? 0)) - p.filledCost), 0);
+}
+
+/** Chiude tutte le posizioni e riparte con metà del capitale di partenza: la ripartenza dopo una bancarotta. */
 export async function restartAfterBankruptcy(): Promise<string[]> {
   const pf = S.portfolio;
   const notes: string[] = [];
   for (const p of pf.pending.slice()) notes.push(await cancel(p));
   for (const pos of pf.positions.slice()) notes.push((await sell(pos.id, pos.qty, { tag: 'chiusura' })).msg);
-  const half = Math.round(pf.initial * LEVERAGE.restart);
+  const half = Math.round(startCapital() * LEVERAGE.restart);
   pf.bankruptcies += 1;
   pf.loan = 0; pf.marginCallAt = 0; pf.interestDay = '';
-  pf.initial = half; pf.contributed = half; pf.cash = half; pf.peak = half; pf.bought = 0;
+  // le Prove già fatte restano fatte: gli acquisti eseguiti restano contati, quelli in coda no
+  pf.bought = Math.max(0, pf.bought - unfilledBuys(pf));
+  pf.initial = half; pf.contributed = half; pf.cash = half; pf.peak = half;
   // le posizioni ancora in vendita (mercato chiuso) escono dal registro: il loro ricavato non rientra nel nuovo capitale
   pf.positions = []; pf.pending = [];
   S.exTools = { limit: false, stop: false };

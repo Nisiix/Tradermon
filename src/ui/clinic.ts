@@ -12,7 +12,7 @@ import { openObservatory, realChart } from './live';
 import * as Acc from '../systems/account';
 import { asOfLabel, hasPrices } from '../systems/realdata';
 import { marketClock } from '../systems/market';
-import { DIFFICULTY, LEVERAGE } from '../systems/balance';
+import { DIFFICULTY } from '../systems/balance';
 import { requireAccount, apiKeysMenu, stageScreen, leverageDesk, accountAlerts, nextSealLine } from './broker';
 import { journalPrompt } from './journal';
 import { questionnaire } from './setup';
@@ -115,7 +115,7 @@ export function checkupHtml(): string {
   return `
     <div class="grid2">
       <div><b>Patrimonio:</b> ${fmtMoney(v)} <span class="${v >= pf.contributed ? 'good' : 'bad'}">(${fmtPct(v / pf.contributed - 1)} sul capitale)</span><br>
-      <b>Da investire:</b> ${fmtMoney(Acc.usableCash(pf))} · <b>Soglia di bancarotta:</b> ${fmtMoney(pf.initial * LEVERAGE.bankrupt)}${Acc.reserved(pf) > 0 ? ` · <b>in ordini:</b> ${fmtMoney(Acc.reserved(pf))}` : ''}${pf.loan > 0 ? ` · <b class="bad">prestito:</b> ${fmtMoney(pf.loan)}` : ''}<br>
+      <b>Da investire:</b> ${fmtMoney(Acc.usableCash(pf))}${Acc.reserved(pf) > 0 ? ` · <b>in ordini:</b> ${fmtMoney(Acc.reserved(pf))}` : ''}${pf.loan > 0 ? ` · <b class="bad">prestito:</b> ${fmtMoney(pf.loan)}` : ''}<br>
       <b>Slot:</b> ${pf.positions.length}/${slots()} · <b>Clima:</b> ${CLIMATE_LABEL[S.market.climate]} · ${clk.label}</div>
       <div><b>Salute: ${h.state}</b> (${h.score}/100)${bar(h.score)}
       <span class="small">Peso massimo ${h.maxW.toFixed(0)}% · drawdown ${h.dd.toFixed(1)}% · settori ${h.sectors}</span></div>
@@ -161,7 +161,7 @@ export async function trade(guided = false): Promise<boolean> {
       const useLev = !!S.flags.useLev && Acc.leverageOpen();
       const fee = DIFFICULTY[S.difficulty].fee;
       body.innerHTML = `${msg ? `<p class="${msg.startsWith('!') ? 'bad' : 'good'}">${esc(msg.replace(/^!/, ''))}</p>` : ''}
-        <p class="small">Puoi investire <b>${fmtMoney(Acc.usableCash(pf) + (useLev ? Acc.credit(pf) : 0))}</b>${useLev ? ' (leva attiva)' : ''} · patrimonio ${fmtMoney(v - pf.loan)} (bancarotta sotto ${fmtMoney(pf.initial * LEVERAGE.bankrupt)}) · slot ${pf.positions.length}/${slots()} · ${fee ? `costo didattico ${(fee * 100).toFixed(2).replace('.', ',')}% per ordine` : 'nessun costo didattico'}.<br>
+        <p class="small">Puoi investire <b>${fmtMoney(Acc.usableCash(pf) + (useLev ? Acc.credit(pf) : 0))}</b>${useLev ? ' (leva attiva)' : ''} · patrimonio ${fmtMoney(v - pf.loan)} (bancarotta a zero) · slot ${pf.positions.length}/${slots()} · ${fee ? `costo didattico ${(fee * 100).toFixed(2).replace('.', ',')}% per ordine` : 'nessun costo didattico'}.<br>
         ${clk.open ? '<span class="good">Borsa USA aperta</span>: gli ordini a mercato si eseguono subito.' : `${clk.label}: puoi ordinare lo stesso, azioni ed ETF si eseguono alla prossima apertura (le cripto sempre).`} <span class="muted">${asOfLabel()}.</span><br>
         ${ex.allDone ? '' : ex.open ? `<b>Prova sul conto ${ex.stage === 0 ? 'della Valigetta' : 'della tappa ' + ex.stage}:</b> ${ex.got + 0.005 >= ex.need ? 'quota minima investita' : `al minimo mancano ${fmtMoney(ex.need - ex.got)} di acquisti (puoi investire anche di più)`}${ex.toolOk ? '' : ` · ${esc(ex.tool)}`}` : ''}${guided ? ' <b>Suggerimento:</b> apri la Valigetta con il titolo che hai scelto in vetrina.' : ''}</p>`;
       const tbl = el('table', 't');

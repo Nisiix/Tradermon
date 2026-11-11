@@ -59,7 +59,7 @@ server/index.mjs      file statici + API /api verso Alpaca (paper e live)
 - `src/systems/trials.ts`: prove pratiche della Lega come controlli puri sul conto di gioco (`book`, `leagueTrial`, `runTrial`); soglie in `TRIAL`.
 - `src/systems/boss.ts` e `src/ui/boss.ts`: Boss dei Mercati (punteggi puri nel primo, flusso nel secondo).
 - `src/ui/broker.ts`: voce "Chiavi API", guida, apertura del conto, difficoltà, tappe, sportello della leva, avvisi, "Mentre eri via".
-- `src/ui/timemachine.ts` e `src/data/missions.ts`: replay su finestre reali (`RealWindow`), prezzi a base 100 e nomi anonimi fino alla fine. Sono allenamento facoltativo e crisi leggendarie: Sigilli e Lega non dipendono dai replay.
+- `src/ui/timemachine.ts` e `src/data/missions.ts`: replay su finestre reali (`RealWindow`), prezzi a base 100 e nomi anonimi fino alla fine. Si giocano solo nella Zona Simulazione (`missionDesk` in `world/scripts/duels.ts`, `simzone` in `places.ts`) e come crisi leggendarie alla Torre: Mentori, Sigilli e Lega non dipendono dai replay.
 - `server/index.mjs`: `/api/data/daily`, `/api/data/snapshot`, lettura di un ordine per id, intestazione `x-tradermon-margin`. `TRADERMON_ALPACA_MOCK` (solo `http://127.0.0.1:<porta>`) e `TRADERMON_SECRETS_DIR` servono ai test.
 - Salvataggio versione 3: la migrazione dalla 2 azzera portafoglio e mercato simulati, tiene studio e Attestati.
 
