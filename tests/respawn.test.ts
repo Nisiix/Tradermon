@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getMap, allMapIds, townOf } from '../src/world/maps';
 import { hasGlyphs, plaqueSize } from '../src/art/plaque';
-import { P } from '../src/art/art';
+import { P, TILE } from '../src/art/art';
 import { newGame } from '../src/systems/state';
 import { pickQuestions } from '../src/systems/quiz';
 import { mentorTopics } from '../src/data/quiz/build';
@@ -37,6 +37,9 @@ describe('insegne degli edifici', () => {
     }
     expect(getMap('t0').plaques!.map((p) => p.text)).toContain('CLINICA');
     expect(getMap('t9').plaques!.map((p) => p.text)).toContain('CLINICA');
+  });
+  it('sotto l\'insegna non c\'è la finestra centrale', () => {
+    for (const id of allMapIds()) for (const p of getMap(id).plaques ?? []) expect(getMap(id).tiles[p.y][p.x], `${id} ${p.text}`).toBe(TILE.WALL);
   });
   it('ogni insegna è disegnabile ed entra nella facciata', () => {
     for (const id of allMapIds()) for (const p of getMap(id).plaques ?? []) {

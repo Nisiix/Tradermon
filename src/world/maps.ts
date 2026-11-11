@@ -66,6 +66,11 @@ function plaque(b: { dx: number; dy: number }, text: string, kind: Plaque['kind'
   return { x: b.dx, y: b.dy - 1, text, kind };
 }
 
+/** Sotto l'insegna il muro resta pieno: toglie la finestra centrale (quella sopra la porta) che l'insegna coprirebbe. */
+function clearUnderPlaques(m: MapDef) {
+  for (const p of m.plaques ?? []) if (m.tiles[p.y]?.[p.x] === TILE.WINDOW) m.tiles[p.y][p.x] = TILE.WALL;
+}
+
 function interior(id: string, name: string, w: number, h: number, back: string, bx: number, by: number): MapDef {
   const t = grid(w, h, TILE.FLOOR);
   rect(t, 0, 0, w, 2, TILE.IWALL);
@@ -160,6 +165,7 @@ function buildHomeTown() {
     signs: [{ x: 11, y: 8, text: ['BORGO SEMINA', 'Dove ogni investitore pianta il primo seme.'] }],
     plaques: [plaque(lab, 'LABORATORIO'), plaque(clinic, 'CLINICA', 'clinic')],
   };
+  clearUnderPlaques(m);
   MAPS.t0 = m;
 
   const hm = interior('home', 'Casa', 10, 8, 't0', home.dx, home.dy);
@@ -292,6 +298,7 @@ function buildTown(n: number) {
       MAPS.archive = ar;
     }
   }
+  clearUnderPlaques(m);
   MAPS[id] = m;
 }
 
@@ -340,6 +347,7 @@ function buildLeagueTown() {
     ],
     signs: [],
     plaques: [plaque(league, 'LEGA'), plaque(clinic, 'CLINICA', 'clinic'), plaque(tower, 'TORRE')] };
+  clearUnderPlaques(m);
   MAPS.t9 = m;
   addClinic(9, clinic.dx, clinic.dy, 't9');
   const lg = interior('league', 'Lega degli Investitori', 15, 20, 't9', league.dx, league.dy);
