@@ -455,7 +455,7 @@ export async function tower() {
 }
 
 const HERMIT_LINES: Record<string, { intro: string[]; win: string; again: string }> = {
-  r3: { intro: ['Sei arrivato fin qui sull\'acqua? Allora la liquidità la sai usare.', 'Io compro e tengo per decenni. Vediamo se reggi le mie domande.'], win: 'Hai la pazienza del cassettista. Tieni questo studio extra, ti servirà.', again: 'Compra bene e dimentica di guardare ogni giorno. Funziona anche con le isole.' },
+  r3: { intro: ['Sei arrivato fin qui sull\'acqua? Allora la liquidità la sai usare.', 'Io compro e tengo per decenni. Vediamo se reggi le mie domande.'], win: 'Hai la pazienza del cassettista. Tieni questo studio extra, ti servirà.', again: 'Chi investe per decenni non ha bisogno di guardare il prezzo ogni giorno. Funziona anche con le isole.' },
   r5: { intro: ['Un prezzo diverso per la stessa cosa in due posti? Mi sveglio per questo.', 'Ma le occasioni vere sono rare e veloci. Rispondi in fretta e bene!'], win: 'Preciso come un arbitraggio. Ti lascio i miei appunti.', again: 'Quando un guadagno sembra senza rischio, cerca il rischio che non vedi.' },
   r7: { intro: ['Custodisco le riserve: la liquidità che non si tocca quando il mercato urla.', 'Solo chi ha mente fredda e liquidità arriva fin qui. Dimostralo.'], win: 'Riserve al sicuro, mente lucida. Sei pronto per la Lega.', again: 'Un fondo di emergenza vale più di qualsiasi previsione.' },
   faro: { intro: ['Il faro non dice alle navi dove andare: mostra solo dove sono gli scogli.', 'Un buon piano d\'investimento fa lo stesso. Vediamo se sai leggere la luce.'], win: 'Rotta sicura. Ricorda: gli scogli sono i costi, la leva e le promesse troppo belle.', again: 'Di notte gli scogli non si spostano. Sono le onde a farti credere di sì.' },

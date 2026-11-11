@@ -91,7 +91,7 @@ async function chooseStarter(cls: AssetClass): Promise<string> {
   for (;;) {
     const id = await modal<string>('La vetrina della Valigetta', ({ body, button, close }) => {
       body.innerHTML = `<p class="small">Scegli il tuo primo titolo. Sono titoli veri, messi in vetrina perché si prestano a imparare: non è un consiglio, e gli altri li ritroverai tutti dopo il primo Attestato.</p>
-        <div class="cards">${opts.map((a) => `<div class="card"><b>${esc(a.name)}</b> (${esc(a.ticker)})<br><span class="small">${SECTOR_LABEL[a.sector]} · rischio ${'★'.repeat(a.risk)}${hasPrices() && px[a.id] ? ` · ${fmtPx(px[a.id])} $` : ''}</span><br><span class="small">${esc(a.desc)}</span></div>`).join('')}</div>`;
+        <div class="cards">${opts.map((a) => `<div class="card"><b>${esc(a.name)}</b> (${esc(a.ticker)})<br><span class="small">${SECTOR_LABEL[a.sector]} · rischio indicativo ${'★'.repeat(a.risk)}${hasPrices() && px[a.id] ? ` · ${fmtPx(px[a.id])} $` : ''}</span><br><span class="small">${esc(a.desc)}</span></div>`).join('')}</div>`;
       opts.forEach((a) => button(a.ticker, () => close(a.id)));
     }, { closable: false, wide: true });
     if (id) return id;

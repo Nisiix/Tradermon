@@ -35,7 +35,7 @@ const DAILY_POOL: TaskDef[] = [
   { id: 'd_duel', ev: 'duel_win', need: 1, text: 'Vinci un duello di conoscenza', xp: 20 },
   { id: 'd_duel2', ev: 'duel_win', need: 2, text: 'Vinci due duelli di conoscenza', xp: 30 },
   { id: 'd_checkup', ev: 'checkup', need: 1, text: 'Fai il check-up del portafoglio in Clinica', xp: 10 },
-  { id: 'd_tip', ev: 'tip', need: 2, text: 'Ascolta due consigli degli abitanti', xp: 15 },
+  { id: 'd_tip', ev: 'tip', need: 2, text: 'Ascolta due lezioni degli abitanti', xp: 15 },
   { id: 'd_daily', ev: 'daily_q', need: 1, text: 'Rispondi alla domanda del giorno', xp: 15 },
   { id: 'd_steps', ev: 'steps', need: 150, text: 'Cammina 150 passi sui percorsi', xp: 10 },
   { id: 'd_journal', ev: 'journal', need: 1, text: 'Scrivi una riga nel Diario dopo un\'operazione', xp: 15 },
