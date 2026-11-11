@@ -2,7 +2,7 @@
 
 Tradermon è un gioco di ruolo educativo sugli investimenti, nello stile dei giochi per console portatili dei primi anni 2000. Il mondo, i personaggi e la grafica sono originali. Ci si muove su una mappa, si sfidano gli altri investitori con quiz di finanza e si superano missioni di trading su periodi veri di mercato. Si sconfiggono 8 Mentori, poi si affronta la Lega degli Investitori. Titoli, prezzi e grafici sono reali: arrivano da Alpaca, con le chiavi del giocatore. Nel gioco non esistono titoli o andamenti inventati.
 
-> **È un gioco per imparare, con denaro finto.** Tradermon è pensato per aiutare chi vuole entrare nel mondo degli investimenti e del trading, ed è volto solo all'apprendimento. Usa esclusivamente un conto Alpaca **Paper** (gratuito, basta un'email): prezzi veri, soldi finti. Non vengono mai usati soldi reali. Senza conto collegato resta aperto tutto il percorso di studio (storia, duelli, biblioteche, Attestati), ma non la parte pratica (Sigilli, Lega, grafici e titoli reali). **Non è consulenza finanziaria.**
+> **È un gioco per imparare, con denaro finto.** Tradermon è pensato per aiutare chi vuole entrare nel mondo degli investimenti e del trading, ed è volto solo all'apprendimento. Usa esclusivamente un conto Alpaca **Paper** (gratuito, basta registrarsi sulla piattaforma di Alpaca): prezzi veri, soldi finti. Non vengono mai usati soldi reali. Senza conto collegato resta aperto tutto il percorso di studio (storia, duelli, biblioteche, Attestati), ma non la parte pratica (Sigilli, Lega, grafici e titoli reali). **Non è consulenza finanziaria.**
 
 ## Avvio rapido
 
