@@ -26,7 +26,6 @@ import { track, rematchReady, scheduleRematch } from '../systems/progress';
 import { questTalk } from './quests';
 import { playMinigame } from '../ui/minigames';
 import { jingle } from '../systems/music';
-import { SOURCES } from '../data/sources';
 
 export interface WorldApi {
   warp(map: string, x: number, y: number, dir?: 0 | 1 | 2 | 3): void;
@@ -105,8 +104,7 @@ async function resident(n: NpcDef) {
     await say(r.lines, who);
     S.tipsHeard.push(r.id);
     S.stats.xp += 5;
-    const src = SOURCES[r.source];
-    toast(`Consiglio annotato nell'Investidex (${S.tipsHeard.length}/${ALL_RESIDENTS.length})${src ? ` · Fonte: ${src.publisher}` : ''}`);
+    toast(`Consiglio annotato nell'Investidex (${S.tipsHeard.length}/${ALL_RESIDENTS.length})`);
     track('tip');
     return;
   }

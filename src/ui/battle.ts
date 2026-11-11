@@ -6,7 +6,6 @@ import { pushHandler, popHandler, type Key } from './input';
 import { S, profileTimer } from '../systems/state';
 import { recordAnswer } from '../systems/quiz';
 import { shuffle } from '../systems/rng';
-import { SOURCES } from '../data/sources';
 import { portrait, portraitBack, playerPal } from '../art/art';
 import { beep } from '../systems/audio';
 
@@ -127,9 +126,8 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         $('.mebar').innerHTML = bar(S.stats.fiducia);
         $('.fv').textContent = String(S.stats.fiducia);
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
-        const src = SOURCES[q.source];
         const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(q.options[q.answer])}`;
-        $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}${src ? ` <span class="small muted">Fonte: <a href="${src.url}" target="_blank" rel="noopener">${esc(src.publisher)} – ${esc(src.title)}</a></span>` : ''}</p>`;
+        $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}</p>`;
         const cont = el('button', 'btn primary', 'Continua ▶');
         cont.style.marginTop = '6px';
         $('.exp').appendChild(cont);
