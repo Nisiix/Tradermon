@@ -165,11 +165,40 @@ export function grantSeals(): number[] {
     if (S.badges < m || !S.flags[`m${m}_mission`] || S.exDone < m + 1 || S.flags.bankrupt) break;
     S.seals = m;
     got.push(m);
-    // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (missione dal Mentore o esercizio in Clinica)
-    addRep(REWARD.rep.badge / 2);
-    S.stats.xp += REWARD.xp.badge / 2;
+    // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (missione dal Mentore o esercizio in Clinica),
+    // e si riceve una volta sola anche se il Sigillo viene sospeso e poi ripreso
+    if (m > Number(S.flags.sealPaid ?? 0)) {
+      S.flags.sealPaid = m;
+      addRep(REWARD.rep.badge / 2);
+      S.stats.xp += REWARD.xp.badge / 2;
+    }
   }
   return got;
+}
+
+/**
+ * L'accredito di un esercizio all'accettazione dell'ordine è provvisorio: se l'ordine finisce annullato, scaduto o
+ * rifiutato senza esecuzione, la rata non è stata versata davvero. Gli esercizi che non sono più coperti dagli
+ * acquisti tornano "da fare", e i Sigilli ottenuti grazie a loro restano sospesi finché la rata non viene versata.
+ * Dopo la Lega non si torna indietro.
+ */
+export function reopenExercises(boughtBefore: number): string[] {
+  if (graduated()) return [];
+  const notes: string[] = [];
+  const before = S.exDone;
+  // torna indietro solo ciò che era coperto PROPRIO dall'ordine non eseguito (dopo un conto azzerato o una
+  // ripartenza gli acquisti ripartono da zero, e gli esercizi già fatti non si toccano)
+  while (S.exDone > 0 && S.portfolio.bought + 0.005 < exNeed(S.exDone - 1) && boughtBefore + 0.005 >= exNeed(S.exDone - 1)) S.exDone--;
+  if (S.exDone === before) return notes;
+  // l'attrezzo era già stato usato: resta valido, manca solo la rata
+  S.exTools = { limit: true, stop: true };
+  notes.push(`${S.exDone === 0 ? 'L\'esercizio della Valigetta' : `L'esercizio della tappa ${S.exDone}`} torna da fare: l'ordine non è stato eseguito, quindi la rata non è stata versata davvero.`);
+  const keep = Math.max(0, S.exDone - 1);
+  if (S.seals > keep) {
+    notes.push(`${S.seals - keep === 1 ? `Il Sigillo ${S.seals} resta sospeso` : `I Sigilli da ${keep + 1} a ${S.seals} restano sospesi`} finché non versi la rata con un acquisto eseguito.`);
+    S.seals = keep;
+  }
+  return notes;
 }
 
 /** Rata ancora da versare per l'esercizio in corso (0 se manca solo l'attrezzo). */
@@ -247,9 +276,11 @@ export function applyOrder(pf: Portfolio, p: PendingOrder, o: A.AlpacaOrder): { 
     pf.pending = pf.pending.filter((x) => x !== p);
     if (o.status !== 'filled') {
       // la parte non eseguita di un acquisto torna disponibile e va versata di nuovo nella tappa seguente
+      const boughtBefore = pf.bought;
       if (p.side === 'buy') pf.bought = Math.max(0, pf.bought - Math.max(0, (p.notional ?? (p.qty ?? 0) * (p.price ?? 0)) - p.filledCost));
       const why = o.status === 'expired' ? 'è scaduto a fine giornata senza essere eseguito' : o.status === 'canceled' ? 'è stato annullato' : 'è stato rifiutato da Alpaca';
       notes.push(p.type === 'stop' ? `Lo stop su ${tick} ${why}: la protezione non è più attiva. Rimettilo dalla Clinica se la vuoi ancora.` : `L'ordine ${p.type === 'limit' ? 'limite' : 'a mercato'} su ${tick} ${why}.`);
+      if (p.side === 'buy' && pf === S.portfolio) notes.push(...reopenExercises(boughtBefore));
     }
   }
   return { notes, atLoss, done, price: avg, qty: fq };
@@ -377,7 +408,7 @@ export async function cancel(p: PendingOrder): Promise<string> {
     await wait(300);
     const r = applyOrder(S.portfolio, p, await A.order(ENV, p.id));
     save();
-    return r.notes[r.notes.length - 1] ?? 'Annullamento inviato ad Alpaca.';
+    return r.notes.join(' ') || 'Annullamento inviato ad Alpaca.';
   } catch (e) { return unreachable(e); }
 }
 
@@ -414,7 +445,10 @@ export function sync(force = false): Promise<string[]> {
         const v = equity(pf);
         pf.peak = Math.max(pf.peak, v);
         pf.valueHistory.push(v);
-        if (pf.valueHistory.length > 400) pf.valueHistory.shift();
+        // le date servono ai confronti: i punti non sono giorni consecutivi, sono i giorni in cui hai aperto il gioco
+        const days = (pf.valueDays ?? []).slice(-(pf.valueHistory.length - 1));
+        pf.valueDays = [...Array(Math.max(0, pf.valueHistory.length - 1 - days.length)).fill(''), ...days, day];
+        if (pf.valueHistory.length > 400) { pf.valueHistory.shift(); pf.valueDays.shift(); }
       }
       const exMsg = closeExercises();
       if (exMsg) notes.push(exMsg);

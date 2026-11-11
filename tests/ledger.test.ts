@@ -88,6 +88,31 @@ describe('conto di gioco dentro il conto Alpaca Paper', () => {
     expect(S.portfolio.cash).toBeCloseTo(before - 300.3, 6);
   }, 20_000);
 
+  it('un ordine annullato prima dell\'esecuzione non vale come rata: esercizio e Sigillo tornano in sospeso', async () => {
+    S.badges = 2; S.flags.m2_mission = true;
+    fake.open = false;
+    // limite lontanissimo dal prezzo per tutta la rata della tappa 2: accettato, quindi esercizio e Sigillo arrivano subito
+    const need = Acc.exNeed(2) - S.portfolio.bought;
+    const r = await Acc.buy('KO', Math.ceil(need), { type: 'limit', price: 10 });
+    expect(r.ok).toBe(true);
+    expect(S.exDone).toBe(3);
+    expect(S.seals).toBe(2);
+    const rep = S.stats.reputazione;
+    // il giocatore annulla: la rata non è mai stata versata
+    const note = await Acc.cancel(S.portfolio.pending[0]);
+    expect(note).toContain('sospeso');
+    expect(S.exDone).toBe(2);
+    expect(S.seals).toBe(1);
+    fake.open = true;
+    // versata davvero: l'esercizio si richiude senza rifare l'ordine limite, il Sigillo torna e il premio non raddoppia
+    const again = await Acc.buy('KO', Math.ceil(need));
+    expect(again.filled).toBe(true);
+    expect(S.exDone).toBe(3);
+    expect(S.seals).toBe(2);
+    expect(S.stats.reputazione).toBe(rep);
+    S.badges = 1; // le prove seguenti ripartono dalla situazione della tappa 1
+  }, 20_000);
+
   it('lo stop su quote frazionarie scade a fine seduta e il gioco lo dice', async () => {
     const r = await Acc.sell('AAPL', 1.5, { type: 'stop', price: 180 });
     expect(r.ok).toBe(true);
@@ -119,7 +144,8 @@ describe('conto di gioco dentro il conto Alpaca Paper', () => {
     expect(notes.join(' ')).toContain('azzerato o sostituito');
     expect(S.portfolio.positions.length).toBe(0);
     expect(S.portfolio.cash).toBe(S.portfolio.initial);
-    expect(S.seals).toBe(1); // Attestati, esercizi e Sigilli restano
+    expect(S.seals).toBe(2); // Attestati, esercizi e Sigilli restano
+    expect(S.exDone).toBe(3);
   }, 20_000);
 
   it('le chiavi non tornano mai al browser', async () => {

@@ -80,8 +80,8 @@ export interface DifficultyDef {
 export const DIFFICULTY: Record<Difficulty, DifficultyDef> = {
   apprendista: { name: 'Apprendista', capital: 10000, fee: 0, tolerance: 0.5, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale ampio, nessun costo didattico, rate molto tolleranti. Per chi parte da zero.' },
   investitore: { name: 'Investitore', capital: 5000, fee: 0.001, tolerance: 0.3, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale medio, costo dello 0,10% per ordine, rate tolleranti.' },
-  stratega: { name: 'Stratega', capital: 2500, fee: 0.0025, tolerance: 0.15, replayLeverage: 3, bankrupt: 'una-volta', desc: 'Capitale ridotto, costo dello 0,25% per ordine, poco margine di errore. Una sola ripartenza dopo una bancarotta.' },
-  leggenda: { name: 'Leggenda', capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', desc: 'Capitale minimo, costo dello 0,50% per ordine, rate quasi esatte. Alla bancarotta la partita finisce.' },
+  stratega: { name: 'Stratega', capital: 2500, fee: 0.0025, tolerance: 0.15, replayLeverage: 3, bankrupt: 'una-volta', desc: 'Capitale ridotto, costo dello 0,25% per ordine, poco margine di errore. Una sola ripartenza dopo una bancarotta (può capitare con la leva o dopo la Lega: prima, la Riserva dell\'Accademia ti protegge).' },
+  leggenda: { name: 'Leggenda', capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', desc: 'Capitale minimo, costo dello 0,50% per ordine, rate quasi esatte. Alla bancarotta la parte pratica finisce (può capitare con la leva o dopo la Lega: prima, la Riserva dell\'Accademia ti protegge).' },
 };
 export const DIFFICULTIES = Object.keys(DIFFICULTY) as Difficulty[];
 

@@ -24,7 +24,7 @@ describe('Boss dei Mercati: quiz, qualità del piano ed esito reale', () => {
   it('l\'esito segue le barre reali: stop, obiettivo, scadenza, gap e caso prudente nella stessa candela', () => {
     const p = { entry: 100, stop: 95, target: 110 };
     expect(outcome(p, [bar(100, 104, 99, 103), bar(103, 111, 102, 110)])).toMatchObject({ how: 'obiettivo', r: 2, points: 30 });
-    expect(outcome(p, [bar(100, 101, 94, 96)])).toMatchObject({ how: 'stop', r: -1, points: 5 });
+    expect(outcome(p, [bar(100, 101, 94, 96)])).toMatchObject({ how: 'stop', r: -1, points: 0 });
     expect(outcome(p, [bar(100, 112, 94, 100)]).how).toBe('stop'); // entrambi toccati: vale lo stop
     const gap = outcome(p, [bar(90, 92, 89, 91)]);
     expect(gap.exit).toBe(90);
@@ -35,7 +35,8 @@ describe('Boss dei Mercati: quiz, qualità del piano ed esito reale', () => {
   it('quiz e piano fatti bene bastano: l\'esito reale non è mai l\'unica via per vincere', () => {
     expect(quizPoints(8, 8)).toBe(BOSS_RULES.quizMax);
     expect(bossWon(quizPoints(8, 8), BOSS_RULES.planMax, 0)).toBe(true);
-    expect(bossWon(quizPoints(BOSS_RULES.quizMin, 8), BOSS_RULES.planMax, 5)).toBe(false);
+    expect(bossWon(quizPoints(7, 8), BOSS_RULES.planMax, 0)).toBe(false); // 7 su 8 e stop pieno: non basta
+    expect(bossWon(quizPoints(7, 8), BOSS_RULES.planMax, 10)).toBe(true);
     expect(bossWon(quizPoints(BOSS_RULES.quizMin, 8), BOSS_RULES.planMax, 20)).toBe(true);
     // un esito fortunato non salva un piano costruito male
     expect(bossWon(quizPoints(5, 8), 8, BOSS_RULES.outcomeMax)).toBe(false);

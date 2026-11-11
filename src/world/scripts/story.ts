@@ -7,7 +7,7 @@ import { runDuel } from '../../ui/battle';
 import { trade } from '../../ui/clinic';
 import { openGameAccount } from '../../ui/broker';
 import { hasPrices } from '../../systems/realdata';
-import { caseOpen } from '../../systems/account';
+import { caseOpen, releasedFrac } from '../../systems/account';
 import { fmtMoney, fmtPx } from '../../systems/portfolio';
 import { DIFFICULTY, RATE } from '../../systems/balance';
 import { pickQuestions, targetDiff, storyStage } from '../../systems/quiz';
@@ -15,7 +15,7 @@ import { trackTopics } from '../../data/quiz/build';
 import { antagonist } from '../../data/story';
 import { DUEL, REWARD } from '../../systems/balance';
 import { ASSETS, ASSET_BY_ID, starterFor, starterOptions, SECTOR_LABEL } from '../../data/assets';
-import { metrics } from '../../systems/market';
+import { metrics, tradingDaysBetween } from '../../systems/market';
 import { PAL } from '../../art/art';
 import { beep } from '../../systems/audio';
 import { track } from '../../systems/progress';
@@ -175,34 +175,52 @@ async function rivalDuel(k: number, w: WorldApi) {
   save();
 }
 
-async function comparePortfolios() {
-  const style = (S.flags.rivalStyle as string) ?? 'audace';
-  const n = 120;
+/**
+ * Confronto con il rivale sugli STESSI giorni reali: quelli in cui il tuo conto è stato misurato, dal più vecchio
+ * disponibile. Il rivale ha il tuo stesso capitale e la tua stessa Riserva, e investe la parte liberata secondo il
+ * suo stile. Con pochi giorni si guardano solo rendimento e calo massimo: volatilità e Sharpe non direbbero nulla.
+ */
+export function rivalSeries(style: string): { me: number[]; rival: number[]; days: number } | null {
+  const pf = S.portfolio;
   const hist = S.market.history;
-  // senza prezzi reali (conto non collegato) non c'è nulla da confrontare: il gioco non inventa andamenti
+  const dates = pf.valueDays ?? [];
+  const last = S.market.lastBar ? Date.parse(S.market.lastBar) : 0;
   const pool = ASSETS.filter((a) => classes().includes(a.cls) && (hist[a.id]?.length ?? 0) >= 30);
-  if (!hasPrices() || !pool.length || S.portfolio.valueHistory.length < 5) { await say([`${S.rival} voleva confrontare i portafogli, ma ${!hasPrices() ? 'il tuo conto non è collegato' : 'il tuo conto è ancora troppo giovane'}: servono qualche giorno di storia e i prezzi veri.`], 'Narratore'); return; }
+  if (!last || !pool.length) return null;
   const picks = style === 'audace' ? pool.filter((a) => a.risk >= 4).slice(0, 2) : pool.filter((a) => a.risk <= 2).slice(0, 1);
   const chosen = picks.length ? picks : pool.slice(0, 1);
-  const investedShare = style === 'audace' ? 1 : 0.25;
-  const rv: number[] = [];
-  for (let i = 0; i < n; i++) {
-    let growth = 0;
-    for (const a of chosen) { const h = hist[a.id].slice(-n); growth += (h[i] ?? h[h.length - 1]) / h[0] / chosen.length; }
-    rv.push(capital() * (1 - investedShare + investedShare * growth));
-  }
-  const me = metrics(S.portfolio.valueHistory.slice(-n));
-  const rm = metrics(rv);
+  const len = Math.min(...chosen.map((a) => hist[a.id].length));
+  // posizione di ogni giorno misurato dentro lo storico reale (che finisce all'ultima chiusura scaricata)
+  const pts: { v: number; i: number }[] = [];
+  pf.valueHistory.forEach((v, k) => {
+    const d = dates[k];
+    if (!d) return;
+    const back = tradingDaysBetween(Date.parse(d), last);
+    if (back < len) pts.push({ v, i: len - 1 - back });
+  });
+  if (pts.length < 5) return null;
+  const share = (style === 'audace' ? 1 : 0.25) * releasedFrac();
+  const at = (i: number) => chosen.reduce((s, a) => { const h = hist[a.id].slice(-len); return s + h[i] / h[pts[0].i] / chosen.length; }, 0);
+  return { me: pts.map((p) => p.v), rival: pts.map((p) => capital() * (1 - share + share * at(p.i))), days: pts.length };
+}
+
+async function comparePortfolios() {
+  const style = (S.flags.rivalStyle as string) ?? 'audace';
+  // senza prezzi reali (conto non collegato) non c'è nulla da confrontare: il gioco non inventa andamenti
+  const cmp = hasPrices() ? rivalSeries(style) : null;
+  if (!cmp) { await say([`${S.rival} voleva confrontare i portafogli, ma ${!hasPrices() ? 'il tuo conto non è collegato' : 'il tuo conto è ancora troppo giovane'}: servono i prezzi veri e almeno cinque giorni in cui il conto è stato misurato.`], 'Narratore'); return; }
+  const me = metrics(cmp.me);
+  const rm = metrics(cmp.rival);
+  const full = cmp.days >= 20;
   const row = (l: string, a: string, b: string) => `<tr><td>${l}</td><td class="n">${a}</td><td class="n">${b}</td></tr>`;
   await modal('Confronto dei portafogli', ({ body, button, close }) => {
-    body.innerHTML = `<p>Ultimi giorni di mercato reali (${Math.min(n, S.portfolio.valueHistory.length)} per te, ${n} per ${esc(S.rival)}). ${S.rival} ha uno stile <b>${style}</b>.</p>
+    body.innerHTML = `<p>Stessi ${cmp.days} giorni reali per entrambi, stesso capitale e stessa Riserva dell'Accademia. ${S.rival} ha uno stile <b>${style}</b>.</p>
       <table class="t"><tr><th></th><th class="n">${esc(S.name)}</th><th class="n">${esc(S.rival)}</th></tr>
       ${row('Rendimento', (me.ret * 100).toFixed(1) + '%', (rm.ret * 100).toFixed(1) + '%')}
-      ${row('Volatilità', (me.vol * 100).toFixed(1) + '%', (rm.vol * 100).toFixed(1) + '%')}
       ${row('Max drawdown', '−' + (me.mdd * 100).toFixed(1) + '%', '−' + (rm.mdd * 100).toFixed(1) + '%')}
-      ${row('Sharpe', me.sharpe.toFixed(2), rm.sharpe.toFixed(2))}</table>
-      <p>${me.sharpe >= rm.sharpe ? 'Il tuo rendimento corretto per il rischio è migliore.' : `${esc(S.rival)} ha uno Sharpe migliore in questo periodo.`} ${rm.ret > me.ret && rm.vol > me.vol ? 'Ha guadagnato di più, ma con molte più oscillazioni: in un periodo diverso avrebbe potuto perdere molto.' : ''}</p>
-      <p class="small muted">Lo Sharpe divide il rendimento per la volatilità: confronta in modo equo stili diversi.</p>`;
+      ${full ? row('Volatilità', (me.vol * 100).toFixed(1) + '%', (rm.vol * 100).toFixed(1) + '%') + row('Sharpe', me.sharpe.toFixed(2), rm.sharpe.toFixed(2)) : ''}</table>
+      <p>${full ? (me.sharpe >= rm.sharpe ? 'Il tuo rendimento corretto per il rischio è migliore.' : `${esc(S.rival)} ha uno Sharpe migliore in questo periodo.`) : (me.mdd <= rm.mdd ? 'Finora il tuo conto è sceso meno del suo nei momenti peggiori.' : `Finora il conto di ${esc(S.rival)} è sceso meno del tuo nei momenti peggiori.`)} ${rm.ret > me.ret && rm.mdd > me.mdd ? 'Ha guadagnato di più, ma con cali più profondi: in un periodo diverso avrebbe potuto perdere molto.' : ''}</p>
+      <p class="small muted">${full ? 'Lo Sharpe divide il rendimento per la volatilità: confronta in modo equo stili diversi.' : 'Con meno di 20 giorni misurati volatilità e Sharpe non sono affidabili: li vedrai più avanti.'} Pochi giorni non dicono chi è più bravo: dicono solo com'è andata.</p>`;
     button('Ok', () => close(), 'primary');
   });
 }

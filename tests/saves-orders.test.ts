@@ -40,6 +40,13 @@ describe('registro del conto di gioco', () => {
     expect(r.notes.join(' ')).toContain('scaduto');
     expect(pf.bought).toBe(0);
     expect(Acc.usableCash()).toBeCloseTo(500, 6);
+    // dopo un conto azzerato gli acquisti ripartono da zero: un ordine scaduto non riapre gli esercizi già fatti
+    S.exDone = 4; S.seals = 3; S.badges = 4;
+    const q = pending({ notional: 100, reserved: 100.1 });
+    pf.pending.push(q); pf.bought = 100;
+    Acc.applyOrder(pf, q, order({ status: 'canceled' }));
+    expect(S.exDone).toBe(4);
+    expect(S.seals).toBe(3);
     expect(pf.cash).toBe(5000);
   });
   it('le rate liberano il capitale un Attestato alla volta e gli esercizi si aprono in ordine', () => {
@@ -119,6 +126,31 @@ describe('registro del conto di gioco', () => {
     // i Sigilli tornano con Attestato e missione: gli esercizi sul conto vero sono già stati fatti
     S1.badges = 1; S1.flags.m1_mission = true;
     expect(Acc.grantSeals()).toEqual([1]);
+  });
+});
+
+describe('confronto con il rivale', () => {
+  it('usa gli stessi giorni reali del giocatore, lo stesso capitale e la stessa Riserva', async () => {
+    const { rivalSeries } = await import('../src/world/scripts/story');
+    const S = newGame();
+    S.flags.starter = true; S.track = 'stocks';
+    expect(rivalSeries('audace')).toBeNull(); // nessun prezzo scaricato
+    // 60 sedute di storico di prova, in salita dell'1% al giorno, fino a venerdì 6 novembre 2026
+    for (const id of ['AAPL', 'KO', 'JNJ', 'JPM', 'NEE', 'XOM', 'MSFT', 'PG', 'NVDA', 'UNH', 'V', 'DUK', 'TSLA', 'CVX']) S.market.history[id] = Array.from({ length: 60 }, (_, i) => 100 * 1.01 ** i);
+    S.market.lastBar = '2026-11-06'; S.market.asOf = Date.now();
+    const pf = S.portfolio;
+    // il conto è stato misurato in sei giorni non consecutivi
+    pf.valueDays = ['2026-10-19', '2026-10-21', '2026-10-26', '2026-10-30', '2026-11-04', '2026-11-06'];
+    pf.valueHistory = [5000, 5005, 5010, 5008, 5020, 5030];
+    const c = rivalSeries('audace')!;
+    expect(c.days).toBe(6);
+    expect(c.me).toEqual(pf.valueHistory);
+    expect(c.rival[0]).toBeCloseTo(5000, 6);
+    // 14 sedute tra il 19 ottobre e il 6 novembre, solo il 10% liberato è investito
+    expect(c.rival[5]).toBeCloseTo(5000 * (0.9 + 0.1 * 1.01 ** 14), 4);
+    expect(rivalSeries('prudente')!.rival[5]).toBeLessThan(c.rival[5]);
+    pf.valueDays = pf.valueDays.slice(0, 3); pf.valueHistory = pf.valueHistory.slice(0, 3);
+    expect(rivalSeries('audace')).toBeNull(); // conto troppo giovane
   });
 });
 

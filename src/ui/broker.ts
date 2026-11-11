@@ -162,7 +162,7 @@ export function stageHtml(): string {
     <p class="small">Capitale ${fmtMoney(pf.initial)} (${DIFFICULTY[S.difficulty].name}) · liberato ${(rel * 100).toFixed(0)}% · Riserva dell'Accademia ${fmtMoney(Acc.locked())} · puoi investire ancora ${fmtMoney(Acc.usableCash())}.</p>
     ${ex.allDone ? '<p class="good">Tutti gli esercizi di tappa sono completati.</p>' : `<p class="small">${ex.open ? `<b>Esercizio in corso (${ex.stage === 0 ? 'Valigetta' : 'tappa ' + ex.stage}):</b> acquisti accettati ${fmtMoney(ex.got)} su ${fmtMoney(ex.need)} in totale${ex.toolOk ? '' : ' · manca: ' + ex.tool}` : `Il prossimo esercizio si apre con l'Attestato del Mentore ${ex.stage}.`}</p>`}
     <table class="t"><tr><th>Tappa</th><th>Esercizio sul conto</th><th class="n">Acquisti totali</th><th></th></tr>${rows}</table>
-    <p class="small muted">${nextSealLine()} Le rate hanno una tolleranza solo verso il basso (${Math.round(DIFFICULTY[S.difficulty].tolerance * 100)}% in ${DIFFICULTY[S.difficulty].name}): puoi versare meno, mai più del capitale liberato. Un esercizio vale quando Alpaca accetta l'ordine, anche a mercato chiuso.</p>`;
+    <p class="small muted">${nextSealLine()} Le rate hanno una tolleranza solo verso il basso (${Math.round(DIFFICULTY[S.difficulty].tolerance * 100)}% in ${DIFFICULTY[S.difficulty].name}): puoi versare meno, mai più del capitale liberato. Un esercizio vale quando Alpaca accetta l'ordine, anche a mercato chiuso; se poi l'ordine viene annullato o scade senza essere eseguito, l'esercizio torna da fare.</p>`;
 }
 
 export async function stageScreen(): Promise<void> {

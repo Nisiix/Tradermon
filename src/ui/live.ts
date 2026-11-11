@@ -110,7 +110,7 @@ export async function openObservatory() {
           <p class="msg small"></p>
           <p class="small muted">Dati forniti da Alpaca per il tuo conto. Nessun consiglio: l\'Osservatorio serve a confrontare ciò che hai scritto nel Diario con quello che è successo.</p>`;
         const look = body.querySelector('.look') as HTMLButtonElement, msg = body.querySelector('.msg') as HTMLElement, inp = body.querySelector('.sym') as HTMLInputElement;
-        (body.querySelector('.chart') as HTMLButtonElement).addEventListener('click', () => { const sym = inp.value.trim().toUpperCase(); if (sym) void realChart(sym); });
+        (body.querySelector('.chart') as HTMLButtonElement | null)?.addEventListener('click', () => { const sym = inp.value.trim().toUpperCase(); if (sym) void realChart(sym); });
         look.addEventListener('click', async () => {
           const sym = inp.value.trim().toUpperCase();
           if (!sym) return;
@@ -256,11 +256,11 @@ async function accountScreen(env: A.Env) {
       try {
         const [acc, pos, ord, clk] = await Promise.all([A.account(env), A.positions(env), A.openOrders(env), A.clock(env).catch(() => null)]);
         body.innerHTML = `
-          ${env === 'live' ? '<p class="bad"><b>Denaro reale.</b> Nessuna XP o ricompensa di gioco da queste operazioni.</p>' : '<p class="small muted">Conto Paper di Alpaca: denaro finto, prezzi reali.</p>'}
+          ${env === 'live' ? '<p class="bad"><b>Denaro reale.</b> Nessuna XP o ricompensa di gioco da queste operazioni.</p>' : '<p class="small muted">Conto Paper di Alpaca, intero: denaro finto, prezzi reali. Il <b>conto di gioco</b> è una parte di questo conto: lo trovi nel Check-up della Clinica, e si opera solo da lì (voce «Compra / Vendi»), così ogni ordine entra nel registro delle tappe. Qui si guarda soltanto.</p>'}
           <p><b>Valore:</b> ${Number(acc.portfolio_value).toFixed(2)} ${acc.currency} · <b>Liquidità:</b> ${Number(acc.cash).toFixed(2)} · <b>Stato:</b> ${esc(acc.status)} · ${clk ? (clk.is_open ? '<span class="good">Mercato aperto</span>' : 'Mercato chiuso') : ''}</p>
           ${pos.length ? `<table class="t"><tr><th>Simbolo</th><th class="n">Quantità</th><th class="n">Prezzo medio</th><th class="n">Valore</th><th class="n">P&amp;L</th></tr>${pos.map((p) => `<tr><td>${esc(p.symbol)}</td><td class="n">${p.qty}</td><td class="n">${Number(p.avg_entry_price).toFixed(2)}</td><td class="n">${Number(p.market_value).toFixed(2)}</td><td class="n ${Number(p.unrealized_pl) >= 0 ? 'good' : 'bad'}">${(Number(p.unrealized_plpc) * 100).toFixed(2)}%</td></tr>`).join('')}</table>` : '<p class="muted">Nessuna posizione.</p>'}
           <h4>Ordini aperti</h4><div class="oo">${ord.length ? '' : '<span class="muted">Nessuno</span>'}</div>
-          <h4>Nuovo ordine</h4>
+          ${env === 'live' ? `          <h4>Nuovo ordine</h4>
           <div class="grid2">
             <label>Simbolo (es. ${classes().includes('crypto') ? 'BTC/USD' : 'un ticker USA'})<span class="row"><input class="tx sym" spellcheck="false" style="flex:1"><button class="btn chart" title="Grafico a candele prima di decidere">Grafico</button></span></label>
             <label>Lato<select class="tx side"><option value="buy">Acquisto</option><option value="sell">Vendita</option></select></label>
@@ -268,7 +268,7 @@ async function accountScreen(env: A.Env) {
             <label>Importo ($)<input class="tx amt" type="number" min="1" step="1" value="10"></label>
             <label>Prezzo limite/stop<input class="tx pr" type="number" step="any"></label>
           </div>
-          <p class="small muted">Il gioco non suggerisce titoli: la scelta è solo tua. Classi consentite dal tuo percorso: ${classes().map((c) => (c === 'crypto' ? 'cripto' : c === 'etf' ? 'ETF (us_equity)' : 'azioni (us_equity)')).join(', ')}.</p>
+          <p class="small muted">Il gioco non suggerisce titoli: la scelta è solo tua. Classi consentite dal tuo percorso: ${classes().map((c) => (c === 'crypto' ? 'cripto' : c === 'etf' ? 'ETF (us_equity)' : 'azioni (us_equity)')).join(', ')}.</p>` : ''}
           <p class="msg"></p>`;
         (body.querySelector('.chart') as HTMLButtonElement).addEventListener('click', () => {
           const sym = (body.querySelector('.sym') as HTMLInputElement).value.trim().toUpperCase();
@@ -281,9 +281,10 @@ async function accountScreen(env: A.Env) {
           const r = el('div', 'row small', `${esc(o.side)} ${esc(o.type)} ${esc(o.symbol)} ${o.notional ? o.notional + ' $' : o.qty} · ${esc(o.status)}`);
           const b = el('button', 'btn', 'Annulla');
           b.addEventListener('click', async () => { try { await A.cancelOrder(env, o.id); toast('Ordine annullato.'); void load(); } catch (e) { toast((e as Error).message); } });
-          r.appendChild(b); oo.appendChild(r);
+          if (env === 'live') r.appendChild(b);
+          oo.appendChild(r);
         });
-        button2(body, env, load);
+        if (env === 'live') button2(body, env, load);
       } catch (e) { body.innerHTML = `<p class="bad">${esc((e as Error).message)}</p>`; }
     };
     void load();

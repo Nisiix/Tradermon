@@ -183,11 +183,24 @@ async function sealChallenge(m: number, w: WorldApi) {
   ], md.name);
 }
 
+/** Periodo reale di riserva per le prove che chiedono di reggere un calo; per le altre vale un anno tranquillo. */
+const ALT_PERIOD: Record<string, string> = { m6: 'sb_bear', m8: 'sb_storm', l2: 'sb_storm', l5: 'sb_bear' };
+
 async function runMission(m: Mission): Promise<{ ok: boolean; detail: string } | null> {
   if (m.kind === 'pick') return runPick(m);
   await say(['Benvenuto nella Macchina del Tempo!', 'Usa il pulsante ▶ per far scorrere i giorni, compra e vendi quando vuoi. I prezzi sono quelli veri di quel periodo, riportati a base 100; i nomi li scoprirai alla fine.'], 'Macchina del Tempo');
-  const r = await runSim({ mission: m });
+  // valvola: dopo tre tentativi falliti sullo stesso periodo si può provare la stessa prova su un altro periodo reale,
+  // così un periodo sfortunato non blocca mai un Sigillo o la Lega
+  const failKey = `${m.id}_fails`;
+  let mission = m;
+  if (Number(S.flags[failKey] ?? 0) >= 3) {
+    const alt = SANDBOX.find((x) => x.id === (ALT_PERIOD[m.id] ?? 'sb_normal'))!;
+    const c = await choose(['Provo su un altro periodo', 'Resto su questo'], { prompt: 'Hai già tentato tre volte su questo periodo. La stessa prova, con le stesse regole, si può fare su un altro periodo vero di mercato.', who: 'Macchina del Tempo' });
+    if (c === 0) mission = { ...m, scenario: { ...m.scenario, window: alt.window, news: undefined }, brief: `${m.brief} (Periodo alternativo: le notizie non sono annunciate.)` };
+  }
+  const r = await runSim({ mission });
   if (!r) return null;
+  S.flags[failKey] = r.ok ? 0 : Number(S.flags[failKey] ?? 0) + 1;
   recordMission(m.id, r);
   if (r.ok && r.lossSales === 0 && r.orders > 0) S.flags.missionNoLossSale = true;
   // il processo conta anche se l'obiettivo non è raggiunto: le stelle danno Conoscenza e restano nella Cartella

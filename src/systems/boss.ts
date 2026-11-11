@@ -90,7 +90,8 @@ export function outcome(p: Pick<BossPlan, 'entry' | 'stop' | 'target'>, bars: { 
     if (b.h >= p.target) { exit = p.target; how = 'obiettivo'; break; }
   }
   const r = (exit - p.entry) / risk;
-  const points = r >= 1 ? BOSS_RULES.outcomeMax : r > 0 ? 20 : r >= -0.5 ? 10 : r >= -1.01 ? 5 : 0;
+  // uno stop pieno non dà punti: solo quiz e piano perfetti vincono a prescindere dall'esito
+  const points = r >= 1 ? BOSS_RULES.outcomeMax : r > 0 ? 20 : r >= -0.5 ? 10 : 0;
   return { exit, how, r, points, bars: bars.length };
 }
 

@@ -1,3 +1,4 @@
+import type { BossRun } from '../types';
 // Boss dei Mercati: interfaccia della sfida (regole e punteggi in systems/boss.ts).
 import * as A from '../systems/alpaca';
 import { S, save } from '../systems/state';
@@ -18,16 +19,24 @@ const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 const when = (t: number) => new Date(t).toLocaleString('it-IT', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
 const cls = (id: string) => (id.includes('/') ? 'crypto' : 'stocks') as 'crypto' | 'stocks';
 
+/** Sfide in corso, una per Boss (i salvataggi precedenti ne avevano una sola: viene portata qui). */
+function runs(): Record<string, BossRun> {
+  const b = S.boss;
+  b.runs ??= {};
+  if (b.run) { b.runs[b.run.id] = b.run; b.run = null; }
+  return b.runs;
+}
+
 export async function bossMenu(): Promise<void> {
   for (;;) {
-    const run = S.boss.run;
-    const opts = [...BOSSES.map((b) => `${b.name} · ${b.durationLabel}${S.boss.beaten.includes(b.id) ? ' ✓' : ''}${run?.id === b.id ? (run.plan ? ' · piano in corso' : ' · quiz superato') : ''}`), 'Come funziona', 'Esci'];
+    const all = runs();
+    const opts = [...BOSSES.map((b) => `${b.name} · ${b.durationLabel}${S.boss.beaten.includes(b.id) ? ' ✓' : ''}${all[b.id] ? (all[b.id].plan ? ' · piano in corso' : ' · quiz superato') : ''}`), 'Come funziona', 'Esci'];
     const c = await choose(opts, { cancel: true, title: 'BOSS DEI MERCATI', who: KEEPER });
     if (c < 0 || c === opts.length - 1) return;
     if (c === BOSSES.length) {
       await say([
         'Ogni Boss si affronta in due tempi: un quiz di livello esperto, poi UNA sola decisione su un grafico vero. Ingresso al prezzo del momento, uno stop, un obiettivo, quanto rischi.',
-        'Il piano non si tocca più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata.',
+        'Il piano non si tocca più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata. I tre Boss si possono sfidare insieme: ognuno ha il suo mandato.',
         `Il Boss ha ${BOSS_RULES.energy} punti di energia: fino a ${BOSS_RULES.quizMax} li toglie il quiz, fino a ${BOSS_RULES.planMax} la qualità del piano, fino a ${BOSS_RULES.outcomeMax} l'esito reale. Ne servono ${BOSS_RULES.win}.`,
         'Quiz e piano perfetti bastano da soli: l\'esito non lo controlla nessuno, quindi non può essere l\'unica strada. Se perdi, si rifà tutto il Boss, quiz compreso.',
         'Nessun ordine viene inviato: è un mandato su carta, valutato sui prezzi reali.',
@@ -39,7 +48,7 @@ export async function bossMenu(): Promise<void> {
 }
 
 function lose(def: BossDef, lines: string[]): Promise<void> {
-  S.boss.run = null;
+  delete runs()[def.id];
   S.boss.tries[def.id] = (S.boss.tries[def.id] ?? 0) + 1;
   save();
   beep('lose');
@@ -48,13 +57,7 @@ function lose(def: BossDef, lines: string[]): Promise<void> {
 
 async function bossFight(def: BossDef): Promise<void> {
   if (!(await requireAccount('sfidare un Boss dei Mercati', KEEPER))) return;
-  let run = S.boss.run;
-  if (run && run.id !== def.id) {
-    const other = BOSSES.find((b) => b.id === run!.id);
-    const c = await choose(['Continuo quella', 'Abbandono e sfido questo'], { cancel: true, prompt: `Hai già una sfida in corso con ${other?.name ?? 'un altro Boss'}: se ne affronta uno alla volta.`, who: KEEPER });
-    if (c !== 1) return;
-    S.boss.run = null; S.boss.tries[run.id] = (S.boss.tries[run.id] ?? 0) + 1; run = null; save();
-  }
+  const run: BossRun | undefined = runs()[def.id];
   if (run?.plan) return resolve(def);
   if (!run) {
     await say(def.intro, def.name);
@@ -65,7 +68,7 @@ async function bossFight(def: BossDef): Promise<void> {
     const r = await runDuel({ foeName: def.name, foeTitle: def.title, foePal: def.pal, questions: qs, need: BOSS_RULES.quizMin, damage: 0, fixed: true });
     S.stats.fiducia = fid;
     if (r.correct < BOSS_RULES.quizMin) return lose(def, [`${r.correct} risposte giuste su ${r.total}: ne servivano almeno ${BOSS_RULES.quizMin} per presentare un piano.`]);
-    S.boss.run = { id: def.id, quiz: r.correct, quizMax: r.total, plan: null, startedAt: Date.now() };
+    runs()[def.id] = { id: def.id, quiz: r.correct, quizMax: r.total, plan: null, startedAt: Date.now() };
     save();
     await say([`${r.correct} su ${r.total}: mi hai tolto ${quizPoints(r.correct, r.total)} punti di energia. Ora il piano.`], def.name);
   }
@@ -132,7 +135,19 @@ async function planForm(def: BossDef): Promise<void> {
     if (err) { await say(`Nel frattempo il prezzo si è mosso a ${fmtPx(last.price)} $ e il piano non regge più: ${err}`, KEEPER); return planForm(def); }
     const sc = planScore(plan, vol);
     plan.quality = sc.points;
-    S.boss.run!.plan = plan;
+    const cur = runs()[def.id];
+    // un piano che non può vincere nemmeno con l'esito migliore non viene registrato: niente attese a vuoto
+    const best = quizPoints(cur.quiz, cur.quizMax) + sc.points + BOSS_RULES.outcomeMax;
+    if (best < BOSS_RULES.win) {
+      await modal('Piano da rifare', ({ body, button, close }) => {
+        body.innerHTML = `<p><b>Qualità del piano: ${sc.points}/${BOSS_RULES.planMax}.</b> Con il tuo quiz (${cur.quiz}/${cur.quizMax}) anche l'esito migliore porterebbe a ${best} punti: ne servono ${BOSS_RULES.win}.</p>
+          <ul class="small">${sc.notes.map((n) => `<li class="${n.ok ? 'good' : 'bad'}">${esc(n.text)}</li>`).join('')}</ul>
+          <p class="small">Non lo registro: aspettare ${esc(def.durationLabel.split(',')[0])} per una sconfitta già scritta non insegna nulla. Il quiz resta valido: correggi il piano.</p>`;
+        button('Rifaccio il piano', () => close(), 'primary');
+      });
+      return planForm(def);
+    }
+    cur.plan = plan;
     save();
     await modal('Piano registrato', ({ body, button, close }) => {
       body.innerHTML = `<p>Ingresso <b>${fmtPx(plan.entry)} $</b> su ${esc(ASSET_BY_ID[plan.asset].ticker)} · stop ${fmtPx(plan.stop)} · obiettivo ${fmtPx(plan.target)} · rischio ${(plan.risk * 100).toFixed(1)}%.</p>
@@ -145,7 +160,7 @@ async function planForm(def: BossDef): Promise<void> {
 }
 
 async function resolve(def: BossDef): Promise<void> {
-  const run = S.boss.run!;
+  const run = runs()[def.id];
   const p = run.plan!;
   const a = ASSET_BY_ID[p.asset];
   const ready = p.deadline + BOSS_RULES.evalDelayMs;
@@ -179,7 +194,7 @@ async function resolve(def: BossDef): Promise<void> {
     button('Continua', () => close(), 'primary');
   }, { closable: false });
   if (!won) return lose(def, ['Non è bastato.']);
-  S.boss.run = null;
+  delete runs()[def.id];
   const first = !S.boss.beaten.includes(def.id);
   if (first) { S.boss.beaten.push(def.id); reward({ rep: REWARD.rep.boss, xp: REWARD.xp.legend, save: false }); }
   save();

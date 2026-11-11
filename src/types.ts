@@ -141,6 +141,8 @@ export interface Portfolio {
   log: OrderLog[];
   peak: number;
   valueHistory: number[];
+  /** Data (AAAA-MM-GG) di ogni punto di valueHistory: il conto si misura solo nei giorni in cui il gioco lo vede. */
+  valueDays?: string[];
   eggs: { asset: string; amount: number; hatchDay: number }[];
   drip: boolean;
   monthly: number;
@@ -281,7 +283,8 @@ export interface BossPlan {
   quality: number;
 }
 export interface BossRun { id: string; quiz: number; quizMax: number; plan: BossPlan | null; startedAt: number }
-export interface BossState { run: BossRun | null; beaten: string[]; tries: Record<string, number> }
+/** `runs`: sfide in corso, una per Boss (i mandati corrono in parallelo). `run` resta per i salvataggi precedenti. */
+export interface BossState { run: BossRun | null; runs?: Record<string, BossRun>; beaten: string[]; tries: Record<string, number> }
 
 export interface AgendaTask { id: string; ev: string; need: number; got: number; done: boolean }
 

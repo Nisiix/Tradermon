@@ -3,6 +3,7 @@ import { processReview, type Replay, type SimMission, type SimResult } from '../
 import { metrics } from '../systems/market';
 import { loadWindow } from '../systems/realdata';
 import { ASSETS, ASSET_BY_ID, SECTOR_LABEL, SECTOR_COLOR, anonymous } from '../data/assets';
+import { shuffle } from '../systems/rng';
 import { type Book, marketBuy, marketSell, placeOrder, processOrders, value, weights, fmtPx, fmtMoney, fmtPct, fmtQty, spreadOf } from '../systems/portfolio';
 import { S, hasTech, TECH, classes } from '../systems/state';
 import { DIFFICULTY, LEVERAGE } from '../systems/balance';
@@ -46,7 +47,10 @@ async function loadSim(o: SimOpts): Promise<SimData | string> {
     // prezzi a base 100 e nomi nascosti: il prezzo vero rivelerebbe il periodo, e quindi il finale
     const prices: Record<string, number[]> = {};
     for (const a of w.assets) { const p0 = w.prices[a.id][0]; prices[a.id] = w.prices[a.id].map((v) => (v / p0) * 100); }
-    return { assets: anonymous(w.assets), real: w.assets, prices, dates: w.dates, anon: true };
+    // a ogni tentativo l'ordine delle righe e le lettere ("Tecnologia A", "Tecnologia B") cambiano: chi rigioca non può
+    // affidarsi alla memoria di quale riga è salita
+    const real = shuffle(w.assets);
+    return { assets: anonymous(real), real, prices, dates: w.dates, anon: true };
   } catch (e) {
     return `Non riesco a scaricare i dati reali di questo periodo: ${(e as Error).message}`;
   }
@@ -327,7 +331,8 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
         </table>
         ${o.mission ? (() => { const pr = processReview(res); return `<p><b>Processo: ${'★'.repeat(pr.stars)}${'☆'.repeat(3 - pr.stars)}</b></p><ul class="small" style="margin:0 0 6px;padding-left:18px">${pr.notes.map((n) => `<li class="${n.ok ? 'good' : 'bad'}">${esc(n.text)}</li>`).join('')}</ul>`; })() : ''}
         ${liquidations ? `<p class="bad small">Liquidazioni forzate subite: ${liquidations}. Con la leva un ribasso normale diventa una perdita definitiva.</p>` : ''}
-        ${data.anon ? `<div class="box small" style="padding:8px;margin:6px 0"><b>Ora si può dire.</b> Era il periodo reale dal ${fmtDate(data.dates[0])} al ${fmtDate(data.dates[data.dates.length - 1])}.<br>${assets.map((a, i) => `${esc(a.name)} = <b>${esc(data.real[i].name)}</b> (${esc(data.real[i].ticker)}) ${fmtPct(series.prices[a.id][days] / series.prices[a.id][0] - 1, 0)}`).join(' · ')}<br><span class="muted">Dati di mercato Alpaca. I rendimenti passati non dicono nulla di quelli futuri.</span></div>` : ''}
+        ${data.anon && o.mission && !chk.ok ? '<div class="box small" style="padding:8px;margin:6px 0"><b>Periodo e nomi restano coperti.</b> Li scoprirai quando superi la prova: così, se riprovi, giudichi di nuovo senza sapere come va a finire. Le righe cambiano ordine e lettera a ogni tentativo.</div>' : ''}
+        ${data.anon && (!o.mission || chk.ok) ? `<div class="box small" style="padding:8px;margin:6px 0"><b>Ora si può dire.</b> Era il periodo reale dal ${fmtDate(data.dates[0])} al ${fmtDate(data.dates[data.dates.length - 1])}.<br>${assets.map((a, i) => `${esc(a.name)} = <b>${esc(data.real[i].name)}</b> (${esc(data.real[i].ticker)}) ${fmtPct(series.prices[a.id][days] / series.prices[a.id][0] - 1, 0)}`).join(' · ')}<br><span class="muted">Dati di mercato Alpaca. I rendimenti passati non dicono nulla di quelli futuri.</span></div>` : ''}
         <p class="small muted">Il rendimento conta, ma in Tradermon si vince con il rendimento corretto per il rischio: lo Sharpe e il drawdown dicono quanto è stato "faticoso" ottenerlo.</p>`;
       foot.innerHTML = '';
       button('Continua', () => close({ ...res, ...chk }), 'primary');
