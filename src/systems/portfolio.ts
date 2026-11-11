@@ -16,7 +16,7 @@ export function spreadOf(a: AssetDef): number {
   return a.cls === 'crypto' ? 0.005 : 0.001;
 }
 
-/** Allocazione obiettivo suggerita dal profilo di rischio (rischiosi, difensivi, liquidità). */
+/** Valore iniziale interno dell'allocazione, sostituito subito da quella che il giocatore scrive all'apertura del conto. */
 export function presetTarget(profile: string): { risky: number; defensive: number; cash: number } {
   return profile === 'prudente' ? { risky: 40, defensive: 50, cash: 10 } : profile === 'audace' ? { risky: 80, defensive: 10, cash: 10 } : { risky: 60, defensive: 30, cash: 10 };
 }
@@ -173,25 +173,19 @@ export function diagnosis(pf: Portfolio, prices: Record<string, number>, day: nu
   return out;
 }
 
-/** Ordini proposti per tornare all'allocazione obiettivo (il giocatore conferma ognuno). */
-export function rebalancePlan(pf: Portfolio, prices: Record<string, number>, locked = 0): { id: string; side: 'buy' | 'sell'; amount: number }[] {
+/**
+ * Calcolo del ribilanciamento: per ogni gruppo (rischiosi, difensivi, liquidità) quanto il conto si è allontanato
+ * dal piano del giocatore, in punti e in dollari. Non propone ordini né titoli: quali titoli usare lo decide il giocatore.
+ */
+export function rebalanceGap(pf: Portfolio, prices: Record<string, number>, locked = 0): { group: 'risky' | 'defensive' | 'cash'; now: number; target: number; amount: number }[] {
   const tot = Math.max(0, value(pf, prices) - locked);
   const al = allocation(pf, prices, locked);
-  const plan: { id: string; side: 'buy' | 'sell'; amount: number }[] = [];
-  const groups: ('risky' | 'defensive')[] = ['risky', 'defensive'];
-  for (const g of groups) {
-    const diff = ((pf.target[g] - al[g]) / 100) * tot;
-    if (Math.abs(diff) < tot * 0.02) continue;
-    const members = pf.positions.filter((p) => (g === 'defensive') === isDefensive(ASSET_BY_ID[p.id]));
-    if (members.length === 0) continue;
-    const gv = members.reduce((s, p) => s + p.qty * prices[p.id], 0);
-    for (const p of members) {
-      const share = gv > 0 ? (p.qty * prices[p.id]) / gv : 1 / members.length;
-      const amt = Math.abs(diff) * share;
-      if (amt > 5) plan.push({ id: p.id, side: diff > 0 ? 'buy' : 'sell', amount: amt });
-    }
-  }
-  return plan.sort((a) => (a.side === 'sell' ? -1 : 1));
+  return (['risky', 'defensive', 'cash'] as const).map((g) => ({ group: g, now: al[g], target: pf.target[g], amount: ((pf.target[g] - al[g]) / 100) * tot }));
+}
+
+/** Scostamento massimo, in punti, tra un gruppo del conto e il piano. Sotto i 2 punti il conto è considerato in linea. */
+export function maxGap(gaps: { now: number; target: number }[]): number {
+  return Math.max(0, ...gaps.map((g) => Math.abs(g.target - g.now)));
 }
 
 export function fmtPx(p: number): string {

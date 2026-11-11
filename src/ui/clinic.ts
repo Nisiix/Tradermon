@@ -1,8 +1,8 @@
 import { track } from '../systems/progress';
 import { S, save, slots, hasTech, TECH, classes, card, learnBias, profileFromScore } from '../systems/state';
 import type { BiasId } from '../types';
-import { unlockedAssets, ASSET_BY_ID, SECTOR_LABEL, SECTOR_COLOR } from '../data/assets';
-import { value, weights, health, diagnosis, rebalancePlan, allocation, fmtMoney, fmtPx, fmtPct, fmtQty, presetTarget } from '../systems/portfolio';
+import { unlockedAssets, ASSET_BY_ID, SECTOR_LABEL, SECTOR_COLOR, isDefensive } from '../data/assets';
+import { value, weights, health, diagnosis, rebalanceGap, maxGap, allocation, fmtMoney, fmtPx, fmtPct, fmtQty } from '../systems/portfolio';
 import { metrics, CLIMATE_LABEL } from '../systems/market';
 import { say, choose, modal, el, esc, toast, bar, confirm } from './core';
 import { LESSONS } from '../data/lessons';
@@ -15,7 +15,7 @@ import { BOSS_BY_ID } from '../systems/boss';
 import { asOfLabel, hasPrices } from '../systems/realdata';
 import { marketClock } from '../systems/market';
 import { DIFFICULTY } from '../systems/balance';
-import { requireAccount, apiKeysMenu, stageScreen, leverageDesk, accountAlerts, nextSealLine } from './broker';
+import { requireAccount, allocationForm, apiKeysMenu, stageScreen, leverageDesk, accountAlerts, nextSealLine } from './broker';
 import { journalPrompt } from './journal';
 import { questionnaire } from './setup';
 import { mirrorReport } from '../systems/mirror';
@@ -45,10 +45,10 @@ export async function openClinic(townIdx: number) {
   if (S.flags.starter && (await Acc.checkLink()).paper) { (await Acc.sync()).forEach((n) => toast(n)); await accountAlerts(); }
   for (;;) {
     const opts = [
-      'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Cura: ribilanciamento', 'Lezione sui bias',
+      'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Calcolo del ribilanciamento', 'Lezione sui bias',
       'Tappe, Prove e Sigilli', 'Leva e margine', 'Dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Chiavi API e conto reale', 'Osservatorio Alpaca (sola lettura)', 'Specchio dell\'investitore', 'Arrivederci',
     ];
-    const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Cura') && !hasTech(TECH.REBAL)));
+    const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Calcolo del ribil') && !hasTech(TECH.REBAL)));
     const c = await choose(opts, { cancel: true, title: 'CLINICA DEL PORTAFOGLIO', disabled: dis });
     if (c < 0 || c === opts.length - 1) { await say('Abbi cura del tuo portafoglio!', NURSE); return; }
     switch (opts[c]) {
@@ -64,7 +64,7 @@ export async function openClinic(townIdx: number) {
       case 'Compra / Vendi': await trade(); break;
       case 'Ordini aperti': await openOrders(); break;
       case 'Diagnosi': await diagnose(); break;
-      case 'Cura: ribilanciamento': await rebalance(); break;
+      case 'Calcolo del ribilanciamento': await rebalance(); break;
       case 'Lezione sui bias': await reflect(); break;
       case 'Tappe, Prove e Sigilli': await stageScreen(); break;
       case 'Leva e margine': await leverageDesk(); break;
@@ -84,10 +84,12 @@ export async function openClinic(townIdx: number) {
         S.profile = profileFromScore(sc);
         await say(`Il tuo profilo ora è: ${S.profile.toUpperCase()}. Ricorda: è uno strumento per conoscerti, non una raccomandazione.`, NURSE);
         if (S.profile !== before) {
-          const pt = presetTarget(S.profile);
           const t = S.portfolio.target;
-          const upd = await choose([`Sì: ${pt.risky}/${pt.defensive}/${pt.cash}`, `No, tengo ${t.risky}/${t.defensive}/${t.cash}`], { prompt: `Vuoi aggiornare anche l'allocazione obiettivo del conto (rischiosi/difensivi/liquidità)? Diagnosi e ribilanciamento la useranno.`, who: NURSE });
-          if (upd === 0) { S.portfolio.target = { ...pt }; toast(`Obiettivo aggiornato: ${pt.risky}/${pt.defensive}/${pt.cash}.`); }
+          const upd = await choose(['Sì, la riscrivo', `No, tengo ${t.risky}/${t.defensive}/${t.cash}`], { prompt: 'Il profilo è cambiato. Vuoi riscrivere la tua allocazione obiettivo (rischiosi/difensivi/liquidità)? La decidi tu: il profilo non la cambia da solo.', who: NURSE });
+          if (upd === 0) {
+            const res = await allocationForm('La tua allocazione obiettivo', '<p class="small">Scrivi il piano che vuoi seguire da qui in avanti. La Diagnosi e il Calcolo del ribilanciamento lo confronteranno con il conto.</p>', t);
+            if (res) { S.portfolio.target = res; toast(`Obiettivo aggiornato: ${res.risky}/${res.defensive}/${res.cash}.`); }
+          }
         }
         save();
         break;
@@ -311,25 +313,37 @@ async function diagnose() {
   }
 }
 
+const GROUP_LABEL = { risky: 'Asset rischiosi', defensive: 'Asset difensivi', cash: 'Liquidità' } as const;
+
+/**
+ * Calcolo del ribilanciamento: mostra quanto ogni gruppo si è allontanato dal piano del giocatore. Il gioco non propone
+ * ordini né titoli; il giocatore decide in Compra / Vendi, dove ogni vendita passa per i soliti controlli sulle Prove.
+ */
 async function rebalance() {
   if (await practiceClosed()) return;
   if (!(await requireAccount('il ribilanciamento'))) return;
-  const plan = rebalancePlan(S.portfolio, S.market.prices, Acc.locked());
-  if (!plan.length) { await say('Il portafoglio è già vicino al tuo obiettivo. Nessuna cura necessaria!', NURSE); return; }
-  await say(['Ecco la cura che propongo per tornare alla tua allocazione obiettivo, calcolata su tutto il conto.', 'Confermerai tu ogni singolo ordine: io propongo, non eseguo da sola. Sono ordini veri sul conto Paper.'], NURSE);
-  for (const p of plan) {
-    const a = ASSET_BY_ID[p.id];
-    const hit = p.side === 'sell' ? Acc.sellCancels(p.id) : null;
-    const ok = (await choose([hit ? 'Vendo per annullare la Prova' : 'Conferma', 'Salta'], { prompt: `${p.side === 'buy' ? 'Comprare' : 'Vendere'} circa ${fmtMoney(p.amount)} di ${a.name}?${hit ? ` Attenzione: ${a.ticker} è un titolo della tua Prova sul conto ${provaName(hit.stage)}. Venderne anche solo una parte annulla la Prova, che rifarai con un altro titolo.` : ''}`, who: NURSE })) === 0;
-    if (!ok) continue;
-    const px = S.market.prices;
-    const r = p.side === 'buy' ? await Acc.buy(p.id, Math.min(p.amount, Acc.usableCash()), { tag: 'ribilanciamento' }) : await Acc.sell(p.id, p.amount / px[p.id], { tag: 'ribilanciamento' });
-    toast(r.msg);
-    if (r.cancelled) await say(r.cancelled, NURSE);
+  const before = rebalanceGap(S.portfolio, S.market.prices, Acc.locked());
+  if (maxGap(before) < 2) { await say('Il conto è già vicino alla tua allocazione obiettivo: nessuno scostamento da correggere.', NURSE); return; }
+  const mine = (g: 'risky' | 'defensive') => S.portfolio.positions.filter((p) => (g === 'defensive') === isDefensive(ASSET_BY_ID[p.id])).map((p) => ASSET_BY_ID[p.id].name);
+  const go = await modal<boolean>('Calcolo del ribilanciamento', ({ body, button, close }) => {
+    const rows = before.map((g) => `<tr><td>${GROUP_LABEL[g.group]}</td><td class="n">${g.now.toFixed(0)}%</td><td class="n">${g.target}%</td><td class="n">${g.amount >= 0 ? '+' : '−'}${fmtMoney(Math.abs(g.amount))}</td></tr>`).join('');
+    const held = (['risky', 'defensive'] as const).map((g) => `<li>${GROUP_LABEL[g]}: ${mine(g).length ? mine(g).map(esc).join(', ') : '<span class="muted">nessuna posizione</span>'}</li>`).join('');
+    body.innerHTML = `<p class="small">Questo è il confronto tra il conto e il <b>tuo</b> piano, calcolato su tutto il conto. L'ultima colonna dice quanto manca (+) o avanza (−) in ogni gruppo.</p>
+      <table class="tbl"><tr><th>Gruppo</th><th class="n">Ora</th><th class="n">Piano</th><th class="n">Differenza</th></tr>${rows}</table>
+      <p class="small">Le tue posizioni per gruppo:</p><ul class="small">${held}</ul>
+      <p class="small muted">Quali titoli vendere o comprare, e quanto, lo decidi tu: è l'esercizio. Il gioco non sceglie al posto tuo e non è un consiglio. Ricorda che vendere un titolo di una Prova in corso la annulla.</p>`;
+    button('Apri Compra / Vendi', () => close(true), 'primary');
+    button('Chiudi', () => close(false), '');
+  }, { wide: true });
+  if (!go) return;
+  await trade();
+  const after = rebalanceGap(S.portfolio, S.market.prices, Acc.locked());
+  if (maxGap(after) + 1 < maxGap(before)) {
+    track('rebalance');
+    S.stats.disciplina = Math.min(100, S.stats.disciplina + 3);
+    toast(`Scostamento dal piano: da ${maxGap(before).toFixed(0)} a ${maxGap(after).toFixed(0)} punti.`);
+    save();
   }
-  track('rebalance');
-  S.stats.disciplina = Math.min(100, S.stats.disciplina + 3);
-  save();
 }
 
 async function reflect() {

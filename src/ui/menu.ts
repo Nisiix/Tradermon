@@ -62,7 +62,7 @@ export async function openInvestidex() {
     const assets = ASSETS.filter((a) => cls.includes(a.cls));
     const unlocked = assets.filter((a) => S.cards[a.id]).length;
     const concepts = LESSONS.filter((l) => S.lessonsRead.includes(l.id)).length;
-    body.innerHTML = `<p>Asset: <b>${unlocked}/${assets.length}</b> · Concetti: <b>${concepts}/${lessonsFor(trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole'])).length}</b> · Bias incontrati: <b>${S.biasSeen.length}/4</b> · Consigli degli abitanti: <b>${S.tipsHeard.length}/${ALL_RESIDENTS.length}</b> · Padronanza quiz: <b>${Math.round(mastery() * 100)}%</b></p>`;
+    body.innerHTML = `<p>Asset: <b>${unlocked}/${assets.length}</b> · Concetti: <b>${concepts}/${lessonsFor(trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole'])).length}</b> · Bias incontrati: <b>${S.biasSeen.length}/4</b> · Lezioni degli abitanti: <b>${S.tipsHeard.length}/${ALL_RESIDENTS.length}</b> · Padronanza quiz: <b>${Math.round(mastery() * 100)}%</b></p>`;
     const grid = el('div', 'cards');
     for (const a of assets) {
       const c = S.cards[a.id];
@@ -78,7 +78,7 @@ export async function openInvestidex() {
     if (S.tipsHeard.length) {
       const items = HOUSEHOLDS.flatMap((town, ti) => town.flatMap((h) => h.people.filter((r) => S.tipsHeard.includes(r.id)).map((r) =>
         `<p class="small"><b>${esc(r.name)}</b> <span class="muted">(${esc(h.name)}, ${esc(TOWNS[ti].name)})</span>: ${esc(r.lines.join(' '))}</p>`)));
-      body.appendChild(el('div', '', `<h4>Consigli degli abitanti</h4>${items.join('')}`));
+      body.appendChild(el('div', '', `<h4>Lezioni degli abitanti</h4>${items.join('')}`));
     }
     if (S.flags.casinoLesson) body.appendChild(el('p', 'small', '<b>Azzardo vs investimento</b>: nel gioco d\'azzardo il banco ha un vantaggio strutturale (2,7% alla roulette europea); la martingala porta prima o poi alla rovina.'));
     body.appendChild(el('p', 'small muted', 'Livelli: 2 con la tecnica "Lettura del Ticker" (Mentore 1), 3-4 dall\'Attestato 5. Lo studio sale con quiz, missioni, possesso e Archivio.'));

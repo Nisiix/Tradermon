@@ -28,7 +28,7 @@ export function sma(bars: Candle[], n: number): (number | null)[] {
   return bars.map((_, i) => (i + 1 < n ? null : bars.slice(i + 1 - n, i + 1).reduce((s, b) => s + b.c, 0) / n));
 }
 
-/** Lettura didattica del grafico: cosa si vede e quale approccio è coerente (non un consiglio). */
+/** Lettura didattica del grafico: descrive cosa si vede e fa una domanda sul piano del giocatore (non un consiglio). */
 export function reading(bars: Candle[], tf: Timeframe): { lines: string[]; trend: 'su' | 'giu' | 'laterale' } {
   if (bars.length < 10) return { lines: ['Pochi dati per una lettura.'], trend: 'laterale' };
   const last = bars[bars.length - 1].c;
@@ -41,10 +41,12 @@ export function reading(bars: Candle[], tf: Timeframe): { lines: string[]; trend
   const lines: string[] = [];
   const horizon = tf === '1g' ? 'di settimane o mesi' : tf === '4h' || tf === '1h' ? 'di giorni' : 'di ore: rumore, per chi investe';
   lines.push(`Orizzonte ${TF_LABEL[tf]}: movimenti ${horizon}. Ultime 30 barre: ${chg >= 0 ? '+' : ''}${(chg * 100).toFixed(1)}%, escursione massimo-minimo ${(range * 100).toFixed(1)}%.`);
-  if (trend === 'su') lines.push('Tendenza al rialzo sopra la media a 20 barre. Chi compra ora insegue: meglio entrare a rate (PAC) o con un ordine limite su un ritracciamento, con uno stop sotto l\'ultimo minimo.');
-  else if (trend === 'giu') lines.push('Tendenza al ribasso sotto la media a 20 barre. Un prezzo "basso" può scendere ancora: serve una ragione fondamentale per comprare, e in caso uno stop stretto. Non mediare al ribasso senza un piano.');
-  else lines.push('Fase laterale intorno alla media: il prezzo rimbalza in un intervallo. Gli ordini limite vicino al minimo dell\'intervallo e lo stop sotto di esso sono coerenti; inseguire i movimenti brevi costa commissioni.');
-  if (tf === '5m' || tf === '15m') lines.push('Su questi orizzonti il grafico è quasi tutto rumore: utile per scegliere il momento di un ordine già deciso, non per decidere se investire.');
+  // Solo descrizione di ciò che il grafico mostra, più una domanda sul piano del giocatore: mai un'indicazione su come
+  // o quando operare su questo titolo (sarebbe una raccomandazione su uno strumento preciso).
+  if (trend === 'su') lines.push('Tendenza al rialzo: il prezzo è sopra la media a 20 barre. Domanda per il tuo piano: avevi deciso prima come e quando entrare, o lo decide il grafico?');
+  else if (trend === 'giu') lines.push('Tendenza al ribasso: il prezzo è sotto la media a 20 barre. Un prezzo sceso non è per forza basso. Domanda per il tuo piano: quale motivo, fuori dal grafico, giustificherebbe una decisione?');
+  else lines.push('Fase laterale: il prezzo oscilla intorno alla media a 20 barre, dentro un intervallo. Domanda per il tuo piano: hai già deciso dove metteresti lo stop, se dovessi entrare?');
+  if (tf === '5m' || tf === '15m') lines.push('Su questi orizzonti il grafico è quasi tutto rumore: chi investe di solito non decide su candele così brevi.');
   if (tf === '1g') lines.push('È l\'orizzonte dell\'investitore: qui si vedono le fasi di mercato. Confronta con i fondamentali dell\'Asset Card prima di decidere.');
   return { lines, trend };
 }
