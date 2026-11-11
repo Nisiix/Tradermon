@@ -7,7 +7,7 @@ export function isSafari(): boolean {
   return /safari/i.test(ua) && !/chrome|chromium|crios|fxios|edgios|edg\/|opr\/|android/i.test(ua);
 }
 function installedApp(): boolean {
-  return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
+  return window.matchMedia?.('(display-mode: standalone)').matches || window.matchMedia?.('(display-mode: fullscreen)').matches || (navigator as { standalone?: boolean }).standalone === true;
 }
 export function safariAtRisk(): boolean { return isSafari() && !installedApp(); }
 
