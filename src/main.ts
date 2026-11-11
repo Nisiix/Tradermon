@@ -62,8 +62,8 @@ async function boot() {
   if (cloudEnabled()) {
     const player = (await currentPlayer()) ?? (await accountScreen());
     const r = await syncAtBoot(player, legacyPrompt);
-    if (r === 'offline') toast('Supabase non è raggiungibile: giochi con la copia di questo dispositivo e la invio appena torna la rete.');
-    startCloudSync(() => toast('Salvato su questo dispositivo: lo invio a Supabase appena torna la connessione.'));
+    if (r === 'offline') toast('Il servizio dei salvataggi non è raggiungibile: giochi con la copia di questo dispositivo e la invio appena torna la rete.');
+    startCloudSync(() => toast('Salvato su questo dispositivo: lo invio online appena torna la connessione.'));
   }
   for (;;) {
     const choice = await titleScreen(hasSave());

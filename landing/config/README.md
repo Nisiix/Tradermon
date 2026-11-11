@@ -16,3 +16,15 @@ Ogni riga diventa una scheda nel riquadro (indirizzo, pulsante Copia e QR code g
 
 Controlla l'indirizzo due volte: le transazioni crypto non si possono annullare.
 Il file viene incluso al momento del build, quindi dopo una modifica serve un nuovo deploy (push su main).
+
+## segnalazioni.json
+
+Indirizzo email che riceve le segnalazioni dal modulo "Segnala un problema" nel footer della landing.
+Se `email` è vuoto, il link non compare.
+
+```json
+{ "email": "segnalazioni@esempio.it" }
+```
+
+Il modulo non invia nulla da solo: prepara il messaggio e lo apre nel programma di posta del giocatore, che lo spedisce a questo indirizzo.
+Anche questo file viene incluso al momento del build: dopo una modifica serve un nuovo deploy (push su main).
