@@ -70,6 +70,8 @@ export function controlsTutorial(): Promise<void> {
     wrap.appendChild(box);
     getStage().appendChild(wrap);
     let open = true;
+    let customizing = false;
+    const skipped = new Set<number>();
     let unsub = () => {};
     const clearHints = () => document.querySelectorAll('.touch button.hint, .gear-btn.hint').forEach((b) => b.classList.remove('hint'));
     const render = () => {
@@ -78,15 +80,16 @@ export function controlsTutorial(): Promise<void> {
       clearHints();
       const done = i >= STEPS.length;
       const s = STEPS[Math.min(i, STEPS.length - 1)];
-      const dots = STEPS.map((_, j) => `<i class="${j < i ? 'ok' : j === i ? 'cur' : ''}"></i>`).join('');
+      const dots = STEPS.map((_, j) => `<i class="${j < i ? (skipped.has(j) ? 'skip' : 'ok') : j === i ? 'cur' : ''}"></i>`).join('');
+      const all = skipped.size === 0;
       box.innerHTML = `
         <div class="tut-head"><span>COMANDI · ${touch ? 'TOUCH' : 'TASTIERA'}</span><span class="dots">${dots}</span></div>
         ${done
-          ? `<h3>Perfetto!</h3><p>Hai provato tutti i comandi. Puoi rivederli da <b>Menu → Opzioni</b> e cambiarli dall'icona <b>⚙</b> in alto a destra.</p>${legend(touch, null)}<p class="tut-try">${touch ? 'Tocca <b>A</b>' : `Premi ${kbd('a')}`} per iniziare l'avventura.</p>`
+          ? `<h3>${all ? 'Perfetto!' : 'Ecco tutti i comandi'}</h3><p>${all ? 'Hai provato tutti i comandi.' : 'Qui sotto trovi a cosa serve ogni comando, anche quelli che hai saltato.'} Puoi rivederli da <b>Menu → Opzioni</b> e cambiarli dall'icona <b>⚙</b> in alto a destra.</p>${legend(touch, null)}<p class="tut-try">${touch ? 'Tocca <b>A</b>' : `Premi ${kbd('a')}`} o <b>Prosegui</b> per iniziare l'avventura.</p>`
           : `<h3>${i + 1}. ${s.title}</h3>${touch ? touchPad(s.hint) : keyboard(s.hint)}<p>${touch ? s.touch : s.desk()}</p><p class="tut-try">Prova adesso!</p>${legend(touch, s.hint)}`}
-        <div class="tut-foot"><button class="btn keys">Cambia tasti e touch</button><button class="btn skip">${done ? 'Inizia' : 'Salta'}</button></div>`;
-      box.querySelector('.skip')!.addEventListener('click', finish);
-      box.querySelector('.keys')!.addEventListener('click', () => { void openControls(); });
+        <div class="tut-foot"><button class="btn custom" title="Cambia i tasti e i comandi touch">Personalizza</button><button class="btn primary next">Prosegui</button></div>`;
+      box.querySelector('.tut-foot .next')!.addEventListener('click', next);
+      box.querySelector('.tut-foot .custom')!.addEventListener('click', () => { void customize(); });
       if (!done && s.hint === 'settings') document.querySelector('.gear-btn')?.classList.add('hint');
       else if (touch && !done) document.querySelector(`.touch button[data-k="${s.hint}"]`)?.classList.add('hint');
     };
@@ -98,7 +101,24 @@ export function controlsTutorial(): Promise<void> {
       try { localStorage.setItem(SEEN, '1'); } catch { /* storage non disponibile */ }
       resolve();
     };
+    /** Prosegui: passo successivo (anche senza aver provato il tasto) o, alla fine, chiude la guida. */
+    const next = () => {
+      if (!open || customizing) return;
+      if (i >= STEPS.length) { finish(); return; }
+      skipped.add(i);
+      i++;
+      beep('tick');
+      render();
+    };
+    /** Personalizza: apre i comandi sopra la guida e, alla chiusura, si torna allo stesso passo. */
+    const customize = async () => {
+      if (customizing) return;
+      customizing = true;
+      try { await openControls(); } finally { customizing = false; }
+      render();
+    };
     const advance = (k: Action) => {
+      if (customizing) return;
       if (i >= STEPS.length || !STEPS[i].want.includes(k)) return;
       beep('ok');
       box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash');
