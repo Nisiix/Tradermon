@@ -2,7 +2,7 @@ import type { Question, QuizTopic, Track, AssetClass } from '../../types';
 import * as C from './core';
 import * as T from './tracks';
 
-export type QRow = [1 | 2 | 3, string, string, string, string, string, string, string];
+export type QRow = [1 | 2 | 3 | 4, string, string, string, string, string, string, string];
 
 function build(topic: QuizTopic, rows: QRow[]): Question[] {
   return rows.map((r, i) => ({
