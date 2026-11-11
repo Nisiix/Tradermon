@@ -39,7 +39,7 @@ export async function checkLink(force = false): Promise<Link> {
   if (!force && Date.now() - linkAt < 20_000) return link;
   const st = await A.serverStatus();
   linkAt = Date.now();
-  if (!st) link = { server: false, paper: false, reason: A.isLocalHost() ? 'Il server locale di Tradermon non risponde: avvialo con "npm start".' : 'Dal sito il conto Alpaca si collega dopo essere entrati con il proprio giocatore: ricarica la pagina ed entra con nome e password.' };
+  if (!st) link = { server: false, paper: false, reason: A.isLocalHost() ? 'Il server locale di Tradermon non risponde: avvialo come spiegato nel file README.' : 'Dal sito il conto Alpaca si collega dopo essere entrati con il proprio giocatore: ricarica la pagina ed entra con nome e password.' };
   else link = { server: true, paper: st.paper.configured, reason: st.paper.configured ? '' : 'Le chiavi del conto Alpaca Paper non sono collegate.' };
   return link;
 }

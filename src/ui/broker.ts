@@ -27,7 +27,7 @@ export const GUIDE_LINES = [
   PAPER_ONLY,
   '1) Crea un account su alpaca.markets: per il conto Paper basta l\'email. È gratuito e usa denaro finto con prezzi veri.',
   '2) Nella dashboard, in modalità Paper, genera una coppia di chiavi API (Key ID e Secret) e inseriscile alla voce "Chiavi API" del menu.',
-  '3) Le chiavi restano solo sul tuo dispositivo. Dal sito sono cifrate con la password del tuo giocatore e il browser le usa per parlare direttamente con Alpaca: non vanno su Supabase e nessun server di Tradermon le riceve. Giocando sul tuo computer le custodisce il server locale di Tradermon, che non le rimanda mai al browser.',
+  '3) Le chiavi restano solo sul tuo dispositivo. Dal sito sono cifrate con la password del tuo giocatore e il browser le usa per parlare direttamente con Alpaca: non vanno online e nessun server di Tradermon le riceve. Giocando sul tuo computer le custodisce il server locale di Tradermon, che non le rimanda mai al browser.',
   'Il conto Paper è il conto di gioco: capitale fissato dalla difficoltà, Prove sul conto, Sigilli e Lega vivono lì.',
   'La Medaglia ha due metà. L\'ATTESTATO si vince con il duello di conoscenza del Mentore e apre la strada verso la città successiva. Il SIGILLO pratico si guadagna con la Prova sul conto: ordini veri sul mercato di oggi, dal conto Paper. Per entrare nella Lega servono tutti e otto i Sigilli.',
   'Ogni tappa chiede una quota MINIMA da investire: un importo fisso, calcolato sul capitale di partenza e non su quello che ti resta, più alto nelle difficoltà più dure. Sopra il minimo sei libero: puoi investire tutto il capitale fin dal primo giorno.',

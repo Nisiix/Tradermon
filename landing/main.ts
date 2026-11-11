@@ -9,6 +9,7 @@ import { marketClock } from '../src/systems/market';
 import { mentor, TOWNS } from '../src/data/story';
 import type { Track } from '../src/types';
 import donazioni from './config/donazioni.json';
+import segnalazioni from './config/segnalazioni.json';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -34,13 +35,6 @@ document.querySelectorAll('.menu a').forEach((a) => a.addEventListener('click', 
   burger.setAttribute('aria-expanded', 'false');
 }));
 
-const bubble = $('#wallet-bubble');
-$('#wallet').addEventListener('click', (e) => {
-  e.stopPropagation();
-  bubble.hidden = !bubble.hidden;
-});
-document.addEventListener('click', () => { bubble.hidden = true; });
-
 // Transizione a tendine verso il gioco
 document.querySelectorAll<HTMLAnchorElement>('[data-play]').forEach((a) => a.addEventListener('click', (e) => {
   if (reduced || e.ctrlKey || e.metaKey || e.shiftKey) return;
@@ -52,74 +46,182 @@ document.querySelectorAll<HTMLAnchorElement>('[data-play]').forEach((a) => a.add
 // Tornando indietro dalla cache del browser la tendina non deve restare chiusa
 addEventListener('pageshow', () => $('#curtain').classList.remove('go'));
 
-// ---------------- Hero: cielo, skyline e grafico ----------------
+// ---------------- Hero: la città della Borsa ----------------
+// Scena vettoriale disegnata alla risoluzione dello schermo (niente pixel ingranditi): cielo, grafico a candele
+// che sale dietro i grattacieli, tre file di palazzi e il porto del Mare della Liquidità che riflette le luci.
+// Un solo momento animato all'apertura (le candele salgono una dopo l'altra), poi solo stelle e finestre.
+
+type Phase = 'day' | 'dusk' | 'night';
+interface Theme { sky: string[]; glow: string; orb: string; far: string; mid: string; near: string; edge: string; win: string; winOn: number; water: string[] }
+const THEMES: Record<Phase, Theme> = {
+  night: { sky: ['#070b22', '#151c4a', '#33296a'], glow: '#7a4a9a', orb: '#f4efd2', far: '#232659', mid: '#181a40', near: '#0d0f28', edge: '#2e3170', win: '#ffd98a', winOn: 0.42, water: ['#121638', '#070918'] },
+  dusk: { sky: ['#1d1a52', '#7a3f78', '#f09a5a'], glow: '#ffb070', orb: '#ffd27a', far: '#6a3f74', mid: '#3d2a5c', near: '#1f1838', edge: '#8a5a88', win: '#ffe0a0', winOn: 0.28, water: ['#3a2a5a', '#120e24'] },
+  day: { sky: ['#3d6fd0', '#79a9ec', '#cfe6f8'], glow: '#ffffff', orb: '#fff2b0', far: '#9db6e0', mid: '#6d86bd', near: '#465a92', edge: '#b8cbea', win: '#e8f2ff', winOn: 0.12, water: ['#5b84c8', '#2e4c8a'] },
+};
 
 function hero() {
   const cv = $<HTMLCanvasElement>('#sky');
   const c = cv.getContext('2d')!;
-  const W = 320, H = 180; // risoluzione logica, ingrandita senza sfocare via CSS
-  cv.width = W; cv.height = H;
   const h = new Date().getHours();
-  const night = h >= 20 || h < 6;
-  const dusk = !night && (h >= 17 || h < 8);
-  const sky = night ? ['#0c1030', '#1c2050', '#302a60'] : dusk ? ['#2a2060', '#a04870', '#f0a050'] : ['#4878d0', '#78a8e8', '#b8d8f0'];
-  // grattacieli deterministici
-  let seed = 7;
-  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-  const blds: { x: number; w: number; h: number; win: boolean[] }[] = [];
-  for (let x = -4; x < W;) {
-    const w = 14 + Math.floor(rnd() * 22), hh = 40 + Math.floor(rnd() * 70);
-    const cols = Math.floor((w - 4) / 4), rows = Math.floor((hh - 6) / 6);
-    blds.push({ x, w, h: hh, win: Array.from({ length: cols * rows }, () => rnd() < (night ? 0.45 : 0.15)) });
-    x += w + 1 + Math.floor(rnd() * 3);
-  }
-  // linea del grafico: passeggiata casuale che sale
-  const pts: number[] = [];
-  let y = 120;
-  for (let i = 0; i <= 64; i++) { pts.push(y); y += (rnd() - 0.62) * 9; y = Math.max(40, Math.min(140, y)); }
-  const stars = Array.from({ length: 40 }, () => [Math.floor(rnd() * W), Math.floor(rnd() * 80)]);
-  let t0 = performance.now();
+  const phase: Phase = h >= 20 || h < 6 ? 'night' : h >= 17 || h < 8 ? 'dusk' : 'day';
+  const T = THEMES[phase];
+  document.body.dataset.sky = phase;
 
-  const draw = (now: number) => {
-    const t = reduced ? 1e9 : now - t0;
-    const g = c.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, sky[0]); g.addColorStop(0.55, sky[1]); g.addColorStop(1, sky[2]);
-    c.fillStyle = g; c.fillRect(0, 0, W, H);
-    if (night) { c.fillStyle = '#e8e8ff'; for (const [sx, sy] of stars) if ((sx + Math.floor(t / 400)) % 5) c.fillRect(sx, sy, 1, 1); }
-    // sole o luna
-    c.fillStyle = night ? '#f0f0d0' : '#f8d860';
-    c.beginPath(); c.arc(250, night ? 34 : dusk ? 112 : 30, 12, 0, Math.PI * 2); c.fill();
-    // skyline
-    for (const b of blds) {
-      const top = H - 30 - b.h;
-      c.fillStyle = night ? '#1a1838' : dusk ? '#3a2858' : '#506090';
-      c.fillRect(b.x, top, b.w, b.h);
-      c.fillStyle = night ? '#24204a' : dusk ? '#4a3468' : '#6070a0';
-      c.fillRect(b.x, top, 2, b.h);
-      const cols = Math.floor((b.w - 4) / 4);
-      b.win.forEach((on, i) => {
-        const flick = !reduced && ((i * 31 + Math.floor(t / 1500)) % 97 === 0);
-        if (on !== flick) { c.fillStyle = '#f8d870'; c.fillRect(b.x + 3 + (i % cols) * 4, top + 4 + Math.floor(i / cols) * 6, 2, 3); }
-      });
+  // dati deterministici: la stessa città a ogni visita
+  let seed = 11;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const candles: { o: number; c: number; hi: number; lo: number }[] = [];
+  let v = 0.22;
+  for (let i = 0; i < 34; i++) {
+    const o = v; v = Math.max(0.12, Math.min(0.95, v + (rnd() - 0.36) * 0.09));
+    candles.push({ o, c: v, hi: Math.max(o, v) + rnd() * 0.04, lo: Math.min(o, v) - rnd() * 0.04 });
+  }
+  const layer = (n: number, minH: number, maxH: number) => {
+    const out: { x: number; w: number; h: number; spire: number; win: number[] }[] = [];
+    for (let x = -0.02; x < 1.02;) {
+      const w = 0.035 + rnd() * 0.05, hh = minH + rnd() * (maxH - minH);
+      out.push({ x, w, h: hh, spire: rnd() < 0.18 ? 0.02 + rnd() * 0.04 : 0, win: Array.from({ length: 80 }, () => rnd()) });
+      x += w + rnd() * 0.01 * n;
     }
-    // grafico verde che si disegna da solo
-    const n = Math.min(pts.length - 1, Math.floor(t / 45));
-    c.strokeStyle = '#183818'; c.lineWidth = 4; c.lineJoin = 'round';
-    const path = () => { c.beginPath(); for (let i = 0; i <= n; i++) { const px = 10 + i * 4.6; i ? c.lineTo(px, pts[i]) : c.moveTo(px, pts[i]); } };
-    path(); c.stroke();
-    c.strokeStyle = '#48e070'; c.lineWidth = 2; path(); c.stroke();
-    if (n === pts.length - 1) { // freccia
-      const ax = 10 + n * 4.6, ay = pts[n];
-      c.fillStyle = '#48e070'; c.beginPath(); c.moveTo(ax + 7, ay - 4); c.lineTo(ax - 2, ay - 6); c.lineTo(ax + 3, ay + 3); c.fill();
-    }
-    // prato
-    c.fillStyle = '#48a048'; c.fillRect(0, H - 30, W, 30);
-    c.fillStyle = '#58b858'; for (let x = 0; x < W; x += 6) c.fillRect(x + ((x / 6) % 2) * 2, H - 30, 2, 2);
-    c.fillStyle = '#307830'; c.fillRect(0, H - 4, W, 4);
-    if (!reduced && document.visibilityState === 'visible') requestAnimationFrame(draw);
+    return out;
   };
-  requestAnimationFrame(draw);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !reduced) { t0 = performance.now() - 1e6; requestAnimationFrame(draw); } });
+  const far = layer(1, 0.18, 0.38), mid = layer(2, 0.14, 0.32), near = layer(3, 0.08, 0.22);
+  const stars = Array.from({ length: 90 }, () => [rnd(), rnd() * 0.55, rnd() * 1.2 + 0.4, rnd() * 6.28]);
+
+  let W = 0, H = 0, dpr = 1, horizon = 0;
+  const back = document.createElement('canvas'), front = document.createElement('canvas');
+
+  const drawCity = (g: CanvasRenderingContext2D, list: typeof far, color: string, base: number, scale: number, lit: number, winSize: number) => {
+    for (const b of list) {
+      const x = b.x * W, w = b.w * W, hh = b.h * H * scale, top = base - hh;
+      g.fillStyle = color;
+      g.fillRect(Math.round(x), Math.round(top), Math.ceil(w), Math.ceil(hh) + 1);
+      if (b.spire) { g.fillRect(Math.round(x + w / 2 - 1.5 * dpr), Math.round(top - b.spire * H), Math.ceil(3 * dpr), Math.ceil(b.spire * H)); }
+      g.fillStyle = T.edge; g.globalAlpha = 0.35; g.fillRect(Math.round(x), Math.round(top), Math.ceil(2 * dpr), Math.ceil(hh)); g.globalAlpha = 1;
+      if (!lit) continue;
+      const sx = winSize * 2.2, sy = winSize * 2.6;
+      const cols = Math.max(1, Math.floor((w - winSize * 2) / sx)), rows = Math.max(1, Math.floor((hh - winSize * 3) / sy));
+      const ox = x + (w - cols * sx + (sx - winSize)) / 2;
+      g.fillStyle = T.win;
+      for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) {
+        if (b.win[(r * cols + k) % 80] > lit) continue;
+        g.globalAlpha = 0.55 + b.win[(r * 7 + k) % 80] * 0.45;
+        g.fillRect(Math.round(ox + k * sx), Math.round(top + winSize * 2 + r * sy), Math.ceil(winSize), Math.ceil(winSize * 1.3));
+      }
+      g.globalAlpha = 1;
+    }
+  };
+
+  const build = () => {
+    dpr = Math.min(2, devicePixelRatio || 1);
+    W = Math.round(cv.clientWidth * dpr); H = Math.round(cv.clientHeight * dpr);
+    if (!W || !H) return;
+    for (const k of [cv, back, front]) { k.width = W; k.height = H; }
+    horizon = H * 0.84;
+    // sfondo: cielo, bagliore all'orizzonte, luna o sole
+    const b = back.getContext('2d')!;
+    const sky = b.createLinearGradient(0, 0, 0, horizon);
+    sky.addColorStop(0, T.sky[0]); sky.addColorStop(0.6, T.sky[1]); sky.addColorStop(1, T.sky[2]);
+    b.fillStyle = sky; b.fillRect(0, 0, W, H);
+    const glow = b.createRadialGradient(W * 0.62, horizon, 0, W * 0.62, horizon, W * 0.7);
+    glow.addColorStop(0, T.glow + '66'); glow.addColorStop(1, T.glow + '00');
+    b.fillStyle = glow; b.fillRect(0, 0, W, H);
+    const ox = W * (W / dpr > 900 ? 0.86 : 0.8), oy = phase === 'dusk' ? horizon * 0.62 : H * (W / dpr > 900 ? 0.2 : 0.15), r = Math.max(26, Math.min(W, H) * 0.06);
+    const halo = b.createRadialGradient(ox, oy, r * 0.8, ox, oy, r * 4);
+    halo.addColorStop(0, T.orb + '55'); halo.addColorStop(1, T.orb + '00');
+    b.fillStyle = halo; b.fillRect(0, 0, W, H);
+    b.fillStyle = T.orb; b.beginPath(); b.arc(ox, oy, r, 0, Math.PI * 2); b.fill();
+    if (phase === 'night') { b.fillStyle = '#00000018'; b.beginPath(); b.arc(ox - r * 0.3, oy - r * 0.2, r * 0.25, 0, 7); b.arc(ox + r * 0.35, oy + r * 0.3, r * 0.16, 0, 7); b.fill(); }
+    // primo piano: tre file di palazzi e il porto
+    const f = front.getContext('2d')!;
+    f.clearRect(0, 0, W, H);
+    const haze = (col: string, a: number) => { f.fillStyle = col; f.globalAlpha = a; f.fillRect(0, 0, W, horizon); f.globalAlpha = 1; };
+    drawCity(f, far, T.far, horizon, 1.15, T.winOn * 0.5, 2 * dpr);
+    haze(T.sky[2], 0.12);
+    drawCity(f, mid, T.mid, horizon, 1, T.winOn * 0.8, 3 * dpr);
+    drawCity(f, near, T.near, horizon, 0.9, T.winOn, 3.5 * dpr);
+    const water = f.createLinearGradient(0, horizon, 0, H);
+    water.addColorStop(0, T.water[0]); water.addColorStop(1, T.water[1]);
+    f.fillStyle = water; f.fillRect(0, horizon, W, H - horizon);
+    f.fillStyle = T.edge; f.globalAlpha = 0.6; f.fillRect(0, horizon, W, Math.ceil(2 * dpr)); f.globalAlpha = 1;
+  };
+
+  const ease = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+  // su schermi larghi il grafico sale a destra del riquadro del titolo; su quelli stretti sta in alto, sopra il riquadro
+  const chartBox = () => W / dpr > 900
+    ? { x0: W * 0.58, x1: W * 0.97, top: H * 0.14, bottom: horizon - H * 0.12 }
+    : { x0: W * 0.06, x1: W * 0.94, top: H * 0.12, bottom: H * 0.4 };
+  const drawChart = (t: number) => {
+    const { x0, x1, top, bottom } = chartBox();
+    const step = (x1 - x0) / candles.length, bw = Math.max(3 * dpr, step * 0.56);
+    const yOf = (p: number) => bottom - p * (bottom - top);
+    c.save();
+    c.globalAlpha = phase === 'day' ? 0.5 : 0.62;
+    candles.forEach((k, i) => {
+      const p = ease((t - i * 55) / 420);
+      if (p <= 0) return;
+      const up = k.c >= k.o, cx = x0 + i * step + step / 2;
+      c.strokeStyle = c.fillStyle = up ? '#48e070' : '#ff6b6b';
+      const mid = (k.o + k.c) / 2, grow = (q: number) => yOf(mid + (q - mid) * p);
+      c.lineWidth = Math.max(1, 1.5 * dpr);
+      c.beginPath(); c.moveTo(cx, grow(k.hi)); c.lineTo(cx, grow(k.lo)); c.stroke();
+      const y1 = grow(Math.max(k.o, k.c)), y2 = grow(Math.min(k.o, k.c));
+      c.fillRect(cx - bw / 2, y1, bw, Math.max(2 * dpr, y2 - y1));
+    });
+    // media mobile: si traccia dietro le candele
+    const n = Math.min(candles.length, (t - 300) / 55);
+    if (n > 1) {
+      c.globalAlpha = 0.95; c.strokeStyle = '#f8d860'; c.lineWidth = 2.5 * dpr; c.lineJoin = 'round'; c.shadowColor = '#f8d860'; c.shadowBlur = 10 * dpr;
+      c.beginPath();
+      for (let i = 0; i < n; i++) {
+        const a = candles.slice(Math.max(0, i - 4), i + 1), avg = a.reduce((s, k) => s + k.c, 0) / a.length;
+        const px = x0 + i * step + step / 2, py = yOf(avg);
+        i ? c.lineTo(px, py) : c.moveTo(px, py);
+      }
+      c.stroke();
+    }
+    c.restore();
+  };
+
+  let start = performance.now(), last = 0, parallax = 0;
+  const INTRO = 34 * 55 + 700;
+  const frame = (now: number) => {
+    if (!W) return;
+    const t = reduced ? 1e9 : now - start;
+    c.drawImage(back, 0, 0);
+    if (phase !== 'day') {
+      c.fillStyle = '#ffffff';
+      for (const [sx, sy, sr, ph] of stars) {
+        c.globalAlpha = reduced ? 0.7 : 0.45 + 0.4 * Math.sin(now / 900 + ph);
+        c.beginPath(); c.arc(sx * W, sy * horizon, sr * dpr, 0, 7); c.fill();
+      }
+      c.globalAlpha = 1;
+    }
+    c.save(); c.translate(0, -parallax * 0.35 * dpr); drawChart(t); c.restore();
+    c.drawImage(front, 0, 0);
+    // riflessi delle luci sull'acqua
+    c.fillStyle = T.win;
+    for (let i = 0; i < 26; i++) {
+      const x = ((i * 0.0383 + 0.02) % 1) * W, y = horizon + (6 + (i % 5) * 9) * dpr * (H / 900 + 0.6);
+      c.globalAlpha = 0.18 + 0.14 * Math.sin(now / 700 + i);
+      c.fillRect(x + Math.sin(now / 1100 + i) * 4 * dpr, y, (14 + (i % 4) * 8) * dpr, 1.5 * dpr);
+    }
+    c.globalAlpha = 1;
+  };
+  const loop = (now: number) => {
+    // dopo l'apertura bastano pochi fotogrammi al secondo: stelle e riflessi si muovono piano
+    if (now - start < INTRO || now - last > 66) { frame(now); last = now; }
+    if (!reduced && document.visibilityState === 'visible' && heroVisible) requestAnimationFrame(loop);
+  };
+  let heroVisible = true;
+  build();
+  requestAnimationFrame(loop);
+  let rt = 0;
+  addEventListener('resize', () => { clearTimeout(rt); rt = window.setTimeout(() => { build(); frame(performance.now()); }, 120); });
+  addEventListener('scroll', () => { parallax = Math.min(scrollY, innerHeight); }, { passive: true });
+  const restart = () => { if (!reduced && document.visibilityState === 'visible' && heroVisible) requestAnimationFrame(loop); };
+  document.addEventListener('visibilitychange', restart);
+  if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { const was = heroVisible; heroVisible = e.isIntersecting; if (!was && heroVisible) restart(); }).observe(cv);
 }
 hero();
 
@@ -202,6 +304,34 @@ if (list.length) {
   document.querySelectorAll('[data-donate]').forEach((b) => b.addEventListener('click', open));
 }
 function esc(s: string): string { return s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`); }
+
+// ---------------- Segnala un problema ----------------
+// Il modulo prepara un'email verso l'indirizzo scelto in config/segnalazioni.json e la apre nel programma di posta:
+// la pagina non spedisce nulla da sola (sito statico, nessun server).
+
+const reportTo = String((segnalazioni as { email?: string }).email ?? '').trim();
+if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(reportTo)) {
+  const link = $<HTMLAnchorElement>('#report-link');
+  const box = $<HTMLDialogElement>('#report-box');
+  const form = $<HTMLFormElement>('#report-form');
+  const err = $('#report-error');
+  link.hidden = false;
+  link.addEventListener('click', (e) => { e.preventDefault(); err.textContent = ''; box.showModal(); });
+  $('#report-close').addEventListener('click', () => box.close());
+  $('#report-address').textContent = reportTo;
+  form.querySelector('textarea')!.addEventListener('input', () => { err.textContent = ''; });
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const testo = String(data.get('testo') ?? '').trim();
+    if (testo.length < 10) { err.textContent = 'Scrivi almeno una frase su cosa è successo.'; form.querySelector('textarea')!.focus(); return; }
+    err.textContent = '';
+    const tipo = String(data.get('tipo') ?? 'Altro');
+    const info = data.get('info') ? `\n\n---\nBrowser: ${navigator.userAgent}\nSchermo: ${innerWidth}×${innerHeight}\nPagina: ${location.href.split('#')[0]}` : '';
+    location.href = `mailto:${reportTo}?subject=${encodeURIComponent(`[Tradermon] ${tipo}`)}&body=${encodeURIComponent(testo + info)}`;
+    $('#report-fallback').hidden = false;
+  });
+}
 
 // ---------------- Abitanti che passeggiano nel footer ----------------
 

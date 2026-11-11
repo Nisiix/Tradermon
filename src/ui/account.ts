@@ -6,7 +6,7 @@ import { formatPlayTime } from '../systems/playtime';
 import { forgetPlayerOnDevice, type LegacyChoice } from '../systems/sync';
 import { busy } from './loading';
 
-const PRIVACY = 'La partita viene salvata su Supabase, legata al tuo giocatore: puoi continuarla da qualsiasi browser o dispositivo entrando con nome e password. Le chiavi Alpaca, se le colleghi, restano solo su questo dispositivo, cifrate con la tua password: non vanno su Supabase e non entrano nel salvataggio.';
+const PRIVACY = 'La partita viene salvata online, legata al tuo giocatore: puoi continuarla da qualsiasi browser o dispositivo entrando con nome e password. Le chiavi Alpaca, se le colleghi, restano solo su questo dispositivo, cifrate con la tua password: non vanno online e non entrano nel salvataggio.';
 export const PRIVACY_URL = '../privacy/';
 const PRIVACY_LINK = `<a href="${PRIVACY_URL}" target="_blank" rel="noopener">Informativa sulla privacy</a>`;
 const NO_RESET = 'Non c\'è un\'email collegata, quindi la password <b>non si può recuperare</b>: scegline una che ricorderai.';
@@ -38,7 +38,7 @@ export async function accountScreen(): Promise<C.Player> {
   let gone = justDeleted();
   for (;;) {
     const mode = await modal<'new' | 'login'>('Il tuo giocatore', ({ body, button, close }) => {
-      body.innerHTML = `${gone ? '<p class="good">Il giocatore è stato cancellato, da Supabase e da questo browser.</p>' : ''}<p>Benvenuto in Tradermon! Per salvare i progressi serve un <b>giocatore</b>: un nome unico (nessun altro potrà usarlo) e una password.</p><p class="small muted">${PRIVACY} ${PRIVACY_LINK}.</p>`;
+      body.innerHTML = `${gone ? '<p class="good">Il giocatore è stato cancellato, online e da questo browser.</p>' : ''}<p>Benvenuto in Tradermon! Per salvare i progressi serve un <b>giocatore</b>: un nome unico (nessun altro potrà usarlo) e una password.</p><p class="small muted">${PRIVACY} ${PRIVACY_LINK}.</p>`;
       button('Nuovo giocatore', () => close('new'), 'primary');
       button('Ho già un giocatore', () => close('login'));
     }, { closable: false });
@@ -144,7 +144,7 @@ export function legacyPrompt(c: LegacyChoice): Promise<boolean> {
   const l = c.local as unknown as { name: string; playMs: number; badges: number };
   return modal<boolean>('Partita trovata in questo browser', ({ body, button, close }) => {
     body.innerHTML = `<p>In questo browser c'è la partita di <b>${esc(l.name)}</b> (${formatPlayTime(l.playMs)}, ${l.badges} medaglie), salvata prima che esistessero i giocatori.</p>
-      ${c.cloud ? `<p>Il tuo giocatore ha già una partita su Supabase (${formatPlayTime(c.cloud.playMs)}). Se porti quella del browser, sostituisce quella online.</p>` : '<p>Vuoi portarla nel tuo giocatore? Da ora in poi sarà salvata su Supabase.</p>'}
+      ${c.cloud ? `<p>Il tuo giocatore ha già una partita online (${formatPlayTime(c.cloud.playMs)}). Se porti quella del browser, sostituisce quella online.</p>` : '<p>Vuoi portarla nel tuo giocatore? Da ora in poi sarà salvata online.</p>'}
       <p class="small muted">Se non la porti, ne resta comunque una copia di riserva in questo browser.</p>`;
     button('Porta questa partita', () => close(true), 'primary');
     button(c.cloud ? 'Tieni quella online' : 'No, ricomincia', () => close(false));

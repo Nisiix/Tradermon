@@ -1,77 +1,62 @@
 # Guida per la landing page (sezione `#guida`)
 
-Testo della sezione Guida della landing (`index.html`, schede `g-...`). Il gioco rimanda qui dalla voce "Chiavi API" e dalla Guida interna (`src/ui/broker.ts`, `GUIDE_LINES`): se una regola cambia, vanno aggiornati tutti e due.
+Testo della sezione Guida della landing (`index.html`, schede `g-...`). Sulla landing la Guida è volutamente breve: le regole complete (bancarotta, Prove sul conto, Lega, Boss) le spiegano i personaggi dentro il gioco e la Guida interna (`src/ui/broker.ts`, `GUIDE_LINES`). Se una regola cambia, controlla che queste righe restino vere.
 
-## Come si gioca
+Regola dei testi: nelle pagine e nel gioco non si nominano gli strumenti dietro le quinte (servizio dei salvataggi, hosting, Node e simili). L'unico servizio esterno nominato è Alpaca, perché il giocatore deve crearsi il conto Paper. Fa eccezione l'informativa sulla privacy, che per legge deve dire chi tratta i dati.
 
-Tradermon è un gioco di ruolo per imparare a investire. Si studia, si sfidano gli altri investitori a quiz e si opera su titoli veri con denaro finto, attraverso un conto Alpaca Paper.
+### Un gioco per imparare (sezione `#imparare`, tre colonne)
 
-### Un gioco per imparare (riassunto in cima alla landing, sezione `#imparare`)
+- **Dai primi passi al portafoglio.** Lezioni, quiz e Mentori ti portano nel mondo degli investimenti e del trading, un concetto alla volta.
+- **Solo denaro finto.** La pratica passa da un conto Alpaca Paper, gratuito: prezzi e orari veri, soldi che non esistono. Non ti chiederemo mai di versare nulla.
+- **Sbagliare è permesso.** Un errore costa capitale di gioco, non i tuoi risparmi. È solo apprendimento: non è consulenza e non ti dice cosa comprare.
 
-- Tradermon è pensato per aiutarti a **entrare nel mondo degli investimenti e del trading** giocando: lezioni, quiz e Mentori ti accompagnano dai primi concetti fino alla gestione di un portafoglio.
-- **Nel gioco usi solo denaro finto.** La parte pratica passa da un conto Alpaca Paper, gratuito, con prezzi e orari veri dei mercati ma soldi che non esistono. Tradermon non usa mai denaro reale e non ti chiederà mai di versare nulla.
-- È uno strumento **solo di apprendimento**: puoi sbagliare quanto vuoi, perché un errore costa capitale di gioco e non i tuoi risparmi. Non è consulenza finanziaria e non ti dice che cosa comprare.
+## Guida
 
-### Attestati e Sigilli: la regola da sapere prima di partire
+L'essenziale per partire. Le regole complete te le spiegano i personaggi, dentro il gioco.
 
-In ogni città c'è un Mentore, e la sua Medaglia ha due metà.
+### #01 Attestati e Sigilli
 
-- **L'Attestato** si vince con un duello di conoscenza. Basta l'Attestato per proseguire verso la città successiva.
-- **Il Sigillo pratico** si guadagna con la **Prova sul conto**: ordini sul mercato di oggi, dal tuo conto di gioco con denaro finto, usando la Tecnica che il Mentore ti ha appena insegnato.
+In ogni città un Mentore assegna una Medaglia in due metà. **L'Attestato** si vince a quiz e basta per proseguire. **Il Sigillo** si guadagna con la Prova sul conto: ordini veri, con denaro finto, usando la Tecnica appena imparata.
 
-Puoi viaggiare con i soli Attestati, ma **nella Lega degli Investitori entra solo chi ha tutti e otto i Sigilli**. Studiare apre la strada; saper fare apre la Lega.
+> Puoi viaggiare con i soli Attestati, ma **nella Lega entra solo chi ha tutti e otto i Sigilli**.
 
-### Il conto di gioco
+### #02 Il conto di gioco
 
-- Serve un conto **Alpaca Paper**: gratuito, basta un'email, denaro finto con prezzi e orari veri. Senza conto puoi comunque studiare tutto e vincere gli Attestati, ma non i Sigilli e la Lega.
-- La **difficoltà** si sceglie all'inizio, fissa il capitale e non si cambia: Apprendista 10.000 $, Investitore 5.000 $, Stratega 2.500 $. La quarta, **Leggenda** (1.000 $), si sblocca con la Nuova Partita+.
-- **Tutto il capitale è tuo dal primo giorno.** Ogni tappa ti chiede solo una quota minima da investire (dal 5% del capitale per tappa in Apprendista al 9,5% in Leggenda). Sopra il minimo decidi tu.
-- Gli ordini sono per importo in dollari: compri anche una **frazione** di titolo, a mercato, con limite o con stop.
-- Puoi ordinare anche a mercato chiuso: l'ordine parte lo stesso e Alpaca lo esegue all'apertura. Le cripto si scambiano sempre.
-- I **dividendi** nel gioco sono solo teoria: si studiano, ma nessuna prova pratica li richiede e il conto Paper non li paga.
+Serve un conto **Alpaca Paper**: gratuito, basta un'email, prezzi veri e denaro finto. Senza conto puoi comunque studiare e vincere gli Attestati. La **difficoltà** scelta all'inizio fissa il capitale; ogni tappa chiede solo una quota minima da investire, il resto lo decidi tu.
 
-### Bancarotta
+| Livello | Capitale | Quota minima per tappa | Dopo una bancarotta |
+|---|---|---|---|
+| Apprendista | 10.000 $ | 5% | si riparte con metà capitale |
+| Investitore | 5.000 $ | 7% | si riparte con metà capitale |
+| Stratega | 2.500 $ | 8,5% | si riparte una volta sola |
+| Leggenda (Nuova Partita+) | 1.000 $ | 9,5% | la parte pratica finisce |
 
-È bancarotta quando il conto arriva a **zero**, in ogni difficoltà. Le quote di tappa sono importi fissi, calcolati sul capitale di partenza e non su quello che ti resta: se perdi, pesano di più. Chi opera con metodo arriva alla Lega con capitale in tasca; quanti errori ti puoi permettere dipende dalla difficoltà. In Apprendista e Investitore si riparte con metà del capitale di partenza; in Stratega una volta sola; in Leggenda la parte pratica finisce.
+### #03 Bancarotta
 
-Al conto a zero si arriva in due modi: usando la **leva**, oppure **vendendo in perdita**. Finché tieni un titolo la perdita è sulla carta; quando lo vendi diventa vera e il capitale non torna. Vale per le vendite fatte nel gioco e per quelle fatte fuori, per esempio dal sito di Alpaca: alla sincronizzazione successiva il gioco se ne accorge, le registra al prezzo vero di esecuzione e aggiorna conto, perdite realizzate e controllo della bancarotta.
+Scatta quando il conto arriva a **zero**, per colpa della leva o di vendite in perdita. Cosa succede dopo dipende dalla difficoltà.
 
-Se in una Prova sul conto non riesci ad arrivare all'obiettivo con un titolo, puoi venderlo e puntare su un altro. **Decidere di vendere il titolo di una Prova, anche solo una parte, annulla la Prova**: prima della vendita il gioco ti chiede di confermare che vendi per annullarla e rifarla con un altro titolo, poi la quota della tappa riparte da zero e gli acquisti del titolo venduto non contano finché non la completi. Le Prove già completate restano. Vale anche se scatta uno stop o se vendi dal sito di Alpaca. Anche la vendita forzata della leva e la bancarotta annullano la Prova in corso (senza escludere titoli, perché non sono una tua scelta). Vendere un titolo che non hai comprato per la Prova in corso non annulla nulla, e nelle verifiche della Lega si guarda il conto com'è: lì una vendita non annulla niente.
+### #04 La Lega
 
-**Prosegui anche se la Prova va male**: in Apprendista e Investitore puoi attivare questa opzione dalle Impostazioni (⚙) o da Menu, Opzioni. Non salta la Prova, che va comunque affrontata: se finisce male il risultato viene ignorato e prosegui lo stesso. È una scelta sconsigliata se vuoi imparare a investire o a fare trading in modo efficiente e corretto. In Stratega e Leggenda non esiste.
+Quattro Superiori e il Campione ti sfidano a quiz e poi guardano il tuo conto: **si giudica il metodo, non il rendimento**.
 
-### La Lega
+### #05 Dopo la Lega
 
-Ogni Superiore ti sfida a un duello di conoscenza e poi guarda il tuo conto com'è adesso: quanto è investito, come è diviso tra i titoli, se è protetto da ordini stop, se somiglia al piano che ti sei dato. **Nessuno ti chiede un rendimento**: si giudica il metodo. Se la verifica non riesce, operi e la ripeti senza rifare il duello. Contano gli ordini eseguiti, quindi a mercato chiuso può servire aspettare l'apertura.
+Torre delle Sfide, crisi leggendarie e tre Boss dei Mercati, che si battono con un piano di ordini sul conto di gioco. La **Nuova Partita+** riparte da zero e sblocca la difficoltà Leggenda.
 
-I periodi veri del passato si rivivono solo nella Macchina del Tempo (la Zona Simulazione di Diversia) e nelle crisi leggendarie della Torre: sono facoltativi e non contano per Sigilli e Lega.
+### #06 Il tuo salvataggio
 
-### Dopo la Lega
+Crei un giocatore con nome e password: la partita si salva online e la ritrovi su ogni dispositivo. La password non si può recuperare, quindi conservala.
 
-Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati. Con un Boss presenti un piano su un titolo vero: ingresso, stop e obiettivo. Il piano muove **ordini sul conto di gioco**, con denaro finto: quando lo invii compri il titolo sul conto Paper, per un importo deciso dal rischio che scegli, e parte uno stop vero. Se il piano va male la sfida si rifà da capo e **la perdita su quella posizione resta sul conto**. Se vedi che l'obiettivo non arriva puoi **vendere prima della scadenza**, tutto o solo una parte: in tutti e due i casi dichiari che vendi per annullare la sfida, che si ripete da capo con un titolo diverso. Non conta come sconfitta.
-
-La **Nuova Partita+** riparte da zero (conto, Attestati e Sigilli si riguadagnano) conservando solo i trofei, e sblocca la difficoltà Leggenda.
-
-## Come collegare Alpaca
+### #07 Come collegare Alpaca
 
 1. Crea un account su alpaca.markets: per il conto Paper basta l'email.
-2. Nella dashboard, in modalità Paper, genera una coppia di chiavi API (Key ID e Secret).
+2. Nella dashboard, in modalità **Paper**, genera le chiavi API (Key ID e Secret).
 3. Nel gioco apri il menu, voce **Chiavi API**, e inseriscile.
 
-**Se giochi dal sito**, le chiavi restano **solo sul tuo dispositivo**, cifrate con la password del giocatore. Non vanno su Supabase, non entrano nel salvataggio e nessun server di Tradermon le riceve: è il tuo browser a parlare direttamente con Alpaca, su connessione cifrata. Prima di inserirle il gioco te lo ricorda con un avviso.
+Le chiavi restano **solo sul tuo dispositivo**, cifrate con la password del giocatore, e puoi revocarle quando vuoi dalla dashboard di Alpaca.
 
-Che cosa comporta: su un altro dispositivo o browser le inserisci di nuovo; se cancelli i dati del sito le perdi e ne generi di nuove dalla dashboard di Alpaca; puoi revocarle in ogni momento da lì, e smettono di funzionare subito.
+### #08 Si gioca dal browser
 
-**Se giochi sul tuo computer**, le chiavi restano sul server locale di Tradermon e il gioco non le mostra più.
+Non c'è niente da scaricare o installare: entri con il tuo giocatore, colleghi il conto Paper e **gli ordini partono dal tuo browser direttamente verso Alpaca**. Li decidi sempre tu, e il gioco li controlla prima di inviarli.
 
-Il gioco collega **solo il conto Paper**: è un gioco, e non vengono mai usati soldi reali.
-
-### Dove funziona la parte pratica
-
-Gli ordini li decidi sempre tu e prima di partire passano dalle regole del gioco (niente vendite allo scoperto, acquisti entro la liquidità).
-
-- **Sul sito** funziona tutto: studio, Attestati, prove sul conto, Sigilli, Lega e Boss. Serve essere entrati con il proprio giocatore e aver collegato il conto **Paper**. Gli ordini partono dal tuo browser e vanno direttamente ad Alpaca.
-- Se il tuo browser non riesce a raggiungere Alpaca (capita con alcune reti o con un blocco di contenuti), il gioco ti chiede se vuoi far passare il conto Paper dal servizio di Tradermon, che usa le chiavi per quella richiesta e non le salva. Lo scegli tu e puoi tornare indietro.
-- **Sul tuo computer** funziona tutto allo stesso modo: scarica il progetto da GitHub, installa Node.js 20 o più recente, poi nella cartella esegui `npm install`, `npm run build` e `npm start`, e apri l'indirizzo che compare.
-
-Tradermon è un gioco educativo, usa solo denaro finto e non fornisce consulenza finanziaria.
+Se la tua rete blocca Alpaca, il gioco ti propone di far passare le richieste dal servizio di Tradermon, che non salva le chiavi. Lo scegli tu.

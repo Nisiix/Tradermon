@@ -40,7 +40,7 @@ export function nameEmail(name: string): string {
   return `g${hex}@${MAIL_DOMAIN}`;
 }
 
-const netMsg = (e: unknown) => (e instanceof TypeError || /fetch|network/i.test(String((e as Error)?.message)) ? 'Supabase non è raggiungibile: controlla la connessione e riprova.' : null);
+const netMsg = (e: unknown) => (e instanceof TypeError || /fetch|network/i.test(String((e as Error)?.message)) ? 'Il servizio dei salvataggi non è raggiungibile: controlla la connessione e riprova.' : null);
 
 /** Giocatore della sessione salvata su questo dispositivo (nessuna richiesta di rete). */
 export async function currentPlayer(): Promise<Player | null> {

@@ -203,6 +203,7 @@ body.touch-on .touch { display: flex; }
 .tut-head .dots i { display: inline-block; width: 9px; height: 9px; margin-left: 4px; border: 2px solid var(--line); border-radius: 50%; background: #fff; }
 .tut-head .dots i.ok { background: #48c048; }
 .tut-head .dots i.cur { background: #f8d030; }
+.tut-head .dots i.skip { background: #b8c0d0; }
 .tut-box h3 { font-family: var(--font); font-size: calc(var(--fs) * 1.15); margin: 10px 0 8px; }
 .tut-box p { margin: 6px 0; }
 .tut-box .tut-try { font-family: var(--font); font-size: calc(var(--fs) * .95); color: #c03028; animation: blink 1s steps(2) infinite; }
