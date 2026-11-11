@@ -13,6 +13,11 @@ export function spreadOf(a: AssetDef): number {
   return a.cls === 'crypto' ? 0.005 : 0.001;
 }
 
+/** Allocazione obiettivo suggerita dal profilo di rischio (rischiosi, difensivi, liquidità). */
+export function presetTarget(profile: string): { risky: number; defensive: number; cash: number } {
+  return profile === 'prudente' ? { risky: 40, defensive: 50, cash: 10 } : profile === 'audace' ? { risky: 80, defensive: 10, cash: 10 } : { risky: 60, defensive: 30, cash: 10 };
+}
+
 export function newPortfolio(initial: number, monthly: number, profile: string): Portfolio {
   const target = profile === 'prudente' ? { risky: 40, defensive: 50, cash: 10 } : profile === 'audace' ? { risky: 80, defensive: 10, cash: 10 } : { risky: 60, defensive: 30, cash: 10 };
   return {

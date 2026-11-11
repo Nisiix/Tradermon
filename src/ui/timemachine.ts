@@ -1,7 +1,7 @@
 import type { AssetClass, AssetDef } from '../types';
-import type { SimMission, SimResult } from '../data/missions';
+import { processReview, type SimMission, type SimResult } from '../data/missions';
 import type { Scenario } from '../systems/market';
-import { generateScenario, metrics } from '../systems/market';
+import { generateScenario, metrics, resolveScenario } from '../systems/market';
 import { ASSETS, SECTOR_LABEL, SECTOR_COLOR } from '../data/assets';
 import { type Book, marketBuy, marketSell, placeOrder, processOrders, value, weights, fmtPx, fmtMoney, fmtPct, fmtQty, FEE, spreadOf } from '../systems/portfolio';
 import { hasTech, TECH, classes } from '../systems/state';
@@ -39,7 +39,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
   const canStop = hasTech(TECH.STOP) || mid === 'm8' || o.sandbox;
   const canPac = hasTech(TECH.PAC) || mid === 'm4' || o.sandbox || monthly > 0;
   const newsMap = new Map<number, string>();
-  sc.shocks.forEach((s) => s.news && newsMap.set(s.day, s.news));
+  resolveScenario(sc, seed).shocks.forEach((s) => s.news && newsMap.set(s.day, s.news));
 
   const book: Book = { cash: capital, positions: [], orders: [], log: [] };
   let lossSales = 0;
@@ -270,6 +270,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
           <tr><td>Settori a fine periodo / peso massimo</td><td class="n">${res.sectors} / ${(res.maxW * 100).toFixed(0)}%</td></tr>
           <tr><td>Valore finale / versato</td><td class="n">${fmtMoney(res.finalValue)} / ${fmtMoney(res.contributed)}</td></tr>
         </table>
+        ${o.mission ? (() => { const pr = processReview(res); return `<p><b>Processo: ${'★'.repeat(pr.stars)}${'☆'.repeat(3 - pr.stars)}</b></p><ul class="small" style="margin:0 0 6px;padding-left:18px">${pr.notes.map((n) => `<li class="${n.ok ? 'good' : 'bad'}">${esc(n.text)}</li>`).join('')}</ul>`; })() : ''}
         <p class="small muted">Il rendimento conta, ma in Tradermon si vince con il rendimento corretto per il rischio: lo Sharpe e il drawdown dicono quanto è stato "faticoso" ottenerlo.</p>`;
       foot.innerHTML = '';
       button('Continua', () => close({ ...res, ...chk }), 'primary');

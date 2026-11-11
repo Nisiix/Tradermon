@@ -75,6 +75,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       if (prevTrack) play(prevTrack); else stop();
       markDuelDone();
       if (win && o.damage > 0) { track('duel_win'); if (perfect) track('duel_perfect'); jingle('win'); }
+      if (!win && o.damage > 0) track('duel_loss');
       resolve({ win, correct, total: idx, perfect: perfect && win, tilted, ids: o.questions.slice(0, idx).map((q) => q.id), wrong: wrongIds });
     };
 

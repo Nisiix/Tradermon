@@ -11,7 +11,7 @@ import { LEDGER_PAGES, pageFlag, SECRET_FLAGS } from '../world/secretsData';
 // ---------------- Contatori di eventi ----------------
 
 export type GameEvent =
-  | 'lesson' | 'duel_win' | 'duel_perfect' | 'checkup' | 'tip' | 'daily_q' | 'mission' | 'journal' | 'minigame'
+  | 'lesson' | 'duel_win' | 'duel_loss' | 'duel_perfect' | 'checkup' | 'tip' | 'daily_q' | 'mission' | 'journal' | 'minigame'
   | 'rematch' | 'steps' | 'trade' | 'rebalance' | 'quest' | 'house_unique' | 'review' | 'review_journal' | 'challenge' | 'badge' | 'legend' | 'islet' | 'secret';
 
 const listeners: ((ev: GameEvent, n: number) => void)[] = [];

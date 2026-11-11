@@ -2,7 +2,7 @@ import { track } from '../systems/progress';
 import { S, save, slots, hasTech, TECH, classes, card, learnBias, profileFromScore } from '../systems/state';
 import type { BiasId } from '../types';
 import { unlockedAssets, ASSET_BY_ID, SECTOR_LABEL, SECTOR_COLOR } from '../data/assets';
-import { value, weights, health, diagnosis, rebalancePlan, marketBuy, marketSell, placeOrder, allocation, fmtMoney, fmtPx, fmtPct, fmtQty, FEE } from '../systems/portfolio';
+import { value, weights, health, diagnosis, rebalancePlan, marketBuy, marketSell, placeOrder, allocation, fmtMoney, fmtPx, fmtPct, fmtQty, FEE, presetTarget } from '../systems/portfolio';
 import { metrics, CLIMATE_LABEL } from '../systems/market';
 import { say, choose, modal, el, esc, toast, bar, confirm } from './core';
 import { LESSONS } from '../data/lessons';
@@ -13,6 +13,8 @@ import { journalPrompt } from './journal';
 import { questionnaire } from './setup';
 import { shuffle } from '../systems/rng';
 import { onBuy, onSell } from '../systems/character';
+import { openChart } from './chart';
+import { simulatedCandles } from '../systems/candles';
 
 const NURSE = 'Dott.ssa Ratio';
 
@@ -55,10 +57,18 @@ export async function openClinic(townIdx: number) {
       case 'Conto Alpaca (paper e reale)': await openAlpacaHub(); break;
       case 'Osservatorio Alpaca (sola lettura)': await openObservatory(); break;
       case 'Rifai il questionario': {
+        const before = S.profile;
         const sc = await questionnaire();
         S.profileScore = sc;
         S.profile = profileFromScore(sc);
         await say(`Il tuo profilo ora è: ${S.profile.toUpperCase()}. Ricorda: è uno strumento per conoscerti, non una raccomandazione.`, NURSE);
+        if (S.profile !== before) {
+          const pt = presetTarget(S.profile);
+          const t = S.portfolio.target;
+          const upd = await choose([`Sì: ${pt.risky}/${pt.defensive}/${pt.cash}`, `No, tengo ${t.risky}/${t.defensive}/${t.cash}`], { prompt: `Vuoi aggiornare anche l'allocazione obiettivo del conto (rischiosi/difensivi/liquidità)? Diagnosi e ribilanciamento la useranno.`, who: NURSE });
+          if (upd === 0) { S.portfolio.target = { ...pt }; toast(`Obiettivo aggiornato: ${pt.risky}/${pt.defensive}/${pt.cash}.`); }
+        }
+        save();
         break;
       }
     }
@@ -118,6 +128,15 @@ export async function trade(guided = false) {
         const tr = el('tr');
         tr.innerHTML = `<td><span class="card sector" style="background:${SECTOR_COLOR[a.sector]};border:0;padding:2px 4px">${SECTOR_LABEL[a.sector]}</span> <b>${esc(a.ticker)}</b> ${esc(a.name)} <span class="small muted">rischio ${'★'.repeat(a.risk)}</span></td><td class="n">${fmtPx(px[a.id])}</td><td class="n ${px[a.id] >= p30 ? 'good' : 'bad'}">${fmtPct(px[a.id] / p30 - 1)}</td><td class="n">${pos ? fmtMoney(pos.qty * px[a.id]) : '—'}</td>`;
         const td = el('td');
+        const ch = el('button', 'btn', 'Grafico');
+        ch.title = 'Grafico a candele: 5 min, 15 min, 1 ora, 4 ore, 1 giorno';
+        ch.addEventListener('click', () => void openChart({
+          title: `${a.ticker} · ${a.name}`,
+          load: (tf) => simulatedCandles(a.id, S.market.history[a.id], tf, a.cls === 'crypto', S.market.seed),
+          note: pos ? `Prezzo medio di carico ${fmtPx(pos.cost / pos.qty)} · posizione ${fmtMoney(pos.qty * px[a.id])}` : 'Nessuna posizione aperta su questo asset.',
+          marker: pos ? { price: pos.cost / pos.qty, label: 'carico' } : undefined,
+        }));
+        td.appendChild(ch);
         const inp = el('input', 'tx') as HTMLInputElement;
         inp.type = 'number'; inp.min = '0'; inp.placeholder = 'Cr'; inp.style.width = '90px'; inp.style.fontSize = '18px';
         inp.value = String(Math.max(0, Math.round(Math.min(S.portfolio.cash, v * 0.15))));
@@ -162,7 +181,7 @@ export async function trade(guided = false) {
         tbl.appendChild(tr);
       }
       body.appendChild(tbl);
-      body.appendChild(el('p', 'small muted', 'Riepilogo prima di ogni acquisto: l\'importo comprende la commissione; il prezzo include metà spread. Il mercato avanza mentre esplori (1 giorno ogni 60 passi sui percorsi e a ogni sfida).'));
+      body.appendChild(el('p', 'small muted', 'Prima di decidere, apri il Grafico: candele a 5 min, 15 min, 1 ora, 4 ore e 1 giorno con una lettura guidata. Riepilogo prima di ogni acquisto: l\'importo comprende la commissione; il prezzo include metà spread. Il mercato avanza mentre esplori (1 giorno ogni 60 passi sui percorsi e a ogni sfida).'));
     };
     const summaryOk = async (id: string, amt: number) => {
       const a = ASSET_BY_ID[id];

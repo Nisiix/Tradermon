@@ -14,6 +14,8 @@ import { prefs } from '../systems/controls';
 import { availableTitles, track } from '../systems/progress';
 import { openAgenda } from './agenda';
 import { openJournal } from './journal';
+import { openStudentFolder } from './student';
+import { headlines, weekSummary } from '../systems/gazette';
 import type { QuizTopic, BiasId } from '../types';
 import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 import { safariAtRisk, SAFARI_TEXT } from './storageNotice';
@@ -23,7 +25,7 @@ import { ABILITY, canSwim, canTransfer } from '../world/travel';
 export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) {
   for (;;) {
     const pending = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length;
-    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
+    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Giornale di Capitalia', 'Cartella dello studente', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
     const c = await choose(opts, { cancel: true, title: 'MENU' });
     if (c < 0 || c === opts.length - 1) return;
     const o = opts[c];
@@ -31,6 +33,8 @@ export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) 
     else if (o === 'Portafoglio') await modal('Portafoglio', ({ body, button, close }) => { body.innerHTML = checkupHtml(); button('Chiudi', () => close(), 'primary'); }, { wide: true });
     else if (o.startsWith('Agenda')) await openAgenda();
     else if (o === 'Diario') await openJournal();
+    else if (o === 'Giornale di Capitalia') await openGazette();
+    else if (o === 'Cartella dello studente') await openStudentFolder();
     else if (o === 'Profilo e Licenza') await profile();
     else if (o === 'Medaglie e Tecniche') await badges();
     else if (o === 'Lezioni') await openLessons();
@@ -83,6 +87,14 @@ export async function openLessons(only?: QuizTopic[]) {
     await say(l.body, l.title);
     if (!S.lessonsRead.includes(l.id)) { S.lessonsRead.push(l.id); S.stats.xp += 5; track('lesson'); }
   }
+}
+
+async function openGazette() {
+  await modal('Giornale di Capitalia', ({ body, button, close }) => {
+    const hs = headlines();
+    body.innerHTML = `<p class="small">${esc(weekSummary())}</p>` + (hs.length ? hs.map((h) => `<div style="margin:6px 0"><b class="${h.tone === 'su' ? 'good' : h.tone === 'giu' ? 'bad' : ''}">Giorno ${h.day} · ${esc(h.title)}</b>${h.body ? `<br><span class="small">${esc(h.body)}</span>` : ''}</div>`).join('') : '<p class="muted">Nessuna notizia ancora.</p>');
+    button('Chiudi', () => close(), 'primary');
+  }, { wide: true });
 }
 
 async function profile() {

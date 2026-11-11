@@ -15,7 +15,7 @@ import { mentorBooks, TOPIC_LABEL, type Book } from '../data/books';
 import { DUEL, REWARD, TRAIT_HIGH, REP_TIERS } from '../systems/balance';
 import { repTier, repGreeting, mentorCharacterLine, epilogue, TIER_MENTOR_REMATCH, TIER_ARCHIVE } from '../systems/character';
 import type { Section } from './maps';
-import { mentorMission, leagueMission, LEGENDS, SANDBOX, HISTORY, type Mission } from '../data/missions';
+import { mentorMission, processReview, leagueMission, LEGENDS, SANDBOX, HISTORY, type Mission } from '../data/missions';
 import { weeklyChallenge } from '../ui/challenge';
 import { ASSETS, ASSET_BY_ID, starterFor, unlockedAssets, SECTOR_LABEL } from '../data/assets';
 import { TEMPTATIONS, BIAS_INFO } from '../data/events';
@@ -469,8 +469,14 @@ async function runMission(m: Mission): Promise<{ ok: boolean; detail: string } |
   if (m.kind === 'pick') return runPick(m);
   await say(['Benvenuto nella Macchina del Tempo!', 'Usa il pulsante ▶ per far scorrere i giorni, compra e vendi quando vuoi. Gli asset sono quelli didattici della missione.'], 'Macchina del Tempo');
   const r = await runSim({ mission: m });
-  if (r?.ok && r.lossSales === 0 && r.orders > 0) S.flags.missionNoLossSale = true;
-  return r ? { ok: r.ok, detail: r.detail } : null;
+  if (!r) return null;
+  if (r.ok && r.lossSales === 0 && r.orders > 0) S.flags.missionNoLossSale = true;
+  // il processo conta anche se l'obiettivo non è raggiunto: le stelle danno Conoscenza e restano nella Cartella
+  const pr = processReview(r);
+  const prev = Number(S.flags[`${m.id}_stars`] ?? 0);
+  if (pr.stars > prev) { S.flags[`${m.id}_stars`] = pr.stars; S.stats.xp += (pr.stars - prev) * REWARD.xp.processStar; }
+  if (pr.stars === 3) { clampStat('disciplina', 3); clampStat('pazienza', 2); }
+  return { ok: r.ok, detail: r.detail };
 }
 
 async function winBadge(m: number, w: WorldApi) {
@@ -800,9 +806,11 @@ async function tower() {
     return;
   }
   if (opts[c] === 'Nuova Partita+') {
-    const t = await choose(['Sentiero dei Titoli', 'Sentiero degli Indici', 'Sentiero Cripto', 'Annulla'], { cancel: true, prompt: 'Ricomincerai dall\'inizio in un altro percorso, conservando avatar, record e carte dorate. Sicuro?' });
-    if (t < 0 || t === 3) return;
-    newGamePlus((['stocks', 'etf', 'crypto'] as const)[t]);
+    const t = await choose(['Sentiero dei Titoli', 'Sentiero degli Indici', 'Sentiero Cripto', 'Sentiero Misto (tutte le classi)', 'Annulla'], { cancel: true, prompt: 'Ricomincerai dall\'inizio in un altro percorso, conservando avatar, record e carte dorate. Sicuro?' });
+    if (t < 0 || t === 4) return;
+    newGamePlus((['stocks', 'etf', 'crypto', 'mixed'] as const)[t]);
+    if (t === 3) S.mixedClasses = ['stocks', 'etf', 'crypto'];
+    await say(['Nuova Partita+: i Mentori faranno domande più difficili e una domanda su due avrà numeri nuovi.', 'Le carte dorate, i record della Torre e le Leggende restano con te.'], 'Custode della Torre');
     S.flags.starter = false;
     save();
     location.reload();

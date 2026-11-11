@@ -44,20 +44,34 @@ function ddAllow(base: number, _profile?: RiskProfile): number {
   return base;
 }
 
+/**
+ * Giudizio sul processo, oltre all'obiettivo: come hai investito, non solo quanto hai guadagnato.
+ * Tre criteri, una stella ciascuno; le stelle danno Conoscenza extra e restano nella Cartella dello studente.
+ */
+export interface ProcessReview { stars: number; notes: { ok: boolean; text: string }[] }
+export function processReview(r: SimResult): ProcessReview {
+  const notes = [
+    { ok: r.maxW <= 0.4 && r.sectors >= 2, text: r.maxW <= 0.4 && r.sectors >= 2 ? 'Nessuna posizione dominante e più settori: rischio specifico sotto controllo.' : 'Troppo concentrato: una posizione sopra il 40% o un solo settore.' },
+    { ok: r.lossSales === 0, text: r.lossSales === 0 ? 'Nessuna vendita in perdita: hai attraversato i cali senza panico.' : `Vendite in perdita: ${r.lossSales}. Vendere nel calo trasforma un ribasso in una perdita vera.` },
+    { ok: r.orders <= Math.ceil(r.values.length / 10) + 3, text: r.orders <= Math.ceil(r.values.length / 10) + 3 ? 'Poche operazioni, ben scelte: i costi sono rimasti bassi.' : `Troppe operazioni (${r.orders}): ogni ordine costa e raramente aggiunge valore.` },
+  ];
+  return { stars: notes.filter((n) => n.ok).length, notes };
+}
+
 export function mentorMission(n: number, track: Track, profile: RiskProfile): Mission {
   const crypto = track === 'crypto';
   switch (n) {
     case 1: return {
-      kind: 'sim', id: 'm1', title: 'Il primo raccolto', scenario: { id: 'm1', name: 'Mercato normale', desc: '', days: 60, phases: [{ until: 999, drift: 0.08, vol: 0.16 }], shocks: [{ day: 25, market: -0.04, news: 'Giornata rossa: l\'indice perde il 4%.' }] },
-      brief: 'Hai 60 giorni di mercato. Investi almeno metà del capitale e arriva alla fine senza scendere sotto il 90% del capitale iniziale. Non serve fare tante operazioni.',
+      kind: 'sim', id: 'm1', title: 'Il primo raccolto', scenario: { id: 'm1', name: 'Mercato normale', desc: '', days: 60, jitter: 12, phases: [{ until: 999, drift: 0.08, vol: 0.16 }], shocks: [{ day: 25, market: -0.04, news: 'Giornata rossa: l\'indice perde il 4%.' }] },
+      brief: 'Hai 60 giorni di mercato, con una giornata rossa da qualche parte nel mezzo. Investi almeno metà del capitale e arriva alla fine senza scendere sotto il 90% del capitale iniziale. Non serve fare tante operazioni.',
       check: (r) => ({ ok: r.investedW >= 0.5 && r.finalValue >= r.startValue * 0.9, detail: `Investito a fine periodo: ${pct(r.investedW)} (min 50%) · valore finale ${pct(r.finalValue / r.startValue)} del capitale (min 90%)` }) };
     case 2: return {
-      kind: 'sim', id: 'm2', title: 'Ordini precisi', scenario: { id: 'm2', name: 'Mercato laterale', desc: '', days: 40, phases: [{ until: 999, drift: 0, vol: 0.22 }], shocks: [{ day: 12, market: -0.03 }, { day: 27, market: -0.025 }] },
+      kind: 'sim', id: 'm2', title: 'Ordini precisi', scenario: { id: 'm2', name: 'Mercato laterale', desc: '', days: 40, jitter: 6, phases: [{ until: 999, drift: 0, vol: 0.22 }], shocks: [{ day: 12, market: -0.03 }, { day: 27, market: -0.025 }] },
       brief: 'Il mercato oscilla senza direzione. Piazza un ordine limite di acquisto sotto il prezzo attuale e fallo eseguire entro 40 giorni.',
       check: (r) => ({ ok: r.limitFills >= 1, detail: `Ordini limite eseguiti: ${r.limitFills} (min 1)` }) };
     case 3: return {
-      kind: 'sim', id: 'm3', title: 'Il mosaico', scenario: { id: 'm3', name: 'Shock di settore', desc: '', days: 80, phases: [{ until: 999, drift: 0.06, vol: 0.16 }], shocks: [{ day: 40, sectors: { tech: -0.15, crypto: -0.2, energy: 0.05 }, news: 'Shock di settore: tecnologia e cripto crollano, l\'energia sale.' }] },
-      brief: 'A metà periodo arriva uno shock di settore. A fine periodo devi avere almeno 3 settori diversi e nessuna posizione sopra il 40% del portafoglio.',
+      kind: 'sim', id: 'm3', title: 'Il mosaico', scenario: { id: 'm3', name: 'Shock di settore', desc: '', days: 80, jitter: 18, phases: [{ until: 999, drift: 0.06, vol: 0.16 }], shocks: [{ day: 40, sectors: { tech: -0.15, crypto: -0.2, energy: 0.05 }, news: 'Shock di settore: tecnologia e cripto crollano, l\'energia sale.' }] },
+      brief: 'Prima o poi arriverà uno shock di settore: non sai quando né quale settore. A fine periodo devi avere almeno 3 settori diversi e nessuna posizione sopra il 40% del portafoglio.',
       check: (r) => ({ ok: r.sectors >= 3 && r.maxW <= 0.4, detail: `Settori: ${r.sectors} (min 3) · peso massimo ${pct(r.maxW)} (max 40%)` }) };
     case 4: return {
       kind: 'sim', id: 'm4', title: 'La spirale del tempo', monthly: 300, scenario: { id: 'm4', name: '24 mesi di accumulo', desc: '', days: 504, phases: [{ until: 150, drift: 0.05, vol: 0.18 }, { until: 260, drift: -0.25, vol: 0.25 }, { until: 999, drift: 0.15, vol: 0.16 }], shocks: [] },
@@ -73,20 +87,20 @@ export function mentorMission(n: number, track: Track, profile: RiskProfile): Mi
       return {
         kind: 'sim', id: 'm6', title: crypto ? 'L\'ancora che cede' : 'L\'onda dei tassi',
         scenario: crypto
-          ? { id: 'm6', name: 'Perdita di aggancio', desc: '', days: 120, phases: [{ until: 999, drift: -0.2, vol: 0.2 }], shocks: [{ day: 50, sectors: { crypto: -0.25 }, news: 'Una stablecoin algoritmica perde l\'aggancio: panico su tutto il mercato cripto.' }, { day: 51, sectors: { crypto: -0.12 } }] }
-          : { id: 'm6', name: 'Tassi in salita', desc: '', days: 120, phases: [{ until: 999, drift: -0.08, vol: 0.18 }], shocks: [{ day: 30, sectors: { bond: -0.03, tech: -0.04, utility: -0.03 }, news: 'La banca centrale alza i tassi dello 0,75%.' }, { day: 70, sectors: { bond: -0.03, tech: -0.03 }, news: 'Altro rialzo dei tassi.' }] },
+          ? { id: 'm6', name: 'Perdita di aggancio', desc: '', days: 120, jitter: 20, phases: [{ until: 999, drift: -0.2, vol: 0.2 }], shocks: [{ day: 50, sectors: { crypto: -0.25 }, news: 'Una stablecoin algoritmica perde l\'aggancio: panico su tutto il mercato cripto.' }, { day: 51, sectors: { crypto: -0.12 } }] }
+          : { id: 'm6', name: 'Tassi in salita', desc: '', days: 120, jitter: 15, phases: [{ until: 999, drift: -0.08, vol: 0.18 }], shocks: [{ day: 30, sectors: { bond: -0.03, tech: -0.04, utility: -0.03 }, news: 'La banca centrale alza i tassi dello 0,75%.' }, { day: 70, sectors: { bond: -0.03, tech: -0.03 }, news: 'Altro rialzo dei tassi.' }] },
         brief: crypto ? `Una stablecoin crolla e trascina il mercato. Mantieni il massimo drawdown del portafoglio sotto il ${pct(lim)}. La liquidità e la stablecoin con riserve sono tue alleate.` : `I tassi salgono due volte. Mantieni il massimo drawdown del portafoglio sotto il ${pct(lim)}.`,
         check: (r) => ({ ok: r.mdd <= lim && r.investedW > 0.2, detail: `Max drawdown ${pct(r.mdd)} (max ${pct(lim)}) · investito ${pct(r.investedW)} (min 20%)` }) };
     }
     case 7: return {
-      kind: 'sim', id: 'm7', title: 'Specchio, specchio', scenario: { id: 'm7', name: 'Bolle e notizie euforiche', desc: '', days: 90, phases: [{ until: 30, drift: 0.3, vol: 0.2 }, { until: 60, drift: -0.4, vol: 0.3 }, { until: 999, drift: 0.1, vol: 0.18 }], shocks: [{ day: 10, asset: { RZM: 0.25, MEM: 0.5, TKE: 0.08 }, news: 'TUTTI COMPRANO! Razzomania e Gattomoneta volano!' }, { day: 25, asset: { RZM: 0.2, MEM: 0.4 }, news: '"Non è mai troppo tardi per salire a bordo!"' }, { day: 40, asset: { RZM: -0.35, MEM: -0.6 }, news: 'La bolla scoppia.' }] },
-      brief: 'Notizie euforiche e bolle ti tenteranno. Fai al massimo 6 ordini e chiudi con almeno il 95% del capitale.',
-      check: (r) => ({ ok: r.orders <= 6 && r.finalValue >= r.startValue * 0.95, detail: `Ordini: ${r.orders} (max 6) · valore finale ${pct(r.finalValue / r.startValue)} (min 95%)` }) };
+      kind: 'sim', id: 'm7', title: 'Specchio, specchio', scenario: { id: 'm7', name: 'Bolle e notizie euforiche', desc: '', days: 90, jitter: 8, phases: [{ until: 30, drift: 0.3, vol: 0.2 }, { until: 60, drift: -0.4, vol: 0.3 }, { until: 999, drift: 0.1, vol: 0.18 }], shocks: [{ day: 10, asset: { RZM: 0.25, MEM: 0.5, TKE: 0.08 }, news: 'TUTTI COMPRANO! Razzomania e Gattomoneta volano!' }, { day: 25, asset: { RZM: 0.2, MEM: 0.4 }, news: '"Non è mai troppo tardi per salire a bordo!"' }, { day: 40, asset: { RZM: -0.35, MEM: -0.6 }, news: 'La bolla scoppia.' }] },
+      brief: 'Notizie euforiche e bolle ti tenteranno. Fai al massimo 6 ordini, resta investito almeno al 30% a fine periodo (restare fermi in liquidità non è una strategia) e chiudi con almeno il 95% del capitale.',
+      check: (r) => ({ ok: r.orders <= 6 && r.investedW >= 0.3 && r.finalValue >= r.startValue * 0.95, detail: `Ordini: ${r.orders} (max 6) · investito a fine periodo ${pct(r.investedW)} (min 30%) · valore finale ${pct(r.finalValue / r.startValue)} (min 95%)` }) };
     default: {
       const lim = crypto ? ddAllow(0.2, profile) : ddAllow(0.12, profile);
       return {
-        kind: 'sim', id: 'm8', title: 'Lo scudo', scenario: { id: 'm8', name: 'Crollo improvviso', desc: '', days: 90, phases: [{ until: 30, drift: 0.1, vol: 0.15 }, { until: 55, drift: -1.2, vol: 0.45 }, { until: 999, drift: 0.3, vol: 0.25 }], shocks: [{ day: 31, market: -0.07, news: 'Crollo! L\'indice perde il 7% in apertura.' }] },
-        brief: `Arriverà un crollo improvviso. Tieni il massimo drawdown sotto il ${pct(lim)}, restando investito almeno al 30% a fine periodo. Gli ordini stop e la diversificazione sono il tuo scudo.`,
+        kind: 'sim', id: 'm8', title: 'Lo scudo', scenario: { id: 'm8', name: 'Crollo improvviso', desc: '', days: 90, jitter: 14, phases: [{ until: 30, drift: 0.1, vol: 0.15 }, { until: 55, drift: -1.2, vol: 0.45 }, { until: 999, drift: 0.3, vol: 0.25 }], shocks: [{ day: 31, market: -0.07, news: 'Crollo! L\'indice perde il 7% in apertura.' }] },
+        brief: `Arriverà un crollo improvviso, senza preavviso. Tieni il massimo drawdown sotto il ${pct(lim)}, restando investito almeno al 30% a fine periodo. Gli ordini stop e la diversificazione sono il tuo scudo.`,
         check: (r) => ({ ok: r.mdd <= lim && r.investedW >= 0.3, detail: `Max drawdown ${pct(r.mdd)} (max ${pct(lim)}) · investito a fine periodo ${pct(r.investedW)} (min 30%)` }) };
     }
   }

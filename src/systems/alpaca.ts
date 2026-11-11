@@ -48,8 +48,9 @@ export function submitOrder(env: Env, o: OrderReq, confirmWord?: string) {
 }
 
 export interface Bar { t: string; o: number; h: number; l: number; c: number; v: number }
-export function bars(symbol: string, cls: 'stocks' | 'crypto', start: string, end: string) {
-  return call<{ bars: Bar[] }>(`/api/data/bars?symbol=${encodeURIComponent(symbol)}&class=${cls}&start=${start}&end=${end}`);
+export type BarTimeframe = '5Min' | '15Min' | '1Hour' | '4Hour' | '1Day';
+export function bars(symbol: string, cls: 'stocks' | 'crypto', start: string, end: string, timeframe: BarTimeframe = '1Day') {
+  return call<{ bars: Bar[] }>(`/api/data/bars?symbol=${encodeURIComponent(symbol)}&class=${cls}&start=${start}&end=${end}&timeframe=${timeframe}`);
 }
 export function latest(symbol: string, cls: 'stocks' | 'crypto') {
   return call<{ price: number }>(`/api/data/latest?symbol=${encodeURIComponent(symbol)}&class=${cls}`);

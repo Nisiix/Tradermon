@@ -15,7 +15,12 @@ export const MAX_DIFF = 4;
 export const STAGE_LEAGUE = 9;
 
 export function targetDiff(stage: number): number {
-  return Math.max(1, Math.min(MAX_DIFF, 1 + stage * 0.25));
+  return Math.max(1, Math.min(MAX_DIFF, 1 + stage * 0.25 + ngBoost()));
+}
+
+/** Nuova Partita+: ogni giro alza la difficoltà media di mezzo livello (le domande da esperto compaiono già dai Mentori). */
+export function ngBoost(): number {
+  return 0.5 * Math.min(2, S?.ngPlus ?? 0);
 }
 
 /** Tappa della storia raggiunta dal giocatore. */
@@ -49,7 +54,7 @@ export interface PickOpts {
 }
 
 /** Quante domande del duello sono generate con numeri nuovi: una ogni tre (3 → 1, 8 → 2, 12 → 4). */
-export function generatedCount(n: number): number { return Math.floor(n / 3); }
+export function generatedCount(n: number): number { return Math.floor(n / ((S?.ngPlus ?? 0) > 0 ? 2 : 3)); }
 
 /**
  * Sostituisce una domanda ogni tre con una generata sugli stessi argomenti e alla stessa difficoltà:

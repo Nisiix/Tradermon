@@ -15,6 +15,20 @@ export interface Scenario {
   phases: Phase[];
   shocks: DayShock[];
   historical?: string;
+  /** Spostamento casuale (in giorni, ±) di fasi e shock, deciso dal seme: il giocatore sa che lo shock arriverà, non quando. */
+  jitter?: number;
+}
+
+/** Scenario concreto per un seme: fasi e shock spostati dello stesso numero di giorni, così restano coerenti tra loro. */
+export function resolveScenario(sc: Scenario, seed: number): Scenario {
+  if (!sc.jitter) return sc;
+  const off = Math.round((mulberry32(seed ^ 0x5bd1e995)() * 2 - 1) * sc.jitter);
+  const clampDay = (d: number) => Math.max(1, Math.min(sc.days, d + off));
+  return {
+    ...sc,
+    phases: sc.phases.map((ph) => ({ ...ph, until: ph.until >= sc.days ? ph.until : clampDay(ph.until) })),
+    shocks: sc.shocks.map((sh) => ({ ...sh, day: clampDay(sh.day) })),
+  };
 }
 
 const START_PRICE: Record<string, number> = {};
@@ -55,7 +69,8 @@ export function phaseAt(phases: Phase[], day: number): Phase {
 }
 
 /** Genera l'intera serie di prezzi di uno scenario (deterministica dal seed). */
-export function generateScenario(sc: Scenario, assets: AssetDef[], seed: number): { prices: Record<string, number[]>; index: number[] } {
+export function generateScenario(sc0: Scenario, assets: AssetDef[], seed: number): { prices: Record<string, number[]>; index: number[] } {
+  const sc = resolveScenario(sc0, seed);
   const rng = mulberry32(seed);
   const prices: Record<string, number[]> = {};
   assets.forEach((a) => (prices[a.id] = [startPrice(a.id)]));

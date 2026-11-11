@@ -232,12 +232,15 @@ async function handleApi(req, res, url) {
       const start = String(url.searchParams.get('start') || '').slice(0, 10);
       const end = String(url.searchParams.get('end') || '').slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return send(res, 400, { message: 'Date non valide' });
+      const TIMEFRAMES = new Set(['5Min', '15Min', '1Hour', '4Hour', '1Day']);
+      const tf = String(url.searchParams.get('timeframe') || '1Day');
+      if (!TIMEFRAMES.has(tf)) return send(res, 400, { message: 'Orizzonte non valido (5Min, 15Min, 1Hour, 4Hour, 1Day)' });
       const env = dataEnv();
       if (cls === 'crypto') {
-        const d = await alpaca(env, 'GET', `${DATA}/v1beta3/crypto/us/bars?symbols=${encodeURIComponent(sym)}&timeframe=1Day&start=${start}&end=${end}&limit=10000`);
+        const d = await alpaca(env, 'GET', `${DATA}/v1beta3/crypto/us/bars?symbols=${encodeURIComponent(sym)}&timeframe=${tf}&start=${start}&end=${end}&limit=10000`);
         return send(res, 200, { bars: d.bars?.[sym] ?? [] });
       }
-      const d = await alpaca(env, 'GET', `${DATA}/v2/stocks/${encodeURIComponent(sym)}/bars?timeframe=1Day&start=${start}&end=${end}&limit=10000&adjustment=all&feed=iex`);
+      const d = await alpaca(env, 'GET', `${DATA}/v2/stocks/${encodeURIComponent(sym)}/bars?timeframe=${tf}&start=${start}&end=${end}&limit=10000&adjustment=all&feed=iex`);
       return send(res, 200, { bars: d.bars ?? [] });
     }
   }
