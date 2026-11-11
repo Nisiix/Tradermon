@@ -1,7 +1,7 @@
 // Funzioni comuni agli script dei PNG: API del mondo, esito dei duelli, risveglio in Clinica, rivincite con le domande sbagliate.
 import { townOf, type NpcDef } from '../maps';
 import type { Question } from '../../types';
-import { S, save, addRep, advanceDays } from '../../systems/state';
+import { S, save, addRep } from '../../systems/state';
 import { track, type GameEvent } from '../../systems/progress';
 import { say } from '../../ui/core';
 import { storyStage } from '../../systems/quiz';
@@ -9,6 +9,7 @@ import { BY_ID } from '../../data/quiz/build';
 import { TRAINER_TIPS } from '../../data/story';
 import { beep } from '../../systems/audio';
 import { pick, shuffle } from '../../systems/rng';
+import { tick } from '../../systems/account';
 
 export interface WorldApi {
   warp(map: string, x: number, y: number, dir?: 0 | 1 | 2 | 3): void;
@@ -41,7 +42,7 @@ export function reward(o: { rep?: number; xp?: number; defeated?: string; event?
 }
 
 export async function afterDuel(win: boolean, id: string, rep: number, w: WorldApi, who: string) {
-  advanceDays(1);
+  tick();
   if (win) {
     reward({ defeated: id, rep });
     await say(['Complimenti, sei preparato!', pick(TRAINER_TIPS)], who);

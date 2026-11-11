@@ -372,18 +372,18 @@ const TOWN_TALK = [
   'La Dott.ssa Ratio dice che il mio portafoglio "ha la febbre". Troppa tecnologia, a quanto pare.',
   'Lo sapevi? Dopo un −50% serve un +100% per tornare in pari!',
   'Mio nonno ha fatto un piano di accumulo per 30 anni. Dice che il segreto è stato non guardare troppo spesso.',
-  'Le Guardie della Borsa ti lasciano passare solo con la Medaglia della città.',
+  'Le Guardie della Borsa ti lasciano passare con l\'Attestato del Mentore della città: lo vinci nel duello.',
   'In Biblioteca il ripasso ti ripropone le domande al momento giusto. Io ci passo ogni giorno!',
   'Le cripto non dormono mai: sono aperte anche la domenica!',
   'Un signore elegante mi ha offerto il 20% al mese. Gli ho detto di no. Ho fatto bene, vero?',
-  'Il treno collega le città visitate dalla seconda Medaglia. Dalla quarta ti trasferisci ovunque dalla Mappa della Regione!',
+  'Il treno collega le città visitate dal secondo Attestato. Dal quarto ti trasferisci ovunque dalla Mappa della Regione!',
   'Ho letto che i costi si compongono come i rendimenti. Che brutta sorpresa!',
   'La Zona Simulazione di Diversia è perfetta per sperimentare senza rischi.',
   'Chi promette rendimenti garantiti di solito garantisce solo una cosa: i suoi guadagni.',
   'Le Zone di Mercato, quelle con l\'erba alta e il grafico, sono piene di sorprese.',
   'Il mio portafoglio è diversificato: azioni, obbligazioni e un po\' di liquidità. Dormo tranquillo.',
   'Dicono che nel Casinò di Interessa il banco vinca sempre. Matematicamente, è vero.',
-  'Per sfidare la Lega servono tutte e otto le Medaglie.',
+  'Per sfidare la Lega servono otto Medaglie complete: Attestato e Sigillo pratico, guadagnato sul conto vero.',
   'Un buon investitore scrive il suo piano a mente fredda.',
   'L\'Archivio di Bilancia si apre solo a chi sa leggere oltre la superficie.',
 ];
@@ -535,7 +535,7 @@ function buildSeaAndCaves() {
   rect(port.tiles, 24, 18, 3, 2, TILE.WATER);
   port.tiles[16][25] = TILE.PIER; port.tiles[17][25] = TILE.PIER;
   port.tiles[16][24] = TILE.SIGN;
-  port.signs.push({ x: 24, y: 16, text: ['MOLO DI PORTO ORDINI', 'A sud: Mare della Liquidità. Solo con il Flusso di Liquidità (Medaglia 3).'] });
+  port.signs.push({ x: 24, y: 16, text: ['MOLO DI PORTO ORDINI', 'A sud: Mare della Liquidità. Solo con il Flusso di Liquidità (Attestato 3).'] });
   port.warps.push({ x: 25, y: 19, to: 'sea', tx: 20, ty: 1, dir: 0, lock: 'swim' });
 
   const w = 40, h = 26;
@@ -570,7 +570,7 @@ function buildSeaAndCaves() {
     warps: [{ x: 20, y: 0, to: 't2', tx: 25, ty: 17, dir: 1 }, { x: 20, y: 19, to: 'cave_pearl', tx: 6, ty: 7, dir: 1, lock: 'dark' }],
     signs: [
       { x: 30, y: 8, text: ['RELITTO DELLA COMPAGNIA DEI MARI LONTANI', 'Una bolla speculativa finita in fondo al mare.'] },
-      { x: 22, y: 21, text: ['GROTTA DELLE PERLE', 'Buia come un bilancio non letto. Serve la Lanterna della Due Diligence (Medaglia 5).'] },
+      { x: 22, y: 21, text: ['GROTTA DELLE PERLE', 'Buia come un bilancio non letto. Serve la Lanterna della Due Diligence (Attestato 5).'] },
     ] };
 
   const pearl = cave('cave_pearl', 'Grotta delle Perle', 13, 10, [[5, 7, 3, 3], [2, 2, 9, 5], [1, 4, 2, 2]]);

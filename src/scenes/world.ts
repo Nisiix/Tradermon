@@ -6,7 +6,7 @@ import { drawPlaque } from '../art/plaque';
 import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal } from '../art/art';
 import { getMap, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, librarySection, type WorldApi } from '../world/scripts';
-import { S, save, advanceDays, hasTech, TECH } from '../systems/state';
+import { S, save, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc, choose } from '../ui/core';
 import { pauseMenu } from '../ui/menu';
@@ -18,6 +18,7 @@ import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { beep } from '../systems/audio';
 import { addPlayTime, formatPlayTime, startPlayTimeAutosave } from '../systems/playtime';
 import { View3D, type MirrorFrame, type MirrorItem, type Painter } from '../render3d/view';
+import { tick } from '../systems/account';
 
 const DIRS: Record<string, [number, number, 0 | 1 | 2 | 3]> = { down: [0, 1, 0], up: [0, -1, 1], left: [-1, 0, 2], right: [1, 0, 3] };
 const DIR_NAME = ['down', 'up', 'left', 'right'] as const;
@@ -413,7 +414,7 @@ export class WorldScene extends Phaser.Scene {
       if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione della Lega.'], 'Torre')); return; }
       if (warp.lock === 'secret' && !S.flags[SECRET_FLAGS.tapeOpen]) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'swim' && !canSwim()) { if (!turned || continuing) this.bump(di); return; }
-      if (warp.lock === 'dark' && !canSeeDark()) { void this.runScript(() => say(['È buio pesto: non si vede nemmeno dove mettere i piedi.', `Senza la ${ABILITY.dark.name} (Medaglia ${ABILITY.dark.badge}) è meglio non entrare.`])); return; }
+      if (warp.lock === 'dark' && !canSeeDark()) { void this.runScript(() => say(['È buio pesto: non si vede nemmeno dove mettere i piedi.', `Senza la ${ABILITY.dark.name} (Attestato ${ABILITY.dark.badge}) è meglio non entrare.`])); return; }
       this.walkTo(nx, ny, di, () => {
         beep('door');
         this.moving = true;
@@ -516,7 +517,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.map.route) {
       S.stepCounter++;
       track('steps');
-      if (S.stepCounter % 60 === 0) { const msgs = advanceDays(1); msgs.forEach((m) => toast(m)); }
+      if (S.stepCounter % 60 === 0) tick();
     }
   }
 
@@ -556,7 +557,7 @@ export class WorldScene extends Phaser.Scene {
 
   /** Taglio dei Costi: frantuma un Masso delle Commissioni (resta rotto nel salvataggio). */
   async breakBoulder(x: number, y: number) {
-    if (!canCut()) return say(['Un masso enorme, pieno di crepe a forma di "%". Le chiamano Massi delle Commissioni.', `Con il ${ABILITY.cut.name} (Medaglia ${ABILITY.cut.badge}) potresti toglierlo di mezzo.`]);
+    if (!canCut()) return say(['Un masso enorme, pieno di crepe a forma di "%". Le chiamano Massi delle Commissioni.', `Con il ${ABILITY.cut.name} (Attestato ${ABILITY.cut.badge}) potresti toglierlo di mezzo.`]);
     if ((await choose(['Sì', 'No'], { prompt: `Un Masso delle Commissioni blocca il passaggio. Usare ${ABILITY.cut.name}?`, cancel: true })) !== 0) return;
     beep('bump');
     S.flags[boulderFlag(S.map, x, y)] = true;
@@ -764,7 +765,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.hud.innerHTML = `<span class="pill playtime" title="Tempo di gioco totale">Tempo <b>${formatPlayTime(S.playMs)}</b></span>
       <span class="pill">${clk.open ? '<i class="dot on"></i>' : '<i class="dot"></i>'}${clk.label} · ${CLIMATE_LABEL[S.market.climate]}</span>
-      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Medaglie <b>${S.badges}</b></span>`;
+      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Attestati <b>${S.badges}</b> · Sigilli <b>${S.seals}</b></span>`;
     if (force) this.applyTint();
   }
 

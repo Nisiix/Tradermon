@@ -1,7 +1,7 @@
 // Luoghi: Biblioteche, stazioni, Zona Simulazione, Archivio, casinò, titoli di coda.
 import { type NpcDef } from '../maps';
 import type { AssetClass, AssetDef, Sector } from '../../types';
-import { S, addRep, card, advanceDays, level } from '../../systems/state';
+import { S, addRep, card, level } from '../../systems/state';
 import { say, choose, modal, toast, esc } from '../../ui/core';
 import { runSim } from '../../ui/timemachine';
 import { openInvestidex, openLessons } from '../../ui/menu';
@@ -19,6 +19,7 @@ import { track } from '../../systems/progress';
 import { playMinigame } from '../../ui/minigames';
 import { reward, type WorldApi } from './common';
 import { linkDuel, reviewDuel } from './duels';
+import { tick } from '../../systems/account';
 
 export async function librarian(n: NpcDef) {
   const town = Number(n.data?.town ?? 0);
@@ -66,12 +67,12 @@ export async function librarySection(sec: Section, town: number) {
 }
 
 export async function station(w: WorldApi) {
-  if (S.badges < 2) return say(['Stazione di Capitalia.', 'L\'abbonamento al treno si ottiene con la seconda Medaglia.'], 'Capostazione');
+  if (S.badges < 2) return say(['Stazione di Capitalia.', 'L\'abbonamento al treno si ottiene con il secondo Attestato.'], 'Capostazione');
   const dests = TOWNS.filter((t) => S.visited.includes(t.id) && t.id !== `t${w.town()}`);
   if (!dests.length) return say('Non ci sono altre città visitate.', 'Capostazione');
   const c = await choose([...dests.map((t) => t.name), 'Annulla'], { cancel: true, prompt: 'Dove vuoi andare?', who: 'Capostazione' });
   if (c < 0 || c >= dests.length) return;
-  advanceDays(1);
+  tick();
   travelTo(dests[c].id, w);
 }
 
@@ -84,41 +85,46 @@ export function travelTo(id: string, w: WorldApi) {
 
 export async function simzone() {
   const legendsBeaten = LEGENDS.filter((l) => S.legends.includes(l.id));
-  const opts = [...SANDBOX.map((s) => s.name), ...legendsBeaten.map((l) => `Leggenda: ${l.title}`), 'Scenari storici (cosa successe davvero)', 'Minigiochi didattici', 'Sfida della settimana', 'Dati reali Alpaca (un simbolo)', 'Duello con codice (cavo link)', 'Esci'];
-  const c = await choose(opts, { cancel: true, prompt: 'Zona Simulazione: sperimenta senza punteggio. Quale scenario?', who: 'Operatrice' });
+  const opts = [...SANDBOX.map((s) => s.name), ...legendsBeaten.map((l) => `Leggenda: ${l.title}`), 'Crisi storiche (cosa successe davvero)', 'Minigiochi didattici', 'Sfida della settimana', 'Dati reali Alpaca (un simbolo a scelta)', 'Duello con codice (cavo link)', 'Esci'];
+  const c = await choose(opts, { cancel: true, prompt: 'Zona Simulazione: rivivi periodi veri di mercato, senza punteggio. Quale?', who: 'Operatrice' });
   if (c < 0 || c === opts.length - 1) return;
   if (c < SANDBOX.length) { await runSim({ scenario: SANDBOX[c], sandbox: true }); return; }
-  if (c < SANDBOX.length + legendsBeaten.length) { await runSim({ scenario: legendsBeaten[c - SANDBOX.length].scenario, sandbox: true }); return; }
-  if (opts[c].startsWith('Scenari storici')) return historical();
+  if (c < SANDBOX.length + legendsBeaten.length) { await runSim({ scenario: legendsBeaten[c - SANDBOX.length].scenario, sandbox: true, classes: ['stocks', 'etf', 'crypto'] }); return; }
+  if (opts[c].startsWith('Crisi storiche')) return historical();
   if (opts[c].startsWith('Minigiochi')) return playMinigame('Operatrice');
   if (opts[c].startsWith('Sfida della settimana')) return weeklyChallenge();
   if (opts[c].startsWith('Dati reali')) return realReplay();
   return linkDuel();
 }
 
-/** Scenari storici: cosa successe davvero e perché, poi la possibilità di riviverli senza punteggio. */
+/** Crisi storiche: cosa successe davvero e perché. Quelle dal 2016 in poi si possono rivivere sui dati reali. */
 async function historical() {
+  const ids = Object.keys(HISTORY);
+  const TITLES: Record<string, string> = { leg1929: 'Il Grande Crollo (1929)', leg2000: 'La bolla dot-com (2000)', leg2008: 'La crisi finanziaria (2008)' };
   for (;;) {
-    const c = await choose([...LEGENDS.map((l) => l.title), 'Esci'], { cancel: true, prompt: 'Quale crisi vuoi capire?', who: 'Operatrice' });
-    if (c < 0 || c === LEGENDS.length) return;
-    const l = LEGENDS[c];
-    const h = HISTORY[l.id];
-    const go = await modal<boolean>(l.title, ({ body, button, close }) => {
-      body.innerHTML = `<p class="small muted">${esc(h.when)} · ${esc(l.scenario.historical ?? '')}</p><h4 style="margin:6px 0 2px">Cosa successe</h4><p>${esc(h.cause)}</p><h4 style="margin:6px 0 2px">La lezione</h4><p class="good">${esc(h.lesson)}</p><p class="small muted">Ricostruzione semplificata a scopo didattico: le cifre sono arrotondate e lo scenario nel gioco è una simulazione, non i prezzi reali.</p>`;
-      button('Rivivi lo scenario', () => close(true), 'primary');
+    const title = (id: string) => LEGENDS.find((l) => l.id === id)?.title ?? TITLES[id] ?? id;
+    const c = await choose([...ids.map(title), 'Esci'], { cancel: true, prompt: 'Quale crisi vuoi capire?', who: 'Operatrice' });
+    if (c < 0 || c === ids.length) return;
+    const id = ids[c];
+    const l = LEGENDS.find((x) => x.id === id);
+    const h = HISTORY[id];
+    const go = await modal<boolean>(title(id), ({ body, button, close }) => {
+      body.innerHTML = `<p class="small muted">${esc(h.when)}${l?.scenario.historical ? ' · ' + esc(l.scenario.historical) : ''}</p><h4 style="margin:6px 0 2px">Cosa successe</h4><p>${esc(h.cause)}</p><h4 style="margin:6px 0 2px">La lezione</h4><p class="good">${esc(h.lesson)}</p><p class="small muted">${l ? 'Il replay usa i prezzi reali di quel periodo, scaricati da Alpaca con il tuo conto.' : 'Questa crisi è raccontata ma non si può rivivere: lo storico dei dati di Alpaca parte dal 2016 e il gioco non ricostruisce prezzi.'} Le cifre nel racconto sono arrotondate.</p>`;
+      if (l) button('Rivivi sui dati reali', () => close(true), 'primary');
       button('Indietro', () => close(false));
     }, { wide: true });
-    if (go) { S.flags[`hist_${l.id}`] = true; await runSim({ scenario: l.scenario, sandbox: true }); }
+    S.flags[`hist_${id}`] = true;
+    if (go && l) await runSim({ scenario: l.scenario, sandbox: true, classes: ['stocks', 'etf', 'crypto'] });
   }
 }
 
 async function realReplay() {
   const st = await A.serverStatus();
   if (!st) return say(A.noServerLines('il replay di dati reali'), 'Operatrice');
-  if (!st.paper.configured && !st.live.configured) return say(['Per i dati reali serve il server locale con le chiavi Alpaca (anche solo Paper).', 'Collegale dalla Clinica, voce "Conto Alpaca".'], 'Operatrice');
+  if (!st.paper.configured && !st.live.configured) return say(['Per i dati reali serve il conto Alpaca collegato (basta il Paper).', 'Collegalo dal menu, voce "Chiavi API".'], 'Operatrice');
   const res = await modal<{ sym: string; start: string; end: string }>('Replay di dati reali', ({ body, button, close }) => {
     const y = new Date().getFullYear();
-    body.innerHTML = `<p class="small">Riproduci le barre giornaliere reali di un simbolo scelto da te (dati Alpaca). Nessun consiglio: è solo un esercizio.</p>
+    body.innerHTML = `<p class="small">Riproduci le barre giornaliere reali di un simbolo scelto da te (dati Alpaca, dal 2016). Qui nulla è nascosto: sei tu a scegliere che cosa guardare. Nessun consiglio: è solo un esercizio.</p>
       <label>Simbolo (es. un ticker USA o BTC/USD)<input class="tx s"></label>
       <div class="grid2"><label>Dal<input class="tx a" type="date" value="${y - 3}-01-01"></label><label>Al<input class="tx b" type="date" value="${y - 1}-12-31"></label></div>`;
     button('Avvia', () => close({ sym: (body.querySelector('.s') as HTMLInputElement).value.trim().toUpperCase(), start: (body.querySelector('.a') as HTMLInputElement).value, end: (body.querySelector('.b') as HTMLInputElement).value }), 'primary');
@@ -129,7 +135,7 @@ async function realReplay() {
     const { bars } = await A.bars(res.sym, cls, res.start, res.end);
     if (!bars || bars.length < 20) return say('Dati insufficienti per questo simbolo o periodo.', 'Operatrice');
     const def = { id: 'REAL', ticker: res.sym, name: res.sym, cls: (cls === 'crypto' ? 'crypto' : 'stocks') as AssetClass, sector: (cls === 'crypto' ? 'crypto' : 'world') as Sector, risk: 3 as const, mu: 0, sigma: 0.2, beta: 1, dividend: 0, desc: 'Dati reali', facts: [] as string[], unlock: 'real' } as AssetDef;
-    await runSim({ scenario: { id: 'real', name: `${res.sym} ${res.start} → ${res.end}`, desc: 'Barre giornaliere reali da Alpaca. I rendimenti passati non garantiscono quelli futuri.', days: bars.length - 1, phases: [{ until: 9999, drift: 0, vol: 0 }], shocks: [] }, sandbox: true, dividends: false, custom: { assets: [{ ...def }], prices: { REAL: bars.map((b) => b.c) } } });
+    await runSim({ scenario: { id: 'real', name: `${res.sym} ${res.start} → ${res.end}`, desc: 'Barre giornaliere reali da Alpaca. I rendimenti passati non garantiscono quelli futuri.', window: { start: res.start, end: res.end } }, sandbox: true, dividends: false, custom: { assets: [{ ...def }], prices: { REAL: bars.map((b) => b.c) }, labels: bars.map((b) => b.t) } });
   } catch (e) { await say(`Errore: ${(e as Error).message}`, 'Operatrice'); }
 }
 
@@ -182,8 +188,8 @@ export async function archivist() {
 
 export async function credits() {
   await modal('Tradermon · Titoli di coda', ({ body, button, close }) => {
-    body.innerHTML = `<p><b>Grazie per aver giocato!</b></p><p>Medaglie: ${S.badges}/8 · Livello di Conoscenza: ${level()} · Reputazione: ${S.stats.reputazione}<br>Domande risposte: ${Object.values(S.answered).reduce((a, b) => a + b, 0)} · Tempo di gioco: ${Math.round(S.playMs / 60000)} minuti</p>
-      <p class="small">Contenuti didattici basati su fonti pubbliche: SEC Investor.gov, Investopedia, Consob, Banca d'Italia (L'economia per tutti), CFA Institute, ESMA. Mondo, personaggi, grafica e suoni originali.</p>
+    body.innerHTML = `<p><b>Grazie per aver giocato!</b></p><p>Attestati: ${S.badges}/8 · Sigilli pratici: ${S.seals}/8 · Livello di Conoscenza: ${level()} · Reputazione: ${S.stats.reputazione}<br>Domande risposte: ${Object.values(S.answered).reduce((a, b) => a + b, 0)} · Tempo di gioco: ${Math.round(S.playMs / 60000)} minuti</p>
+      <p class="small">Contenuti didattici basati su fonti pubbliche: SEC Investor.gov, Investopedia, Consob, Banca d'Italia (L'economia per tutti), CFA Institute, ESMA. Mondo, personaggi, grafica e suoni originali. Titoli, prezzi e grafici reali forniti da Alpaca per il tuo uso personale.</p>
       <p class="small muted">Tradermon è un gioco educativo e non fornisce consulenza finanziaria.</p>`;
     button('Continua', () => close(), 'primary');
   }, { closable: false });

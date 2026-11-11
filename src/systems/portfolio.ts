@@ -8,7 +8,10 @@ export interface Book {
   log: OrderLog[];
 }
 
-export const FEE = 1; // Crediti per ordine
+/**
+ * Spread stimato nei replay storici (i dati giornalieri non contengono denaro e lettera): 0,1% per azioni
+ * ed ETF, 0,5% per le cripto. Sul conto reale lo spread è quello vero dell'esecuzione di Alpaca.
+ */
 export function spreadOf(a: AssetDef): number {
   return a.cls === 'crypto' ? 0.005 : 0.001;
 }
@@ -23,6 +26,7 @@ export function newPortfolio(initial: number, monthly: number, profile: string):
   return {
     cash: initial, initial, contributed: initial, positions: [], orders: [], log: [], peak: initial,
     valueHistory: [initial], eggs: [], drip: true, monthly, refillsUsed: 0, target,
+    pending: [], orderSeq: 0, bought: 0, costs: 0, loan: 0, interestDay: '', marginCallAt: 0, bankruptcies: 0, accountTag: '', external: [],
   };
 }
 
@@ -41,11 +45,18 @@ export interface TradeResult { ok: boolean; msg: string; qty?: number; price?: n
 export type AssetDefs = Record<string, AssetDef>;
 const defOf = (id: string, defs?: AssetDefs): AssetDef | undefined => defs?.[id] ?? ASSET_BY_ID[id];
 
-export function marketBuy(b: Book, id: string, amount: number, prices: Record<string, number>, day: number, maxSlots: number, type = 'mercato', defs?: AssetDefs): TradeResult {
+/**
+ * Acquisto e vendita nei replay storici (Macchina del Tempo): un libro contabile in memoria, sui prezzi reali
+ * del periodo. Il conto di gioco vero passa invece da systems/account.ts, che invia ordini ad Alpaca.
+ * `feeRate` è il costo didattico della difficoltà (percentuale del controvalore); `credit` è il prestito
+ * ancora disponibile quando nel replay è attiva la leva.
+ */
+export function marketBuy(b: Book, id: string, amount: number, prices: Record<string, number>, day: number, maxSlots: number, type = 'mercato', defs?: AssetDefs, feeRate = 0, credit = 0): TradeResult {
   const a = defOf(id, defs);
   if (!a) return { ok: false, msg: 'Asset sconosciuto.' };
-  if (amount <= FEE) return { ok: false, msg: 'Importo troppo basso.' };
-  if (amount > b.cash + 1e-9) return { ok: false, msg: 'Liquidità insufficiente: niente margine né prestiti.' };
+  const FEE = amount * feeRate;
+  if (!(amount >= 1)) return { ok: false, msg: 'Importo troppo basso: almeno 1 $.' };
+  if (amount > b.cash + credit + 1e-9) return { ok: false, msg: credit > 0 ? 'Supera la liquidità più il prestito disponibile.' : 'Liquidità insufficiente.' };
   const has = b.positions.find((p) => p.id === id);
   if (!has && b.positions.length >= maxSlots) return { ok: false, msg: `Hai già ${maxSlots} posizioni: è il massimo per il tuo livello (slot di portafoglio).` };
   const px = prices[id] * (1 + spreadOf(a) / 2);
@@ -56,13 +67,14 @@ export function marketBuy(b: Book, id: string, amount: number, prices: Record<st
   return { ok: true, msg: `Comprate ${fmtQty(qty)} ${a.ticker} a ${fmtPx(px)}.`, qty, price: px, fee: FEE };
 }
 
-export function marketSell(b: Book, id: string, qty: number, prices: Record<string, number>, day: number, type = 'mercato', defs?: AssetDefs): TradeResult {
+export function marketSell(b: Book, id: string, qty: number, prices: Record<string, number>, day: number, type = 'mercato', defs?: AssetDefs, feeRate = 0): TradeResult {
   const a = defOf(id, defs);
   const pos = b.positions.find((p) => p.id === id);
   if (!a || !pos) return { ok: false, msg: 'Non possiedi questo asset: le vendite allo scoperto non sono consentite.' };
   qty = Math.min(qty, pos.qty);
   if (qty <= 0) return { ok: false, msg: 'Quantità non valida.' };
   const px = prices[id] * (1 - spreadOf(a) / 2);
+  const FEE = qty * px * feeRate;
   const proceeds = qty * px - FEE;
   const atLoss = px < pos.cost / pos.qty;
   pos.cost *= 1 - qty / pos.qty;
@@ -80,7 +92,7 @@ export function placeOrder(b: Book, o: Omit<OpenOrder, 'id'>): OpenOrder {
 }
 
 /** Esegue gli ordini limite/stop compatibili con i prezzi del giorno. */
-export function processOrders(b: Book, prices: Record<string, number>, day: number, maxSlots: number, defs?: AssetDefs): string[] {
+export function processOrders(b: Book, prices: Record<string, number>, day: number, maxSlots: number, defs?: AssetDefs, feeRate = 0): string[] {
   const msgs: string[] = [];
   for (const o of b.orders.slice()) {
     const px = prices[o.asset];
@@ -94,8 +106,8 @@ export function processOrders(b: Book, prices: Record<string, number>, day: numb
     if (o.type === 'limit') execPrices[o.asset] = o.side === 'buy' ? Math.min(px, o.price) : Math.max(px, o.price);
     const tag = o.type === 'limit' ? 'limite' : 'stop';
     const r = o.side === 'buy'
-      ? marketBuy(b, o.asset, Math.min(b.cash, o.qty * execPrices[o.asset] + FEE), execPrices, day, maxSlots, tag, defs)
-      : marketSell(b, o.asset, o.qty, execPrices, day, tag, defs);
+      ? marketBuy(b, o.asset, Math.min(b.cash, o.qty * execPrices[o.asset] * (1 + feeRate)), execPrices, day, maxSlots, tag, defs, feeRate)
+      : marketSell(b, o.asset, o.qty, execPrices, day, tag, defs, feeRate);
     msgs.push(r.ok ? `Ordine ${tag} eseguito. ${r.msg}` : `Ordine ${tag} annullato: ${r.msg}`);
   }
   return msgs;
@@ -105,23 +117,29 @@ export function processOrders(b: Book, prices: Record<string, number>, day: numb
 
 export interface Health { score: number; state: 'Ottima' | 'Buona' | 'Ha la febbre' | 'Affaticata'; maxW: number; dd: number; cashW: number; dev: number; sectors: number }
 
-export function allocation(b: Book, prices: Record<string, number>): { risky: number; defensive: number; cash: number } {
-  const tot = value(b, prices) || 1;
+/**
+ * Allocazione in percentuale. `locked` è la Riserva dell'Accademia: la parte di capitale non ancora liberata
+ * dalle rate di tappa. Non è una scelta del giocatore, quindi non conta né come liquidità né nel totale.
+ */
+export function allocation(b: Book, prices: Record<string, number>, locked = 0): { risky: number; defensive: number; cash: number } {
+  const tot = Math.max(0, value(b, prices) - locked) || 1;
   let risky = 0;
   let def = 0;
   for (const p of b.positions) {
     const v = p.qty * prices[p.id];
     if (isDefensive(ASSET_BY_ID[p.id])) def += v; else risky += v;
   }
-  return { risky: (risky / tot) * 100, defensive: (def / tot) * 100, cash: (b.cash / tot) * 100 };
+  return { risky: (risky / tot) * 100, defensive: (def / tot) * 100, cash: (Math.max(0, b.cash - locked) / tot) * 100 };
 }
 
-export function health(pf: Portfolio, prices: Record<string, number>): Health {
+export function health(pf: Portfolio, prices: Record<string, number>, locked = 0): Health {
   const tot = value(pf, prices);
-  const ws = weights(pf, prices);
-  const maxW = ws.reduce((m, x) => Math.max(m, x.w), 0) * 100;
+  const free = Math.max(1, tot - locked);
+  // i pesi si misurano sul capitale liberato: con una sola rata versata un titolo non è "il 10% del conto"
+  const ws = weights(pf, prices).map((x) => ({ ...x, w: x.v / free }));
+  const maxW = pf.positions.length > 1 ? ws.reduce((m, x) => Math.max(m, x.w), 0) * 100 : 0;
   const dd = pf.peak > 0 ? Math.max(0, (1 - tot / pf.peak) * 100) : 0;
-  const al = allocation(pf, prices);
+  const al = allocation(pf, prices, locked);
   const dev = (Math.abs(al.risky - pf.target.risky) + Math.abs(al.defensive - pf.target.defensive) + Math.abs(al.cash - pf.target.cash)) / 2;
   let score = 100;
   score -= Math.max(0, maxW - 25) * 1.5;
@@ -135,16 +153,17 @@ export function health(pf: Portfolio, prices: Record<string, number>): Health {
   return { score, state, maxW, dd, cashW: al.cash, dev, sectors };
 }
 
-export function diagnosis(pf: Portfolio, prices: Record<string, number>, day: number): { text: string; lesson: string }[] {
+export function diagnosis(pf: Portfolio, prices: Record<string, number>, day: number, locked = 0): { text: string; lesson: string }[] {
   const out: { text: string; lesson: string }[] = [];
-  const h = health(pf, prices);
-  const ws = weights(pf, prices).sort((a, b) => b.w - a.w);
+  const h = health(pf, prices, locked);
+  const free = Math.max(1, value(pf, prices) - locked);
+  const ws = pf.positions.length > 1 ? weights(pf, prices).map((x) => ({ ...x, w: x.v / free })).sort((a, b) => b.w - a.w) : [];
   if (ws[0] && ws[0].w > 0.4) out.push({ text: `Il ${Math.round(ws[0].w * 100)}% del portafoglio è in ${ASSET_BY_ID[ws[0].id].name}: se va male, va male quasi tutto.`, lesson: 'l_div_1' });
   if (pf.positions.length >= 2 && h.sectors === 1) out.push({ text: `Tutte le posizioni sono nel settore ${SECTOR_LABEL[ASSET_BY_ID[pf.positions[0].id].sector]}: un evento di settore le colpirebbe insieme.`, lesson: 'l_div_2' });
   if (h.dd > 15) out.push({ text: `Sei il ${h.dd.toFixed(0)}% sotto il massimo: ricordi il tuo piano?`, lesson: 'l_gestione_1' });
   if (pf.log.length > 0 && h.cashW > 60) out.push({ text: 'Gran parte è ferma in liquidità: l\'inflazione la erode nel tempo.', lesson: 'l_costi_1' });
   const recent = pf.log.filter((l) => l.day > day - 21).length;
-  if (recent > 10) out.push({ text: `${recent} ordini nell'ultimo mese simulato: più ordini significano più costi e spesso più emozioni.`, lesson: 'l_costi_2' });
+  if (recent > 10) out.push({ text: `${recent} ordini nell'ultimo mese di mercato: più ordini significano più costi e spesso più emozioni.`, lesson: 'l_costi_2' });
   if (h.dev > 15) out.push({ text: `L'allocazione si è allontanata di ${h.dev.toFixed(0)} punti dal tuo obiettivo: valuta un ribilanciamento.`, lesson: 'l_div_2' });
   for (const p of pf.positions) {
     const v = p.qty * prices[p.id];
@@ -155,9 +174,9 @@ export function diagnosis(pf: Portfolio, prices: Record<string, number>, day: nu
 }
 
 /** Ordini proposti per tornare all'allocazione obiettivo (il giocatore conferma ognuno). */
-export function rebalancePlan(pf: Portfolio, prices: Record<string, number>): { id: string; side: 'buy' | 'sell'; amount: number }[] {
-  const tot = value(pf, prices);
-  const al = allocation(pf, prices);
+export function rebalancePlan(pf: Portfolio, prices: Record<string, number>, locked = 0): { id: string; side: 'buy' | 'sell'; amount: number }[] {
+  const tot = Math.max(0, value(pf, prices) - locked);
+  const al = allocation(pf, prices, locked);
   const plan: { id: string; side: 'buy' | 'sell'; amount: number }[] = [];
   const groups: ('risky' | 'defensive')[] = ['risky', 'defensive'];
   for (const g of groups) {
@@ -183,8 +202,10 @@ export function fmtPx(p: number): string {
 export function fmtQty(q: number): string {
   return q >= 100 ? q.toFixed(0) : q >= 1 ? q.toFixed(2) : q.toFixed(4);
 }
+/** Importi sempre in dollari, anche sul conto Paper: è la valuta dei prezzi reali. */
 export function fmtMoney(v: number): string {
-  return v.toLocaleString('it-IT', { maximumFractionDigits: 0 }) + ' Cr';
+  const small = Math.abs(v) < 100 && Math.round(v) !== v;
+  return v.toLocaleString('it-IT', { minimumFractionDigits: small ? 2 : 0, maximumFractionDigits: small ? 2 : 0 }) + ' $';
 }
 export function fmtPct(v: number, digits = 1): string {
   return (v >= 0 ? '+' : '') + (v * 100).toFixed(digits) + '%';

@@ -1,9 +1,7 @@
 import type { SaveData, AssetClass, Track, RiskProfile, BiasId } from '../types';
-import { createWorldMarket, advanceWorldMarket } from './market';
-import { newPortfolio, value, processOrders } from './portfolio';
-import { toast } from '../ui/core';
-import { ANSWER_SECONDS } from './balance';
-import { onMarketDay } from './character';
+import { emptyMarket } from './market';
+import { newPortfolio } from './portfolio';
+import { ANSWER_SECONDS, DIFFICULTY } from './balance';
 import { ASSETS, ASSET_BY_ID } from '../data/assets';
 
 export const SAVE_KEY = 'tradermon.save.v1';
@@ -25,12 +23,14 @@ export const LIVE_LIMITS: { order: number; month: number; cOrder: number; cMonth
 export let S: SaveData = null as unknown as SaveData;
 
 export function newGame(): SaveData {
-  const seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
+  // identificativo breve della partita: marca gli ordini inviati ad Alpaca (client_order_id)
+  const saveId = Math.floor(Math.random() * 36 ** 6).toString(36).padStart(6, '0');
   S = {
     version: SAVE_VERSION, createdAt: Date.now(), name: 'Alex', avatar: 0, rival: 'Leo', profile: 'equilibrato', profileScore: 3,
     goal: '', horizon: '', track: 'stocks', mixedClasses: [], map: 'home', x: 4, y: 4, facing: 'down', flags: {}, badges: 0, techniques: [],
     stats: { xp: 0, fiducia: 100, disciplina: 50, pazienza: 50, reputazione: 0 }, bias: null, biasSeen: [], cards: {}, lessonsRead: [], booksRead: [], tipsHeard: [], defeated: [], visited: ['t0'],
-    portfolio: newPortfolio(10000, 0, 'equilibrato'), market: createWorldMarket(seed), review: {}, reviewDue: {}, answered: {}, daily: { lastDate: '', streak: 0 },
+    portfolio: newPortfolio(DIFFICULTY.investitore.capital, 0, 'equilibrato'), market: emptyMarket(), saveId, difficulty: 'investitore', seals: 0, exDone: 0, exTools: { limit: false, stop: false }, levExam: false,
+    lastSeen: { t: 0, value: 0 }, boss: { run: null, beaten: [], tries: {} }, review: {}, reviewDue: {}, answered: {}, daily: { lastDate: '', streak: 0 },
     tower: { best: 0 }, legends: [], stepCounter: 0, lastClinic: { map: 'home', x: 4, y: 4 }, license: 'apprendista', examLastFail: 0,
     liveLimits: { perOrder: 0, perMonth: 0, pauseUntil: 0, monthKey: '', spentThisMonth: 0 }, liveAudit: [], ngPlus: 0, playMs: 0,
     options: { textSpeed: 2, fontScale: 1, contrast: false, studyMode: false, volume: 0.5, music: 0.5, gfx: '3d', fx: 'alti' },
@@ -77,7 +77,7 @@ export function load(): SaveData | null {
 }
 
 /** Versione corrente del formato di salvataggio: ogni cambio di struttura aggiunge un passo in MIGRATIONS. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
@@ -103,6 +103,22 @@ const MIGRATIONS: Record<number, (s: SaveData) => void> = {
     const key = (n: number) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
     for (const [id, box] of Object.entries(s.review ?? {})) if (!s.reviewDue[id]) s.reviewDue[id] = box <= 1 ? key(0) : key(box === 2 ? 3 : 7);
     for (const o of s.portfolio?.orders ?? []) if (o.expiresDay === undefined) o.expiresDay = (o.createdDay ?? 0) + 20;
+  },
+  // v2 → v3: il gioco passa ai dati reali di Alpaca. I titoli inventati e il mercato simulato spariscono:
+  // il conto di gioco riparte dal capitale della difficoltà Apprendista (la più indulgente), con il mercato vuoto
+  // finché non si collega il conto Paper. Medaglie (ora Attestati), Tecniche, studio e storia restano.
+  2: (s) => {
+    const fresh = newPortfolio(DIFFICULTY.apprendista.capital, 0, s.profile);
+    fresh.target = s.portfolio?.target ?? fresh.target;
+    s.portfolio = fresh;
+    s.difficulty = 'apprendista';
+    s.market = emptyMarket();
+    s.seals = 0; s.exDone = 0; s.exTools = { limit: false, stop: false }; s.levExam = false;
+    s.lastSeen = { t: 0, value: 0 }; s.boss = { run: null, beaten: [], tries: {} };
+    // le carte dei titoli inventati escono dall'Investidex; le leggende simulate non valgono più come replay reali
+    for (const id of Object.keys(s.cards ?? {})) if (!ASSET_BY_ID[id]) delete s.cards[id];
+    s.legends = [];
+    if (s.flags.starter) s.flags.migratedV3 = true;
   },
 };
 
@@ -164,6 +180,9 @@ export function xpToNext(): { cur: number; need: number } {
   return { cur: xp, need: Math.round(50 * Math.pow(n, 1.5)) };
 }
 
+/** Capitale del conto di gioco fissato dalla difficoltà. */
+export function capital(): number { return DIFFICULTY[S.difficulty].capital; }
+
 export function slots(): number { return SLOTS_BY_BADGE[Math.min(8, S.badges)]; }
 export function hasTech(t: string): boolean { return S.techniques.includes(t); }
 export const TECH = { LIMIT: 'Ordine Limite', REBAL: 'Ribilanciamento', PAC: 'Piano di Accumulo', STOP: 'Stop Loss', COLD: 'Mente Fredda', TICKER: 'Lettura del Ticker', DRIP: 'Reinvestimento' };
@@ -204,56 +223,13 @@ export function profileTimer(): number {
   return ANSWER_SECONDS;
 }
 
-/** Avanza il mercato del mondo di n giorni, con ordini, dividendi e uova. */
-export function advanceDays(n: number): string[] {
-  const msgs: string[] = [];
-  const pf = S.portfolio;
-  for (let i = 0; i < n; i++) {
-    advanceWorldMarket(S.market);
-    const prices = S.market.prices;
-    // ordini limite e stop della Clinica: si eseguono sui prezzi del giorno, oppure scadono
-    for (const m of processOrders(pf, prices, S.market.day, slots())) toast(m);
-    onMarketDay(pf, S.market.day);
-    for (const o of pf.orders.slice()) {
-      if (o.expiresDay !== undefined && S.market.day > o.expiresDay) {
-        pf.orders = pf.orders.filter((x) => x !== o);
-        toast(`Ordine ${o.type === 'limit' ? 'limite' : 'stop'} su ${ASSET_BY_ID[o.asset]?.ticker ?? o.asset} scaduto dopo 20 giorni di mercato senza essere eseguito.`);
-      }
-    }
-    // dividendi mensili (ogni 21 giorni di mercato)
-    if (S.market.day % 21 === 0) {
-      for (const p of pf.positions) {
-        const a = ASSET_BY_ID[p.id];
-        if (a.dividend > 0) {
-          const amt = (p.qty * prices[p.id] * a.dividend) / 12;
-          if (pf.drip) {
-            const hatch = S.market.day + (hasTech(TECH.DRIP) ? 1 : 3);
-            pf.eggs.push({ asset: p.id, amount: amt, hatchDay: hatch });
-          } else pf.cash += amt;
-        }
-        card(p.id).xp += 2;
-      }
-    }
-    for (const egg of pf.eggs.slice()) {
-      if (S.market.day >= egg.hatchDay) {
-        const pos = pf.positions.find((p) => p.id === egg.asset);
-        if (pos) { pos.qty += egg.amount / prices[egg.asset]; pos.cost += egg.amount; msgs.push(`Un uovo si è schiuso: +${(egg.amount / prices[egg.asset]).toFixed(4)} quote di ${ASSET_BY_ID[egg.asset].ticker} grazie al dividendo reinvestito!`); }
-        else pf.cash += egg.amount;
-        pf.eggs = pf.eggs.filter((e) => e !== egg);
-      }
-    }
-    const v = value(pf, prices);
-    pf.peak = Math.max(pf.peak, v);
-    pf.valueHistory.push(v);
-    if (pf.valueHistory.length > 400) pf.valueHistory.shift();
-  }
-  return msgs;
-}
-
 export function newGamePlus(track: Track) {
-  const keep = { name: S.name, avatar: S.avatar, rival: S.rival, tower: S.tower, legends: S.legends, gold: Object.entries(S.cards).filter(([, c]) => c.gold), ng: S.ngPlus + 1, options: S.options };
+  // il conto di gioco è reale e segue il giocatore: capitale, posizioni, difficoltà ed esercizi di tappa non ripartono
+  const keep = { name: S.name, avatar: S.avatar, rival: S.rival, tower: S.tower, legends: S.legends, gold: Object.entries(S.cards).filter(([, c]) => c.gold), ng: S.ngPlus + 1, options: S.options,
+    portfolio: S.portfolio, market: S.market, saveId: S.saveId, difficulty: S.difficulty, exDone: S.exDone, levExam: S.levExam, boss: S.boss, license: S.license, liveLimits: S.liveLimits, liveAudit: S.liveAudit, createdAt: S.createdAt };
   newGame();
-  Object.assign(S, { name: keep.name, avatar: keep.avatar, rival: keep.rival, tower: keep.tower, legends: keep.legends, ngPlus: keep.ng, options: keep.options, track });
+  Object.assign(S, { name: keep.name, avatar: keep.avatar, rival: keep.rival, tower: keep.tower, legends: keep.legends, ngPlus: keep.ng, options: keep.options, track,
+    portfolio: keep.portfolio, market: keep.market, saveId: keep.saveId, difficulty: keep.difficulty, exDone: keep.exDone, levExam: keep.levExam, boss: keep.boss, license: keep.license, liveLimits: keep.liveLimits, liveAudit: keep.liveAudit, createdAt: keep.createdAt });
   keep.gold.forEach(([id, c]) => (S.cards[id] = c));
 }
 

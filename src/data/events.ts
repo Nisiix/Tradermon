@@ -9,7 +9,7 @@ export interface SectorShock {
 
 // Matrice evento × settore (rendimento applicato nel giorno dell'evento).
 export const SECTOR_SHOCKS: SectorShock[] = [
-  { id: 'rate_up', title: 'La banca centrale alza i tassi', text: 'Per frenare l\'inflazione la Banca Centrale di Capitalia alza i tassi dello 0,5%.',
+  { id: 'rate_up', title: 'La banca centrale alza i tassi', text: 'Per frenare l\'inflazione la banca centrale alza i tassi dello 0,5%.',
     effects: { tech: -0.04, finance: 0.02, energy: 0, health: -0.01, consumer: -0.02, utility: -0.03, bond: -0.03, gold: -0.01, crypto: -0.06, world: -0.02 } },
   { id: 'rate_down', title: 'La banca centrale taglia i tassi', text: 'L\'economia rallenta e i tassi vengono tagliati dello 0,5%.',
     effects: { tech: 0.04, finance: -0.01, energy: 0.01, health: 0.01, consumer: 0.02, utility: 0.02, bond: 0.02, gold: 0.01, crypto: 0.06, world: 0.02 } },
@@ -31,7 +31,7 @@ export interface NewsChoice { label: string; good: boolean; reply: string; stat?
 export interface NewsEvent { id: string; who: string; text: string; choices: NewsChoice[]; source: string }
 
 export const NEWS_EVENTS: NewsEvent[] = [
-  { id: 'drop15', who: 'Notiziario di Capitalia', source: 'ip_loss_aversion',
+  { id: 'drop15', who: 'Notiziario dei Mercati', source: 'ip_loss_aversion',
     text: 'Un titolo del tuo portafoglio perde il 15% in un giorno dopo una trimestrale deludente. Cosa fai?',
     choices: [
       { label: 'Rileggo le ragioni per cui l\'ho comprato e il mio piano', good: true, reply: 'Giusto: decidi in base al piano e ai fatti, non alla paura del momento.', stat: 'pazienza', delta: 5 },
@@ -52,7 +52,7 @@ export const NEWS_EVENTS: NewsEvent[] = [
       { label: 'Raddoppio la dimensione delle operazioni', good: false, reply: 'Eccesso di fiducia: aumentare il rischio dopo una serie positiva è un classico errore.', stat: 'disciplina', delta: -5, bias: 'euforia' },
       { label: 'Metto tutto sulla prossima idea', good: false, reply: 'La concentrazione totale può cancellare in un colpo tutti i guadagni.', stat: 'disciplina', delta: -8, bias: 'euforia' },
     ] },
-  { id: 'anchor', who: 'Notiziario di Capitalia', source: 'ip_anchoring',
+  { id: 'anchor', who: 'Notiziario dei Mercati', source: 'ip_anchoring',
     text: 'Un titolo che hai comprato a 100 è a 70 da mesi e i conti peggiorano. Pensi: "Vendo solo quando torna a 100".',
     choices: [
       { label: 'Mi chiedo se lo comprerei oggi a 70, con i dati attuali', good: true, reply: 'Esatto: il prezzo di carico è un\'àncora che al mercato non interessa.', stat: 'disciplina', delta: 5 },

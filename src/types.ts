@@ -57,19 +57,57 @@ export interface Lesson {
   source: string;
 }
 
+/**
+ * Mercato del mondo: SOLO dati reali di Alpaca. Prezzi = ultimo scambio, storia = chiusure giornaliere,
+ * indice = S&P 500 (ETF SPY) a base 100. Senza conto collegato resta vuoto (asOf = 0) e il gioco offre
+ * solo il percorso di studio.
+ */
 export interface MarketState {
+  /** Giorni di mercato (lunedì-venerdì) trascorsi dall'inizio della partita: tempo reale, non simulato. */
   day: number;
   prices: Record<string, number>;
   history: Record<string, number[]>;
   index: number[];
+  /** Mantenuto per i salvataggi precedenti: non genera più alcun prezzo. */
   seed: number;
   climate: 'toro' | 'orso' | 'tempesta' | 'laterale';
+  /** Momento dell'ultimo aggiornamento dei prezzi da Alpaca (ms); 0 = mai. */
+  asOf: number;
+  /** Data (AAAA-MM-GG) dell'ultima chiusura giornaliera scaricata. */
+  lastBar: string;
 }
+
+export type Difficulty = 'apprendista' | 'investitore' | 'stratega' | 'leggenda';
 
 export interface Position {
   id: string;
   qty: number;
   cost: number; // total cost basis
+}
+
+/** Ordine inviato ad Alpaca dal conto di gioco e non ancora concluso (in attesa, o eseguito in parte). */
+export interface PendingOrder {
+  /** Id dell'ordine su Alpaca. */
+  id: string;
+  /** client_order_id: tm-<partita>-<numero>, così il registro riconosce i propri ordini. */
+  cid: string;
+  asset: string;
+  side: 'buy' | 'sell';
+  type: 'market' | 'limit' | 'stop';
+  /** Importo in dollari (acquisti a mercato) oppure quantità (limite, stop, vendite). */
+  notional?: number;
+  qty?: number;
+  price?: number;
+  /** Liquidità tenuta da parte per l'acquisto finché l'ordine non si chiude. */
+  reserved: number;
+  /** Quantità e controvalore già registrati (esecuzioni parziali). */
+  filledQty: number;
+  filledCost: number;
+  createdAt: number;
+  /** Etichetta nel registro: mercato, limite, stop, ribilanciamento, liquidazione. */
+  tag: string;
+  /** Acquisto fatto usando la leva. */
+  lev?: boolean;
 }
 
 export interface OpenOrder {
@@ -108,6 +146,26 @@ export interface Portfolio {
   monthly: number;
   refillsUsed: number;
   target: { risky: number; defensive: number; cash: number };
+  // ---- conto di gioco dentro il conto Alpaca Paper ----
+  /** Ordini reali ancora aperti su Alpaca. */
+  pending: PendingOrder[];
+  /** Numero progressivo degli ordini (per il client_order_id). */
+  orderSeq: number;
+  /** Totale degli acquisti accettati da Alpaca dall'inizio: misura le rate di tappa. */
+  bought: number;
+  /** Costi didattici addebitati dal gioco (solo Paper), tenuti separati dai prezzi reali. */
+  costs: number;
+  /** Prestito per la leva e data dell'ultimo interesse calcolato (AAAA-MM-GG). */
+  loan: number;
+  interestDay: string;
+  /** Chiamata di margine: momento in cui il giocatore l'ha vista (0 = nessuna). */
+  marginCallAt: number;
+  /** Bancarotte subite. */
+  bankruptcies: number;
+  /** Impronta del conto Alpaca a cui il registro è legato (per accorgersi di un conto azzerato). */
+  accountTag: string;
+  /** Operazioni fatte fuori dal gioco e scoperte dalla riconciliazione. */
+  external: { t: number; asset: string; qty: number; note: string }[];
 }
 
 export interface CardState {
@@ -162,6 +220,22 @@ export interface SaveData {
   visited: string[];
   portfolio: Portfolio;
   market: MarketState;
+  /** Identificativo breve della partita: marca gli ordini inviati ad Alpaca. */
+  saveId: string;
+  /** Difficoltà scelta all'inizio: fissa il capitale del conto di gioco e non si cambia più. */
+  difficulty: Difficulty;
+  /** Sigilli pratici ottenuti (0-8): missione su dati reali ed esercizio di tappa, in ordine. */
+  seals: number;
+  /** Esercizi di tappa completati (0-9): il prossimo da fare è quello con questo numero. */
+  exDone: number;
+  /** Attrezzi usati nell'esercizio in corso (ordine limite, stop). */
+  exTools: { limit: boolean; stop: boolean };
+  /** Esame della Leva superato. */
+  levExam: boolean;
+  /** Ultimo avvio del gioco con il conto raggiungibile (per "Mentre eri via"). */
+  lastSeen: { t: number; value: number };
+  /** Boss dell'endgame: sfida in corso e boss battuti. */
+  boss: BossState;
   review: Record<string, number>; // question id -> box 1..3
   /** Ripetizione spaziata: data (AAAA-MM-GG) in cui la domanda torna nel ripasso. */
   reviewDue: Record<string, string>;
@@ -191,6 +265,23 @@ export interface SaveData {
   challenges: { code: string; score: number; date: string; label: string }[];
   npcMemory: Record<string, number>;
 }
+
+export interface BossPlan {
+  asset: string;
+  side: 'long';
+  entry: number;
+  stop: number;
+  target: number;
+  /** Quota del capitale del boss messa a rischio (0-1). */
+  risk: number;
+  /** Momento dell'invio e scadenza del mandato (ms). */
+  placedAt: number;
+  deadline: number;
+  /** Punti di qualità del piano, calcolati all'invio (prima di conoscere l'esito). */
+  quality: number;
+}
+export interface BossRun { id: string; quiz: number; quizMax: number; plan: BossPlan | null; startedAt: number }
+export interface BossState { run: BossRun | null; beaten: string[]; tries: Record<string, number> }
 
 export interface AgendaTask { id: string; ev: string; need: number; got: number; done: boolean }
 

@@ -8,6 +8,9 @@ import { SOURCES } from '../data/sources';
 import { BIAS_INFO } from '../data/events';
 import { mentor, TOWNS } from '../data/story';
 import { checkupHtml, download } from './clinic';
+import { apiKeysMenu, stageScreen } from './broker';
+import { asOfLabel } from '../systems/realdata';
+import { DIFFICULTY } from '../systems/balance';
 import { mastery } from '../systems/quiz';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { applyAudio, openControls } from './settings';
@@ -28,7 +31,7 @@ import { ABILITY, canSwim, canTransfer } from '../world/travel';
 export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) {
   for (;;) {
     const pending = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length;
-    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Giornale di Capitalia', 'Cartella dello studente', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
+    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Giornale dei Mercati', 'Cartella dello studente', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Tappe, rate e Sigilli', 'Chiavi API', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
     const c = await choose(opts, { cancel: true, title: 'MENU' });
     if (c < 0 || c === opts.length - 1) return;
     const o = opts[c];
@@ -36,7 +39,9 @@ export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) 
     else if (o === 'Portafoglio') await modal('Portafoglio', ({ body, button, close }) => { body.innerHTML = checkupHtml(); button('Chiudi', () => close(), 'primary'); }, { wide: true });
     else if (o.startsWith('Agenda')) await openAgenda();
     else if (o === 'Diario') await openJournal();
-    else if (o === 'Giornale di Capitalia') await openGazette();
+    else if (o === 'Giornale dei Mercati') await openGazette();
+    else if (o === 'Tappe, rate e Sigilli') await stageScreen();
+    else if (o === 'Chiavi API') await apiKeysMenu();
     else if (o === 'Cartella dello studente') await openStudentFolder();
     else if (o === 'Profilo e Licenza') await profile();
     else if (o === 'Medaglie e Tecniche') await badges();
@@ -64,7 +69,7 @@ export async function openInvestidex() {
       const d = el('div', 'card' + (c ? '' : ' locked') + (c?.gold ? ' gold' : ''));
       d.innerHTML = c
         ? `<span class="sector" style="background:${SECTOR_COLOR[a.sector]}">${SECTOR_LABEL[a.sector]}</span> ${c.gold ? '★' : ''}<br><b>${esc(a.name)}</b> <span class="muted">${a.ticker}</span><br><span class="small">Livello ${lv}/4 · rischio ${'★'.repeat(a.risk)}</span><p class="small" style="margin:4px 0">${esc(a.desc)}</p>${a.facts.slice(0, Math.max(0, lv - 1)).map((f) => `<p class="small" style="margin:2px 0">• ${esc(f)}</p>`).join('')}${lv < 4 ? `<div class="small muted">Studio: ${c.xp} pt</div>` : ''}`
-        : `<b>???</b><br><span class="small muted">Si sblocca ${a.unlock.startsWith('badge:') ? `con la Medaglia ${a.unlock.slice(6)}` : 'più avanti'}.</span>`;
+        : `<b>???</b><br><span class="small muted">Si sblocca ${a.unlock.startsWith('badge:') ? `con l'Attestato ${a.unlock.slice(6)}` : 'più avanti'}.</span>`;
       grid.appendChild(d);
     }
     body.appendChild(grid);
@@ -75,7 +80,7 @@ export async function openInvestidex() {
       body.appendChild(el('div', '', `<h4>Consigli degli abitanti</h4>${items.join('')}`));
     }
     if (S.flags.casinoLesson) body.appendChild(el('p', 'small', '<b>Azzardo vs investimento</b>: nel gioco d\'azzardo il banco ha un vantaggio strutturale (2,7% alla roulette europea); la martingala porta prima o poi alla rovina.'));
-    body.appendChild(el('p', 'small muted', 'Livelli: 2 con la tecnica "Lettura del Ticker" (Mentore 1), 3-4 dalla Medaglia 5. Lo studio sale con quiz, missioni, possesso e Archivio.'));
+    body.appendChild(el('p', 'small muted', 'Livelli: 2 con la tecnica "Lettura del Ticker" (Mentore 1), 3-4 dall\'Attestato 5. Lo studio sale con quiz, missioni, possesso e Archivio.'));
     button('Chiudi', () => close(), 'primary');
   }, { wide: true });
 }
@@ -93,7 +98,7 @@ export async function openLessons(only?: QuizTopic[]) {
 }
 
 async function openGazette() {
-  await modal('Giornale di Capitalia', ({ body, button, close }) => {
+  await modal('Giornale dei Mercati', ({ body, button, close }) => {
     const hs = headlines();
     body.innerHTML = `<p class="small">${esc(weekSummary())}</p>` + (hs.length ? hs.map((h) => `<div style="margin:6px 0"><b class="${h.tone === 'su' ? 'good' : h.tone === 'giu' ? 'bad' : ''}">Giorno ${h.day} · ${esc(h.title)}</b>${h.body ? `<br><span class="small">${esc(h.body)}</span>` : ''}</div>`).join('') : '<p class="muted">Nessuna notizia ancora.</p>');
     button('Chiudi', () => close(), 'primary');
@@ -114,10 +119,11 @@ async function profile() {
         Disciplina ${S.stats.disciplina} · Pazienza ${S.stats.pazienza} · Reputazione ${S.stats.reputazione}<br>
         Slot di portafoglio ${slots()}<br>
         Serie della domanda del giorno: ${S.daily.streak} · Torre: piano ${S.tower.best}</div>
-        <div><b>Licenza:</b> ${S.license === 'apprendista' ? 'Apprendista (bloccata: serve la 1ª Medaglia)' : S.license === 'esame' ? 'Esame di Abilitazione disponibile (Clinica → Conto Alpaca)' : '<span class="good">Licenza di Investitore</span>'}<br>
+        <div><b>Licenza:</b> ${S.license === 'apprendista' ? 'Apprendista (conto reale: dopo il 1º Attestato e l\'Esame; è facoltativo)' : S.license === 'esame' ? 'Esame di Abilitazione disponibile (menu → Chiavi API)' : '<span class="good">Licenza di Investitore</span>'}<br>
+        <b>Difficoltà:</b> ${DIFFICULTY[S.difficulty].name} · <b>Attestati</b> ${S.badges}/8 · <b>Sigilli</b> ${S.seals}/8${S.levExam ? ' · Esame della Leva superato' : ''}<br>
         ${S.license === 'investitore' ? `Limiti scelti: ${S.liveLimits.perOrder} $/ordine, ${S.liveLimits.perMonth} $/mese (massimi del livello ${L.order}/${L.month})<br>${S.liveLimits.pauseUntil > Date.now() ? `<span class="bad">Pausa di riflessione fino al ${new Date(S.liveLimits.pauseUntil).toLocaleString('it-IT')}</span><br>` : ''}` : ''}
-        <b>Orologio di mercato:</b> ${clk.label}<br><b>Clima di Capitalia:</b> ${CLIMATE_LABEL[S.market.climate]}<br>
-        <b>Giorno di mercato simulato:</b> ${S.market.day}<br>
+        <b>Orologio di mercato:</b> ${clk.label}<br><b>Clima dei mercati:</b> ${CLIMATE_LABEL[S.market.climate]} <span class="small muted">(${asOfLabel()})</span><br>
+        <b>Giorni di mercato dall'inizio:</b> ${S.market.day}<br>
         <b>Traguardi:</b> ${S.achievements.length} · <b>Titoli sbloccati:</b> ${availableTitles().length}</div>
       </div>`;
     if (availableTitles().length) button('Scegli titolo', () => close('title'));
@@ -142,13 +148,16 @@ async function badges() {
     for (let i = 1; i <= 8; i++) {
       const m = mentor(i, S.track);
       const got = S.badges >= i;
-      h += `<div class="card ${got ? 'gold' : 'locked'}"><b>${got ? '🏅' : '○'} ${esc(m.badge)}</b><br><span class="small">${esc(m.name)} · ${TOWNS[i].name}</span><br><span class="small">${got ? `Tecnica: <b>${esc(m.technique)}</b>. ${esc(m.techDesc)}` : 'Non ancora ottenuta'}</span></div>`;
+      const seal = S.seals >= i;
+      h += `<div class="card ${got && seal ? 'gold' : got ? '' : 'locked'}"><b>${got && seal ? '🏅' : got ? '📜' : '○'} ${esc(m.badge)}</b> <span class="small">${got ? (seal ? 'Attestato e Sigillo' : 'Attestato · manca il Sigillo pratico') : ''}</span><br><span class="small">${esc(m.name)} · ${TOWNS[i].name}</span><br><span class="small">${got ? `Tecnica: <b>${esc(m.technique)}</b>. ${esc(m.techDesc)}` : 'Non ancora ottenuta'}</span></div>`;
     }
     h += '</div>';
     const ab = [{ a: ABILITY.swim, ok: canSwim() }, { a: ABILITY.cut, ok: S.badges >= ABILITY.cut.badge }, { a: ABILITY.transfer, ok: canTransfer() }, { a: ABILITY.dark, ok: S.badges >= ABILITY.dark.badge }, { a: ABILITY.cold, ok: S.badges >= 7 }];
-    h += `<h4>Abilità di esplorazione</h4>${ab.map(({ a, ok }) => `<p class="small" style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b> (Medaglia ${a.badge}): ${ok ? esc(a.desc) : 'non ancora ottenuta.'}</p>`).join('')}`;
+    h += `<h4>Abilità di esplorazione</h4>${ab.map(({ a, ok }) => `<p class="small" style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b> (Attestato ${a.badge}): ${ok ? esc(a.desc) : 'non ancora ottenuta.'}</p>`).join('')}`;
     if (S.flags.champion) h += '<p class="good"><b>Campione della Lega degli Investitori</b></p>';
     if (S.legends.length) h += `<p>Crisi leggendarie superate: ${S.legends.length}/5</p>`;
+    if (S.boss.beaten.length) h += `<p>Boss dei Mercati battuti: ${S.boss.beaten.length}/3</p>`;
+    h += '<p class="small muted">Ogni Medaglia ha due metà: l\'Attestato (il duello con il Mentore) apre la strada e la Tecnica; il Sigillo pratico (missione su dati reali ed esercizio sul conto) la completa. Per la Lega servono otto Medaglie complete.</p>';
     body.innerHTML = h;
     button('Chiudi', () => close(), 'primary');
   }, { wide: true });
@@ -177,6 +186,7 @@ async function options() {
     q<HTMLInputElement>('.hc').checked = S.options.contrast;
     q<HTMLInputElement>('.sm').checked = S.options.studyMode;
     button('Comandi', () => { close(); void openControls(); });
+    button('Chiavi API', () => { close(); void apiKeysMenu(); });
     button('Crediti e fonti', () => { close(); void credits(); });
     button('Esporta salvataggio', () => download(`tradermon-${S.name}.json`, exportSave()));
     if (cloudPlayer()) button('Esci dal giocatore', () => { close(); void leavePlayer(); });
@@ -223,7 +233,7 @@ async function credits() {
       <h4>Fonti didattiche</h4>
       ${[...byPublisher].map(([pub, list]) => `<p class="small"><b>${esc(pub)}</b>: ${list.map((s) => `<a href="${s.url}" target="_blank" rel="noopener">${esc(s.title)}</a>`).join(', ')}</p>`).join('')}
       <h4>Dati di mercato</h4>
-      <p class="small">Il mercato del gioco è simulato; gli scenari storici sono ricostruzioni semplificate. Conto, posizioni e prezzi dell'Osservatorio e del conto collegato sono forniti da Alpaca solo per il tuo uso personale e non vengono ridistribuiti.</p>
+      <p class="small">Il gioco non simula alcun mercato: titoli, prezzi, grafici e periodi storici dei replay sono dati reali, scaricati da Alpaca con le chiavi del giocatore. Senza conto collegato non viene mostrato alcun prezzo. Conto, posizioni e prezzi sono forniti da Alpaca solo per il tuo uso personale e non vengono ridistribuiti.</p>
       <h4>Software e caratteri</h4>
       <p class="small">Motore Phaser (licenza MIT); resa 2.5D con Three.js (MIT) e postprocessing (Zlib). Caratteri Press Start 2P, Pixelify Sans e DotGothic16 (SIL Open Font License 1.1) tramite Fontsource. Grafica e musica generate dal gioco.</p>
       <p class="small muted">Contenuti a scopo educativo, non sono consulenza finanziaria.</p>`;

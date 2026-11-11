@@ -43,7 +43,7 @@ export async function openAlpacaHub() {
     const licensed = S.license === 'investitore';
     const opts = [
       st.paper.configured ? `Conto Alpaca Paper (${st.paper.keyHint})` : 'Collega Alpaca Paper (chiavi)',
-      licensed ? (st.live.configured ? `Conto REALE (${st.live.keyHint})` : 'Collega conto REALE (chiavi Live)') : S.badges >= 1 ? 'Esame di Abilitazione (sblocca il conto reale)' : 'Conto reale: bloccato (serve la 1ª Medaglia)',
+      licensed ? (st.live.configured ? `Conto REALE (${st.live.keyHint})` : 'Collega conto REALE (chiavi Live)') : S.badges >= 1 ? 'Esame di Abilitazione (sblocca il conto reale)' : 'Conto reale: dopo il 1º Attestato',
       'Limiti e pausa di riflessione',
       'Scollega chiavi',
       'Come ottenere le chiavi',
@@ -126,7 +126,7 @@ export async function openObservatory() {
   }, { wide: true });
 }
 
-async function keysForm(env: A.Env): Promise<boolean> {
+export async function keysForm(env: A.Env): Promise<boolean> {
   const res = await modal<boolean>(env === 'live' ? 'Collega il conto REALE' : 'Collega Alpaca Paper', ({ body, button, close }) => {
     body.innerHTML = `
       <p>${env === 'live' ? '<b>Attenzione: queste chiavi operano con denaro reale.</b> ' : ''}Inserisci le chiavi API generate nella dashboard di Alpaca ${env === 'live' ? '(conto Live)' : '(conto Paper)'}.</p>
@@ -184,14 +184,14 @@ async function restoreKeys(st: A.ServerStatus): Promise<boolean> {
 
 async function licenseFlow() {
   if (S.license === 'apprendista' && S.badges >= 1) S.license = 'esame';
-  if (S.license !== 'esame') { await say('Prima devi ottenere la Medaglia del primo Mentore.', NURSE); return; }
+  if (S.license !== 'esame') { await say('Prima devi ottenere l\'Attestato del primo Mentore.', NURSE); return; }
   const wait = S.examLastFail + 10 * 60 * 1000 - Date.now();
   if (wait > 0) { await say(`Potrai ripetere l'esame tra ${Math.ceil(wait / 60000)} minuti. Intanto ripassa in Biblioteca!`, NURSE); return; }
   await say(['L\'Esame di Abilitazione ha 10 domande su rischio, perdite, costi, ordini e truffe.', 'Servono 9 risposte giuste. Nessun timer: prenditi il tempo che serve.'], NURSE);
   const passed = await runExam();
   if (!passed) { S.examLastFail = Date.now(); save(); await say('Non ancora. Il denaro vero merita preparazione: riprova tra 10 minuti.', NURSE); return; }
   const ok = await seriousDisclaimer();
-  if (!ok) { await say('Va benissimo così. Puoi restare in paper per sempre: storia e Medaglie non cambiano.', NURSE); return; }
+  if (!ok) { await say('Va benissimo così. Puoi restare sul Paper per sempre: storia, Attestati e Sigilli non dipendono dal conto reale.', NURSE); return; }
   S.license = 'investitore';
   const L = LIVE_LIMITS[Math.min(8, S.badges)];
   S.liveLimits = { ...S.liveLimits, perOrder: L.order, perMonth: L.month, monthKey: monthKey(), spentThisMonth: 0 };
@@ -207,7 +207,7 @@ function seriousDisclaimer(): Promise<boolean> {
       'Tradermon è un gioco educativo: non fornisce consulenza né raccomandazioni personalizzate.',
       'Gli ordini sono eseguiti da Alpaca sul conto che ho aperto io a mio nome; Tradermon non detiene né gestisce il mio denaro.',
       'Nessun premio di gioco (XP, Medaglie, classifiche, carte) deriva da operazioni con denaro reale.',
-      'Ho capito i limiti per ordine e al mese, che crescono con le Medaglie, e la pausa di riflessione.',
+      'Ho capito i limiti per ordine e al mese, che crescono con gli Attestati, e la pausa di riflessione.',
       'Se risiedo in Italia, so di dover dichiarare il conto estero e i redditi (quadri RW e RT).',
     ];
     body.innerHTML = '<p>Leggi e spunta ogni dichiarazione. Questa schermata è volutamente fuori dallo stile del gioco.</p>' + items.map((t, i) => `<label><input type="checkbox" data-i="${i}"> <span>${esc(t)}</span></label>`).join('');
@@ -222,7 +222,7 @@ async function limitsScreen() {
   const max = LIVE_LIMITS[Math.min(8, S.badges)];
   await modal('Limiti e pausa di riflessione', ({ body, button, close }) => {
     body.innerHTML = `
-      <p>Massimi del tuo livello (${S.badges} Medaglie): <b>${max.order} $</b> per ordine, <b>${max.month} $</b> al mese. Cripto: ${max.cOrder} $ / ${max.cMonth} $. Ordini consentiti: mercato${hasTech(TECH.LIMIT) ? ', limite' : ''}${hasTech(TECH.STOP) ? ', stop' : ''}.</p>
+      <p>Massimi del tuo livello (${S.badges} Attestati): <b>${max.order} $</b> per ordine, <b>${max.month} $</b> al mese. Cripto: ${max.cOrder} $ / ${max.cMonth} $. Ordini consentiti: mercato${hasTech(TECH.LIMIT) ? ', limite' : ''}${hasTech(TECH.STOP) ? ', stop' : ''}.</p>
       <label>Il mio limite per ordine ($)<input class="tx po" type="number" min="0" max="${max.order}" value="${S.liveLimits.perOrder}"></label>
       <label style="display:block;margin-top:8px">Il mio limite al mese ($)<input class="tx pm" type="number" min="0" max="${max.month}" value="${S.liveLimits.perMonth}"></label>
       <p class="small">Usati questo mese: ${S.liveLimits.monthKey === monthKey() ? S.liveLimits.spentThisMonth.toFixed(2) : '0'} $.</p>

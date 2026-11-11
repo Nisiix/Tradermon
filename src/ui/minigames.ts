@@ -124,8 +124,8 @@ async function compoundGame() {
     const simple = cap * (1 + (rate / 100) * years);
     const low = fv * 0.55;
     const opts = shuffle([fv, simple, low], rng);
-    const fmt = (v: number) => `${Math.round(v / 100) * 100} Cr`;
-    const ok = await quizRound(`Interesse composto · ${r + 1}/${ROUNDS}`, `<p>${cap} Cr al <b>${rate}%</b> annuo per <b>${years} anni</b>, reinvestendo tutto. Quanto diventano, circa?</p><p class="small muted">Suggerimento: regola del 72 → raddoppia ogni ${Math.round(72 / rate)} anni.</p>`,
+    const fmt = (v: number) => `${Math.round(v / 100) * 100} $`;
+    const ok = await quizRound(`Interesse composto · ${r + 1}/${ROUNDS}`, `<p>${cap} $ al <b>${rate}%</b> annuo per <b>${years} anni</b>, reinvestendo tutto. Quanto diventano, circa?</p><p class="small muted">Suggerimento: regola del 72 → raddoppia ogni ${Math.round(72 / rate)} anni.</p>`,
       opts.map(fmt), opts.indexOf(fv), `${fmt(fv)}. Con l'interesse semplice (senza reinvestire) sarebbero solo ${fmt(simple)}.`);
     if (ok) score += 20;
   }

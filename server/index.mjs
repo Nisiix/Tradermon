@@ -7,7 +7,8 @@
 //    e non vengono mai restituite al browser;
 //  - solo un elenco chiuso di endpoint Alpaca è raggiungibile;
 //  - gli ordini LIVE richiedono la parola di conferma e rispettano un tetto rigido per ordine;
-//  - niente vendite allo scoperto né acquisti oltre la liquidità disponibile;
+//  - niente vendite allo scoperto; gli acquisti non superano la liquidità disponibile, oppure, quando il giocatore
+//    usa la leva (intestazione x-tradermon-margin), il potere d'acquisto concesso da Alpaca;
 //  - ogni ordine è registrato in server/.secrets/audit.log.
 
 import http from 'node:http';
@@ -18,15 +19,18 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.resolve(ROOT, '..', 'dist');
-const SECRETS = path.join(ROOT, '.secrets');
+const SECRETS = process.env.TRADERMON_SECRETS_DIR ? path.resolve(process.env.TRADERMON_SECRETS_DIR) : path.join(ROOT, '.secrets');
 const KEYS_FILE = path.join(SECRETS, 'keys.json');
 const AUDIT_FILE = path.join(SECRETS, 'audit.log');
 const PORT = Number(process.env.TRADERMON_PORT || process.env.PORT || 8888);
 const HOST = process.env.TRADERMON_HOST || '127.0.0.1';
 const LIVE_MAX_ORDER = Number(process.env.TRADERMON_LIVE_MAX_ORDER || 2500);
 
-const TRADING = { paper: 'https://paper-api.alpaca.markets/v2', live: 'https://api.alpaca.markets/v2' };
-const DATA = 'https://data.alpaca.markets';
+// Indirizzi di Alpaca. TRADERMON_ALPACA_MOCK serve solo ai test automatici (un finto Alpaca locale):
+// è accettato soltanto se punta a questo stesso computer.
+const MOCK = /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.TRADERMON_ALPACA_MOCK || '') ? process.env.TRADERMON_ALPACA_MOCK : '';
+const TRADING = MOCK ? { paper: `${MOCK}/paper/v2`, live: `${MOCK}/live/v2` } : { paper: 'https://paper-api.alpaca.markets/v2', live: 'https://api.alpaca.markets/v2' };
+const DATA = MOCK ? `${MOCK}/data` : 'https://data.alpaca.markets';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -92,7 +96,7 @@ async function audit(entry) {
 
 const SYMBOL_RE = /^[A-Z0-9.]{1,12}(\/[A-Z]{3,5})?$/;
 
-async function validateOrder(env, o, confirm) {
+async function validateOrder(env, o, confirm, margin = false) {
   if (!o || typeof o !== 'object') throw Object.assign(new Error('Ordine non valido'), { status: 400 });
   const symbol = String(o.symbol || '').toUpperCase();
   if (!SYMBOL_RE.test(symbol)) throw Object.assign(new Error('Simbolo non valido'), { status: 400 });
@@ -132,7 +136,9 @@ async function validateOrder(env, o, confirm) {
   if (o.side === 'buy') {
     const acc = await alpaca(env, 'GET', `${TRADING[env]}/account`);
     const cash = Number(acc.cash);
-    if (estimate > cash) throw Object.assign(new Error('Liquidità insufficiente: Tradermon non usa margine né prestiti'), { status: 403 });
+    // con la leva (scelta del giocatore, solo dopo l'Esame della Leva) vale il potere d'acquisto di Alpaca, che ne fissa il tetto
+    const limit = margin ? Number(acc.buying_power) : cash;
+    if (estimate > limit) throw Object.assign(new Error(margin ? 'Potere d\'acquisto insufficiente: supera il margine concesso da Alpaca' : 'Liquidità insufficiente: senza leva Tradermon non usa margine né prestiti'), { status: 403 });
   } else {
     let pos = null;
     try { pos = await alpaca(env, 'GET', `${TRADING[env]}/positions/${encodeURIComponent(symbol.replace('/', ''))}`); } catch { pos = null; }
@@ -205,7 +211,7 @@ async function handleApi(req, res, url) {
     }
     if (req.method === 'POST' && rest[0] === 'orders' && rest.length === 1) {
       const body = await readBody(req);
-      const { clean, estimate } = await validateOrder(env, body, req.headers['x-tradermon-confirm']);
+      const { clean, estimate } = await validateOrder(env, body, req.headers['x-tradermon-confirm'], req.headers['x-tradermon-margin'] === '1');
       try {
         const out = await alpaca(env, 'POST', `${base}/orders`, clean);
         await audit({ event: 'order', env, symbol: clean.symbol, side: clean.side, type: clean.type, estimate, id: out.id, client_order_id: clean.client_order_id, status: out.status });
@@ -215,6 +221,11 @@ async function handleApi(req, res, url) {
         throw e;
       }
     }
+    if (req.method === 'GET' && rest[0] === 'orders' && rest.length === 2) {
+      const id = rest[1];
+      if (!/^[a-f0-9-]{36}$/i.test(id)) return send(res, 400, { message: 'Id ordine non valido' });
+      return send(res, 200, await alpaca(env, 'GET', `${base}/orders/${id}`));
+    }
     if (req.method === 'DELETE' && rest[0] === 'orders' && rest.length === 2) {
       const id = rest[1];
       if (!/^[a-f0-9-]{36}$/i.test(id)) return send(res, 400, { message: 'Id ordine non valido' });
@@ -222,6 +233,47 @@ async function handleApi(req, res, url) {
       await audit({ event: 'order_cancel', env, id });
       return send(res, 200, { ok: true });
     }
+  }
+  if (parts[1] === 'data' && (parts[2] === 'daily' || parts[2] === 'snapshot')) {
+    // più simboli insieme: azioni/ETF e cripto vanno su endpoint diversi di Alpaca
+    const list = String(url.searchParams.get('symbols') || '').toUpperCase().split(',').map((x) => x.trim()).filter(Boolean);
+    if (!list.length || list.length > 60 || list.some((x) => !SYMBOL_RE.test(x))) return send(res, 400, { message: 'Elenco di simboli non valido' });
+    const stocks = list.filter((x) => !x.includes('/'));
+    const crypto = list.filter((x) => x.includes('/'));
+    const env = dataEnv();
+    if (parts[2] === 'snapshot') {
+      const prices = {};
+      if (stocks.length) {
+        const d = await alpaca(env, 'GET', `${DATA}/v2/stocks/trades/latest?symbols=${encodeURIComponent(stocks.join(','))}&feed=iex`);
+        for (const [k, v] of Object.entries(d.trades ?? {})) prices[k] = v.p;
+      }
+      if (crypto.length) {
+        const d = await alpaca(env, 'GET', `${DATA}/v1beta3/crypto/us/latest/trades?symbols=${encodeURIComponent(crypto.join(','))}`);
+        for (const [k, v] of Object.entries(d.trades ?? {})) prices[k] = v.p;
+      }
+      return send(res, 200, { prices });
+    }
+    const start = String(url.searchParams.get('start') || '').slice(0, 10);
+    const end = String(url.searchParams.get('end') || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return send(res, 400, { message: 'Date non valide' });
+    const out = {};
+    const page = async (u) => {
+      let token = '';
+      for (let i = 0; i < 40; i++) {
+        const d = await alpaca(env, 'GET', u + (token ? `&page_token=${encodeURIComponent(token)}` : ''));
+        for (const [k, v] of Object.entries(d.bars ?? {})) (out[k] ??= []).push(...v);
+        token = d.next_page_token;
+        if (!token) break;
+      }
+    };
+    if (stocks.length) {
+      // storico: il feed SIP gratuito copre il passato (non gli ultimi 15 minuti); se il piano non lo consente si ripiega su IEX
+      const recent = Date.parse(end) > Date.now() - 2 * 86400000;
+      const q = `${DATA}/v2/stocks/bars?symbols=${encodeURIComponent(stocks.join(','))}&timeframe=1Day&start=${start}&end=${end}&limit=10000&adjustment=split`;
+      try { await page(q + `&feed=${recent ? 'iex' : 'sip'}`); } catch { await page(q + '&feed=iex'); }
+    }
+    if (crypto.length) await page(`${DATA}/v1beta3/crypto/us/bars?symbols=${encodeURIComponent(crypto.join(','))}&timeframe=1Day&start=${start}&end=${end}&limit=10000`);
+    return send(res, 200, { bars: out });
   }
   if (parts[1] === 'data') {
     const sym = String(url.searchParams.get('symbol') || '').toUpperCase();

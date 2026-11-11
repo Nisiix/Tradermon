@@ -1,5 +1,5 @@
 // Grafico a candele con scelta dell'orizzonte (5m, 15m, 1h, 4h, 1g), media a 20 barre e lettura didattica.
-// Si usa prima di comprare o vendere, sul conto di prova (candele ricostruite) e su Alpaca (barre reali).
+// Si usa prima di comprare o vendere: le candele sono sempre barre reali di Alpaca.
 import { modal, el, esc } from './core';
 import { TIMEFRAMES, TF_LABEL, sma, reading, type Candle, type Timeframe } from '../systems/candles';
 
