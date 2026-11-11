@@ -10,15 +10,17 @@ Serve Node.js 20 o più recente.
 
 ```bash
 npm install
-npm run dev        # gioco su http://localhost:5173 + server locale Alpaca su 127.0.0.1:8888
+npm run dev        # landing su http://localhost:5173, gioco su /gioca/ + server locale Alpaca su 127.0.0.1:8888
 ```
 
 Versione di produzione (un solo processo, nessuna dipendenza a runtime):
 
 ```bash
 npm run build
-npm start          # apri http://localhost:8888
+npm start          # apri http://localhost:8888 (landing) oppure http://localhost:8888/gioca/ (gioco)
 ```
+
+Il sito ha due pagine: la **landing** (`index.html`, codice in `landing/`) con la Guida completa nella sezione `#guida`, e il **gioco** (`gioca/index.html`). Gli indirizzi per le donazioni in crypto si inseriscono in `landing/config/donazioni.json` (istruzioni in `landing/config/README.md`); se la lista è vuota il pulsante non compare.
 
 La porta predefinita del server locale è **8888**. Per usarne un'altra imposta la variabile `TRADERMON_PORT`, ad esempio `TRADERMON_PORT=9000 npm start` (su Windows PowerShell: `$env:TRADERMON_PORT=9000; npm start`). Vale anche per `npm run dev`.
 
