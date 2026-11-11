@@ -2,7 +2,7 @@
   "name": "Tradermon – Il viaggio dell'investitore",
   "short_name": "Tradermon",
   "lang": "it",
-  "start_url": "./",
+  "start_url": "./gioca/",
   "scope": "./",
   "display": "fullscreen",
   "orientation": "landscape",

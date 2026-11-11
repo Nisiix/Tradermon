@@ -9,12 +9,15 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export interface AssetManifest { models?: Record<string, string>; scale?: Record<string, number>; lift?: Record<string, number> }
 
+/** Cartella degli asset pubblici: il gioco sta in /gioca/, il prototipo hd2d.html alla radice. */
+const ROOT = typeof location !== 'undefined' && location.pathname.includes('/gioca/') ? '../' : './';
+
 let manifestP: Promise<AssetManifest | null> | null = null;
 const models = new Map<string, Promise<THREE.Object3D | null>>();
 
 export function assetManifest(): Promise<AssetManifest | null> {
   if (!manifestP) {
-    manifestP = fetch('assets3d/manifest.json', { cache: 'no-cache' })
+    manifestP = fetch(ROOT + 'assets3d/manifest.json', { cache: 'no-cache' })
       .then((r) => (r.ok ? (r.json() as Promise<AssetManifest>) : null))
       .catch(() => null);
   }
@@ -29,7 +32,7 @@ export function externalModel(key: string): Promise<THREE.Object3D | null> {
     const file = m?.models?.[key];
     if (!file) return null;
     try {
-      const gltf = await new GLTFLoader().loadAsync('assets3d/' + file);
+      const gltf = await new GLTFLoader().loadAsync(ROOT + 'assets3d/' + file);
       const obj = gltf.scene;
       const box = new THREE.Box3().setFromObject(obj);
       const size = new THREE.Vector3(); box.getSize(size);
