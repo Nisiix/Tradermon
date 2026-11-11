@@ -24,6 +24,7 @@ import { rendererType, guardRendering } from './systems/render';
 import { cloudEnabled, currentPlayer } from './systems/cloud';
 import { syncAtBoot, startCloudSync, cloudPlayer } from './systems/sync';
 import { accountScreen, legacyPrompt } from './ui/account';
+import { busy, pauseBusy } from './ui/loading';
 import { whileAway } from './ui/broker';
 
 function pickFile(): Promise<string | null> {
@@ -60,8 +61,8 @@ async function boot() {
   play('title');
   // Giocatore (nome univoco + password) prima di tutto, tutorial compreso: la partita vive su Supabase.
   if (cloudEnabled()) {
-    const player = (await currentPlayer()) ?? (await accountScreen());
-    const r = await syncAtBoot(player, legacyPrompt);
+    const player = (await busy('Controllo l\'accesso', currentPlayer())) ?? (await accountScreen());
+    const r = await busy('Carico la partita', syncAtBoot(player, (c) => pauseBusy(() => legacyPrompt(c))));
     if (r === 'offline') toast('Supabase non è raggiungibile: giochi con la copia di questo dispositivo e la invio appena torna la rete.');
     startCloudSync(() => toast('Salvato su questo dispositivo: lo invio a Supabase appena torna la connessione.'));
   }
