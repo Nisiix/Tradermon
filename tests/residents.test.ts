@@ -3,7 +3,7 @@ import { HOUSEHOLDS, ALL_RESIDENTS } from '../src/data/residents';
 import { SOURCES } from '../src/data/sources';
 import { TOWNS } from '../src/data/story';
 import { getMap } from '../src/world/maps';
-import { PALETTES } from '../src/art/art';
+import { CHAR_PALETTES } from '../src/art/art';
 
 describe('case e abitanti', () => {
   it('ogni nucleo ha il numero giusto di persone', () => {
@@ -20,7 +20,7 @@ describe('case e abitanti', () => {
   it('ogni consiglio cita una fonte esistente e usa una tavolozza valida', () => {
     for (const r of ALL_RESIDENTS) {
       expect(SOURCES[r.source], r.id).toBeDefined();
-      expect(r.pal).toBeLessThan(PALETTES.length);
+      expect(r.pal).toBeLessThan(CHAR_PALETTES.length);
     }
   });
   it('ogni città ha le sue case collegate e visitabili', () => {

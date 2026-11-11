@@ -1,3 +1,5 @@
+import { lookPal } from '../art/art';
+import { poolFor } from '../art/looks';
 // Abitanti delle case: ogni persona insegna un concetto diverso (campo `topic`, unico in tutto il gioco).
 // I temi seguono la progressione delle città: basi → ordini → diversificazione → costi → analisi →
 // dividendi e obbligazioni → bias → gestione del rischio, con qualche tema di macroeconomia e sicurezza.
@@ -22,9 +24,19 @@ export interface Household {
 }
 
 type R = [id: string, name: string, role: string, pal: number, topic: string, source: string, lines: string[]];
-const hh = (id: string, name: string, kind: HouseholdKind, people: R[]): Household => ({
-  id, name, kind, people: people.map(([pid, n, role, pal, topic, source, lines]) => ({ id: pid, name: n, role, pal, topic, source, lines })),
-});
+// L'aspetto di ogni abitante è generato dal suo id (pelle, capelli, occhi, vestiti: src/art/looks.ts);
+// il numero di palette scritto nei dati qui sotto non viene più usato. Nella stessa casa nessuno si somiglia.
+function residentPal(pid: string, role: string, taken: Set<number>): number {
+  const pool = poolFor(role);
+  let pal = lookPal(pid, pool);
+  for (let b = 1; taken.has(pal) && b < 16; b++) pal = lookPal(pid, pool, b);
+  taken.add(pal);
+  return pal;
+}
+const hh = (id: string, name: string, kind: HouseholdKind, people: R[]): Household => {
+  const taken = new Set<number>();
+  return { id, name, kind, people: people.map(([pid, n, role, , topic, source, lines]) => ({ id: pid, name: n, role, pal: residentPal(pid, role, taken), topic, source, lines })) };
+};
 
 /** Case per città (indice = numero della città). L'ordine segue gli slot degli edifici nella mappa. */
 export const HOUSEHOLDS: Household[][] = [

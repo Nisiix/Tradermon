@@ -1,5 +1,7 @@
 // Tutta la grafica di Tradermon è generata in codice (pixel art originale, nessun asset esterno).
 
+import { POOLS, POOL_ORDER, lookIndex, type Look, type LookPool } from './looks';
+
 export const T = 16;
 /** Scala di resa: ogni pixel logico diventa RS×RS pixel reali, con le diagonali smussate (Scale3x). */
 export const RS = 3;
@@ -748,7 +750,7 @@ export const PAL = { PROF: 3, NURSE: 4, RIVAL: 5, SPEC: 15, GUARD: 20, LIB: 23 }
 
 function colorsFor(p: CharPal): Record<string, string> {
   return {
-    o: '#283038', h: p.hair, H: shade(p.hair, 0.18), d: shade(p.hair, -0.3), s: p.skin, S: shade(p.skin, -0.18), e: '#283038',
+    o: '#283038', h: p.hair, H: shade(p.hair, 0.18), d: shade(p.hair, -0.3), s: p.skin, S: shade(p.skin, -0.18), e: (p as Look).eyes ?? '#283038',
     c: p.shirt, C: shade(p.shirt, -0.25), x: p.extra ?? shade(p.shirt, -0.25), p: p.pants, P: shade(p.pants, -0.3), k: '#403838',
     ...(p.cap ? { q: p.cap, Q: shade(p.cap, 0.22), b: shade(p.cap, -0.3), w: '#f2f2f2' } : {}),
   };
@@ -801,13 +803,25 @@ function drawChar(c: Ctx, ox: number, oy: number, p: CharPal, dir: number, frame
   paint(c, ox, oy + (frame ? -1 : 0) * 0, rows, colorsFor(p), fr.flip);
 }
 
+// Dopo le palette fisse vengono gli aspetti generati per i personaggi generici (src/art/looks.ts).
+const LOOK_BASE = {} as Record<LookPool, number>;
+/** Tutte le palette disegnate nel foglio 'chars': fisse + folla, anziani, guardie, speculatori. */
+export const CHAR_PALETTES: CharPal[] = POOL_ORDER.reduce<CharPal[]>((all, k) => { LOOK_BASE[k] = all.length; return all.concat(POOLS[k]); }, PALETTES.slice());
+/** Palette per un personaggio generico: sempre la stessa per lo stesso seme (id o nome). */
+export function lookPal(seed: string, pool: LookPool = 'crowd', bump = 0): number { return LOOK_BASE[pool] + lookIndex(seed, pool, bump); }
+/** Il gruppo a cui appartiene una palette generata (undefined per le palette fisse). */
+export function lookPoolOf(pal: number): LookPool | undefined { return POOL_ORDER.find((k) => pal >= LOOK_BASE[k] && pal < LOOK_BASE[k] + POOLS[k].length); }
+/** Palette per riga nel foglio 'chars' (12 fotogrammi ciascuna): il foglio resta sotto i 4096 px anche su mobile. */
+export const CHAR_PER_ROW = 6;
+
 export function drawCharacters(): HTMLCanvasElement {
   const cv = document.createElement('canvas');
-  cv.width = CW * 12;
-  cv.height = CH * PALETTES.length;
+  cv.width = CW * 12 * CHAR_PER_ROW;
+  cv.height = CH * Math.ceil(CHAR_PALETTES.length / CHAR_PER_ROW);
   const c = cv.getContext('2d')!;
-  PALETTES.forEach((p, row) => {
-    for (let dir = 0; dir < 4; dir++) for (let f = 0; f < 3; f++) drawChar(c, (dir * 3 + f) * CW, row * CH, p, dir, f);
+  CHAR_PALETTES.forEach((p, i) => {
+    const ox = (i % CHAR_PER_ROW) * 12 * CW, oy = Math.floor(i / CHAR_PER_ROW) * CH;
+    for (let dir = 0; dir < 4; dir++) for (let f = 0; f < 3; f++) drawChar(c, ox + (dir * 3 + f) * CW, oy, p, dir, f);
   });
   return upscale(cv, CW, CH);
 }
@@ -865,7 +879,7 @@ function scale2x(src: HTMLCanvasElement): HTMLCanvasElement {
 function bigSprite(pal: number, dir: number, scale: number): string {
   const small = document.createElement('canvas');
   small.width = CW; small.height = CH;
-  drawChar(small.getContext('2d')!, 0, 0, PALETTES[pal % PALETTES.length], dir, 0);
+  drawChar(small.getContext('2d')!, 0, 0, CHAR_PALETTES[pal % CHAR_PALETTES.length], dir, 0);
   // due passaggi di Scale2x (×4) e poi ingrandimento nitido fino alla scala richiesta
   const smooth = scale2x(scale2x(small));
   const cv = document.createElement('canvas');

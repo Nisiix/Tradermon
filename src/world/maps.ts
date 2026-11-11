@@ -1,4 +1,5 @@
-import { TILE } from '../art/art';
+import { TILE, lookPal } from '../art/art';
+import { poolFor, type LookPool } from '../art/looks';
 import { TOWNS, TRAINER_NAMES, TRAINER_LINES } from '../data/story';
 import { mulberry32 } from '../systems/rng';
 import { HOUSEHOLDS, type Household } from '../data/residents';
@@ -115,6 +116,35 @@ function buildAll() {
   for (let i = 1; i <= 8; i++) buildTown(i);
   buildLeagueTown();
   for (let r = 1; r <= 9; r++) buildRoute(r);
+  for (const m of Object.values(MAPS)) diversify(m);
+}
+
+/** Personaggi con un aspetto voluto, che non cambiano mai. */
+const FIXED_LOOK = new Set(['t0_old', 'league_hall']);
+
+/** Gruppo di aspetti e seme per i personaggi generici; undefined per chi tiene la sua palette. */
+function lookSeed(n: NpcDef): [LookPool, string] | undefined {
+  if (n.hiddenSprite || FIXED_LOOK.has(n.id)) return undefined;
+  switch (n.kind) {
+    case 'trainer': return [poolFor(n.name), n.name]; // stesso allenatore, stesso aspetto su ogni percorso
+    case 'talk': case 'student': case 'aide': case 'daily': case 'librarian': return [poolFor(n.name), n.id];
+    case 'guard': return ['guard', n.id];
+    case 'speculator': return n.data?.boss ? undefined : ['spec', n.id];
+    default: return undefined;
+  }
+}
+
+/** Dà a ogni personaggio generico un aspetto deterministico e, nella stessa mappa, diverso dagli altri. */
+function diversify(m: MapDef) {
+  const taken = new Set(m.npcs.filter((n) => n.kind === 'resident').map((n) => n.pal));
+  for (const n of m.npcs) {
+    const seed = lookSeed(n);
+    if (!seed) continue;
+    let pal = lookPal(seed[1], seed[0]);
+    for (let b = 1; taken.has(pal) && b < 16; b++) pal = lookPal(seed[1], seed[0], b);
+    taken.add(pal);
+    n.pal = pal;
+  }
 }
 
 // ---------------- Borgo Semina ----------------
