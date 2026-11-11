@@ -320,11 +320,11 @@ export async function tower() {
     return;
   }
   if (opts[c] === 'Nuova Partita+') {
-    const t = await choose(['Sentiero dei Titoli', 'Sentiero degli Indici', 'Sentiero Cripto', 'Sentiero Misto (tutte le classi)', 'Annulla'], { cancel: true, prompt: 'Ricomincerai dall\'inizio in un altro percorso, conservando avatar, record e carte dorate. Sicuro?' });
-    if (t < 0 || t === 4) return;
-    newGamePlus((['stocks', 'etf', 'crypto', 'mixed'] as const)[t]);
-    if (t === 3) S.mixedClasses = ['stocks', 'etf', 'crypto'];
-    await say(['Nuova Partita+: i Mentori faranno domande più difficili e una domanda su due avrà numeri nuovi.', 'Le carte dorate, i record della Torre e le Leggende restano con te.'], 'Custode della Torre');
+    // il percorso (anche il Sentiero Misto) si sceglie di nuovo dal Professore, come nella prima partita
+    const t = await choose(['Sì, ricomincio', 'Annulla'], { cancel: true, prompt: 'Ricomincerai dall\'inizio scegliendo un percorso dal Professore (anche il Sentiero Misto), conservando avatar, record e carte dorate. Sicuro?' });
+    if (t !== 0) return;
+    newGamePlus(S.track);
+    await say(['Nuova Partita+: i Mentori faranno domande più difficili e una domanda su due avrà numeri nuovi.', 'Le carte dorate, i record della Torre e le Leggende restano con te. Il Professore ti aspetta per la nuova Valigetta.'], 'Custode della Torre');
     S.flags.starter = false;
     save();
     location.reload();

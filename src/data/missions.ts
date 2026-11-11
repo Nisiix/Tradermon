@@ -52,7 +52,7 @@ export interface ProcessReview { stars: number; notes: { ok: boolean; text: stri
 export function processReview(r: SimResult): ProcessReview {
   const notes = [
     { ok: r.maxW <= 0.4 && r.sectors >= 2, text: r.maxW <= 0.4 && r.sectors >= 2 ? 'Nessuna posizione dominante e più settori: rischio specifico sotto controllo.' : 'Troppo concentrato: una posizione sopra il 40% o un solo settore.' },
-    { ok: r.lossSales === 0, text: r.lossSales === 0 ? 'Nessuna vendita in perdita: hai attraversato i cali senza panico.' : `Vendite in perdita: ${r.lossSales}. Vendere nel calo trasforma un ribasso in una perdita vera.` },
+    { ok: r.lossSales === 0, text: r.lossSales === 0 ? 'Nessuna vendita manuale in perdita: hai attraversato i cali senza panico (gli stop pianificati non contano).' : `Vendite manuali in perdita: ${r.lossSales}. Vendere nel calo per paura trasforma un ribasso in una perdita vera; uno stop deciso prima è un'altra cosa.` },
     { ok: r.orders <= Math.ceil(r.values.length / 10) + 3, text: r.orders <= Math.ceil(r.values.length / 10) + 3 ? 'Poche operazioni, ben scelte: i costi sono rimasti bassi.' : `Troppe operazioni (${r.orders}): ogni ordine costa e raramente aggiunge valore.` },
   ];
   return { stars: notes.filter((n) => n.ok).length, notes };

@@ -63,7 +63,7 @@ export function openChart(o: ChartOpts): Promise<void> {
     cv.width = 640; cv.height = 280; cv.style.width = '100%'; cv.style.maxWidth = '640px'; cv.style.imageRendering = 'auto';
     const head = el('p', 'small', '');
     const read = el('div', 'small', '');
-    body.append(head, cv, o.note ? el('p', 'small muted', esc(o.note)) : el('span'), read);
+    body.append(head, cv, o.note ? el('p', 'small muted', esc(o.note)) : el('span'), read, el('p', 'small muted', 'Lettura didattica, non un consiglio: la decisione resta tua. Il grafico racconta il passato; i fondamentali e il tuo piano decidono il futuro.'));
     const tfBtns: HTMLButtonElement[] = [];
     const show = async () => {
       head.innerHTML = `Orizzonte: <b>${TF_LABEL[tf]}</b> <span class="muted">(frecce ← → per cambiare, A per confermare)</span>`;
