@@ -121,10 +121,10 @@ Altopiano della Lega ─ P9 ─ Rocca Rischio ─ P8 ─ Mentelucida ─ P7 ─ 
 | Borgo Semina | Casa, Laboratorio, Clinica | — | Scelta delle Valigette |
 | Ponte Cedola | Clinica, Biblioteca, Accademia | 1. Gaia Primo – Medaglia Seme | Esame di Abilitazione dopo la Medaglia |
 | Porto Ordini | Clinica, Biblioteca, Accademia | 2. Orazio Limite – Medaglia Ordine | Abbonamento al treno |
-| Diversia | Clinica, Biblioteca, Accademia, **Zona Simulazione** | 3. Vera Varia – Medaglia Mosaico | Sandbox Macchina del Tempo |
-| Interessa | Clinica, Biblioteca, Accademia, **Casinò dello Speculatore** | 4. Cosimo Composto – Medaglia Spirale | Mini-gioco sull'azzardo |
+| Diversia | Clinica, Biblioteca, Accademia, **Zona Simulazione** | 3. Vera Varia – Medaglia Mosaico | Sandbox Macchina del Tempo · abilità Flusso di Liquidità |
+| Interessa | Clinica, Biblioteca, Accademia, **Casinò dello Speculatore** | 4. Cosimo Composto – Medaglia Spirale | Mini-gioco sull'azzardo · abilità Trasferimento di Capitale |
 | Bilancia | Clinica, Biblioteca, Accademia, **Archivio** (chiuso) | 5. Mentore specifico A – Medaglia Lente | L'Archivio si apre con "Lettura del Bilancio" |
-| Valdividendo | Clinica, Biblioteca, Accademia | 6. Mentore specifico B – Medaglia Raccolto | Viaggio rapido |
+| Valdividendo | Clinica, Biblioteca, Accademia | 6. Mentore specifico B – Medaglia Raccolto | — |
 | Mentelucida | Clinica, Biblioteca, Accademia | 7. Serena Bias – Medaglia Specchio | Muro del Rumore sul percorso 7 |
 | Rocca Rischio | Clinica, Biblioteca, Accademia | 8. Rocco Rischio – Medaglia Scudo | Ultimo scontro con gli antagonisti |
 | Altopiano della Lega | Clinica, Lega, **Torre delle Sfide** (post-game) | 4 Superiori + Campione | Crisi leggendarie dopo la Lega |
@@ -333,6 +333,26 @@ Non portati, per scelta: oggetti di cattura, pozioni, negozi, loot box, scambi d
 
 ---
 
+### 5.16d Mappa della Regione e abilità di esplorazione
+
+Abilità legate alle Medaglie (non sono oggetti né aiuti nei duelli; codice in `src/world/travel.ts`):
+
+| Abilità | Medaglia | Effetto |
+|---|---|---|
+| Flusso di Liquidità | 3 (Mosaico) | Il giocatore attraversa l'acqua su una zattera. Sui Percorsi 3, 5 e 7 un lago circonda un'Isola della Liquidità con un abitante che propone un duello difficile una sola volta (5 domande, 4 giuste, nessuna perdita di Fiducia): +120 Conoscenza e studio per tutte le carte. Le tre isole danno il traguardo "Navigatore di Liquidità". |
+| Trasferimento di Capitale | 4 (Spirale, il Mentore di mezzo) | Dal menu, voce **Mappa della Regione**, ci si sposta in una città già visitata (si entra in una città la prima volta e diventa disponibile). Regolamento T+1: passa un giorno di mercato. Non funziona dentro la Lega. |
+| Taglio dei Costi | 4 (Spirale) | Frantuma i Massi delle Commissioni (restano rotti nel salvataggio). Apre la Galleria del Dark Pool dal Percorso 2. |
+| Lanterna della Due Diligence | 5 (Lente) | Si entra nelle grotte buie: Miniera dei Lingotti e Grotta delle Perle. |
+| Mente Fredda | 7 (Specchio) | Attraversa il Muro del Rumore sul Percorso 7 (già esistente). |
+
+**Struttura del mondo (non lineare).** Oltre alla strada principale Borgo Semina → Altopiano:
+- **Mare della Liquidità**: dal molo di Porto Ordini (Medaglia 3) verso sud. Isola del Faro (Guardiana del Faro, duello unico), Isola del Relitto (la bolla della "Compagnia dei Mari Lontani"), Isola Lontana con la **Grotta delle Perle** (buia, Pescatore di Perle). Traguardo "Capitano di Liquidità".
+- **Galleria del Dark Pool**: da metà del Percorso 2 a Diversia, saltando Porto Ordini. Il masso è sul lato del Percorso 2; da Diversia la galleria è un vicolo finché il masso non è rotto.
+- **Miniera dei Lingotti**: da metà del Percorso 5 a Valdividendo, saltando Bilancia (buia, quindi solo dalla Medaglia 5).
+- `tests/reach.test.ts` simula il mondo per ogni numero di Medaglie: nessuna scorciatoia porta a un'Accademia oltre la successiva, con 8 Medaglie ogni luogo è raggiungibile e da ogni casella si torna a casa.
+
+La Mappa della Regione è sempre consultabile: mostra città visitate e no (???), percorsi, isole, Muro del Rumore, la posizione del giocatore e lo stato delle abilità. Il treno dalle stazioni resta disponibile dalla seconda Medaglia.
+
 ## 6. Macchina del Tempo: le missioni di trading
 
 ### 6.1 Motore
@@ -490,7 +510,7 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 - Schermata di sfida: avversario in alto a destra su una pedana d'erba, giocatore di spalle in basso a sinistra, riquadri delle barre (Convinzione e Fiducia) verde/giallo/rosso, lampo d'ingresso e scorrimento dei personaggi.
 - Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.
 - Touch: croce direzionale e pulsanti A, B, Menu sullo schermo.
-- Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo e Licenza (con scelta del titolo), Medaglie, Tecniche, Viaggio rapido, Salva, Opzioni (effetti, musica, velocità del testo, scala dei caratteri, contrasto alto, Comandi).
+- Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo e Licenza (con scelta del titolo), Medaglie, Tecniche, Mappa della Regione (con Trasferimento di Capitale), Salva, Opzioni (effetti, musica, velocità del testo, scala dei caratteri, contrasto alto, Comandi).
 - Resa: la griglia 240×160 è disegnata a risoluzione interna 720×480 (Scale3x per tile e sprite) e adattata allo schermo con filtro lineare; la camera aggiunge vignettatura e una leggera saturazione. Niente sfocatura né scalini.
 - Musica: chiptune originale generata in codice, un brano per tipo di luogo, uno per i duelli e uno per la notte; con il clima orso o tempesta i brani maggiori passano in minore e rallentano, con il toro accelerano. Brevi motivi per vittorie, Medaglie e missioni completate. Volume separato dagli effetti nelle Opzioni.
 - Accessibilità: testo ingrandibile, nessuna informazione solo a colori, timer disattivabile in modalità "Studio" (in cambio dimezza la Reputazione dei duelli).

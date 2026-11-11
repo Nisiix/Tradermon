@@ -8,8 +8,9 @@ import { getMap, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, type WorldApi } from '../world/scripts';
 import { S, save, advanceDays, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
-import { say, toast, getStage, el, esc } from '../ui/core';
+import { say, toast, getStage, el, esc, choose } from '../ui/core';
 import { pauseMenu } from '../ui/menu';
+import { canSwim, canCut, canSeeDark, boulderFlag, ABILITY } from '../world/travel';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { beep } from '../systems/audio';
 import { addPlayTime, formatPlayTime, startPlayTimeAutosave } from '../systems/playtime';
@@ -56,6 +57,7 @@ export class WorldScene extends Phaser.Scene {
   lastStepEnd = -1e9;
   lastSignMap = '';
   playerShadow?: Phaser.GameObjects.Image;
+  raft?: Phaser.GameObjects.Graphics;
   grassOver?: Phaser.GameObjects.Sprite;
 
   constructor() { super('world'); }
@@ -116,6 +118,12 @@ export class WorldScene extends Phaser.Scene {
   loadMap(id: string, x: number, y: number, dir: 0 | 1 | 2 | 3) {
     this.map = getMap(id);
     if (id === 'home') this.map = decorateHome(this.map);
+    // Massi delle Commissioni già frantumati: copia della mappa con il pavimento al loro posto
+    if (this.map.tiles.some((r) => r.includes(TILE.BOULDER))) {
+      const m = this.map;
+      const floor = m.tiles.some((r) => r.includes(TILE.CAVE)) ? TILE.CAVE : TILE.PATH;
+      this.map = { ...m, tiles: m.tiles.map((r, yy) => r.map((t, xx) => (t === TILE.BOULDER && S.flags[boulderFlag(id, xx, yy)] ? floor : t))) };
+    }
     S.map = id; S.x = x; S.y = y; S.facing = DIR_NAME[dir];
     // l'ultima Clinica in cui sei entrato è quella in cui rinasci dopo una sconfitta
     if (/^clinic_\d+$/.test(id)) S.lastClinic = { map: id, x: 5, y: 4 };
@@ -138,6 +146,8 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(this.map.interior ? '#1b1b24' : '#2e7d32');
     this.player = this.add.sprite(x * P + P / 2, y * P + P, 'chars', playerPal(S.avatar) * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
     this.playerShadow = this.add.image(x * P + P / 2, y * P + P - RS, 'shadow').setDepth(4);
+    this.raft = undefined;
+    this.placeRaft(this.onWater(x, y));
     this.grassOver = undefined;
     const now = this.time.now;
     this.npcs = this.map.npcs.map((d) => ({ def: d, x: d.x, y: d.y, dir: d.dir, hx: d.x, hy: d.y, foot: 0, nextIdle: now + 1500 + Math.random() * 3000 }));
@@ -150,6 +160,7 @@ export class WorldScene extends Phaser.Scene {
     if (mw <= vw && mh <= vh) { cam.removeBounds(); cam.centerOn(mw / 2, mh / 2); }
     else { cam.setBounds(Math.min(0, (mw - vw) / 2), Math.min(0, (mh - vh) / 2), Math.max(mw, vw), Math.max(mh, vh)); cam.startFollow(this.player, true, 1, 1); }
     if (this.map.town !== undefined && !this.map.interior) void onEnterTown(this.map.id);
+    if (id === 'sea') S.flags.seaVisited = true;
     setMood(S.market.climate);
     play(trackForMap(id, this.map.interior, marketClock().night));
     if (/^h\d+_/.test(id) && !S.flags[`visited_${id}`]) { S.flags[`visited_${id}`] = true; track('house_unique'); }
@@ -246,9 +257,11 @@ export class WorldScene extends Phaser.Scene {
     return this.npcs.find((n) => n.x === x && n.y === y && this.isVisible(n));
   }
 
-  blocked(x: number, y: number): boolean {
+  /** player: il giocatore può entrare nell'acqua con il Flusso di Liquidità; i personaggi no. */
+  blocked(x: number, y: number, player = false): boolean {
     if (x < 0 || y < 0 || x >= this.map.w || y >= this.map.h) return true;
     const t = this.map.tiles[y][x];
+    if (player && t === TILE.WATER && canSwim()) return !!this.npcAt(x, y);
     if (t === TILE.NOISE && hasTech(TECH.COLD)) return false;
     if (SOLID.has(t)) return true;
     return !!this.npcAt(x, y);
@@ -263,7 +276,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.busy || this.moving || uiActive()) return;
     if (this.time.now < this.turnLock) return;
     const p = takeWorldPress();
-    if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => travelTo(id, this.api())));
+    if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => { travelTo(id, this.api()); this.cameras.main.fadeIn(450, 255, 255, 255); }));
     if (p === 'a') return void this.interactFront();
     const dir = this.nextDir();
     if (dir) this.tryMove(dir, this.time.now - this.lastStepEnd < MOMENTUM_MS);
@@ -306,6 +319,8 @@ export class WorldScene extends Phaser.Scene {
     if (warp && !this.blockedNpcOnly(nx, ny)) {
       if (warp.lock === 'archive' && S.badges < 5) { void this.runScript(() => say(['La porta dell\'Archivio è chiusa.', 'Una targa dice: "Si apre solo a chi sa leggere oltre la superficie" (Mentore 5).'], 'Archivio')); return; }
       if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione della Lega.'], 'Torre')); return; }
+      if (warp.lock === 'swim' && !canSwim()) { if (!turned || continuing) this.bump(di); return; }
+      if (warp.lock === 'dark' && !canSeeDark()) { void this.runScript(() => say(['È buio pesto: non si vede nemmeno dove mettere i piedi.', `Senza la ${ABILITY.dark.name} (Medaglia ${ABILITY.dark.badge}) è meglio non entrare.`])); return; }
       this.walkTo(nx, ny, di, () => {
         beep('door');
         this.moving = true;
@@ -314,7 +329,7 @@ export class WorldScene extends Phaser.Scene {
       });
       return;
     }
-    if (this.blocked(nx, ny)) {
+    if (this.blocked(nx, ny, true)) {
       if (!turned || continuing) this.bump(di);
       return;
     }
@@ -341,7 +356,28 @@ export class WorldScene extends Phaser.Scene {
     // primo mezzo passo con il piede avanti, secondo mezzo in piedi: l'andatura dei classici
     const base = playerPal(S.avatar) * 12 + w.di * 3;
     this.player.setFrame(k < 0.5 ? base + 1 + this.walkFrame : base);
-    this.playerShadow?.setPosition(this.player.x, this.player.y - RS);
+    this.placeRaft(this.onWater(k < 0.5 ? w.fx : w.tx, k < 0.5 ? w.fy : w.ty));
+  }
+
+  onWater(x: number, y: number) { return this.map.tiles[y]?.[x] === TILE.WATER; }
+
+  /** Zattera del Flusso di Liquidità sotto i piedi del giocatore quando è sull'acqua (al posto dell'ombra). */
+  placeRaft(water: boolean) {
+    const px = this.player.x, py = this.player.y;
+    this.playerShadow?.setPosition(px, py - RS).setVisible(!water);
+    if (!water) { this.raft?.setVisible(false); return; }
+    if (!this.raft) {
+      const g = this.add.graphics();
+      const u = RS;
+      g.fillStyle(0x5a3418, 1).fillRect(-8 * u, -6 * u, 16 * u, 7 * u);
+      g.fillStyle(0xb07838, 1).fillRect(-7 * u, -6 * u, 14 * u, 6 * u);
+      g.fillStyle(0x8a5828, 1);
+      for (let i = -5; i <= 5; i += 3) g.fillRect(i * u, -6 * u, u, 6 * u);
+      g.fillStyle(0xd8a860, 1).fillRect(-7 * u, -6 * u, 14 * u, u);
+      g.fillStyle(0xe8f4ff, 0.8).fillRect(-9 * u, 0, 3 * u, u).fillRect(6 * u, 0, 3 * u, u);
+      this.raft = g;
+    }
+    this.raft.setPosition(px, py).setDepth(this.player.depth - 0.5).setVisible(true);
   }
 
   /** Avanza il passo; a fine casella, se una direzione è ancora premuta, riparte subito con il tempo avanzato. */
@@ -363,6 +399,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   afterStep() {
+    if (this.onWater(S.x, S.y) && !S.flags.raftTip) {
+      S.flags.raftTip = true;
+      toast('Flusso di Liquidità: la zattera ti porta sull\'acqua. Cerca le Isole della Liquidità sui Percorsi 3, 5 e 7!');
+    }
     // allievi dell'Accademia: chi prova a superarli alle spalle viene fermato
     for (const n of this.npcs) {
       if (n.def.guardY === undefined || S.y >= n.def.guardY || !this.isVisible(n) || S.defeated.includes(n.def.id)) continue;
@@ -406,7 +446,22 @@ export class WorldScene extends Phaser.Scene {
     if (t === TILE.SHELF) return void this.runScript(() => say('Scaffali pieni di libri di economia. Le lezioni si leggono parlando con la Bibliotecaria o dal menu.'));
     if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? 'Il rumore delle notizie non ti tocca più: puoi attraversare.' : ['Un muro di notizie urlate, grafici impazziti e "consigli" dai social.', 'Serve una mente fredda per attraversarlo (Mentore 7).']));
     if (t === TILE.STATION) { const st = this.npcs.find((x) => x.def.kind === 'station'); if (st) void this.runScript(() => interact(st.def, this.api())); }
-    if (t === TILE.WATER) return void this.runScript(() => say('L\'acqua scorre tranquilla. Come la liquidità: utile, ma col tempo l\'inflazione la erode.'));
+    if (t === TILE.BOULDER) return void this.runScript(() => this.breakBoulder(fx, fy));
+    if (t === TILE.CAVE_MOUTH) return void this.runScript(() => say('L\'ingresso di una grotta. Cammina verso di lui per entrare.'));
+    if (t === TILE.WATER) return void this.runScript(() => say(canSwim() ? ['L\'acqua scorre tranquilla. Con il Flusso di Liquidità puoi attraversarla: cammina verso di lei.'] : ['L\'acqua scorre tranquilla. Come la liquidità: utile, ma col tempo l\'inflazione la erode.', 'Con il Flusso di Liquidità (Medaglia 3) potresti attraversarla.']));
+  }
+
+  /** Taglio dei Costi: frantuma un Masso delle Commissioni (resta rotto nel salvataggio). */
+  async breakBoulder(x: number, y: number) {
+    if (!canCut()) return say(['Un masso enorme, pieno di crepe a forma di "%". Le chiamano Massi delle Commissioni.', `Con il ${ABILITY.cut.name} (Medaglia ${ABILITY.cut.badge}) potresti toglierlo di mezzo.`]);
+    if ((await choose(['Sì', 'No'], { prompt: `Un Masso delle Commissioni blocca il passaggio. Usare ${ABILITY.cut.name}?`, cancel: true })) !== 0) return;
+    beep('bump');
+    S.flags[boulderFlag(S.map, x, y)] = true;
+    this.cameras.main.shake(180, 0.006);
+    const dir = DIRS[S.facing][2];
+    this.loadMap(S.map, S.x, S.y, dir);
+    toast('Costi tagliati: il masso si sbriciola e il passaggio è libero!');
+    save();
   }
 
   async runScript(fn: () => Promise<void>) {
@@ -467,10 +522,10 @@ export class WorldScene extends Phaser.Scene {
   bumpBack() {
     const [dx, dy] = DIRS[S.facing];
     const bx = S.x - dx, by = S.y - dy;
-    if (!this.blocked(bx, by)) {
+    if (!this.blocked(bx, by, true)) {
       S.x = bx; S.y = by;
       this.player.setDepth(10 + by);
-      this.tweens.add({ targets: this.player, x: bx * P + P / 2, y: by * P + P, duration: STEP_MS, onUpdate: () => this.playerShadow?.setPosition(this.player.x, this.player.y - RS), onComplete: () => this.updateGrass() });
+      this.tweens.add({ targets: this.player, x: bx * P + P / 2, y: by * P + P, duration: STEP_MS, onUpdate: () => this.placeRaft(this.onWater(bx, by)), onComplete: () => this.updateGrass() });
     }
   }
 

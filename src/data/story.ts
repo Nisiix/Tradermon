@@ -56,7 +56,7 @@ const M6: Record<AssetClass | 'mixed', Partial<MentorDef>> = {
 
 export function mentor(n: number, track: Track): MentorDef {
   if (n === 5) return { n, badge: 'Medaglia Lente', palette: 8, win: 'Ora vedi oltre la superficie. L\'Archivio di questa città è aperto per te.', ...(M5[track] as Partial<MentorDef>) } as MentorDef;
-  if (n === 6) return { n, badge: 'Medaglia Raccolto', palette: 9, technique: 'Reinvestimento', techDesc: 'Le uova dei dividendi si schiudono più in fretta. Viaggio rapido sbloccato.', win: 'Il raccolto è tuo. Ricorda: reinvestire è seminare di nuovo.', ...(M6[track] as Partial<MentorDef>) } as MentorDef;
+  if (n === 6) return { n, badge: 'Medaglia Raccolto', palette: 9, technique: 'Reinvestimento', techDesc: 'Le uova dei dividendi si schiudono più in fretta.', win: 'Il raccolto è tuo. Ricorda: reinvestire è seminare di nuovo.', ...(M6[track] as Partial<MentorDef>) } as MentorDef;
   return COMMON[n] as MentorDef;
 }
 

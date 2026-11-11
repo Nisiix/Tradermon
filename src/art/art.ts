@@ -13,14 +13,16 @@ export const TILE = {
   ROOF_CLINIC: 21, ROOF_ACADEMY: 22, ROOF_SPECIAL: 23, PLAZA: 24, ROULETTE: 25, RUG: 26, CASE_TABLE: 27, STATION: 28, BED: 29, PLANT: 30, LEDGE: 31,
   // arredi sbloccabili per la casa (traguardi e storie degli abitanti)
   TROPHY_S: 32, TROPHY_G: 33, TROPHY_L: 34, POSTER: 35, CALENDAR: 36, DESK: 37, ARCADE: 38, FRAME: 39, GLOBE: 40, PAINTING: 41, RADIO: 42, AQUARIUM: 43,
+  // mare, spiagge e grotte
+  SAND: 44, ROCK: 45, CAVE: 46, CAVE_MOUTH: 47, BOULDER: 48, PIER: 49, LADDER: 50,
 } as const;
-export const TILE_COUNT = 44;
+export const TILE_COUNT = 51;
 /** Nome del tile di arredo per ogni oggetto sbloccabile. */
 export const DECOR_TILE: Record<string, number> = { plant: TILE.PLANT, shelf: TILE.SHELF, trophy_silver: TILE.TROPHY_S, trophy_gold: TILE.TROPHY_G, trophy_league: TILE.TROPHY_L, poster: TILE.POSTER, calendar: TILE.CALENDAR, desk: TILE.DESK, arcade: TILE.ARCADE, frame: TILE.FRAME, globe: TILE.GLOBE, painting: TILE.PAINTING, radio: TILE.RADIO, aquarium: TILE.AQUARIUM };
 /** Arredi da parete (sostituiscono un pezzo di muro interno) e da pavimento. */
 export const WALL_DECOR = new Set<number>([TILE.POSTER, TILE.CALENDAR, TILE.FRAME, TILE.PAINTING]);
 
-export const SOLID = new Set<number>([TILE.TREE, TILE.WATER, TILE.FENCE, TILE.SIGN, TILE.ROOF, TILE.WALL, TILE.WINDOW, TILE.IWALL, TILE.COUNTER, TILE.SHELF, TILE.TABLE, TILE.PC, TILE.GATE, TILE.NOISE, TILE.ROOF_CLINIC, TILE.ROOF_ACADEMY, TILE.ROOF_SPECIAL, TILE.ROULETTE, TILE.CASE_TABLE, TILE.STATION, TILE.BED, TILE.PLANT, TILE.TROPHY_S, TILE.TROPHY_G, TILE.TROPHY_L, TILE.POSTER, TILE.CALENDAR, TILE.DESK, TILE.ARCADE, TILE.FRAME, TILE.GLOBE, TILE.PAINTING, TILE.RADIO, TILE.AQUARIUM]);
+export const SOLID = new Set<number>([TILE.TREE, TILE.WATER, TILE.FENCE, TILE.SIGN, TILE.ROOF, TILE.WALL, TILE.WINDOW, TILE.IWALL, TILE.COUNTER, TILE.SHELF, TILE.TABLE, TILE.PC, TILE.GATE, TILE.NOISE, TILE.ROOF_CLINIC, TILE.ROOF_ACADEMY, TILE.ROOF_SPECIAL, TILE.ROULETTE, TILE.CASE_TABLE, TILE.STATION, TILE.BED, TILE.PLANT, TILE.TROPHY_S, TILE.TROPHY_G, TILE.TROPHY_L, TILE.POSTER, TILE.CALENDAR, TILE.DESK, TILE.ARCADE, TILE.FRAME, TILE.GLOBE, TILE.PAINTING, TILE.RADIO, TILE.AQUARIUM, TILE.ROCK, TILE.BOULDER]);
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -505,6 +507,57 @@ reg('ledge', (c, o) => {
   for (let x = 1; x < 16; x += 4) px(c, o.x + x, o.y + 10, 2, 1, C.sandDD);
   c.fillStyle = 'rgba(16,48,24,.3)'; c.fillRect(o.x, o.y + 13, 16, 2);
 });
+// ---- mare e grotte ----
+reg('sand', (c, o) => {
+  px(c, o.x, o.y, 16, 16, C.sand);
+  const r = prng(o.x * 7 + o.y);
+  for (let i = 0; i < 10; i++) { const x = Math.floor(r() * 16), y = Math.floor(r() * 16); px(c, o.x + x, o.y + y, 1, 1, i % 3 ? C.sandD : C.sandL); }
+  px(c, o.x + 4, o.y + 9, 2, 1, C.sandDD); px(c, o.x + 11, o.y + 4, 2, 1, C.sandDD);
+});
+function rockFace(c: Ctx, o: { x: number; y: number }, dark: boolean) {
+  const b = dark ? '#5a5048' : '#9a8c7c', l = dark ? '#7a6c60' : '#c4b6a2', d = dark ? '#3a322c' : '#6c6054', o2 = dark ? '#221c18' : '#4a3e34';
+  px(c, o.x, o.y, 16, 16, b);
+  // blocchi di roccia a strati, luce da sinistra in alto
+  for (const [x, y, w, h] of [[0, 0, 9, 6], [9, 0, 7, 7], [0, 6, 6, 5], [6, 7, 10, 5], [0, 11, 10, 5], [10, 12, 6, 4]]) {
+    px(c, o.x + x, o.y + y, w, h, b); px(c, o.x + x, o.y + y, w, 1, l); px(c, o.x + x, o.y + y, 1, h, l);
+    px(c, o.x + x, o.y + y + h - 1, w, 1, d); px(c, o.x + x + w - 1, o.y + y, 1, h, o2);
+  }
+}
+reg('rock', (c, o) => rockFace(c, o, false));
+reg('rock_cave', (c, o) => rockFace(c, o, true));
+reg('cave', (c, o) => {
+  px(c, o.x, o.y, 16, 16, '#6a5c50');
+  const r = prng(77 + o.x + o.y * 3);
+  for (let i = 0; i < 12; i++) { const x = Math.floor(r() * 15), y = Math.floor(r() * 15); px(c, o.x + x, o.y + y, 2, 1, i % 2 ? '#5a4c42' : '#7c6e60'); }
+  px(c, o.x + 3, o.y + 11, 1, 1, '#f0d070');
+});
+reg('cave_mouth', (c, o) => {
+  rockFace(c, o, false);
+  px(c, o.x + 2, o.y + 4, 12, 12, '#2a2018'); px(c, o.x + 4, o.y + 2, 8, 2, '#2a2018');
+  px(c, o.x + 3, o.y + 5, 10, 11, '#120c08'); px(c, o.x + 5, o.y + 3, 6, 2, '#120c08');
+  px(c, o.x + 2, o.y + 15, 12, 1, '#3a2c20');
+});
+reg('ladder', (c, o) => {
+  px(c, o.x, o.y, 16, 16, '#6a5c50');
+  px(c, o.x + 3, o.y + 2, 10, 13, '#120c08');
+  px(c, o.x + 4, o.y + 1, 1, 15, '#c08848'); px(c, o.x + 11, o.y + 1, 1, 15, '#c08848');
+  for (let y = 3; y < 15; y += 3) px(c, o.x + 4, o.y + y, 8, 1, '#e0a860');
+});
+for (const onCave of [false, true]) reg(onCave ? 'boulder_cave' : 'boulder', (c, o) => {
+  if (onCave) { px(c, o.x, o.y, 16, 16, '#6a5c50'); } else grassBase(c, o, 0);
+  c.fillStyle = 'rgba(16,48,24,.3)'; c.fillRect(o.x + 2, o.y + 13, 13, 2);
+  px(c, o.x + 2, o.y + 3, 12, 11, '#4a3e34'); px(c, o.x + 3, o.y + 2, 10, 12, '#4a3e34');
+  px(c, o.x + 3, o.y + 3, 10, 10, '#a89480'); px(c, o.x + 4, o.y + 3, 6, 3, '#d0c0a8'); px(c, o.x + 9, o.y + 9, 4, 4, '#7c6a58');
+  // crepa a forma di simbolo di commissione: "%"
+  px(c, o.x + 5, o.y + 7, 1, 1, '#4a3e34'); px(c, o.x + 10, o.y + 10, 1, 1, '#4a3e34');
+  for (let i = 0; i < 5; i++) px(c, o.x + 10 - i, o.y + 6 + i, 1, 1, '#4a3e34');
+});
+reg('pier', (c, o) => {
+  px(c, o.x, o.y, 16, 16, C.water);
+  px(c, o.x + 1, o.y, 14, 16, '#8a5828');
+  for (let y = 0; y < 16; y += 4) { px(c, o.x + 1, o.y + y, 14, 3, '#c08848'); px(c, o.x + 1, o.y + y, 14, 1, '#e0a860'); }
+  px(c, o.x + 1, o.y, 1, 16, '#5a3418'); px(c, o.x + 14, o.y, 1, 16, '#5a3418');
+});
 reg('case_blue', (c, o) => briefcase(c, o, '#3878d8'));
 reg('case_green', (c, o) => briefcase(c, o, '#38a058'));
 reg('case_orange', (c, o) => briefcase(c, o, '#f08830'));
@@ -536,7 +589,7 @@ function upscale(cv: HTMLCanvasElement, cellW = T, cellH = T): HTMLCanvasElement
   return out;
 }
 
-const PATHLIKE = new Set<number>([TILE.PATH, TILE.PLAZA, TILE.STATION, TILE.SIGN, TILE.DOOR, TILE.GATE]);
+const PATHLIKE = new Set<number>([TILE.PATH, TILE.PLAZA, TILE.STATION, TILE.SIGN, TILE.DOOR, TILE.GATE, TILE.CAVE_MOUTH, TILE.PIER]);
 const ROOFSET: Record<number, string> = { [TILE.ROOF]: 'roof', [TILE.ROOF_CLINIC]: 'roof_clinic', [TILE.ROOF_ACADEMY]: 'roof_academy', [TILE.ROOF_SPECIAL]: 'roof_special' };
 
 /** Tile che proiettano un'ombra sulla casella sotto (alberi e facciate). */
@@ -554,6 +607,8 @@ export function visualTiles(tiles: number[][], frame = 0, night = false): number
   const mask = (x: number, y: number, same: (t: number) => boolean) =>
     (same(at(x, y - 1)) || at(x, y - 1) === -1 ? 0 : 1) | (same(at(x + 1, y)) || at(x + 1, y) === -1 ? 0 : 2) |
     (same(at(x, y + 1)) || at(x, y + 1) === -1 ? 0 : 4) | (same(at(x - 1, y)) || at(x - 1, y) === -1 ? 0 : 8);
+  // nelle grotte la roccia è più scura
+  const cave = tiles.some((r) => r.includes(TILE.CAVE));
   return tiles.map((row, y) => row.map((t, x) => {
     const hv = hash(x, y);
     switch (t) {
@@ -593,6 +648,13 @@ export function visualTiles(tiles: number[][], frame = 0, night = false): number
       case TILE.BED: return IDX.bed;
       case TILE.PLANT: return IDX.plant;
       case TILE.LEDGE: return IDX.ledge;
+      case TILE.SAND: return IDX.sand;
+      case TILE.ROCK: return IDX[cave ? 'rock_cave' : 'rock'];
+      case TILE.CAVE: return IDX.cave;
+      case TILE.CAVE_MOUTH: return IDX.cave_mouth;
+      case TILE.BOULDER: return IDX[cave ? 'boulder_cave' : 'boulder'];
+      case TILE.PIER: return IDX.pier;
+      case TILE.LADDER: return IDX.ladder;
       default: return DECOR_NAME[t] ? IDX[DECOR_NAME[t]] : IDX.grass0;
     }
   }));
