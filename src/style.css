@@ -161,7 +161,7 @@ a { color: var(--accent); }
 .touch .ab { display: flex; gap: 12px; align-items: flex-end; }
 .touch .ab button { width: 58px; height: 58px; border-radius: 50%; background: rgba(255,255,255,.25); border: 2px solid rgba(255,255,255,.5); color: #fff; font-family: var(--font); font-size: calc(var(--fs) * 1.2); }
 .touch .ab button.menu-b { width: 52px; height: 30px; border-radius: 15px; font-size: 8px; }
-@media (pointer: coarse) { .touch { display: flex; } }
+body.touch-on .touch { display: flex; }
 
 .toast { position: absolute; top: 40px; left: 50%; transform: translateX(-50%); padding: 8px 14px; font-family: var(--font); font-size: calc(var(--fs) * 1); z-index: 99; max-width: 90%; text-align: center; }
 
@@ -185,8 +185,8 @@ a { color: var(--accent); }
 .modal .body input[type=checkbox]:focus, .modal .body [tabindex="0"]:focus { outline: 3px solid #f8d030; outline-offset: 2px; }
 
 /* ---- Mini tutorial dei comandi ---- */
-.tutorial { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding: 4% 12px; background: rgba(8, 12, 32, .55); z-index: 40; }
-.tut-box { width: min(560px, 100%); max-height: 70%; overflow: auto; padding: 12px 16px 12px; }
+.tutorial { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding: 2% 12px; background: rgba(8, 12, 32, .55); z-index: 40; }
+.tut-box { width: min(600px, 100%); max-height: 92%; overflow: auto; padding: 12px 16px 12px; }
 .tut-box.flash { animation: tutflash .35s; }
 @keyframes tutflash { 0% { background: #d8f8b0; } 100% { background: #f8f8f8; } }
 .tut-head { display: flex; justify-content: space-between; align-items: center; font-family: var(--font); font-size: calc(var(--fs) * .95); color: var(--accent); }
@@ -230,3 +230,47 @@ button, input, select, textarea { font-variant-ligatures: none; font-feature-set
 @keyframes barR { to { left: 0; } }
 .bt-trans.out { animation: btout .45s forwards; }
 @keyframes btout { to { opacity: 0; } }
+
+/* ---- Impostazioni ⚙ ---- */
+.hud { right: 50px; }
+.gear-btn { position: absolute; top: 6px; right: 6px; z-index: 80; width: 38px; height: 38px; padding: 6px; border: 3px solid var(--line); border-radius: 8px; background: rgba(248,248,248,.92); color: var(--ink); cursor: pointer; box-shadow: inset 0 -3px 0 #c8c8d8, 0 2px 0 rgba(0,0,0,.35); }
+.gear-btn svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+.gear-btn:hover, .gear-btn:focus-visible { background: #fff4c0; outline: none; }
+.gear-btn:hover svg { transform: rotate(30deg); transition: transform .2s; }
+.modal-wrap.settings-wrap { z-index: 90; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 2px solid var(--panel-2); }
+.set-row:last-child { border-bottom: 0; }
+.set-row p { margin: 2px 0 0; }
+.vol-ctl { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.vol-ctl input[type=range] { flex: 1; min-width: 80px; accent-color: var(--accent); }
+.vol-ctl .vmin, .vol-ctl .vplus { width: 40px; padding-left: 0; padding-right: 0; }
+.touch-modes { display: flex; flex-wrap: wrap; gap: 8px; }
+.keys-t td { vertical-align: middle; padding: 5px 4px; border-bottom: 1px solid var(--panel-2); }
+.keys-t .kcell { white-space: nowrap; text-align: right; }
+.kchip { display: inline-flex; margin-left: 6px; }
+.kchip .kb-b { border-radius: 6px 0 0 6px; min-width: 44px; }
+.kchip .kb-b:only-child { border-radius: 6px; }
+.kchip .kx { border-left: 0; border-radius: 0 6px 6px 0; padding-left: 6px; padding-right: 6px; color: var(--bad); }
+.kcell .add { margin-left: 6px; min-width: 40px; }
+.kb-b.wait { background: #f8d030; animation: blink 1s steps(2) infinite; }
+@media (max-width: 640px) { .keys-t .kcell { white-space: normal; } }
+
+/* legenda dei comandi nel tutorial */
+.kbd-map .keys { display: flex; flex-wrap: wrap; max-width: 260px; }
+.tut-legend { margin: 8px 0 4px; border: 2px solid var(--panel-2); border-radius: 6px; padding: 6px 8px; background: #fff; }
+.tut-legend .lg-title { font-family: var(--font); font-size: calc(var(--fs) * .85); color: var(--accent); margin-bottom: 4px; }
+.tut-legend .lg-row { display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: 10px; align-items: center; padding: 2px 4px; border-radius: 4px; font-size: calc(var(--fs) * .9); line-height: 1.2; }
+.tut-legend .lg-row.on { background: #fff4c0; }
+.tut-legend .lg-keys kbd { font-size: calc(var(--fs) * .8); padding: 2px 4px 1px; margin: 1px; }
+.tut-legend .lg-round, .tut-legend .lg-pill, .tut-legend .lg-pad { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: #505868; color: #fff; font-family: var(--font); font-size: calc(var(--fs) * .85); }
+.tut-legend .lg-round { background: #c03028; }
+.tut-foot { align-items: center; }
+.kbd-map .keys { gap: 10px; max-width: none; flex-wrap: nowrap; }
+.kgrp { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.kgrp > div:first-child:not(.arrows) { display: flex; gap: 3px; }
+.kgrp small { font-family: var(--font); font-size: calc(var(--fs) * .75); color: var(--muted); }
+.kgrp.on small { color: var(--ink); }
+@media (max-width: 640px) { .kbd-map .keys { flex-wrap: wrap; } }
+/* lascia libera la colonna dell'icona ⚙ in alto a destra */
+.modal-wrap:not(.settings-wrap), .tutorial { padding-left: 52px; padding-right: 52px; }
+.gear-btn.hint { background: #f8d030; animation: pulse .6s ease-in-out infinite alternate; }

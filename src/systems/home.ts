@@ -1,0 +1,12 @@
+// Uscita dal gioco verso la landing page.
+
+/**
+ * Indirizzo della landing page: il gioco vive nella sottocartella /gioca/ e la landing nella cartella sopra,
+ * quindi di default si risale di un livello. VITE_HOME_URL lo sostituisce se la landing si sposta.
+ */
+export function homeUrl(loc: { href: string; pathname: string } = location): string {
+  const env = (import.meta.env.VITE_HOME_URL as string | undefined)?.trim();
+  if (env) return new URL(env, loc.href).href;
+  const dir = loc.pathname.replace(/[^/]*$/, ''); // cartella della pagina del gioco
+  return new URL(dir === '/' ? '/' : '../', new URL(dir, loc.href)).href;
+}

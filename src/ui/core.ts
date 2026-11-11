@@ -170,7 +170,7 @@ export function modal<T = unknown>(title: string, build: (ctl: ModalCtl<T>) => v
     };
     if (opts.closable !== false) {
       const x = el('button', 'btn', '✕');
-      x.title = 'Chiudi (Esc)';
+      x.title = 'Chiudi (X)';
       x.addEventListener('click', () => close(undefined));
       head.appendChild(x);
     }
