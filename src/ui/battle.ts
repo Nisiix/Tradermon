@@ -8,6 +8,7 @@ import { recordAnswer } from '../systems/quiz';
 import { shuffle } from '../systems/rng';
 import { portrait, portraitBack, playerPal } from '../art/art';
 import { beep } from '../systems/audio';
+import { markDuelDone } from './savebtn';
 
 export interface DuelOpts {
   foeName: string;
@@ -68,6 +69,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       await wait(400);
       root.remove();
       if (prevTrack) play(prevTrack); else stop();
+      markDuelDone();
       if (win && o.damage > 0) { track('duel_win'); if (perfect) track('duel_perfect'); jingle('win'); }
       resolve({ win, correct, total: idx, perfect: perfect && win, ids: o.questions.slice(0, idx).map((q) => q.id) });
     };

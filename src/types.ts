@@ -80,6 +80,8 @@ export interface OpenOrder {
   qty: number;
   price: number;
   createdDay: number;
+  /** Giorno di mercato dopo il quale l'ordine scade (validità "fino a revoca" limitata a 20 giorni). */
+  expiresDay?: number;
 }
 
 export interface OrderLog {
@@ -161,6 +163,8 @@ export interface SaveData {
   portfolio: Portfolio;
   market: MarketState;
   review: Record<string, number>; // question id -> box 1..3
+  /** Ripetizione spaziata: data (AAAA-MM-GG) in cui la domanda torna nel ripasso. */
+  reviewDue: Record<string, string>;
   answered: Record<string, number>;
   daily: { lastDate: string; streak: number };
   tower: { best: number };

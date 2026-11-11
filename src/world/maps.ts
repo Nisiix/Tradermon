@@ -316,7 +316,7 @@ function buildTown(n: number) {
   lb.sections = [
     { x: 1, y: 2, w: 4, kind: 'mentor', label: `Sezione del Mentore n. ${n}` },
     { x: 6, y: 2, w: 4, kind: 'general', label: 'Sezione generale: lezioni' },
-    { x: 1, y: 4, w: 3, kind: 'review', label: 'Archivio delle domande sbagliate' },
+    { x: 1, y: 4, w: 3, kind: 'review', label: 'Archivio del ripasso' },
     { x: 7, y: 4, w: 3, kind: 'index', label: 'Investidex' },
   ];
   lb.npcs.push(
@@ -373,7 +373,7 @@ const TOWN_TALK = [
   'Lo sapevi? Dopo un −50% serve un +100% per tornare in pari!',
   'Mio nonno ha fatto un piano di accumulo per 30 anni. Dice che il segreto è stato non guardare troppo spesso.',
   'Le Guardie della Borsa ti lasciano passare solo con la Medaglia della città.',
-  'In Biblioteca puoi ripassare le domande sbagliate. Io ci vado ogni giorno!',
+  'In Biblioteca il ripasso ti ripropone le domande al momento giusto. Io ci passo ogni giorno!',
   'Le cripto non dormono mai: sono aperte anche la domenica!',
   'Un signore elegante mi ha offerto il 20% al mese. Gli ho detto di no. Ho fatto bene, vero?',
   'Il treno collega le città visitate dalla seconda Medaglia. Dalla quarta ti trasferisci ovunque dalla Mappa della Regione!',

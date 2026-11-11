@@ -203,6 +203,7 @@ export function ask(prompt: string, def = '', maxLen = 10): Promise<string | nul
 
 let toastTimer = 0;
 export function toast(msg: string) {
+  if (typeof document === 'undefined' || !stage) return;
   document.querySelectorAll('.toast').forEach((t) => t.remove());
   const t = el('div', 'box toast', esc(msg));
   stage.appendChild(t);

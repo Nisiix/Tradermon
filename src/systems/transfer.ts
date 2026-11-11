@@ -60,7 +60,7 @@ export function saveInfo(raw: string | null | undefined): SaveInfo | null {
   if (!raw) return null;
   try {
     const d = JSON.parse(raw);
-    if (!d || d.version !== 1 || !d.portfolio) return null;
+    if (!d || typeof d.version !== 'number' || d.version < 1 || !d.portfolio) return null;
     return { name: String(d.name ?? '?'), playMs: Number(d.playMs) || 0, badges: Number(d.badges) || 0 };
   } catch { return null; }
 }

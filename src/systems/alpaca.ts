@@ -41,7 +41,7 @@ export const clock = (env: Env) => call<{ is_open: boolean; next_open: string; n
 export const asset = (env: Env, symbol: string) => call<{ symbol: string; class: string; tradable: boolean; fractionable: boolean; name: string }>(`/api/alpaca/${env}/assets/${encodeURIComponent(symbol)}`);
 export const cancelOrder = (env: Env, id: string) => call<unknown>(`/api/alpaca/${env}/orders/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
-export interface OrderReq { symbol: string; side: 'buy' | 'sell'; type: 'market' | 'limit' | 'stop'; notional?: string; qty?: string; limit_price?: string; stop_price?: string; time_in_force: 'day' | 'gtc' | 'ioc'; client_order_id: string }
+export interface OrderReq { symbol: string; side: 'buy' | 'sell'; type: 'market' | 'limit' | 'stop' | 'stop_limit'; notional?: string; qty?: string; limit_price?: string; stop_price?: string; time_in_force: 'day' | 'gtc' | 'ioc'; client_order_id: string }
 
 export function submitOrder(env: Env, o: OrderReq, confirmWord?: string) {
   return call<AlpacaOrder>(`/api/alpaca/${env}/orders`, { method: 'POST', body: JSON.stringify(o), headers: confirmWord ? { 'x-tradermon-confirm': confirmWord } : {} });
@@ -57,3 +57,15 @@ export function latest(symbol: string, cls: 'stocks' | 'crypto') {
 
 export const ALPACA_DASHBOARD = 'https://app.alpaca.markets/';
 export const ALPACA_SIGNUP = 'https://alpaca.markets/';
+
+/** Il gioco gira sul computer del giocatore (server locale) oppure è la versione online senza server? */
+export function isLocalHost(): boolean {
+  try { return ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname); } catch { return false; }
+}
+
+/** Spiegazione unica quando il server locale (e quindi Alpaca) non è raggiungibile. */
+export function noServerLines(what: string): string[] {
+  return isLocalHost()
+    ? [`Per ${what} serve il server locale di Tradermon, che ora non risponde.`, 'Avvialo con "npm start" (oppure "npm run dev"): le istruzioni sono nel file LEGGIMI. Senza server il gioco funziona lo stesso con il mercato simulato.']
+    : [`La versione online di Tradermon non ha il server che collega Alpaca, quindi ${what} qui non è disponibile.`, 'Si usa solo nella versione da scaricare e avviare sul tuo computer. Tutto il resto del gioco funziona con il mercato simulato.'];
+}

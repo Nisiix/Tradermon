@@ -1,6 +1,6 @@
 import * as A from '../systems/alpaca';
 import { S, save, LIVE_LIMITS, hasTech, TECH, classes } from '../systems/state';
-import { say, choose, modal, el, esc, toast } from './core';
+import { say, choose, modal, el, esc, toast, confirm } from './core';
 import { runExam } from './setup';
 import { journalPrompt } from './journal';
 import { fmtPx } from '../systems/portfolio';
@@ -12,7 +12,7 @@ function monthKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMo
 export async function openAlpacaHub() {
   const st = await A.serverStatus();
   if (!st) {
-    await say(['Non riesco a contattare il server locale di Tradermon.', 'Per usare Alpaca avvia il gioco con "npm run dev" oppure "npm start" (vedi il file LEGGIMI). Senza server il gioco funziona lo stesso con il mercato simulato.'], NURSE);
+    await say(A.noServerLines('il collegamento ad Alpaca (Paper e reale)'), NURSE);
     return;
   }
   for (;;) {
@@ -55,7 +55,7 @@ export async function openAlpacaHub() {
 /** Osservatorio: conto, posizioni e prezzi Alpaca in sola lettura. Nessun pulsante d'ordine: qui si guarda, non si opera. */
 export async function openObservatory() {
   const st = await A.serverStatus();
-  if (!st) return say(['Per l\'Osservatorio serve il server locale di Tradermon (npm run dev oppure npm start).', 'Senza server il gioco funziona lo stesso con il mercato simulato.'], NURSE);
+  if (!st) return say(A.noServerLines('l\'Osservatorio Alpaca'), NURSE);
   const envs: A.Env[] = [];
   if (st.paper.configured) envs.push('paper');
   if (st.live.configured && S.license === 'investitore') envs.push('live');
@@ -169,14 +169,14 @@ async function limitsScreen() {
       <div class="row"><button class="btn p1">24 ore</button><button class="btn p7">7 giorni</button><button class="btn p30">30 giorni</button></div>
       <p class="msg small"></p>`;
     const msg = body.querySelector('.msg') as HTMLElement;
-    const pause = (d: number) => {
-      if (!window.confirm(`Bloccare il conto reale per ${d} giorni? Non potrai annullare.`)) return;
+    const pause = async (d: number) => {
+      if (!(await confirm(`Bloccare il conto reale per ${d} giorni? Non potrai annullare.`))) return;
       S.liveLimits.pauseUntil = Date.now() + d * 86400000; save();
       msg.innerHTML = `<span class="good">Pausa attiva fino al ${new Date(S.liveLimits.pauseUntil).toLocaleString('it-IT')}.</span>`;
     };
-    (body.querySelector('.p1') as HTMLElement).addEventListener('click', () => pause(1));
-    (body.querySelector('.p7') as HTMLElement).addEventListener('click', () => pause(7));
-    (body.querySelector('.p30') as HTMLElement).addEventListener('click', () => pause(30));
+    (body.querySelector('.p1') as HTMLElement).addEventListener('click', () => void pause(1));
+    (body.querySelector('.p7') as HTMLElement).addEventListener('click', () => void pause(7));
+    (body.querySelector('.p30') as HTMLElement).addEventListener('click', () => void pause(30));
     button('Salva limiti', () => {
       const po = Math.max(0, Math.min(max.order, Number((body.querySelector('.po') as HTMLInputElement).value)));
       const pm = Math.max(0, Math.min(max.month, Number((body.querySelector('.pm') as HTMLInputElement).value)));
@@ -264,7 +264,11 @@ function button2(body: HTMLElement, env: A.Env, reload: () => Promise<void>) {
         order.qty = isCrypto ? q.toFixed(6) : String(q);
       }
       if (type === 'limit') order.limit_price = String(pr);
-      if (type === 'stop') order.stop_price = String(pr);
+      if (type === 'stop') {
+        order.stop_price = String(pr);
+        // Alpaca non accetta stop "a mercato" sulle cripto: si usa uno stop limit con un margine del 3%
+        if (isCrypto) { order.type = 'stop_limit'; order.limit_price = String(+(side === 'sell' ? pr * 0.97 : pr * 1.03).toPrecision(8)); }
+      }
       const out = await A.submitOrder(env, order, confirmWord);
       let refPx = pr;
       if (!refPx) { try { refPx = (await A.latest(sym, isCrypto ? 'crypto' : 'stocks')).price; } catch { refPx = 0; } }

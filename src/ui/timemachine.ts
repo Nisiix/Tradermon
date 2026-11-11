@@ -1,4 +1,4 @@
-import type { AssetDef } from '../types';
+import type { AssetClass, AssetDef } from '../types';
 import type { SimMission, SimResult } from '../data/missions';
 import type { Scenario } from '../systems/market';
 import { generateScenario, metrics } from '../systems/market';
@@ -17,14 +17,17 @@ export interface SimOpts {
   custom?: { assets: AssetDef[]; prices: Record<string, number[]>; labels?: string[] };
   seed?: number;
   sandbox?: boolean;
+  /** Classi di attivo da usare al posto di quelle del percorso (duello con codice: uguale per tutti). */
+  classes?: AssetClass[];
 }
 
 export type SimOutcome = (SimResult & { ok: boolean; detail: string }) | null;
 
 export function runSim(o: SimOpts): Promise<SimOutcome> {
   const sc = o.mission?.scenario ?? o.scenario!;
-  const cls = classes();
+  const cls = o.classes ?? classes();
   const assets = o.custom?.assets ?? ASSETS.filter((a) => cls.includes(a.cls));
+  const defs = Object.fromEntries(assets.map((a) => [a.id, a]));
   const seed = o.seed ?? Math.floor(Math.random() * 1e9);
   const series = o.custom ? { prices: o.custom.prices, index: [] as number[] } : generateScenario(sc, assets, seed);
   const days = o.custom ? Math.min(...Object.values(o.custom.prices).map((p) => p.length)) - 1 : sc.days;
@@ -148,7 +151,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
     const tick = (id: string) => assets.find((a) => a.id === id)!.ticker;
 
     const doBuy = (a: number, type = 'mercato') => {
-      const r = marketBuy(book, selected, a, prices(), day, slotsMax, type);
+      const r = marketBuy(book, selected, a, prices(), day, slotsMax, type, defs);
       toast(r.msg);
       if (r.ok) { boughtShares += r.qty ?? 0; monthsBought.add(Math.floor(day / 21)); beep('coin'); }
       draw();
@@ -157,7 +160,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
     const sell = (f: number) => {
       const pos = book.positions.find((x) => x.id === selected);
       if (!pos) return toast('Non possiedi questo asset.');
-      const r = marketSell(book, selected, pos.qty * f, prices(), day);
+      const r = marketSell(book, selected, pos.qty * f, prices(), day, 'mercato', defs);
       if (r.ok && r.atLoss) lossSales++;
       toast(r.msg);
       draw();
@@ -178,7 +181,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
       if (day >= days) { setSpeed(0); finish(); return; }
       day++;
       const px = prices();
-      for (const m of processOrders(book, px, day, slotsMax)) { toast(m); if (m.includes('limite eseguito') && m.includes('Comprate')) limitFills++; if (m.includes('Comprate')) monthsBought.add(Math.floor(day / 21)); }
+      for (const m of processOrders(book, px, day, slotsMax, defs)) { toast(m); if (m.includes('limite eseguito') && m.includes('Comprate')) limitFills++; if (m.includes('Comprate')) monthsBought.add(Math.floor(day / 21)); }
       if (day % 21 === 0) {
         if (monthly) { book.cash += monthly; contributed += monthly; pacCash += monthly; }
         if (dividends) {

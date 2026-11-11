@@ -40,7 +40,7 @@ const DAILY_POOL: TaskDef[] = [
   { id: 'd_steps', ev: 'steps', need: 150, text: 'Cammina 150 passi sui percorsi', xp: 10 },
   { id: 'd_journal', ev: 'journal', need: 1, text: 'Scrivi una riga nel Diario dopo un\'operazione', xp: 15 },
   { id: 'd_mini', ev: 'minigame', need: 1, text: 'Gioca un minigioco in Biblioteca o Zona Simulazione', xp: 15 },
-  { id: 'd_review', ev: 'review', need: 1, text: 'Fai il ripasso dilazionato in Biblioteca', xp: 20 },
+  { id: 'd_review', ev: 'review', need: 1, text: 'Fai il ripasso delle domande in scadenza in Biblioteca', xp: 20 },
 ];
 
 const WEEKLY_POOL: TaskDef[] = [

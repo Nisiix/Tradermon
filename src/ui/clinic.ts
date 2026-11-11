@@ -4,7 +4,7 @@ import type { BiasId } from '../types';
 import { unlockedAssets, ASSET_BY_ID, SECTOR_LABEL, SECTOR_COLOR } from '../data/assets';
 import { value, weights, health, diagnosis, rebalancePlan, marketBuy, marketSell, placeOrder, allocation, fmtMoney, fmtPx, fmtPct, fmtQty, FEE } from '../systems/portfolio';
 import { metrics, CLIMATE_LABEL } from '../systems/market';
-import { say, choose, modal, el, esc, toast, bar } from './core';
+import { say, choose, modal, el, esc, toast, bar, confirm } from './core';
 import { LESSONS } from '../data/lessons';
 import { BIAS_CURE_Q, BIAS_INFO } from '../data/events';
 import { beep } from '../systems/audio';
@@ -121,9 +121,9 @@ export async function trade(guided = false) {
         inp.type = 'number'; inp.min = '0'; inp.placeholder = 'Cr'; inp.style.width = '90px'; inp.style.fontSize = '18px';
         inp.value = String(Math.max(0, Math.round(Math.min(S.portfolio.cash, v * 0.15))));
         const b = el('button', 'btn', 'Compra');
-        b.addEventListener('click', () => {
+        b.addEventListener('click', async () => {
           const amt = Number(inp.value);
-          if (!summaryOk(a.id, amt)) return;
+          if (!(await summaryOk(a.id, amt))) return;
           const r = marketBuy(S.portfolio, a.id, amt, px, S.market.day, slots());
           if (r.ok) { card(a.id).xp += 3; beep('coin'); S.flags.firstBuy = true; }
           render(r.ok ? r.msg : '!' + r.msg);
@@ -142,7 +142,7 @@ export async function trade(guided = false) {
           td.append(s);
           if (hasTech(TECH.STOP)) {
             const st = el('button', 'btn', 'Stop −10%');
-            st.addEventListener('click', () => { placeOrder(S.portfolio, { asset: a.id, side: 'sell', type: 'stop', qty: pos.qty, price: px[a.id] * 0.9, createdDay: S.market.day }); render(`Stop loss a ${fmtPx(px[a.id] * 0.9)} inserito.`); });
+            st.addEventListener('click', () => { placeOrder(S.portfolio, { asset: a.id, side: 'sell', type: 'stop', qty: pos.qty, price: px[a.id] * 0.9, createdDay: S.market.day, expiresDay: S.market.day + 20 }); render(`Stop loss a ${fmtPx(px[a.id] * 0.9)} inserito: vende se il prezzo scende fin lì entro 20 giorni di mercato.`); });
             td.append(st);
           }
         }
@@ -151,8 +151,8 @@ export async function trade(guided = false) {
           lb.addEventListener('click', () => {
             const amt = Number(inp.value);
             if (amt > S.portfolio.cash) return render('!Liquidità insufficiente.');
-            placeOrder(S.portfolio, { asset: a.id, side: 'buy', type: 'limit', qty: (amt - FEE) / (px[a.id] * 0.97), price: px[a.id] * 0.97, createdDay: S.market.day });
-            render(`Ordine limite a ${fmtPx(px[a.id] * 0.97)} inserito: si esegue se il prezzo scende fin lì.`);
+            placeOrder(S.portfolio, { asset: a.id, side: 'buy', type: 'limit', qty: (amt - FEE) / (px[a.id] * 0.97), price: px[a.id] * 0.97, createdDay: S.market.day, expiresDay: S.market.day + 20 });
+            render(`Ordine limite a ${fmtPx(px[a.id] * 0.97)} inserito: si esegue se il prezzo scende fin lì entro 20 giorni di mercato.`);
           });
           td.append(lb);
         }
@@ -162,10 +162,10 @@ export async function trade(guided = false) {
       body.appendChild(tbl);
       body.appendChild(el('p', 'small muted', 'Riepilogo prima di ogni acquisto: l\'importo comprende la commissione; il prezzo include metà spread. Il mercato avanza mentre esplori (1 giorno ogni 60 passi sui percorsi e a ogni sfida).'));
     };
-    const summaryOk = (id: string, amt: number) => {
+    const summaryOk = async (id: string, amt: number) => {
       const a = ASSET_BY_ID[id];
       const v = value(S.portfolio, S.market.prices);
-      if (amt > v * 0.5 && !window.confirm(`Riepilogo: stai per investire ${fmtMoney(amt)} in ${a.name}, cioè il ${((amt / v) * 100).toFixed(0)}% del portafoglio in un solo asset (rischio ${a.risk}/5). Confermi?`)) return false;
+      if (amt > v * 0.5 && !(await confirm(`Riepilogo: stai per investire ${fmtMoney(amt)} in ${a.name}, cioè il ${((amt / v) * 100).toFixed(0)}% del portafoglio in un solo asset (rischio ${a.risk}/5). Confermi?`))) return false;
       return true;
     };
     render();
@@ -179,7 +179,7 @@ async function openOrders() {
       const o = S.portfolio.orders;
       body.innerHTML = o.length ? '' : '<p class="muted">Nessun ordine in attesa.</p>';
       o.forEach((x) => {
-        const r = el('div', 'row', `${x.side === 'buy' ? 'Acquisto' : 'Vendita'} ${x.type === 'limit' ? 'limite' : 'stop'} · ${ASSET_BY_ID[x.asset].ticker} · ${fmtQty(x.qty)} @ ${fmtPx(x.price)} (giorno ${x.createdDay})`);
+        const r = el('div', 'row', `${x.side === 'buy' ? 'Acquisto' : 'Vendita'} ${x.type === 'limit' ? 'limite' : 'stop'} · ${ASSET_BY_ID[x.asset].ticker} · ${fmtQty(x.qty)} @ ${fmtPx(x.price)} (giorno ${x.createdDay}${x.expiresDay !== undefined ? `, scade al giorno ${x.expiresDay}` : ''})`);
         const b = el('button', 'btn', 'Annulla');
         b.addEventListener('click', () => { S.portfolio.orders = S.portfolio.orders.filter((y) => y !== x); render(); });
         r.appendChild(b);

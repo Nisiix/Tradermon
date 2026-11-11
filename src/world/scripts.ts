@@ -8,7 +8,7 @@ import { runPick } from '../ui/pick';
 import { openClinic, trade } from '../ui/clinic';
 import { portfolioSetup } from '../ui/setup';
 import { openInvestidex, openLessons } from '../ui/menu';
-import { pickQuestions, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE } from '../systems/quiz';
+import { pickQuestions, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE } from '../systems/quiz';
 import { mentorTopics, trackTopics, LEAGUE_TOPICS, byTopic } from '../data/quiz/build';
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../data/story';
 import { mentorBooks, TOPIC_LABEL, type Book } from '../data/books';
@@ -161,7 +161,7 @@ async function prof(w: WorldApi) {
 }
 
 async function licenseTalk() {
-  await say(['Per ora giocherai con monete di prova: denaro finto, lezioni vere.', 'Batti il primo Mentore e potrai sostenere l\'Esame di Abilitazione per la Licenza di Investitore.', 'Con la Licenza potrai collegare il tuo vero wallet digitale, se lo vorrai, con limiti che crescono insieme alle tue Medaglie.', 'Ma potrai anche restare in prova per sempre: la storia non cambia.'], 'Prof. Saldi');
+  await say(['Per ora giocherai con monete di prova: denaro finto, lezioni vere.', 'Batti il primo Mentore e potrai sostenere l\'Esame di Abilitazione per la Licenza di Investitore.', A.isLocalHost() ? 'Con la Licenza potrai collegare un conto Alpaca (prima Paper, con denaro finto, poi se vorrai quello reale), con limiti che crescono insieme alle tue Medaglie.' : 'Nella versione da avviare sul tuo computer, con la Licenza potrai collegare un conto Alpaca (Paper o reale) con limiti che crescono con le Medaglie. Qui online si gioca con il mercato simulato.', 'Ma potrai anche restare in prova per sempre: la storia non cambia.'], 'Prof. Saldi');
 }
 
 async function chooseCase(n: NpcDef, w: WorldApi) {
@@ -475,7 +475,7 @@ async function librarian(n: NpcDef) {
     const md = mentor(town, S.track);
     await say(['Benvenuto in Biblioteca! Qui si studia prima di sfidare il Mentore.', `Gli scaffali in alto a sinistra sono la Sezione del Mentore: i libri su ${mentorTopics(town, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}, l'argomento del duello con ${md.name}.`, 'A destra le lezioni generali; in basso l\'archivio delle domande sbagliate e l\'Investidex. Avvicinati a uno scaffale e premi il tasto di conferma.'], 'Bibliotecaria');
   }
-  const c = await choose(['Sezione del Mentore (libri)', 'Lezioni', 'Ripasso delle domande sbagliate', 'Minigiochi didattici', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenuto in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
+  const c = await choose(['Sezione del Mentore (libri)', 'Lezioni', 'Ripasso (domande in scadenza)', 'Minigiochi didattici', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenuto in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
   if (c === 0) return mentorShelf(town);
   if (c === 1) return openLessons();
   if (c === 3) return playMinigame('Bibliotecaria');
@@ -483,15 +483,21 @@ async function librarian(n: NpcDef) {
   if (c === 2) return reviewDuel();
 }
 
+/** Quando torneranno le prossime domande del ripasso. */
+function nextReviewLine(): string {
+  const next = Object.values(S.reviewDue).filter((d) => d > todayKey()).sort()[0];
+  return next ? `La prossima domanda torna nel ripasso il ${next.split('-').reverse().join('/')}.` : 'Rispondi ai duelli: le domande che incontri entreranno nel ripasso.';
+}
+
 async function reviewDuel() {
   const q = reviewQueue();
-  if (!q.length) return say('Non hai domande da ripassare. Ottimo lavoro!', 'Bibliotecaria');
+  if (!q.length) return say(['Oggi non hai domande in scadenza. Ottimo lavoro!', nextReviewLine()], 'Bibliotecaria');
   const qs = shuffle(q).slice(0, 5);
   const prevFid = S.stats.fiducia;
   await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0 });
   S.stats.fiducia = prevFid;
   track('review');
-  return say('Il ripasso dilazionato è il modo migliore per ricordare.', 'Bibliotecaria');
+  return say(['Ogni domanda giusta torna più avanti: dopo 1, 3, 7 e poi 21 giorni. Quelle sbagliate tornano subito.', 'Rivedere al momento giusto è il modo migliore per ricordare.'], 'Bibliotecaria');
 }
 
 /** Scaffale della Sezione del Mentore: guida alla sfida, libri di contesto e di materia, con le lezioni sugli stessi temi. */
@@ -589,7 +595,8 @@ async function historical() {
 
 async function realReplay() {
   const st = await A.serverStatus();
-  if (!st || (!st.paper.configured && !st.live.configured)) return say(['Per i dati reali serve il server locale con le chiavi Alpaca (anche solo Paper).', 'Collegale dalla Clinica, voce "Conto Alpaca".'], 'Operatrice');
+  if (!st) return say(A.noServerLines('il replay di dati reali'), 'Operatrice');
+  if (!st.paper.configured && !st.live.configured) return say(['Per i dati reali serve il server locale con le chiavi Alpaca (anche solo Paper).', 'Collegale dalla Clinica, voce "Conto Alpaca".'], 'Operatrice');
   const res = await modal<{ sym: string; start: string; end: string }>('Replay di dati reali', ({ body, button, close }) => {
     const y = new Date().getFullYear();
     body.innerHTML = `<p class="small">Riproduci le barre giornaliere reali di un simbolo scelto da te (dati Alpaca). Nessun consiglio: è solo un esercizio.</p>
@@ -608,21 +615,21 @@ async function realReplay() {
 }
 
 async function linkDuel() {
-  const c = await choose(['Genera un codice sfida', 'Inserisci il codice di un amico', 'Annulla'], { cancel: true, prompt: 'Duello con codice: tu e un amico giocate lo stesso scenario e lo stesso quiz.', who: 'Operatrice' });
+  const c = await choose(['Genera un codice sfida', 'Inserisci il codice di un amico', 'Annulla'], { cancel: true, prompt: 'Duello con codice: tu e un amico giocate lo stesso scenario e lo stesso quiz, qualunque sia il vostro percorso.', who: 'Operatrice' });
   if (c < 0 || c === 2) return;
   let code = '';
-  if (c === 0) { code = `TM-${S.track.slice(0, 1).toUpperCase()}${Math.floor(Math.random() * 1e6).toString().padStart(6, '0')}`; await say([`Il tuo codice è ${code}. Condividilo con un amico che gioca lo stesso percorso.`, 'Ora gioca tu.'], 'Operatrice'); }
+  if (c === 0) { code = `TM-${S.track.slice(0, 1).toUpperCase()}${Math.floor(Math.random() * 1e6).toString().padStart(6, '0')}`; await say([`Il tuo codice è ${code}. Condividilo con un amico: il quiz è uguale per tutti i percorsi.`, 'Ora gioca tu.'], 'Operatrice'); }
   else {
     const res = await modal<string>('Codice sfida', ({ body, button, close }) => { body.innerHTML = '<input class="tx c" placeholder="TM-S123456">'; button('Ok', () => close((body.querySelector('.c') as HTMLInputElement).value.trim().toUpperCase()), 'primary'); });
     if (!res) return; code = res;
   }
   const seed = Number(code.replace(/\D/g, '')) || 1;
   const rng = mulberry32(seed);
-  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, 8), 5, { rng });
+  const qs = pickQuestions(SHARED_TOPICS, 5, { rng, shared: true });
   const prevFid = S.stats.fiducia;
   const q = await runDuel({ foeName: 'Duello con codice', foePal: 16, questions: qs, need: 5, damage: 0 });
   S.stats.fiducia = prevFid;
-  const r = await runSim({ scenario: SANDBOX[0], seed, sandbox: true });
+  const r = await runSim({ scenario: SANDBOX[0], seed, sandbox: true, classes: ['stocks', 'etf', 'crypto'] });
   const score = Math.round(q.correct * 100 + (r ? r.sharpe * 200 - r.mdd * 300 : 0));
   await say([`Risultato del duello ${code}: ${q.correct}/5 risposte, Sharpe ${r ? r.sharpe.toFixed(2) : '—'}, drawdown ${r ? (r.mdd * 100).toFixed(1) : '—'}%.`, `Punteggio: ${score}. Confrontalo con quello del tuo amico!`], 'Operatrice');
 }
