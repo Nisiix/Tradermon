@@ -2,7 +2,7 @@ import { play, setMood, trackForMap } from '../systems/music';
 import { track } from '../systems/progress';
 import { decorateHome } from '../world/decor';
 import Phaser from 'phaser';
-import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex } from '../art/art';
+import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal } from '../art/art';
 import { getMap, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, type WorldApi } from '../world/scripts';
 import { S, save, advanceDays, hasTech, TECH } from '../systems/state';
@@ -125,7 +125,7 @@ export class WorldScene extends Phaser.Scene {
     const ts = this.tilemap.addTilesetImage('tiles', 'tiles', P, P, 0, 0, 0)!;
     this.layer = this.tilemap.createLayer(0, ts, 0, 0)!;
     this.cameras.main.setBackgroundColor(this.map.interior ? '#1b1b24' : '#2e7d32');
-    this.player = this.add.sprite(x * P + P / 2, y * P + P, 'chars', S.avatar * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
+    this.player = this.add.sprite(x * P + P / 2, y * P + P, 'chars', playerPal(S.avatar) * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
     this.playerShadow = this.add.image(x * P + P / 2, y * P + P - RS, 'shadow').setDepth(4);
     this.grassOver = undefined;
     const now = this.time.now;
@@ -267,7 +267,7 @@ export class WorldScene extends Phaser.Scene {
 
   setFacing(d: 'up' | 'down' | 'left' | 'right') {
     S.facing = d;
-    this.player.setFrame(S.avatar * 12 + DIRS[d][2] * 3);
+    this.player.setFrame(playerPal(S.avatar) * 12 + DIRS[d][2] * 3);
   }
 
   /** Cammina contro un ostacolo: passo sul posto e suono, come nei classici (senza ripetere il suono a raffica). */
@@ -278,9 +278,9 @@ export class WorldScene extends Phaser.Scene {
     beep('bump');
     // l'animazione non blocca i comandi: si può girare e ripartire subito
     this.walkFrame = (this.walkFrame + 1) % 2;
-    this.player.setFrame(S.avatar * 12 + di * 3 + 1 + this.walkFrame);
+    this.player.setFrame(playerPal(S.avatar) * 12 + di * 3 + 1 + this.walkFrame);
     const token = ++this.bumpToken;
-    this.time.delayedCall(200, () => { if (token === this.bumpToken && !this.walk) this.player.setFrame(S.avatar * 12 + DIRS[S.facing][2] * 3); });
+    this.time.delayedCall(200, () => { if (token === this.bumpToken && !this.walk) this.player.setFrame(playerPal(S.avatar) * 12 + DIRS[S.facing][2] * 3); });
   }
 
   /** continuing: il giocatore stava già camminando, quindi un cambio di direzione cammina subito. */
@@ -328,7 +328,7 @@ export class WorldScene extends Phaser.Scene {
     const k = Math.min(1, w.t / STEP_MS);
     this.player.setPosition((w.fx + (w.tx - w.fx) * k) * P + P / 2, (w.fy + (w.ty - w.fy) * k) * P + P);
     // primo mezzo passo con il piede avanti, secondo mezzo in piedi: l'andatura dei classici
-    const base = S.avatar * 12 + w.di * 3;
+    const base = playerPal(S.avatar) * 12 + w.di * 3;
     this.player.setFrame(k < 0.5 ? base + 1 + this.walkFrame : base);
     this.playerShadow?.setPosition(this.player.x, this.player.y - RS);
   }

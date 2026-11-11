@@ -2,7 +2,7 @@ import { S, profileFromScore, save } from '../systems/state';
 import { say, choose, ask, modal, el, esc } from './core';
 import { pickQuestions } from '../systems/quiz';
 import { runDuel } from './battle';
-import { PAL, titleBackdrop, portrait } from '../art/art';
+import { PAL, titleBackdrop, portrait, playerPal, PLAYER_COLOR_LIST } from '../art/art';
 import { getStage } from './core';
 import { controlsTutorial } from './tutorial';
 import { pushHandler, popHandler, type Key } from './input';
@@ -49,8 +49,13 @@ export async function onboarding(): Promise<void> {
   await say(['Ciao! Benvenuto nella Regione di Capitalia!', 'Mi chiamo Bruno Saldi, ma tutti mi chiamano "il Prof".', 'Ho passato trent\'anni a gestire i risparmi degli altri. Ho visto bolle, crolli e riprese.', 'Oggi insegno ai giovani investitori a non ripetere i miei errori.'], 'Prof. Saldi');
   S.name = (await ask('Come ti chiami?', 'Alex', 10)) || 'Alex';
   await say(`${S.name}! Che bel nome.`, 'Prof. Saldi');
-  const av = await choose(['Stile rosso', 'Stile blu', 'Stile verde'], { prompt: 'Scegli il tuo aspetto (non cambia nulla nel gioco).', who: 'Prof. Saldi' });
+  // il colore scelto tinge vestiti e cappellino del protagonista ovunque (mappa, sfide); anteprima dal vivo sulla pedana
+  const img = intro.querySelector('img')!;
+  const looks = PLAYER_COLOR_LIST.map((_, i) => portrait(playerPal(i)));
+  const av = await choose(PLAYER_COLOR_LIST.map((c) => c.name), { prompt: 'Qual è il tuo colore preferito? Vestiti e cappellino saranno di quel colore (non cambia nulla nel gioco).', who: 'Prof. Saldi', onMove: (i) => { img.src = looks[i]; img.alt = S.name; } });
   S.avatar = av;
+  await say(`Ti sta proprio bene, ${S.name}!`, 'Prof. Saldi');
+  img.src = portrait(PAL.PROF); img.alt = 'Prof. Saldi';
   await say('Ora qualche domanda per conoscerti come investitore.', 'Prof. Saldi');
   const score = await questionnaire();
   S.profileScore = score;

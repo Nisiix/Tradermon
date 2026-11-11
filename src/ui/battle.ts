@@ -7,7 +7,7 @@ import { S, profileTimer } from '../systems/state';
 import { recordAnswer } from '../systems/quiz';
 import { shuffle } from '../systems/rng';
 import { SOURCES } from '../data/sources';
-import { portrait, portraitBack } from '../art/art';
+import { portrait, portraitBack, playerPal } from '../art/art';
 import { beep } from '../systems/audio';
 
 export interface DuelOpts {
@@ -44,7 +44,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       <div class="arena">
         <div class="box plate foe-p"><div class="nm">${esc(o.foeName)}${o.foeTitle ? ` <span class="muted">· ${esc(o.foeTitle)}</span>` : ''}</div><div class="small">Convinzione</div><div class="foebar">${bar(100)}</div></div>
         <div class="foe"><img class="sprite" src="${portrait(o.foePal)}" alt=""></div>
-        <div class="me"><img class="sprite" src="${portraitBack(S.avatar)}" alt=""></div>
+        <div class="me"><img class="sprite" src="${portraitBack(playerPal(S.avatar))}" alt=""></div>
         <div class="box plate me-p"><div class="nm">${esc(S.name)}${S.title ? ` <span class="muted">· ${esc(S.title)}</span>` : ''}</div><div class="small">Fiducia <span class="fv">${S.stats.fiducia}</span>/100</div><div class="mebar">${bar(S.stats.fiducia)}</div></div>
       </div>
       <div class="box q"><div class="qhead row" style="justify-content:space-between"><span class="small muted qn"></span><span class="timer"></span></div><div class="qt"></div><div class="opts"></div><div class="exp"></div></div>`;

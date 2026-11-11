@@ -38,7 +38,7 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 | 1 | Schermata titolo | Nuova partita / Continua / Importa salvataggio | — |
 | 2 | Avviso iniziale (schermata seria) | Presa visione: "gioco educativo, non consulenza finanziaria" | Obbligatorio per proseguire |
 | 3 | Il Prof. Bruno Saldi si presenta | Nome dell'investitore (max 10 caratteri) | Dialoghi, salvataggio |
-| 4 | "Sei un ragazzo, una ragazza o preferisci non dirlo?" | Avatar (3 varianti di colore e capelli, nessuna implicazione di gameplay) | Sprite del protagonista |
+| 4 | "Qual è il tuo colore preferito?" (8 colori, anteprima dal vivo sulla pedana) | Vestiti e cappellino del protagonista di quel colore, ovunque: mappa e sfide (nessuna implicazione di gameplay; i vecchi salvataggi 0-2 restano rosso, blu, verde) | Sprite del protagonista |
 | 5 | Questionario del Professore (5 domande) | Profilo di rischio: Prudente / Equilibrato / Audace | Tono dei consigli, durata timer, difficoltà missioni |
 | 6 | "Quale obiettivo hai?" | Obiettivo: Imparare le basi / Costruire un piano di lungo periodo / Capire il trading | Testi del diario e messaggi motivazionali |
 | 7 | "Qual è il tuo orizzonte?" | Orizzonte: < 3 anni / 3-10 anni / > 10 anni | Spiegazioni personalizzate su rischio e orizzonte |

@@ -71,7 +71,7 @@ export function say(lines: string | string[], who?: string): Promise<void> {
 
 // ---------------- Menu di scelta ----------------
 
-export interface ChooseOpts { cancel?: boolean; title?: string; disabled?: boolean[]; pos?: 'right' | 'center'; prompt?: string; who?: string }
+export interface ChooseOpts { cancel?: boolean; title?: string; disabled?: boolean[]; pos?: 'right' | 'center'; prompt?: string; who?: string; onMove?: (i: number) => void }
 
 export async function choose(options: string[], opts: ChooseOpts = {}): Promise<number> {
   let promptBox: HTMLElement | null = null;
@@ -95,7 +95,7 @@ export async function choose(options: string[], opts: ChooseOpts = {}): Promise<
     else { m.style.right = '10px'; m.style.bottom = promptBox ? '118px' : '10px'; }
     stage.appendChild(m);
     let sel = 0;
-    const render = () => items.forEach((it, i) => it.classList.toggle('sel', i === sel));
+    const render = () => { items.forEach((it, i) => it.classList.toggle('sel', i === sel)); opts.onMove?.(sel); };
     const done = (v: number) => { popHandler(h); m.remove(); promptBox?.remove(); resolve(v); };
     const pick = () => { if (opts.disabled?.[sel]) { beep('bad'); return; } beep('ok'); done(sel); };
     const h = (k: Key) => {
