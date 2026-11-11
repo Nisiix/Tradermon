@@ -674,9 +674,32 @@ const SIDE_STEP = [
 
 function mirrorHalf(rows: string[]): string[] { return rows.map((r) => r + r.split('').reverse().join('')); }
 
-export interface CharPal { skin: string; hair: string; shirt: string; pants: string; extra?: string }
+export interface CharPal { skin: string; hair: string; shirt: string; pants: string; extra?: string; cap?: string }
+
+// Cappellino del protagonista: righe 2-7 della testa (q tessuto, Q riflesso, b visiera, w stemma).
+const CAP_FRONT_HALF = ['.....ooo', '...ooqqq', '..oqqqQw', '.oqqqqQQ', '.obbbbbb', '.ohdhhhh'];
+const CAP_BACK_HALF = ['.....ooo', '...ooqqq', '..oqqqQQ', '.oqqqqqQ', '.oqqqqqq', '.ohhhhhh'];
+const CAP_SIDE = ['.....ooooo......', '...ooqqqqqoo....', '..oqqqqQQqqqo...', '.oqqqqqqQQqqqo..', '.oqqqqqqqqqbbbbo', '.ohdhhhhhhhhhho.'];
+
+function withCap(rows: string[], dir: number): string[] {
+  const cap = dir === 0 ? mirrorHalf(CAP_FRONT_HALF) : dir === 1 ? mirrorHalf(CAP_BACK_HALF) : CAP_SIDE;
+  return rows.map((r, y) => (y >= 2 && y < 2 + cap.length ? cap[y - 2] : r));
+}
 // ---------------- Personaggi ----------------
 
+
+/** Colori proposti dal Prof. Saldi; l'indice è S.avatar (0 rosso, 1 blu, 2 verde come nei vecchi salvataggi). */
+export const PLAYER_COLOR_LIST = [
+  { name: 'Rosso', hex: '#e0473d' },
+  { name: 'Blu', hex: '#3d8ee8' },
+  { name: 'Verde', hex: '#3a9a5b' },
+  { name: 'Giallo', hex: '#e8b828' },
+  { name: 'Viola', hex: '#8a56c2' },
+  { name: 'Arancione', hex: '#f08a30' },
+  { name: 'Rosa', hex: '#f070a8' },
+  { name: 'Nero', hex: '#3a3a48' },
+];
+const PLAYER_PAL_BASE = 32;
 
 export const PALETTES: CharPal[] = [
   { skin: '#f5c9a0', hair: '#5a3418', shirt: '#e0473d', pants: '#2d3b6b' }, // 0 avatar A
@@ -711,7 +734,15 @@ export const PALETTES: CharPal[] = [
   { skin: '#f5c9a0', hair: '#7a3a5a', shirt: '#c870a8', pants: '#3a2a4a' }, // 29 abitante
   { skin: '#d9a77a', hair: '#4a3020', shirt: '#486848', pants: '#c8b890' }, // 30 abitante
   { skin: '#f0c0a0', hair: '#e8e0d0', shirt: '#4858a0', pants: '#585868', extra: '#c84848' }, // 31 abitante
+  // 32+ protagonista: stesso viso e capelli, vestiti e cappellino del colore scelto dal Prof. Saldi
+  ...PLAYER_COLOR_LIST.map((c) => ({ skin: '#f5c9a0', hair: '#5a3418', shirt: c.hex, pants: '#2d3b6b', extra: '#f2f2f2', cap: c.hex })),
 ];
+
+/** Riga della palette del protagonista per il colore scelto (S.avatar). */
+export function playerPal(avatar: number): number {
+  const n = PLAYER_COLOR_LIST.length;
+  return PLAYER_PAL_BASE + (((avatar | 0) % n) + n) % n;
+}
 
 export const PAL = { PROF: 3, NURSE: 4, RIVAL: 5, SPEC: 15, GUARD: 20, LIB: 23 };
 
@@ -719,6 +750,7 @@ function colorsFor(p: CharPal): Record<string, string> {
   return {
     o: '#283038', h: p.hair, H: shade(p.hair, 0.18), d: shade(p.hair, -0.3), s: p.skin, S: shade(p.skin, -0.18), e: '#283038',
     c: p.shirt, C: shade(p.shirt, -0.25), x: p.extra ?? shade(p.shirt, -0.25), p: p.pants, P: shade(p.pants, -0.3), k: '#403838',
+    ...(p.cap ? { q: p.cap, Q: shade(p.cap, 0.22), b: shade(p.cap, -0.3), w: '#f2f2f2' } : {}),
   };
 }
 
@@ -764,8 +796,9 @@ function frameRows(dir: number, frame: number): { rows: string[]; flip: boolean 
 
 function drawChar(c: Ctx, ox: number, oy: number, p: CharPal, dir: number, frame: number) {
   // l'ombra a terra è uno sprite separato nella scena
-  const { rows, flip } = frameRows(dir, frame);
-  paint(c, ox, oy + (frame ? -1 : 0) * 0, rows, colorsFor(p), flip);
+  const fr = frameRows(dir, frame);
+  const rows = p.cap ? withCap(fr.rows, dir) : fr.rows;
+  paint(c, ox, oy + (frame ? -1 : 0) * 0, rows, colorsFor(p), fr.flip);
 }
 
 export function drawCharacters(): HTMLCanvasElement {
