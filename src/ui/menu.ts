@@ -17,13 +17,14 @@ import { openJournal } from './journal';
 import type { BiasId } from '../types';
 import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 import { controlsTutorial } from './tutorial';
+import { openRegionMap } from './regionmap';
+import { ABILITY, canSwim, canTransfer } from '../world/travel';
 
 export async function pauseMenu(onTravel: (id: string) => void) {
   for (;;) {
     const pending = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length;
-    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Lezioni', 'Viaggio rapido', 'Salva', 'Opzioni', 'Chiudi'];
-    const dis = opts.map((o) => o === 'Viaggio rapido' && S.badges < 6);
-    const c = await choose(opts, { cancel: true, title: 'MENU', disabled: dis });
+    const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
+    const c = await choose(opts, { cancel: true, title: 'MENU' });
     if (c < 0 || c === opts.length - 1) return;
     const o = opts[c];
     if (o === 'Investidex') await openInvestidex();
@@ -33,10 +34,9 @@ export async function pauseMenu(onTravel: (id: string) => void) {
     else if (o === 'Profilo e Licenza') await profile();
     else if (o === 'Medaglie e Tecniche') await badges();
     else if (o === 'Lezioni') await openLessons();
-    else if (o === 'Viaggio rapido') {
-      const d = TOWNS.filter((t) => S.visited.includes(t.id));
-      const k = await choose([...d.map((t) => t.name), 'Annulla'], { cancel: true, title: 'VIAGGIO RAPIDO' });
-      if (k >= 0 && k < d.length) { onTravel(d[k].id); return; }
+    else if (o === 'Mappa della Regione') {
+      const dest = await openRegionMap();
+      if (dest) { onTravel(dest); return; }
     }
     else if (o === 'Salva') { toast(save() ? 'Partita salvata.' : 'Salvataggio non riuscito.'); }
     else if (o === 'Opzioni') await options();
@@ -134,6 +134,8 @@ async function badges() {
       h += `<div class="card ${got ? 'gold' : 'locked'}"><b>${got ? '🏅' : '○'} ${esc(m.badge)}</b><br><span class="small">${esc(m.name)} · ${TOWNS[i].name}</span><br><span class="small">${got ? `Tecnica: <b>${esc(m.technique)}</b>. ${esc(m.techDesc)}` : 'Non ancora ottenuta'}</span></div>`;
     }
     h += '</div>';
+    const ab = [{ a: ABILITY.swim, ok: canSwim() }, { a: ABILITY.transfer, ok: canTransfer() }, { a: ABILITY.cold, ok: S.badges >= 7 }];
+    h += `<h4>Abilità di esplorazione</h4>${ab.map(({ a, ok }) => `<p class="small" style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b> (Medaglia ${a.badge}): ${ok ? esc(a.desc) : 'non ancora ottenuta.'}</p>`).join('')}`;
     if (S.flags.champion) h += '<p class="good"><b>Campione della Lega degli Investitori</b></p>';
     if (S.legends.length) h += `<p>Crisi leggendarie superate: ${S.legends.length}/5</p>`;
     body.innerHTML = h;

@@ -11,7 +11,7 @@ import type { AgendaTask } from '../types';
 
 export type GameEvent =
   | 'lesson' | 'duel_win' | 'duel_perfect' | 'checkup' | 'tip' | 'daily_q' | 'mission' | 'journal' | 'minigame'
-  | 'rematch' | 'steps' | 'trade' | 'rebalance' | 'quest' | 'house_unique' | 'review' | 'review_journal' | 'challenge' | 'badge' | 'legend';
+  | 'rematch' | 'steps' | 'trade' | 'rebalance' | 'quest' | 'house_unique' | 'review' | 'review_journal' | 'challenge' | 'badge' | 'legend' | 'islet';
 
 const listeners: ((ev: GameEvent, n: number) => void)[] = [];
 export function onEvent(fn: (ev: GameEvent, n: number) => void) { listeners.push(fn); }
@@ -163,6 +163,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'quest_all', name: 'Il consigliere della regione', desc: 'Completa tutte le storie degli abitanti', title: 'Consigliere', decor: 'frame_letters', check: () => c('quest') >= 6 },
   { id: 'houses_all', name: 'Porta a porta', desc: 'Entra in tutte le 30 case', check: () => c('house_unique') >= 30 },
   { id: 'agenda7', name: 'Agenda piena', desc: 'Completa tutte le missioni del giorno 7 volte', title: 'Metodico', check: () => c('agenda_full') >= 7 },
+  { id: 'islets_all', name: 'Navigatore di Liquidità', desc: 'Vinci la sfida sulle tre Isole della Liquidità', title: 'Navigatore', check: () => [3, 5, 7].every((r) => !!S.flags[`islet_r${r}`]) },
   { id: 'legend1', name: 'Storico', desc: 'Supera una crisi leggendaria', title: 'Storico', check: () => S.legends.length >= 1 },
   { id: 'legend_all', name: 'Memoria dei mercati', desc: 'Supera tutte le crisi leggendarie', title: 'Memoria viva', decor: 'globe', check: () => S.legends.length >= 5 },
   { id: 'tower10', name: 'Scalatore', desc: 'Piano 10 della Torre', title: 'Scalatore', check: () => S.tower.best >= 10 },

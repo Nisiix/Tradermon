@@ -2,10 +2,11 @@ import { TILE } from '../art/art';
 import { TOWNS, TRAINER_NAMES, TRAINER_LINES } from '../data/story';
 import { mulberry32 } from '../systems/rng';
 import { HOUSEHOLDS, type Household } from '../data/residents';
+import { ISLET_ROUTES } from './travel';
 
 export type NpcKind =
   | 'talk' | 'trainer' | 'mentor' | 'student' | 'guard' | 'nurse' | 'prof' | 'aide' | 'case' | 'rival'
-  | 'librarian' | 'daily' | 'pc' | 'station' | 'simop' | 'croupier' | 'archivist' | 'league' | 'towerop' | 'speculator' | 'legend' | 'mom' | 'sage' | 'resident';
+  | 'librarian' | 'daily' | 'pc' | 'station' | 'simop' | 'croupier' | 'archivist' | 'league' | 'towerop' | 'speculator' | 'legend' | 'mom' | 'sage' | 'resident' | 'hermit';
 
 export interface NpcDef {
   id: string;
@@ -290,7 +291,7 @@ const TOWN_TALK = [
   'In Biblioteca puoi ripassare le domande sbagliate. Io ci vado ogni giorno!',
   'Le cripto non dormono mai: sono aperte anche la domenica!',
   'Un signore elegante mi ha offerto il 20% al mese. Gli ho detto di no. Ho fatto bene, vero?',
-  'Il treno collega le città che hai già visitato, dopo la seconda Medaglia.',
+  'Il treno collega le città visitate dalla seconda Medaglia. Dalla quarta ti trasferisci ovunque dalla Mappa della Regione!',
   'Ho letto che i costi si compongono come i rendimenti. Che brutta sorpresa!',
   'La Zona Simulazione di Diversia è perfetta per sperimentare senza rischi.',
   'Chi promette rendimenti garantiti di solito garantisce solo una cosa: i suoi guadagni.',
@@ -343,6 +344,13 @@ function buildLeagueTown() {
 
 // ---------------- Percorsi ----------------
 
+/** Chi abita le Isole della Liquidità: sfida a quiz una volta sola, per esperienza e studio delle carte. */
+export const HERMITS: Record<number, { name: string; pal: number }> = {
+  3: { name: 'Cassettista dell\'Isola', pal: 19 },
+  5: { name: 'Arbitraggista Solitaria', pal: 23 },
+  7: { name: 'Guardiano delle Riserve', pal: 13 },
+};
+
 function buildRoute(r: number) {
   const w = 44, h = 14;
   const rng = mulberry32(500 + r * 31);
@@ -378,6 +386,14 @@ function buildRoute(r: number) {
   if (r === 9) npcs.push({ id: 'r9_rival', x: 30, y: 7, pal: 5, dir: 2, name: 'Rivale', kind: 'rival', data: { n: 4 } });
   if (r === 8) npcs.push({ id: 'r8_boss', x: 34, y: 6, pal: 15, dir: 2, name: 'Capo degli antagonisti', kind: 'speculator', data: { r, boss: true }, sight: 0 });
   const signs: Sign[] = [{ x: 3, y: 5, text: [`PERCORSO ${r}`, `← ${r === 1 ? 'Borgo Semina' : TOWNS[r - 1].name}   ·   ${TOWNS[r === 9 ? 9 : r].name} →`, 'Attenzione: Zone di Mercato (erba alta con il grafico).'] }];
+  if (ISLET_ROUTES.includes(r)) {
+    // Isola della Liquidità: un lago a nord del sentiero, raggiungibile solo con il Flusso di Liquidità (Medaglia 3)
+    rect(t, 14, 1, 8, 5, TILE.WATER);
+    rect(t, 16, 2, 4, 2, TILE.GRASS);
+    t[3][16] = TILE.FLOWERS; t[2][19] = TILE.FLOWERS;
+    const h = HERMITS[r];
+    npcs.push({ id: `islet_r${r}`, x: 18, y: 2, pal: h.pal, dir: 0, name: h.name, kind: 'hermit', data: { r } });
+  }
   if (r === 7) {
     // Muro del Rumore e nicchia segreta
     rect(t, 36, 1, 7, 4, TILE.GRASS);

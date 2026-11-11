@@ -230,3 +230,13 @@ button, input, select, textarea { font-variant-ligatures: none; font-feature-set
 @keyframes barR { to { left: 0; } }
 .bt-trans.out { animation: btout .45s forwards; }
 @keyframes btout { to { opacity: 0; } }
+
+/* Mappa della Regione */
+.region-map { background: #203050; border: 3px solid var(--line); border-radius: 6px; padding: 4px; }
+.region-svg { display: block; width: 100%; height: auto; max-height: 40vh; }
+.region-svg .rg-name { font: 3px var(--font); fill: #102040; text-anchor: middle; paint-order: stroke; stroke: #f8f8f8; stroke-width: .9px; }
+.region-svg .rg-unknown { fill: #505860; }
+.region-svg .rg-route { font: bold 2.4px var(--font); fill: #604820; text-anchor: middle; }
+.region-svg .rg-here { animation: rg-pulse 1s ease-in-out infinite; }
+@keyframes rg-pulse { 50% { opacity: .35; } }
+.region-dest { display: flex; flex-wrap: wrap; gap: 6px; }

@@ -56,3 +56,33 @@ describe('mappe', () => {
     }
   });
 });
+
+describe('isole della liquidità', () => {
+  const reach = (id: string, swim: boolean) => {
+    const m = getMap(id);
+    const start = [1, 6];
+    const seen = new Set<string>([start.join(',')]);
+    const q = [start];
+    while (q.length) {
+      const [x, y] = q.shift()!;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy, k = `${nx},${ny}`;
+        if (nx < 0 || ny < 0 || nx >= m.w || ny >= m.h || seen.has(k)) continue;
+        const t = m.tiles[ny][nx];
+        if (SOLID.has(t) && !(swim && t === TILE.WATER)) continue;
+        seen.add(k); q.push([nx, ny]);
+      }
+    }
+    return seen;
+  };
+  it('chi abita le isole si raggiunge solo attraversando l\'acqua', () => {
+    for (const r of [3, 5, 7]) {
+      const m = getMap(`r${r}`);
+      const h = m.npcs.find((n) => n.kind === 'hermit')!;
+      expect(h, `r${r}`).toBeDefined();
+      const front = `${h.x},${h.y + 1}`;
+      expect(reach(`r${r}`, false).has(front), `r${r}: isola raggiungibile a piedi`).toBe(false);
+      expect(reach(`r${r}`, true).has(front), `r${r}: isola irraggiungibile anche nuotando`).toBe(true);
+    }
+  });
+});
