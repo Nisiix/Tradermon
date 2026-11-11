@@ -352,6 +352,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   afterStep() {
+    // allievi dell'Accademia: chi prova a superarli alle spalle viene fermato
+    for (const n of this.npcs) {
+      if (n.def.guardY === undefined || S.y >= n.def.guardY || !this.isVisible(n) || S.defeated.includes(n.def.id)) continue;
+      if (S.badges >= Number(n.def.data?.n ?? 0)) continue; // Medaglia già presa: nessun blocco
+      void this.runScript(() => this.challenge(n, true));
+      return;
+    }
     // investitori con linea di vista
     for (const n of this.npcs) {
       if (!n.def.sight || !this.isVisible(n) || S.defeated.includes(n.def.id)) continue;
@@ -359,7 +366,7 @@ export class WorldScene extends Phaser.Scene {
       for (let k = 1; k <= n.def.sight; k++) {
         const tx = n.x + dx * k, ty = n.y + dy * k;
         if (SOLID.has(this.map.tiles[ty]?.[tx] ?? TILE.TREE)) break;
-        if (tx === S.x && ty === S.y) { void this.runScript(async () => { await this.exclaim(n.def.id); await this.approach(n.def.id); await interact(n.def, this.api()); }); return; }
+        if (tx === S.x && ty === S.y) { void this.runScript(() => this.challenge(n, false)); return; }
       }
     }
     if (this.map.route) {
@@ -400,6 +407,36 @@ export class WorldScene extends Phaser.Scene {
     this.busy = false;
     this.refreshNpcs();
     this.updateHud(true);
+  }
+
+  /** Sfida di un allenatore che ti nota: (se serve) si gira verso di te, "!", ti viene incontro e parte il duello a quiz. */
+  async challenge(n: NpcSprite, turn: boolean) {
+    if (turn && n.spr) {
+      const dx = S.x - n.x, dy = S.y - n.y;
+      n.dir = Math.abs(dy) >= Math.abs(dx) ? (dy > 0 ? 0 : 1) : (dx < 0 ? 2 : 3);
+      n.spr.setFrame(this.palFor(n.def) * 12 + n.dir * 3);
+      await new Promise((r) => this.time.delayedCall(220, r));
+    }
+    await this.exclaim(n.def.id);
+    await this.approach(n.def.id);
+    await interact(n.def, this.api());
+    // nelle Accademie chi perde contro un allievo rinasce nella Clinica della stessa città: non si passa senza batterlo
+    if (n.def.kind === 'student' && !S.defeated.includes(n.def.id)) await this.backToClinic(Number(n.def.data?.n));
+  }
+
+  /** Dopo una sconfitta in Accademia: dissolvenza e ritorno nella Clinica del villaggio, con la Fiducia ricaricata. */
+  async backToClinic(town: number) {
+    const id = `clinic_${town}`;
+    if (!getMap(id)) return;
+    await say(['Hai perso il duello.', 'Torni alla Clinica del villaggio per riprenderti.'], 'Sistema');
+    const cam = this.cameras.main;
+    cam.fadeOut(220, 0, 0, 0);
+    await new Promise((r) => this.time.delayedCall(240, r));
+    S.stats.fiducia = 100;
+    S.lastClinic = { map: id, x: 5, y: 4 };
+    this.loadMap(id, 5, 4, 1);
+    cam.fadeIn(260, 0, 0, 0);
+    save();
   }
 
   async exclaim(id: string) {

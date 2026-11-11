@@ -1,4 +1,4 @@
-import type { NpcDef } from './maps';
+import { getMap, type NpcDef } from './maps';
 import type { AssetClass, AssetDef, Question, Sector } from '../types';
 import { S, save, slots, addRep, card, learnBias, clampStat, advanceDays, level, TECH, hasTech, classes, LIVE_LIMITS, newGamePlus } from '../systems/state';
 import { say, choose, modal, toast, esc, wait } from '../ui/core';
@@ -15,7 +15,6 @@ import { mentorMission, leagueMission, LEGENDS, SANDBOX, HISTORY, type Mission }
 import { weeklyChallenge } from '../ui/challenge';
 import { ASSETS, ASSET_BY_ID, starterFor, unlockedAssets, SECTOR_LABEL } from '../data/assets';
 import { TEMPTATIONS, BIAS_INFO } from '../data/events';
-import { lessonsFor } from '../data/lessons';
 import { metrics, startPrice, marketClock } from '../systems/market';
 import { PAL } from '../art/art';
 import { beep } from '../systems/audio';
@@ -340,6 +339,11 @@ async function speculator(n: NpcDef, w: WorldApi) {
   await afterDuel(r.win, n.id, 30, w, 'Speculatore');
 }
 
+/** Nessuno salta gli allievi: il Mentore si sfida solo dopo averli battuti tutti. */
+export function allStudentsBeaten(m: number): boolean {
+  return getMap(`academy_${m}`).npcs.filter((x) => x.kind === 'student').every((x) => S.defeated.includes(x.id));
+}
+
 async function student(n: NpcDef) {
   const m = n.data?.n as number;
   if (S.defeated.includes(n.id)) return say(['Il Mentore è là in fondo. Buona fortuna!', pick(TRAINER_TIPS)], n.name);
@@ -358,9 +362,7 @@ async function mentorBattle(m: number, w: WorldApi) {
   const done = S.badges >= m;
   if (done) return say([`Hai già la ${md.badge}.`, md.win], md.name);
   if (S.badges < m - 1) return say(['Sei arrivato qui troppo presto!', `Prima ti serve la Medaglia del Mentore ${S.badges + 1}.`], md.name);
-  const readHere = lessonsFor(mentorTopics(m, S.track, S.mixedClasses)).some((l) => S.lessonsRead.includes(l.id));
-  const beatStudent = S.defeated.some((d) => d.startsWith(`student_${m}_`));
-  if (!readHere && !beatStudent) return say(['Benvenuto nella mia Accademia.', 'Prima di sfidarmi, batti almeno un mio allievo o studia le lezioni nella Biblioteca della città.'], md.name);
+  if (!allStudentsBeaten(m)) return say(['Benvenuto nella mia Accademia.', 'Prima di sfidarmi devi battere tutti i miei allievi.'], md.name);
   if (!S.flags[`m${m}_p1`]) {
     await say([md.intro, 'La sfida ha due fasi: un duello di conoscenza e una missione pratica nella Macchina del Tempo.'], md.name);
     const ok = (await choose(['Sono pronto!', 'Non ancora'], { prompt: 'Iniziamo?' })) === 0;
