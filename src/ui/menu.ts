@@ -19,6 +19,8 @@ import { headlines, weekSummary } from '../systems/gazette';
 import type { QuizTopic, BiasId } from '../types';
 import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 import { safariAtRisk, SAFARI_TEXT } from './storageNotice';
+import { cloudPlayer, flush, clearLocal } from '../systems/sync';
+import { logout } from '../systems/cloud';
 import { openRegionMap } from './regionmap';
 import { ABILITY, canSwim, canTransfer } from '../world/travel';
 
@@ -163,7 +165,7 @@ async function options() {
       <label style="display:block;margin-top:6px">Effetti 2.5D <select class="tx fx"><option value="alti">Alti (occlusione, tilt-shift, alta risoluzione)</option><option value="bassi">Bassi (per computer meno potenti)</option></select></label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="hc"> Contrasto alto</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="sm"> Modalità Studio (nessun timer nei quiz, Reputazione dimezzata nei duelli)</label>
-      <p class="small muted">Il salvataggio è nel browser. Esportalo per sicurezza o per spostarlo su un altro dispositivo. Le chiavi Alpaca non sono mai nel salvataggio.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
+      <p class="small muted">${cloudPlayer() ? `Giocatore <b>${esc(cloudPlayer()!.name)}</b>: la partita è salvata su Supabase e la ritrovi su qualsiasi dispositivo entrando con nome e password. Le chiavi Alpaca non sono mai nel salvataggio e su Supabase stanno solo cifrate con la tua password.` : 'Nessun giocatore collegato: il salvataggio resta solo in questo browser.'} Puoi sempre esportarne una copia come file.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
     const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
     q<HTMLSelectElement>('.ts').value = String(S.options.textSpeed);
     q<HTMLSelectElement>('.fs').value = String(S.options.fontScale);
@@ -176,6 +178,7 @@ async function options() {
     button('Comandi', () => { close(); void openControls(); });
     button('Crediti e fonti', () => { close(); void credits(); });
     button('Esporta salvataggio', () => download(`tradermon-${S.name}.json`, exportSave()));
+    if (cloudPlayer()) button('Esci dal giocatore', () => { close(); void leavePlayer(); });
     button('Applica', () => {
       S.options.textSpeed = Number(q<HTMLSelectElement>('.ts').value);
       S.options.fontScale = Number(q<HTMLSelectElement>('.fs').value);
@@ -190,6 +193,20 @@ async function options() {
       close();
     }, 'primary');
   });
+}
+
+/** Esce dal giocatore su questo dispositivo: la partita resta su Supabase, la copia locale e la chiave della cassaforte si cancellano. */
+async function leavePlayer() {
+  save();
+  const sent = await flush();
+  const ask = sent
+    ? 'Uscire dal giocatore su questo dispositivo? La partita resta su Supabase: per riprenderla basta rientrare con nome e password.'
+    : 'Supabase non è raggiungibile e gli ultimi progressi non sono ancora stati inviati: uscendo adesso li perderesti. Uscire lo stesso?';
+  const c = await choose(['Esci', 'Resta'], { prompt: ask, cancel: true });
+  if (c !== 0) return;
+  await logout();
+  clearLocal();
+  location.reload();
 }
 
 /** Crediti: le fonti didattiche non compaiono durante il gioco, ma restano tutte elencate qui (e in docs/02-CONTENUTI-E-FONTI.md). */

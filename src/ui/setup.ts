@@ -41,15 +41,21 @@ export async function questionnaire(): Promise<number> {
   return score;
 }
 
-export async function onboarding(): Promise<void> {
+/** playerName: il nome del giocatore Supabase (univoco); senza account il Professore lo chiede. */
+export async function onboarding(playerName?: string): Promise<void> {
   await disclaimer();
   await controlsTutorial();
   // scena d'introduzione: il Professore su una pedana, come nei classici
   const intro = el('div', 'intro-stage', `<img class="sprite" src="${portrait(PAL.PROF)}" alt="Prof. Saldi">`);
   getStage().prepend(intro);
   await say(['Ciao! Benvenuto nella Regione di Capitalia!', 'Mi chiamo Bruno Saldi, ma tutti mi chiamano "il Prof".', 'Ho passato trent\'anni a gestire i risparmi degli altri. Ho visto bolle, crolli e riprese.', 'Oggi insegno ai giovani investitori a non ripetere i miei errori.'], 'Prof. Saldi');
-  S.name = (await ask('Come ti chiami?', 'Alex', 10)) || 'Alex';
-  await say(`${S.name}! Che bel nome.`, 'Prof. Saldi');
+  if (playerName) {
+    S.name = playerName;
+    await say(`Tu devi essere ${S.name}! Il tuo nome è già scritto nel registro dei giovani investitori.`, 'Prof. Saldi');
+  } else {
+    S.name = (await ask('Come ti chiami?', 'Alex', 10)) || 'Alex';
+    await say(`${S.name}! Che bel nome.`, 'Prof. Saldi');
+  }
   // il colore scelto tinge vestiti e cappellino del protagonista ovunque (mappa, sfide); anteprima dal vivo sulla pedana
   const img = intro.querySelector('img')!;
   const looks = PLAYER_COLOR_LIST.map((_, i) => portrait(playerPal(i)));

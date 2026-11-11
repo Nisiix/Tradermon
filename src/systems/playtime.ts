@@ -1,4 +1,5 @@
 import { S, SAVE_KEY } from './state';
+import { cloudPlayTime, flush } from './sync';
 
 /** Tempo di gioco complessivo (S.playMs): conta solo mentre il gioco è in primo piano e
  *  viene scritto nel salvataggio anche senza "Salva", così sopravvive alla chiusura del browser. */
@@ -32,6 +33,14 @@ export function persistPlayTime(): void {
     d.playMs = Math.floor(S.playMs);
     localStorage.setItem(SAVE_KEY, JSON.stringify(d));
   } catch { /* spazio pieno o storage bloccato: si riprova al prossimo giro */ }
+  cloudPlayTime();
+}
+
+/** Pagina nascosta o chiusa: tempo e salvataggi in attesa partono subito verso Supabase. */
+function onHide(): void {
+  persistPlayTime();
+  cloudPlayTime(true);
+  void flush();
 }
 
 let started = false;
@@ -40,6 +49,6 @@ export function startPlayTimeAutosave(): void {
   if (started) return;
   started = true;
   setInterval(persistPlayTime, 15000);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) persistPlayTime(); });
-  window.addEventListener('pagehide', persistPlayTime);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) onHide(); });
+  window.addEventListener('pagehide', onHide);
 }

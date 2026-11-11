@@ -46,9 +46,13 @@ export function hasSave(): boolean {
   try { return !!localStorage.getItem(KEY); } catch { return false; }
 }
 
-// Il salvataggio vive solo in questo browser (localStorage, non sessionStorage): resta dopo la
-// chiusura della scheda e del browser, non viene mai inviato a un server e non è visibile da
-// altri dispositivi (per spostarlo si usa Esporta/Importa salvataggio).
+// Il salvataggio vive su Supabase, legato al giocatore (nome + password): systems/sync.ts lo invia
+// a ogni save(). Qui si scrive la copia di lavoro del dispositivo (localStorage), che permette di
+// continuare anche senza rete e viene spedita appena la connessione torna.
+let saveListener: (() => void) | null = null;
+/** Chi deve sapere che c'è un nuovo salvataggio (la sincronizzazione con Supabase). */
+export function setSaveListener(fn: (() => void) | null): void { saveListener = fn; }
+
 let persistAsked = false;
 function askPersistentStorage() {
   if (persistAsked) return;
@@ -58,7 +62,9 @@ function askPersistentStorage() {
 }
 
 export function save(): boolean {
-  try { localStorage.setItem(KEY, JSON.stringify(S)); askPersistentStorage(); return true; } catch { return false; }
+  try { localStorage.setItem(KEY, JSON.stringify(S)); askPersistentStorage(); } catch { return false; }
+  saveListener?.();
+  return true;
 }
 
 export function load(): SaveData | null {

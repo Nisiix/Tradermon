@@ -19,7 +19,8 @@
 
 ```
 src/
-  main.ts             avvio: titolo, onboarding o caricamento, poi la scena del mondo
+  main.ts             avvio: giocatore (Supabase), titolo, onboarding o caricamento, poi la scena del mondo
+  config/supabase.ts  indirizzo e chiave pubblica del progetto Supabase
   art/art.ts          tileset in stile DS con bordi automatici e ombre portate, sprite 16×24 con contorni colorati, ritratti Scale2x, fondale del titolo
   scenes/world.ts     scena Phaser: mappa, movimento a griglia (passo alternato, giro sul posto, urto), passaggi con dissolvenza, NPC che passeggiano, erba alta, fumetto "!", HUD
   world/maps.ts       costruzione delle mappe (città, percorsi, interni, Lega, Torre)
@@ -30,7 +31,11 @@ src/
   ui/timemachine.ts   Macchina del Tempo (mercato simulato con ordini)
   ui/pick.ts          missioni di analisi
   ui/clinic.ts        Clinica del Portafoglio
-  ui/live.ts          collegamento Alpaca, Licenza, limiti, ordini reali
+  ui/live.ts          collegamento Alpaca, Licenza, limiti, ordini reali; copia cifrata e ripristino delle chiavi da Supabase
+  ui/account.ts       nuovo giocatore / accedi / sblocca chiavi / partita del browser senza giocatore
+  systems/cloud.ts    Supabase: account, salvataggio, chiavi Alpaca cifrate
+  systems/sync.ts     copia di lavoro del dispositivo e invio a Supabase
+  systems/vault.ts    cifratura delle chiavi (PBKDF2 + AES-GCM, chiave non estraibile in IndexedDB)
   ui/menu.ts          menu di pausa, Investidex, opzioni
   ui/setup.ts         avvertenze, questionario, conto di prova, esame, titolo
   ui/tutorial.ts      mini tutorial dei comandi (tastiera o touch)
@@ -49,8 +54,11 @@ server/index.mjs      file statici + API /api verso Alpaca (paper e live)
 
 ## Flusso dei dati
 
-- Lo stato di gioco è un unico oggetto `S` (`systems/state.ts`), salvato in `localStorage` ed esportabile in JSON. Non contiene mai chiavi.
-- Tutti i dati del browser hanno il prefisso `tradermon.` e restano solo in `localStorage` (mai sessionStorage, mai un server). Su Safari un avviso una tantum (`ui/storageNotice.ts`) ricorda che i dati di siti non aperti per ~7 giorni possono essere cancellati.
+- Lo stato di gioco è un unico oggetto `S` (`systems/state.ts`), esportabile in JSON. Non contiene mai chiavi.
+- **Giocatore e Supabase** (`systems/cloud.ts`, `systems/sync.ts`, `ui/account.ts`): prima del titolo il giocatore crea un account (funzione Edge `registra-giocatore`, nome univoco) o entra con nome e password. Supabase Auth usa un indirizzo interno derivato dal nome (`g<esadecimale del nome in minuscolo>@giocatori.tradermon.invalid`, dominio riservato che non riceve posta). Ogni `save()` scrive la copia di lavoro in `localStorage` (`tradermon.save.v1`, con `tradermon.save.owner` e `tradermon.save.pending`) e la invia alla tabella `saves`; senza rete resta in attesa e parte al ritorno della connessione. All'avvio `syncAtBoot` sceglie fra copia locale e online (vince quella online, salvo una copia locale in attesa e più avanti) e chiede se adottare una partita del browser di prima degli account.
+- **Sicurezza**: nel browser c'è solo la chiave pubblica; tutte le tabelle hanno RLS (`auth.uid() = user_id`). I profili si creano solo dalla funzione di registrazione: il trigger su `auth.users` rifiuta indirizzi che non corrispondono al nome e crea il profilo solo per utenti confermati. Il nome non è modificabile dal client (solo la colonna `crypto`).
+- **Chiavi Alpaca cifrate** (`systems/vault.ts`): una chiave dati AES-256-GCM casuale cifra le chiavi Paper e Live (con dato associato `tradermon:alpaca:<utente>:<conto>`); la chiave dati è avvolta con una chiave PBKDF2-SHA256 (600.000 iterazioni) derivata dalla password e salvata in `profiles.crypto`. Sul dispositivo la chiave dati resta in IndexedDB come `CryptoKey` non estraibile. Il server non vede mai né la password in chiaro (la gestisce Supabase Auth con bcrypt) né le chiavi. In uso, le chiavi in chiaro vanno solo al server locale, come prima.
+- I dati del browser con prefisso `tradermon.` sono solo preferenze del dispositivo, sessione e copia di lavoro. Su Safari un avviso una tantum (`ui/storageNotice.ts`) ricorda che i dati di siti non aperti per ~7 giorni possono essere cancellati: basta rientrare con nome e password.
 - **Cambio di indirizzo (trasloco, `systems/transfer.ts`)**: il `localStorage` è legato al dominio. Se il gioco si sposta, il vecchio indirizzo va pubblicato ancora con `VITE_MOVED_TO=<nuovo URL>`: all'apertura comprime i dati `tradermon.*` e reindirizza a `<nuovo URL>#trasloco=…`. L'hash non viene mai inviato al server; il nuovo indirizzo lo importa (vince la partita con più tempo di gioco, l'altra resta in `tradermon.save.backup`, con conferma se ce n'è già una) e pulisce la barra degli indirizzi.
 - Il mercato del mondo avanza di un giorno simulato ogni 60 passi sui percorsi e a ogni sfida. È un modello a fattori: beta × mercato + settore + componente propria + shock. Il clima (toro, orso, laterale, tempesta) cambia la tinta del mondo. Il gioco non modifica mai il patrimonio fuori dalle operazioni del giocatore e dal mercato.
 - Le missioni generano uno scenario deterministico dal seme, così lo stesso codice sfida dà lo stesso mercato a due amici.
