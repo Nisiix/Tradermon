@@ -14,13 +14,13 @@ import { prefs } from '../systems/controls';
 import { availableTitles, track } from '../systems/progress';
 import { openAgenda } from './agenda';
 import { openJournal } from './journal';
-import type { BiasId } from '../types';
+import type { QuizTopic, BiasId } from '../types';
 import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 import { safariAtRisk, SAFARI_TEXT } from './storageNotice';
 import { openRegionMap } from './regionmap';
 import { ABILITY, canSwim, canTransfer } from '../world/travel';
 
-export async function pauseMenu(onTravel: (id: string) => void) {
+export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) {
   for (;;) {
     const pending = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length;
     const opts = ['Investidex', 'Portafoglio', `Agenda e traguardi${pending ? ` (${pending})` : ''}`, 'Diario', 'Profilo e Licenza', 'Medaglie e Tecniche', 'Lezioni', 'Mappa della Regione', 'Salva', 'Opzioni', 'Chiudi'];
@@ -36,7 +36,7 @@ export async function pauseMenu(onTravel: (id: string) => void) {
     else if (o === 'Lezioni') await openLessons();
     else if (o === 'Mappa della Regione') {
       const dest = await openRegionMap();
-      if (dest) { onTravel(dest); return; }
+      if (dest) { await onTravel(dest); return; }
     }
     else if (o === 'Salva') { toast(save() ? 'Partita salvata.' : 'Salvataggio non riuscito.'); }
     else if (o === 'Opzioni') await options();
@@ -73,8 +73,8 @@ export async function openInvestidex() {
   }, { wide: true });
 }
 
-export async function openLessons() {
-  const topics = trackTopics(S.track, S.mixedClasses, S.badges).concat(S.badges >= 8 ? ['macro', 'analisi', 'regole'] : []);
+export async function openLessons(only?: QuizTopic[]) {
+  const topics = only ?? trackTopics(S.track, S.mixedClasses, S.badges).concat(S.badges >= 8 ? ['macro', 'analisi', 'regole'] : []);
   const ls = lessonsFor(topics);
   for (;;) {
     const c = await choose([...ls.map((l) => `${S.lessonsRead.includes(l.id) ? '✓ ' : '• '}${l.title}`), 'Fine'], { cancel: true, title: 'LEZIONI' });

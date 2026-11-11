@@ -153,6 +153,8 @@ export interface SaveData {
   biasSeen: BiasId[];
   cards: Record<string, CardState>;
   lessonsRead: string[];
+  /** Libri letti sugli scaffali delle Biblioteche (id in data/books.ts). */
+  booksRead: string[];
   tipsHeard: string[];
   defeated: string[];
   visited: string[];

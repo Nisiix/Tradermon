@@ -5,7 +5,7 @@ import Phaser from 'phaser';
 import { drawPlaque } from '../art/plaque';
 import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal } from '../art/art';
 import { getMap, type MapDef, type NpcDef } from '../world/maps';
-import { interact, npcVisible, onEnterTown, travelTo, type WorldApi } from '../world/scripts';
+import { interact, npcVisible, onEnterTown, travelTo, librarySection, type WorldApi } from '../world/scripts';
 import { S, save, advanceDays, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc, choose } from '../ui/core';
@@ -26,6 +26,8 @@ interface NpcSprite { def: NpcDef; spr?: Phaser.GameObjects.Sprite; shadow?: Pha
 /** Personaggi che passeggiano o si guardano intorno quando il giocatore non interagisce. */
 const WANDER_KINDS = new Set(['talk', 'resident', 'student', 'daily']);
 const STEP_MS = 180;
+/** Altezza (in pixel di scena) a cui sale il personaggio durante il Trasferimento di Capitale. */
+const FLIGHT_PX = 56 * 3;
 /** Tocco breve da fermi: il personaggio si gira sul posto; tenendo premuto oltre questo tempo cammina. */
 const TURN_MS = 85;
 /** Appena fermati, un cambio di direzione riparte subito senza la pausa di rotazione. */
@@ -67,6 +69,8 @@ export class WorldScene extends Phaser.Scene {
   /** Resa 2.5D (Opzioni → Grafica): rispecchia questa scena in un diorama Three.js; la logica resta qui. */
   view3d?: View3D;
   view3dFx = '';
+  /** Trasferimento di Capitale: altezza del volo (0 a terra, 1 in cielo) e nuvole che scorrono sullo schermo. */
+  flightLift = 0; flightClouds: { x: number; y: number; w: number; s: number }[] = [];
 
   constructor() { super('world'); }
 
@@ -142,7 +146,10 @@ export class WorldScene extends Phaser.Scene {
     for (const c of this.children.list as unknown as GO[]) {
       if (!c.visible || c.alpha <= 0) continue;
       const key = c.texture?.key;
-      if (key === 'chars') items.push({ kind: 'char', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: c.y / P, alpha: c.alpha });
+      if (key === 'chars') {
+        const lift = c === (this.player as unknown as GO) ? this.flightLift : 0;
+        items.push({ kind: 'char', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: (c.y + lift * FLIGHT_PX) / P, alpha: c.alpha, lift });
+      }
       else if (key === 'tiles' && c.type === 'Sprite' && c !== (this.grassOver as unknown as GO)) items.push({ kind: 'tile', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: c.y / P, alpha: c.alpha });
       else if (key === 'bubble') items.push({ kind: 'bubble', x: c.x / P, y: (c.y + 24 * RS) / P, scale: c.scaleX });
       else if (c.type === 'Rectangle' && c.getData && c.getData('z0') !== undefined) { const z0 = Number(c.getData('z0')); items.push({ kind: 'leaf', x: c.x / P, z: z0 / P, h: (z0 - c.y) / P + 0.15, color: c.fillColor ?? 0x88d058, alpha: c.alpha }); }
@@ -151,7 +158,7 @@ export class WorldScene extends Phaser.Scene {
     type Fx = { isRunning?: boolean; isComplete?: boolean; alpha?: number; red?: number; green?: number; blue?: number };
     const fe = (cam as unknown as { fadeEffect?: Fx }).fadeEffect, fl = (cam as unknown as { flashEffect?: Fx }).flashEffect, sh = (cam as unknown as { shakeEffect?: Fx }).shakeEffect;
     return {
-      cx: (cam.scrollX + cam.width / 2) / P, cy: (cam.scrollY + cam.height / 2) / P,
+      cx: cam.midPoint.x / P, cy: cam.midPoint.y / P, zoom: cam.zoom,
       shake: !!sh?.isRunning,
       fade: fe && (fe.isRunning || fe.isComplete) ? { r: fe.red ?? 0, g: fe.green ?? 0, b: fe.blue ?? 0, a: fe.alpha ?? 0 } : undefined,
       flash: fl?.isRunning ? { r: fl.red ?? 255, g: fl.green ?? 255, b: fl.blue ?? 255, a: fl.alpha ?? 0 } : undefined,
@@ -339,6 +346,7 @@ export class WorldScene extends Phaser.Scene {
     addPlayTime(now - this.lastMs);
     this.lastMs = now;
     this.updateWeather(delta);
+    if (this.flightLift > 0 || this.flightClouds.length) this.renderFlight();
     this.view3d?.frame(this.mirror());
     // tempo reale (non quello "addolcito" da Phaser, che sui fotogrammi lenti conta 16 ms): così il passo dura
     // lo stesso anche quando la resa 2.5D va sotto i 5 fps
@@ -347,7 +355,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.time.now < this.turnLock) return;
     const p = takeWorldPress();
     if (p) this.idleMs = 0;
-    if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => { travelTo(id, this.api()); this.cameras.main.fadeIn(450, 255, 255, 255); }));
+    if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => this.flyTo(id)));
     if (p === 'a') return void this.interactFront();
     const dir = this.nextDir();
     if (dir) { this.idleMs = 0; this.tryMove(dir, this.time.now - this.lastStepEnd < MOMENTUM_MS); return; }
@@ -533,6 +541,8 @@ export class WorldScene extends Phaser.Scene {
         if (opened) { this.cameras.main.shake(160, 0.004); this.loadMap(S.map, S.x, S.y, DIRS[S.facing][2] as 0 | 1 | 2 | 3); }
       });
     }
+    const sec = this.map.sections?.find((sc) => fy === sc.y && fx >= sc.x && fx < sc.x + sc.w);
+    if (t === TILE.SHELF && sec) return void this.runScript(() => librarySection(sec, Number(/^library_(\d+)$/.exec(this.map.id)?.[1] ?? 0)));
     if (t === TILE.SHELF) return void this.runScript(() => say('Scaffali pieni di libri di economia. Le lezioni si leggono parlando con la Bibliotecaria o dal menu.'));
     if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? 'Il rumore delle notizie non ti tocca più: puoi attraversare.' : ['Un muro di notizie urlate, grafici impazziti e "consigli" dai social.', 'Serve una mente fredda per attraversarlo (Mentore 7).']));
     if (t === TILE.STATION) { const st = this.npcs.find((x) => x.def.kind === 'station'); if (st) void this.runScript(() => interact(st.def, this.api())); }
@@ -620,6 +630,47 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** Meteo legato al clima di mercato: pioggia con l'orso, temporale con lampi nella tempesta, scintille con il toro, foglie e lucciole altrimenti. */
+  /** Trasferimento di Capitale: decollo con nuvole, dissolvenza bianca, atterraggio nella città scelta. */
+  async flyTo(dest: string) {
+    const cam = this.cameras.main;
+    const lift = (to: number, ms: number) => new Promise<void>((res) => this.tweens.add({ targets: this, flightLift: to, duration: ms, ease: to ? 'Quad.easeIn' : 'Quad.easeOut', onComplete: () => res() }));
+    this.setFacing('down');
+    beep('coin');
+    for (let i = 0; i < 9; i++) this.flightClouds.push({ x: Math.random() * cam.width, y: -40 * RS - Math.random() * cam.height, w: (14 + Math.random() * 22) * RS, s: 0.6 + Math.random() * 0.8 });
+    cam.zoomTo(0.72, 1000, 'Quad.easeInOut');
+    await lift(1, 1000);
+    cam.fadeOut(320, 255, 255, 255);
+    await new Promise((r) => this.time.delayedCall(340, r));
+    travelTo(dest, this.api());
+    cam.setZoom(0.72);
+    cam.fadeIn(500, 255, 255, 255);
+    cam.zoomTo(1, 1000, 'Quad.easeInOut');
+    await lift(0, 1000);
+    this.flightClouds = [];
+    this.player.setPosition(S.x * P + P / 2, S.y * P + P);
+    this.playerShadow?.setScale(1).setAlpha(1);
+  }
+
+  /** Posizione del personaggio e dell'ombra durante il volo; le nuvole scorrono verso il basso sopra la scena. */
+  renderFlight() {
+    const k = this.flightLift;
+    if (!this.walk) this.player.setPosition(S.x * P + P / 2, S.y * P + P - k * FLIGHT_PX);
+    this.playerShadow?.setScale(1 - 0.55 * k).setAlpha(1 - 0.6 * k);
+    const cam = this.cameras.main;
+    const g: Painter = this.view3d ? this.view3d.painter : this.weather;
+    for (const c of this.flightClouds) {
+      c.y += (2 + 9 * k) * c.s;
+      if (c.y > cam.height + 30 * RS) { c.y = -30 * RS - Math.random() * 60 * RS; c.x = Math.random() * cam.width; }
+      const a = 0.25 + 0.6 * k;
+      g.fillStyle(0xffffff, a);
+      g.fillRect(c.x, c.y, c.w, 6 * RS);
+      g.fillRect(c.x + c.w * 0.2, c.y - 4 * RS, c.w * 0.55, 4 * RS);
+      g.fillRect(c.x + c.w * 0.1, c.y + 6 * RS, c.w * 0.8, 3 * RS);
+      g.fillStyle(0xffffff, a * 0.5);
+      g.fillRect(c.x - 3 * RS, c.y + 2 * RS, c.w + 6 * RS, 3 * RS);
+    }
+  }
+
   updateWeather(delta: number) {
     const clk = marketClock();
     const kind = this.map.interior ? '' : S.market.climate + (clk.night ? '_n' : '');

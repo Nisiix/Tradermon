@@ -28,6 +28,8 @@ export interface NpcDef {
 
 export interface Warp { x: number; y: number; to: string; tx: number; ty: number; dir?: 0 | 1 | 2 | 3; lock?: 'archive' | 'tower' | 'badge' | 'swim' | 'dark' | 'secret' }
 export interface Sign { x: number; y: number; text: string[] }
+/** Scaffali "parlanti" della Biblioteca: il gruppo di celle (x..x+w-1, y) apre una sezione. */
+export interface Section { x: number; y: number; w: number; kind: 'mentor' | 'general' | 'review' | 'index'; label: string }
 /** Insegna sul muro frontale di un edificio pubblico: centrata sulla porta (x), appesa al bordo tra tetto e muro (y = riga del muro). */
 export interface Plaque { x: number; y: number; text: string; kind: 'clinic' | 'gym' | 'public' }
 
@@ -42,6 +44,8 @@ export interface MapDef {
   signs: Sign[];
   /** Insegne degli edifici speciali (le case normali non ne hanno). */
   plaques?: Plaque[];
+  /** Sezioni della Biblioteca (scaffali che aprono libri, lezioni, ripasso, Investidex). */
+  sections?: Section[];
   interior: boolean;
   town?: number;
   route?: number;
@@ -205,6 +209,7 @@ function buildHomeTown() {
       { id: 't0_aide', x: w - 2, y: 9, pal: 22, dir: 2, name: 'Assistente', kind: 'aide' },
       { id: 't0_kid', x: 13, y: 10, pal: 21, dir: 0, name: 'Bambina', kind: 'talk', lines: ['Il mio papà dice che i soldi sotto il materasso perdono valore. Si chiama inflazione!'] },
       { id: 't0_old', x: 17, y: 10, pal: 19, dir: 1, name: 'Nonno Elio', kind: 'talk', lines: ['Ai miei tempi si diceva: "Non mettere tutte le uova nello stesso paniere".', 'Vale ancora oggi, sai?'] },
+      { id: 't0_student', x: 21, y: 12, pal: 23, dir: 3, name: 'Studentessa', kind: 'talk', lines: ['Torno ora dalla Biblioteca di Ponte Cedola: ogni città dalla prossima ne ha una.', 'Gli scaffali in alto a sinistra sono la Sezione del Mentore: ci sono i libri sull\'argomento del suo duello.', 'Li ho letti tutti prima della sfida e ho risposto a quasi ogni domanda!'] },
     ],
     warps: [
       { x: home.dx, y: home.dy, to: 'home', tx: 4, ty: 6, dir: 1 },
@@ -305,6 +310,15 @@ function buildTown(n: number) {
 
   const lb = interior(`library_${n}`, `Biblioteca di ${def.name}`, 11, 9, id, lib.dx, lib.dy);
   rect(lb.tiles, 1, 2, 4, 1, TILE.SHELF); rect(lb.tiles, 6, 2, 4, 1, TILE.SHELF); rect(lb.tiles, 1, 4, 3, 1, TILE.SHELF); rect(lb.tiles, 7, 4, 3, 1, TILE.SHELF);
+  // sezioni: a sinistra i libri del Mentore della città (l'argomento del suo duello), a destra le lezioni generali,
+  // in basso il ripasso degli errori e l'Investidex
+  lb.tiles[1][2] = TILE.POSTER; lb.tiles[1][7] = TILE.FRAME; // manifesto sopra la Sezione del Mentore, quadro sopra quella generale
+  lb.sections = [
+    { x: 1, y: 2, w: 4, kind: 'mentor', label: `Sezione del Mentore n. ${n}` },
+    { x: 6, y: 2, w: 4, kind: 'general', label: 'Sezione generale: lezioni' },
+    { x: 1, y: 4, w: 3, kind: 'review', label: 'Archivio delle domande sbagliate' },
+    { x: 7, y: 4, w: 3, kind: 'index', label: 'Investidex' },
+  ];
   lb.npcs.push(
     { id: `lib_${n}`, x: 5, y: 3, pal: 23, dir: 0, name: 'Bibliotecaria', kind: 'librarian', data: { town: n } },
     { id: `daily_${n}`, x: 2, y: 6, pal: 18, dir: 3, name: 'Professoressa del giorno', kind: 'daily' },

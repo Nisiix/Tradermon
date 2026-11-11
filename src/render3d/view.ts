@@ -25,7 +25,7 @@ export interface Painter {
 }
 
 export type MirrorItem =
-  | { kind: 'char'; frame: number; x: number; y: number; alpha: number }
+  | { kind: 'char'; frame: number; x: number; y: number; alpha: number; lift?: number }
   | { kind: 'tile'; frame: number; x: number; y: number; alpha: number }
   | { kind: 'bubble'; x: number; y: number; scale: number }
   | { kind: 'leaf'; x: number; z: number; h: number; color: number; alpha: number }
@@ -33,6 +33,7 @@ export type MirrorItem =
 
 export interface MirrorFrame {
   cx: number; cy: number; // centro della vista in caselle
+  zoom?: number; // zoom della camera 2D (1 = normale): in 2.5D allontana la camera
   shake: boolean;
   fade?: { r: number; g: number; b: number; a: number };
   flash?: { r: number; g: number; b: number; a: number };
@@ -275,6 +276,15 @@ export class View3D {
     const TILE_KEY = new Map<number, string>(Object.entries(TILE).map(([k, v]) => [v, k.toLowerCase()]));
     const extCells = new Map<string, [number, number][]>();
     const isHouse = (t: number) => HOUSE_WALLS.has(t) || HOUSE_ROOFS.has(t);
+    // ciuffi d'erba: pannelli piccoli rivolti alla camera, sparsi in modo deterministico dentro la cella
+    const hash = (x: number, y: number, k: number) => { let h = (x * 374761393 + y * 668265263 + k * 1274126177) >>> 0; h = ((h ^ (h >>> 13)) * 1274126177) >>> 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    const tufts = (x: number, y: number, n: number, w: number, h: number) => {
+      for (let k = 0; k < n; k++) {
+        const sp = propSprite(`tuft${Math.floor(hash(x, y, k * 3 + 2) * 3)}`, null);
+        const dx = (hash(x, y, k * 3) - 0.5) * (1 - w * 0.6), dz = (hash(x, y, k * 3 + 1) - 0.5) * (1 - w * 0.6);
+        billboardQuad(props, sp, x + dx, y + dz, w, h, TILT, 0.01);
+      }
+    };
     const cell = (x: number, y: number, sx: number, sy: number, skirt: boolean) => {
       const t = tiles[sy][sx];
       let r = reprOf(t);
@@ -292,6 +302,8 @@ export class View3D {
         case 'ground': {
           const v0 = groundQuad(x, y, skirt && r.kind === 'ground' && t !== TILE.GRASS && t !== TILE.PATH && t !== TILE.WATER && t !== TILE.SAND ? tileIndex('grass0') : vi);
           if (!skirt && (t === TILE.WATER || t === TILE.FLOWERS)) this.animated.push({ x, y, v0 });
+          // prato: un ciuffo ogni tre celle circa, così l'erba non è un pavimento piatto
+          if (t === TILE.GRASS && !cave && hash(x, y, 9) < 0.4) tufts(x, y, 1, 0.34 + hash(x, y, 10) * 0.14, 0.28 + hash(x, y, 11) * 0.12);
           break;
         }
         case 'cross': {
@@ -299,7 +311,12 @@ export class View3D {
           const sp = propSprite(vname, r.base);
           // alberi: pannello rivolto alla camera (come i personaggi), più un pannello incrociato per l'ombra e la profondità
           if (t === TILE.TREE) { billboardQuad(props, sp, x, y, r.w, r.h, TILT, 0.02); crossPlanes(props, sp, x, y, r.w * 0.8, r.h * 0.9, 0.01); }
-          else billboardQuad(props, sp, x, y, r.w, r.h, TILT, 0.01); // erba alta: pannello rivolto alla camera, come il tile 2D in piedi
+          else if (t === TILE.MARKET) {
+            // erba alta: il tile scuro e fitto fa da terreno e sopra crescono cinque ciuffi sfalsati, che si sovrappongono con le celle vicine
+            ground.quad([[x, 0.004, y + 1], [x + 1, 0.004, y + 1], [x + 1, 0.004, y], [x, 0.004, y]], [0, 1, 0], uvq(this.uvOf(vi)));
+            tufts(x, y, 5, 0.6, 0.55);
+          }
+          else billboardQuad(props, sp, x, y, r.w, r.h, TILT, 0.01);
           break;
         }
         case 'upright': {
@@ -491,6 +508,7 @@ export class View3D {
     this.resize();
     // camera: inclinata come su DS, segue il centro della vista 2D (così limiti e inquadrature restano quelli del gioco)
     let cx = f.cx, cz = f.cy, yaw = 0, tilt = TILT, dist = DIST;
+    if (f.zoom && f.zoom > 0) dist = DIST / f.zoom;
     if (this.free) ({ cx, cz, yaw, tilt, dist } = this.free);
     if (f.shake) { cx += (Math.random() - 0.5) * 0.25; cz += (Math.random() - 0.5) * 0.25; }
     this.yaw = yaw; this.tiltNow = tilt; this.distNow = dist;
@@ -512,12 +530,14 @@ export class View3D {
       if (it.kind === 'char') {
         const m = this.pooled(this.charPool, ci++, () => { const mm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.5), this.matChar.clone()); mm.castShadow = true; mm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: this.chars, alphaTest: 0.5 }); return mm; });
         this.setPlaneUv(m, this.charUv(it.frame));
-        m.position.set(it.x, 0.75, it.y - 0.38);
+        const lift = it.lift ?? 0;
+        m.position.set(it.x, 0.75 + lift * 2.6, it.y - 0.38 - lift * 0.3);
         m.rotation.y = this.yaw;
         (m.material as THREE.MeshLambertMaterial).opacity = it.alpha;
         const sh = this.pooled(this.shadowPool, si++, () => { const mm = new THREE.Mesh(new THREE.CircleGeometry(0.5, 20), this.matShadow); mm.rotation.x = -Math.PI / 2; mm.scale.set(0.42, 0.26, 1); return mm; });
         sh.position.set(it.x, 0.012, it.y - 0.45);
-        (sh.material as THREE.MeshBasicMaterial).opacity = 0.28 * it.alpha;
+        sh.scale.set(0.42 * (1 - 0.5 * lift), 0.26 * (1 - 0.5 * lift), 1);
+        (sh.material as THREE.MeshBasicMaterial).opacity = 0.28 * it.alpha * (1 - 0.6 * lift);
       } else if (it.kind === 'tile') {
         const m = this.pooled(this.tilePool, ti++, () => { const mm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.matProps.clone()); mm.castShadow = true; mm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: propAtlas(), alphaTest: 0.5 }); return mm; });
         const sp = propSprite(tileName(it.frame), null);

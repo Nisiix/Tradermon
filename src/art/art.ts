@@ -231,6 +231,22 @@ for (let v = 0; v < 2; v++) reg(`tall${v}`, (c, o) => {
   px(c, o.x, o.y + 15, 16, 1, C.tallO);
   if (v === 1) { px(c, o.x + 12, o.y + 3, 1, 1, '#fff8b0'); px(c, o.x + 11, o.y + 4, 3, 1, '#f8d030'); px(c, o.x + 12, o.y + 5, 1, 1, '#fff8b0'); }
 });
+// ciuffi d'erba sciolti su sfondo trasparente: nel mondo 2.5D danno corpo all'erba alta e ai prati
+for (let v = 0; v < 3; v++) reg(`tuft${v}`, (c, o) => {
+  const blade = (cx: number, h: number, light: boolean) => {
+    const top = 16 - h;
+    const rowW = (i: number) => Math.min(5, 1 + Math.floor(i / 2));
+    for (let i = 0; i < h; i++) { const w = rowW(i) + 2; px(c, o.x + cx - Math.floor(w / 2), o.y + top + i - 1, w, 1, C.tallO); }
+    for (let i = 0; i < h; i++) {
+      const w = rowW(i), x0 = o.x + cx - Math.floor(w / 2), y = o.y + top + i;
+      px(c, x0, y, w, 1, C.tall);
+      px(c, x0, y, 1, 1, light ? C.tallLL : C.tallL);
+      if (w > 2) px(c, x0 + w - 1, y, 1, 1, C.tallD);
+    }
+  };
+  const sets: [number, number, boolean][][] = [[[4, 7, true], [9, 10, false], [13, 6, true]], [[3, 9, false], [8, 6, true], [12, 8, false]], [[5, 10, true], [11, 7, false]]];
+  for (const [cx, h, light] of sets[v]) blade(cx, h, light);
+});
 for (let s = 0; s < 2; s++) for (let m = 0; m < 16; m++) reg(`path${m}${s ? 's' : ''}`, (c, o) => {
   px(c, o.x, o.y, 16, 16, C.sand);
   const r = prng(91 + m);

@@ -11,6 +11,8 @@ import { openInvestidex, openLessons } from '../ui/menu';
 import { pickQuestions, dailyQuestion, todayKey, reviewQueue } from '../systems/quiz';
 import { mentorTopics, trackTopics, LEAGUE_TOPICS, byTopic } from '../data/quiz/build';
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../data/story';
+import { mentorBooks, TOPIC_LABEL, type Book } from '../data/books';
+import type { Section } from './maps';
 import { mentorMission, leagueMission, LEGENDS, SANDBOX, HISTORY, type Mission } from '../data/missions';
 import { weeklyChallenge } from '../ui/challenge';
 import { ASSETS, ASSET_BY_ID, starterFor, unlockedAssets, SECTOR_LABEL } from '../data/assets';
@@ -81,7 +83,7 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
     case 'guard': return guard(n, w);
     case 'nurse': return openClinic(w.town());
     case 'pc': return openInvestidex();
-    case 'librarian': return librarian();
+    case 'librarian': return librarian(n);
     case 'daily': return daily();
     case 'station': return station(w);
     case 'simop': return simzone();
@@ -197,6 +199,7 @@ async function startTrack(track: S_Track, w: WorldApi) {
   await trade(true);
   await licenseTalk();
   await say(['Ah, e prendi questa: la Licenza da Apprendista. La trovi nel menu (tasto M), insieme all\'Investidex e al tuo Profilo.'], 'Prof. Saldi');
+  await say(['Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.', 'Gli scaffali in alto a sinistra sono la Sezione del Mentore: libri sull\'argomento su cui il Mentore di quella città ti interrogherà nel duello.', 'Leggili prima di sfidarlo: in questo gioco si vince studiando, non indovinando.'], 'Prof. Saldi');
   save();
   w.refresh();
   await wait(200);
@@ -384,6 +387,8 @@ async function mentorBattle(m: number, w: WorldApi) {
   if (!allStudentsBeaten(m)) return say(['Benvenuto nella mia Accademia.', 'Prima di sfidarmi devi battere tutti i miei allievi.'], md.name);
   if (!S.flags[`m${m}_p1`]) {
     await say([md.intro, 'La sfida ha due fasi: un duello di conoscenza e una missione pratica nella Macchina del Tempo.'], md.name);
+    const unread = mentorBooks(m, S.track, S.mixedClasses).filter((b) => !S.booksRead.includes(b.id)).length;
+    if (unread) await say([`Un consiglio da Mentore: nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, 'Le domande del duello vengono da lì.'], md.name);
     const ok = (await choose(['Sono pronto!', 'Non ancora'], { prompt: 'Iniziamo?' })) === 0;
     if (!ok) return;
     const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), 8, { minDiff: m >= 4 ? 2 : 1 });
@@ -456,20 +461,59 @@ async function guard(n: NpcDef, w: WorldApi) {
 
 // ---------------- Edifici ----------------
 
-async function librarian() {
-  const c = await choose(['Lezioni', 'Ripasso delle domande sbagliate', 'Minigiochi didattici', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenuto in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
-  if (c === 0) return openLessons();
-  if (c === 2) return playMinigame('Bibliotecaria');
-  if (c === 3) return openInvestidex();
-  if (c === 1) {
-    const q = reviewQueue();
-    if (!q.length) return say('Non hai domande da ripassare. Ottimo lavoro!', 'Bibliotecaria');
-    const qs = shuffle(q).slice(0, 5);
-    const prevFid = S.stats.fiducia;
-    await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0 });
-    S.stats.fiducia = prevFid;
-    track('review');
-    return say('Il ripasso dilazionato è il modo migliore per ricordare.', 'Bibliotecaria');
+async function librarian(n: NpcDef) {
+  const town = Number(n.data?.town ?? 0);
+  if (town && !S.flags[`lib_intro_${town}`]) {
+    S.flags[`lib_intro_${town}`] = true;
+    const md = mentor(town, S.track);
+    await say(['Benvenuto in Biblioteca! Qui si studia prima di sfidare il Mentore.', `Gli scaffali in alto a sinistra sono la Sezione del Mentore: i libri su ${mentorTopics(town, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}, l'argomento del duello con ${md.name}.`, 'A destra le lezioni generali; in basso l\'archivio delle domande sbagliate e l\'Investidex. Avvicinati a uno scaffale e premi il tasto di conferma.'], 'Bibliotecaria');
+  }
+  const c = await choose(['Sezione del Mentore (libri)', 'Lezioni', 'Ripasso delle domande sbagliate', 'Minigiochi didattici', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenuto in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
+  if (c === 0) return mentorShelf(town);
+  if (c === 1) return openLessons();
+  if (c === 3) return playMinigame('Bibliotecaria');
+  if (c === 4) return openInvestidex();
+  if (c === 2) return reviewDuel();
+}
+
+async function reviewDuel() {
+  const q = reviewQueue();
+  if (!q.length) return say('Non hai domande da ripassare. Ottimo lavoro!', 'Bibliotecaria');
+  const qs = shuffle(q).slice(0, 5);
+  const prevFid = S.stats.fiducia;
+  await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0 });
+  S.stats.fiducia = prevFid;
+  track('review');
+  return say('Il ripasso dilazionato è il modo migliore per ricordare.', 'Bibliotecaria');
+}
+
+/** Scaffale della Sezione del Mentore: guida alla sfida, libri di contesto e di materia, con le lezioni sugli stessi temi. */
+async function mentorShelf(n: number) {
+  if (!n) return say('Questa Biblioteca non ha un Mentore di riferimento.', 'Bibliotecaria');
+  const md = mentor(n, S.track);
+  const topics = mentorTopics(n, S.track, S.mixedClasses);
+  const books: Book[] = mentorBooks(n, S.track, S.mixedClasses);
+  for (;;) {
+    const read = (b: Book) => S.booksRead.includes(b.id);
+    const c = await choose([...books.map((b) => `${read(b) ? '✓ ' : '• '}${b.title}`), 'Lezioni su questi temi', 'Rimetto a posto'], { cancel: true, title: `SEZIONE DEL MENTORE · ${topics.map((t) => TOPIC_LABEL[t]).join(', ')}` });
+    if (c < 0 || c === books.length + 1) return;
+    if (c === books.length) { await openLessons(topics); continue; }
+    const b = books[c];
+    await say(b.pages, b.title);
+    if (!read(b)) {
+      S.booksRead.push(b.id); S.stats.xp += 5; track('lesson');
+      if (books.every(read)) { addRep(10); await say([`Hai letto tutta la sezione di ${md.name}. Reputazione +10.`, 'Ora sai cosa ti aspetta nel duello: in bocca al lupo!'], 'Bibliotecaria'); }
+    }
+  }
+}
+
+/** Interazione con uno scaffale della Biblioteca (vedi Section in maps.ts). */
+export async function librarySection(sec: Section, town: number) {
+  switch (sec.kind) {
+    case 'mentor': return mentorShelf(town);
+    case 'general': await say(`${sec.label}: i volumi di tutti i Mentori incontrati finora.`); return openLessons();
+    case 'review': return reviewDuel();
+    case 'index': await say(`${sec.label}: le schede delle Asset Card che hai raccolto.`); return openInvestidex();
   }
 }
 
