@@ -420,18 +420,21 @@ export class WorldScene extends Phaser.Scene {
     await this.exclaim(n.def.id);
     await this.approach(n.def.id);
     await interact(n.def, this.api());
-    // nelle Accademie chi perde contro un allievo torna all'ingresso: non si passa senza batterlo
-    if (n.def.kind === 'student' && !S.defeated.includes(n.def.id)) await this.backToEntrance();
+    // nelle Accademie chi perde contro un allievo rinasce nella Clinica della stessa città: non si passa senza batterlo
+    if (n.def.kind === 'student' && !S.defeated.includes(n.def.id)) await this.backToClinic(Number(n.def.data?.n));
   }
 
-  /** Riporta il giocatore all'ingresso della mappa interna (davanti al tappeto), con una dissolvenza. */
-  async backToEntrance() {
-    const exit = this.map.warps.find((w) => w.y === this.map.h - 1);
-    if (!exit) return;
+  /** Dopo una sconfitta in Accademia: dissolvenza e ritorno nella Clinica del villaggio, con la Fiducia ricaricata. */
+  async backToClinic(town: number) {
+    const id = `clinic_${town}`;
+    if (!getMap(id)) return;
+    await say(['Hai perso il duello.', 'Torni alla Clinica del villaggio per riprenderti.'], 'Sistema');
     const cam = this.cameras.main;
     cam.fadeOut(220, 0, 0, 0);
     await new Promise((r) => this.time.delayedCall(240, r));
-    this.loadMap(this.map.id, exit.x, exit.y - 1, 1);
+    S.stats.fiducia = 100;
+    S.lastClinic = { map: id, x: 5, y: 4 };
+    this.loadMap(id, 5, 4, 1);
     cam.fadeIn(260, 0, 0, 0);
     save();
   }
