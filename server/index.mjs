@@ -97,7 +97,7 @@ async function validateOrder(env, o, confirm) {
   const symbol = String(o.symbol || '').toUpperCase();
   if (!SYMBOL_RE.test(symbol)) throw Object.assign(new Error('Simbolo non valido'), { status: 400 });
   if (!['buy', 'sell'].includes(o.side)) throw Object.assign(new Error('Lato non valido'), { status: 400 });
-  if (!['market', 'limit', 'stop'].includes(o.type)) throw Object.assign(new Error('Tipo di ordine non consentito'), { status: 400 });
+  if (!['market', 'limit', 'stop', 'stop_limit'].includes(o.type)) throw Object.assign(new Error('Tipo di ordine non consentito'), { status: 400 });
   if (!['day', 'gtc', 'ioc'].includes(o.time_in_force)) throw Object.assign(new Error('Validità non consentita'), { status: 400 });
   if (!o.notional && !o.qty) throw Object.assign(new Error('Serve un importo o una quantità'), { status: 400 });
   if (env === 'live' && confirm !== 'CONFERMO') throw Object.assign(new Error('Per gli ordini reali serve la parola di conferma CONFERMO'), { status: 403 });
@@ -108,8 +108,16 @@ async function validateOrder(env, o, confirm) {
   };
   if (o.notional) clean.notional = String(Number(o.notional).toFixed(2));
   if (o.qty) clean.qty = String(Number(o.qty));
-  if (o.type === 'limit') clean.limit_price = String(Number(o.limit_price));
-  if (o.type === 'stop') clean.stop_price = String(Number(o.stop_price));
+  if (o.type === 'limit' || o.type === 'stop_limit') clean.limit_price = String(Number(o.limit_price));
+  if (o.type === 'stop' || o.type === 'stop_limit') clean.stop_price = String(Number(o.stop_price));
+  for (const k of ['limit_price', 'stop_price']) if (k in clean && !(Number(clean[k]) > 0)) throw Object.assign(new Error('Prezzo limite/stop non valido'), { status: 400 });
+  // sulle cripto Alpaca accetta solo validità gtc o ioc e non accetta lo stop semplice
+  if (symbol.includes('/')) {
+    if (clean.time_in_force === 'day') clean.time_in_force = 'gtc';
+    if (clean.type === 'stop') throw Object.assign(new Error('Sulle cripto usa uno stop limit'), { status: 400 });
+  } else if (clean.notional && (clean.type !== 'market' || clean.time_in_force !== 'day')) {
+    throw Object.assign(new Error('Gli ordini frazionari (per importo) sulle azioni devono essere a mercato e giornalieri'), { status: 400 });
+  }
 
   // prezzo stimato per i controlli
   const isCrypto = symbol.includes('/');
@@ -224,12 +232,15 @@ async function handleApi(req, res, url) {
       const start = String(url.searchParams.get('start') || '').slice(0, 10);
       const end = String(url.searchParams.get('end') || '').slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return send(res, 400, { message: 'Date non valide' });
+      const TIMEFRAMES = new Set(['5Min', '15Min', '1Hour', '4Hour', '1Day']);
+      const tf = String(url.searchParams.get('timeframe') || '1Day');
+      if (!TIMEFRAMES.has(tf)) return send(res, 400, { message: 'Orizzonte non valido (5Min, 15Min, 1Hour, 4Hour, 1Day)' });
       const env = dataEnv();
       if (cls === 'crypto') {
-        const d = await alpaca(env, 'GET', `${DATA}/v1beta3/crypto/us/bars?symbols=${encodeURIComponent(sym)}&timeframe=1Day&start=${start}&end=${end}&limit=10000`);
+        const d = await alpaca(env, 'GET', `${DATA}/v1beta3/crypto/us/bars?symbols=${encodeURIComponent(sym)}&timeframe=${tf}&start=${start}&end=${end}&limit=10000`);
         return send(res, 200, { bars: d.bars?.[sym] ?? [] });
       }
-      const d = await alpaca(env, 'GET', `${DATA}/v2/stocks/${encodeURIComponent(sym)}/bars?timeframe=1Day&start=${start}&end=${end}&limit=10000&adjustment=all&feed=iex`);
+      const d = await alpaca(env, 'GET', `${DATA}/v2/stocks/${encodeURIComponent(sym)}/bars?timeframe=${tf}&start=${start}&end=${end}&limit=10000&adjustment=all&feed=iex`);
       return send(res, 200, { bars: d.bars ?? [] });
     }
   }

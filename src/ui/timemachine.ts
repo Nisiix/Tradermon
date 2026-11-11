@@ -1,7 +1,7 @@
-import type { AssetDef } from '../types';
-import type { SimMission, SimResult } from '../data/missions';
+import type { AssetClass, AssetDef } from '../types';
+import { processReview, type SimMission, type SimResult } from '../data/missions';
 import type { Scenario } from '../systems/market';
-import { generateScenario, metrics } from '../systems/market';
+import { generateScenario, metrics, resolveScenario } from '../systems/market';
 import { ASSETS, SECTOR_LABEL, SECTOR_COLOR } from '../data/assets';
 import { type Book, marketBuy, marketSell, placeOrder, processOrders, value, weights, fmtPx, fmtMoney, fmtPct, fmtQty, FEE, spreadOf } from '../systems/portfolio';
 import { hasTech, TECH, classes } from '../systems/state';
@@ -17,14 +17,17 @@ export interface SimOpts {
   custom?: { assets: AssetDef[]; prices: Record<string, number[]>; labels?: string[] };
   seed?: number;
   sandbox?: boolean;
+  /** Classi di attivo da usare al posto di quelle del percorso (duello con codice: uguale per tutti). */
+  classes?: AssetClass[];
 }
 
 export type SimOutcome = (SimResult & { ok: boolean; detail: string }) | null;
 
 export function runSim(o: SimOpts): Promise<SimOutcome> {
   const sc = o.mission?.scenario ?? o.scenario!;
-  const cls = classes();
+  const cls = o.classes ?? classes();
   const assets = o.custom?.assets ?? ASSETS.filter((a) => cls.includes(a.cls));
+  const defs = Object.fromEntries(assets.map((a) => [a.id, a]));
   const seed = o.seed ?? Math.floor(Math.random() * 1e9);
   const series = o.custom ? { prices: o.custom.prices, index: [] as number[] } : generateScenario(sc, assets, seed);
   const days = o.custom ? Math.min(...Object.values(o.custom.prices).map((p) => p.length)) - 1 : sc.days;
@@ -36,7 +39,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
   const canStop = hasTech(TECH.STOP) || mid === 'm8' || o.sandbox;
   const canPac = hasTech(TECH.PAC) || mid === 'm4' || o.sandbox || monthly > 0;
   const newsMap = new Map<number, string>();
-  sc.shocks.forEach((s) => s.news && newsMap.set(s.day, s.news));
+  resolveScenario(sc, seed).shocks.forEach((s) => s.news && newsMap.set(s.day, s.news));
 
   const book: Book = { cash: capital, positions: [], orders: [], log: [] };
   let lossSales = 0;
@@ -148,7 +151,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
     const tick = (id: string) => assets.find((a) => a.id === id)!.ticker;
 
     const doBuy = (a: number, type = 'mercato') => {
-      const r = marketBuy(book, selected, a, prices(), day, slotsMax, type);
+      const r = marketBuy(book, selected, a, prices(), day, slotsMax, type, defs);
       toast(r.msg);
       if (r.ok) { boughtShares += r.qty ?? 0; monthsBought.add(Math.floor(day / 21)); beep('coin'); }
       draw();
@@ -157,7 +160,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
     const sell = (f: number) => {
       const pos = book.positions.find((x) => x.id === selected);
       if (!pos) return toast('Non possiedi questo asset.');
-      const r = marketSell(book, selected, pos.qty * f, prices(), day);
+      const r = marketSell(book, selected, pos.qty * f, prices(), day, 'mercato', defs);
       if (r.ok && r.atLoss) lossSales++;
       toast(r.msg);
       draw();
@@ -178,7 +181,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
       if (day >= days) { setSpeed(0); finish(); return; }
       day++;
       const px = prices();
-      for (const m of processOrders(book, px, day, slotsMax)) { toast(m); if (m.includes('limite eseguito') && m.includes('Comprate')) limitFills++; if (m.includes('Comprate')) monthsBought.add(Math.floor(day / 21)); }
+      for (const m of processOrders(book, px, day, slotsMax, defs)) { toast(m); if (m.includes('limite eseguito') && m.includes('Comprate')) limitFills++; if (m.includes('Comprate')) monthsBought.add(Math.floor(day / 21)); }
       if (day % 21 === 0) {
         if (monthly) { book.cash += monthly; contributed += monthly; pacCash += monthly; }
         if (dividends) {
@@ -267,6 +270,7 @@ export function runSim(o: SimOpts): Promise<SimOutcome> {
           <tr><td>Settori a fine periodo / peso massimo</td><td class="n">${res.sectors} / ${(res.maxW * 100).toFixed(0)}%</td></tr>
           <tr><td>Valore finale / versato</td><td class="n">${fmtMoney(res.finalValue)} / ${fmtMoney(res.contributed)}</td></tr>
         </table>
+        ${o.mission ? (() => { const pr = processReview(res); return `<p><b>Processo: ${'★'.repeat(pr.stars)}${'☆'.repeat(3 - pr.stars)}</b></p><ul class="small" style="margin:0 0 6px;padding-left:18px">${pr.notes.map((n) => `<li class="${n.ok ? 'good' : 'bad'}">${esc(n.text)}</li>`).join('')}</ul>`; })() : ''}
         <p class="small muted">Il rendimento conta, ma in Tradermon si vince con il rendimento corretto per il rischio: lo Sharpe e il drawdown dicono quanto è stato "faticoso" ottenerlo.</p>`;
       foot.innerHTML = '';
       button('Continua', () => close({ ...res, ...chk }), 'primary');

@@ -4,9 +4,8 @@ import { S, save } from '../systems/state';
 import { modal, choose, esc, say, ask, toast } from './core';
 import { track, weekKey } from '../systems/progress';
 import { runDuel } from './battle';
-import { pickQuestions } from '../systems/quiz';
+import { pickQuestions, SHARED_TOPICS } from '../systems/quiz';
 import { mulberry32 } from '../systems/rng';
-import { trackTopics } from '../data/quiz/build';
 
 const N = 8;
 
@@ -48,8 +47,8 @@ export async function weeklyChallenge() {
 
 async function play(week: string) {
   const rng = mulberry32(seedOf(week));
-  const topics = trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'regole', 'bias']);
-  const qs = pickQuestions(topics, N, { rng, minDiff: 1, maxDiff: 3 });
+  // argomenti comuni a tutti i percorsi e nessuna dipendenza dalla cronologia: stesse domande per tutti
+  const qs = pickQuestions(SHARED_TOPICS, N, { rng, minDiff: 1, maxDiff: 3, shared: true });
   const prevFid = S.stats.fiducia;
   const t0 = Date.now();
   const r = await runDuel({ foeName: `Sfida ${week}`, foeTitle: 'Tutti gli sfidanti', foePal: 11, questions: qs, need: N, damage: 0 });

@@ -1,6 +1,9 @@
 import type { SaveData, AssetClass, Track, RiskProfile, BiasId } from '../types';
 import { createWorldMarket, advanceWorldMarket } from './market';
-import { newPortfolio, value } from './portfolio';
+import { newPortfolio, value, processOrders } from './portfolio';
+import { toast } from '../ui/core';
+import { ANSWER_SECONDS } from './balance';
+import { onMarketDay } from './character';
 import { ASSETS, ASSET_BY_ID } from '../data/assets';
 
 export const SAVE_KEY = 'tradermon.save.v1';
@@ -24,10 +27,10 @@ export let S: SaveData = null as unknown as SaveData;
 export function newGame(): SaveData {
   const seed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
   S = {
-    version: 1, createdAt: Date.now(), name: 'Alex', avatar: 0, rival: 'Leo', profile: 'equilibrato', profileScore: 5,
+    version: SAVE_VERSION, createdAt: Date.now(), name: 'Alex', avatar: 0, rival: 'Leo', profile: 'equilibrato', profileScore: 5,
     goal: '', horizon: '', track: 'stocks', mixedClasses: [], map: 'home', x: 4, y: 4, facing: 'down', flags: {}, badges: 0, techniques: [],
     stats: { xp: 0, fiducia: 100, disciplina: 50, pazienza: 50, reputazione: 0 }, bias: null, biasSeen: [], cards: {}, lessonsRead: [], booksRead: [], tipsHeard: [], defeated: [], visited: ['t0'],
-    portfolio: newPortfolio(10000, 0, 'equilibrato'), market: createWorldMarket(seed), review: {}, answered: {}, daily: { lastDate: '', streak: 0 },
+    portfolio: newPortfolio(10000, 0, 'equilibrato'), market: createWorldMarket(seed), review: {}, reviewDue: {}, answered: {}, daily: { lastDate: '', streak: 0 },
     tower: { best: 0 }, legends: [], stepCounter: 0, lastClinic: { map: 'home', x: 4, y: 4 }, license: 'apprendista', examLastFail: 0,
     liveLimits: { perOrder: 0, perMonth: 0, pauseUntil: 0, monthKey: '', spentThisMonth: 0 }, liveAudit: [], ngPlus: 0, playMs: 0,
     options: { textSpeed: 2, fontScale: 1, contrast: false, studyMode: false, volume: 0.5, music: 0.5, gfx: '3d', fx: 'alti' },
@@ -67,15 +70,64 @@ export function load(): SaveData | null {
   } catch { return null; }
 }
 
-function migrate(s: SaveData): SaveData {
-  const base = newGameShape();
-  return { ...base, ...s, stats: { ...base.stats, ...s.stats }, options: { ...base.options, ...s.options }, agenda: { ...base.agenda, ...(s.agenda ?? {}) } };
+/** Versione corrente del formato di salvataggio: ogni cambio di struttura aggiunge un passo in MIGRATIONS. */
+export const SAVE_VERSION = 2;
+
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/** Unisce in profondità: i campi mancanti (anche dentro portfolio, market, opzioni...) prendono il valore di base. */
+function deepFill<T>(base: T, s: unknown): T {
+  if (!isObj(base) || !isObj(s)) return (s === undefined || s === null ? base : s) as T;
+  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
+  for (const [k, v] of Object.entries(s)) {
+    const b = (base as Record<string, unknown>)[k];
+    // i dizionari liberi (prezzi, flag, carte...) si copiano così come sono; le strutture note si completano
+    out[k] = isObj(b) && isObj(v) && Object.keys(b).length ? deepFill(b, v) : v === undefined || v === null ? b : v;
+  }
+  return out as T;
+}
+
+/** Passi di migrazione: da versione n a n+1. */
+const MIGRATIONS: Record<number, (s: SaveData) => void> = {
+  // v1 → v2: ripasso con scadenze (ripetizione spaziata) e ordini con validità
+  1: (s) => {
+    s.reviewDue = s.reviewDue ?? {};
+    // le domande già sapute tornano nel ripasso più avanti; quelle sbagliate restano in scadenza oggi
+    const d = new Date();
+    const key = (n: number) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+    for (const [id, box] of Object.entries(s.review ?? {})) if (!s.reviewDue[id]) s.reviewDue[id] = box <= 1 ? key(0) : key(box === 2 ? 3 : 7);
+    for (const o of s.portfolio?.orders ?? []) if (o.expiresDay === undefined) o.expiresDay = (o.createdDay ?? 0) + 20;
+  },
+};
+
+export function migrate(raw: SaveData): SaveData {
+  const s = deepFill(newGameShape(), raw);
+  let v = Number(raw.version) || 1;
+  while (v < SAVE_VERSION) { MIGRATIONS[v]?.(s); v++; }
+  s.version = SAVE_VERSION;
+  return s;
 }
 function newGameShape(): SaveData {
   const keep = S;
   const n = newGame();
   S = keep;
   return n;
+}
+
+/** Controlla la struttura minima di un salvataggio importato: evita che un file alterato blocchi il gioco. */
+export function validSave(d: unknown): string | null {
+  if (!isObj(d)) return 'il file non contiene un salvataggio';
+  if (typeof d.version !== 'number' || d.version < 1 || d.version > SAVE_VERSION) return 'versione del salvataggio non riconosciuta';
+  if (typeof d.name !== 'string' || typeof d.map !== 'string') return 'nome o posizione mancanti';
+  if (typeof d.x !== 'number' || typeof d.y !== 'number') return 'coordinate non valide';
+  const pf = d.portfolio;
+  if (!isObj(pf) || typeof pf.cash !== 'number' || !Array.isArray(pf.positions)) return 'portafoglio non valido';
+  if (pf.positions.some((p) => !isObj(p) || typeof p.id !== 'string' || typeof p.qty !== 'number')) return 'posizioni non valide';
+  const mk = d.market;
+  if (!isObj(mk) || !isObj(mk.prices) || !isObj(mk.history) || typeof mk.day !== 'number') return 'mercato non valido';
+  if (d.flags !== undefined && !isObj(d.flags)) return 'flag non validi';
+  for (const k of ['defeated', 'visited', 'techniques'] as const) if (d[k] !== undefined && !Array.isArray(d[k])) return `${k} non valido`;
+  return null;
 }
 
 export function exportSave(): string {
@@ -85,7 +137,7 @@ export function exportSave(): string {
 export function importSave(text: string): boolean {
   try {
     const d = JSON.parse(text);
-    if (!d || d.version !== 1 || !d.portfolio) return false;
+    if (validSave(d)) return false;
     S = migrate(d);
     save();
     return true;
@@ -140,10 +192,10 @@ export function learnBias(b: BiasId): void {
   if (!S.biasSeen.includes(b)) S.biasSeen.push(b);
 }
 
+/** Secondi per rispondere: uguali per tutti. Il profilo di rischio descrive chi sei, non dà vantaggi di gioco. */
 export function profileTimer(): number {
   if (S.options.studyMode) return 0;
-  const base = S.profile === 'prudente' ? 30 : S.profile === 'audace' ? 20 : 25;
-  return base + Math.floor((level() - 1) / 5) * 5;
+  return ANSWER_SECONDS;
 }
 
 /** Avanza il mercato del mondo di n giorni, con ordini, dividendi e uova. */
@@ -153,6 +205,15 @@ export function advanceDays(n: number): string[] {
   for (let i = 0; i < n; i++) {
     advanceWorldMarket(S.market);
     const prices = S.market.prices;
+    // ordini limite e stop della Clinica: si eseguono sui prezzi del giorno, oppure scadono
+    for (const m of processOrders(pf, prices, S.market.day, slots())) toast(m);
+    onMarketDay(pf, S.market.day);
+    for (const o of pf.orders.slice()) {
+      if (o.expiresDay !== undefined && S.market.day > o.expiresDay) {
+        pf.orders = pf.orders.filter((x) => x !== o);
+        toast(`Ordine ${o.type === 'limit' ? 'limite' : 'stop'} su ${ASSET_BY_ID[o.asset]?.ticker ?? o.asset} scaduto dopo 20 giorni di mercato senza essere eseguito.`);
+      }
+    }
     // dividendi mensili (ogni 21 giorni di mercato)
     if (S.market.day % 21 === 0) {
       for (const p of pf.positions) {

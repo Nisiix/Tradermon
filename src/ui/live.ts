@@ -1,18 +1,38 @@
 import * as A from '../systems/alpaca';
 import { S, save, LIVE_LIMITS, hasTech, TECH, classes } from '../systems/state';
-import { say, choose, modal, el, esc, toast } from './core';
+import { say, choose, modal, el, esc, toast, confirm } from './core';
 import { runExam } from './setup';
 import { journalPrompt } from './journal';
+import { openChart } from './chart';
+import { BARS_SHOWN, type Timeframe } from '../systems/candles';
 import { fmtPx } from '../systems/portfolio';
 
 const NURSE = 'Dott.ssa Ratio';
 
 function monthKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}`; }
 
+/** Grafico a candele di un simbolo reale: barre Alpaca a 5 min, 15 min, 1 ora, 4 ore o 1 giorno. */
+export function realChart(sym: string, marker?: { price: number; label: string }) {
+  const isCrypto = sym.includes('/');
+  const TF: Record<Timeframe, { tf: A.BarTimeframe; days: number }> = { '5m': { tf: '5Min', days: 3 }, '15m': { tf: '15Min', days: 7 }, '1h': { tf: '1Hour', days: 20 }, '4h': { tf: '4Hour', days: 70 }, '1g': { tf: '1Day', days: 260 } };
+  return openChart({
+    title: sym,
+    marker,
+    note: 'Barre fornite da Alpaca per il tuo conto (azioni: feed IEX, in ritardo rispetto al mercato). Nessun consiglio.',
+    load: async (tf) => {
+      const { tf: atf, days } = TF[tf];
+      const end = new Date(), start = new Date(Date.now() - days * 864e5);
+      const iso = (d: Date) => d.toISOString().slice(0, 10);
+      const r = await A.bars(sym, isCrypto ? 'crypto' : 'stocks', iso(start), iso(end), atf);
+      return r.bars.map((b) => ({ t: Math.floor(new Date(b.t).getTime() / 60000), o: b.o, h: b.h, l: b.l, c: b.c, v: b.v })).slice(-BARS_SHOWN[tf]);
+    },
+  });
+}
+
 export async function openAlpacaHub() {
   const st = await A.serverStatus();
   if (!st) {
-    await say(['Non riesco a contattare il server locale di Tradermon.', 'Per usare Alpaca avvia il gioco con "npm run dev" oppure "npm start" (vedi il file LEGGIMI). Senza server il gioco funziona lo stesso con il mercato simulato.'], NURSE);
+    await say(A.noServerLines('il collegamento ad Alpaca (Paper e reale)'), NURSE);
     return;
   }
   for (;;) {
@@ -55,7 +75,7 @@ export async function openAlpacaHub() {
 /** Osservatorio: conto, posizioni e prezzi Alpaca in sola lettura. Nessun pulsante d'ordine: qui si guarda, non si opera. */
 export async function openObservatory() {
   const st = await A.serverStatus();
-  if (!st) return say(['Per l\'Osservatorio serve il server locale di Tradermon (npm run dev oppure npm start).', 'Senza server il gioco funziona lo stesso con il mercato simulato.'], NURSE);
+  if (!st) return say(A.noServerLines('l\'Osservatorio Alpaca'), NURSE);
   const envs: A.Env[] = [];
   if (st.paper.configured) envs.push('paper');
   if (st.live.configured && S.license === 'investitore') envs.push('live');
@@ -74,10 +94,11 @@ export async function openObservatory() {
           ${pos.length ? `<table class="t"><tr><th>Simbolo</th><th class="n">Quantità</th><th class="n">Prezzo medio</th><th class="n">Prezzo attuale</th><th class="n">Valore</th><th class="n">P&amp;L</th><th>Diario</th></tr>${pos.map((p) => { const j = mine.filter((x) => x.asset === p.symbol); return `<tr><td><b>${esc(p.symbol)}</b></td><td class="n">${p.qty}</td><td class="n">${Number(p.avg_entry_price).toFixed(2)}</td><td class="n">${Number(p.current_price).toFixed(2)}</td><td class="n">${Number(p.market_value).toFixed(2)}</td><td class="n ${Number(p.unrealized_pl) >= 0 ? 'good' : 'bad'}">${(Number(p.unrealized_plpc) * 100).toFixed(2)}%</td><td class="small">${j.length ? esc(j[j.length - 1].reason) : '<span class="muted">—</span>'}</td></tr>`; }).join('')}</table>` : '<p class="muted">Nessuna posizione.</p>'}
           <h4>Ordini aperti</h4>${ord.length ? `<ul class="small" style="margin:0 0 0 16px">${ord.map((o) => `<li>${esc(o.side)} ${esc(o.type)} ${esc(o.symbol)} ${o.notional ? o.notional + ' $' : o.qty} · ${esc(o.status)}</li>`).join('')}</ul>` : '<span class="muted">Nessuno</span>'}
           <h4>Prezzo di un simbolo</h4>
-          <div class="row"><input class="tx sym" placeholder="es. un ticker USA o BTC/USD" spellcheck="false" style="flex:1"><button class="btn look">Guarda</button></div>
+          <div class="row"><input class="tx sym" placeholder="es. un ticker USA o BTC/USD" spellcheck="false" style="flex:1"><button class="btn look">Guarda</button><button class="btn chart">Grafico</button></div>
           <p class="msg small"></p>
           <p class="small muted">Dati forniti da Alpaca per il tuo conto. Nessun consiglio: l\'Osservatorio serve a confrontare ciò che hai scritto nel Diario con quello che è successo.</p>`;
         const look = body.querySelector('.look') as HTMLButtonElement, msg = body.querySelector('.msg') as HTMLElement, inp = body.querySelector('.sym') as HTMLInputElement;
+        (body.querySelector('.chart') as HTMLButtonElement).addEventListener('click', () => { const sym = inp.value.trim().toUpperCase(); if (sym) void realChart(sym); });
         look.addEventListener('click', async () => {
           const sym = inp.value.trim().toUpperCase();
           if (!sym) return;
@@ -169,14 +190,14 @@ async function limitsScreen() {
       <div class="row"><button class="btn p1">24 ore</button><button class="btn p7">7 giorni</button><button class="btn p30">30 giorni</button></div>
       <p class="msg small"></p>`;
     const msg = body.querySelector('.msg') as HTMLElement;
-    const pause = (d: number) => {
-      if (!window.confirm(`Bloccare il conto reale per ${d} giorni? Non potrai annullare.`)) return;
+    const pause = async (d: number) => {
+      if (!(await confirm(`Bloccare il conto reale per ${d} giorni? Non potrai annullare.`))) return;
       S.liveLimits.pauseUntil = Date.now() + d * 86400000; save();
       msg.innerHTML = `<span class="good">Pausa attiva fino al ${new Date(S.liveLimits.pauseUntil).toLocaleString('it-IT')}.</span>`;
     };
-    (body.querySelector('.p1') as HTMLElement).addEventListener('click', () => pause(1));
-    (body.querySelector('.p7') as HTMLElement).addEventListener('click', () => pause(7));
-    (body.querySelector('.p30') as HTMLElement).addEventListener('click', () => pause(30));
+    (body.querySelector('.p1') as HTMLElement).addEventListener('click', () => void pause(1));
+    (body.querySelector('.p7') as HTMLElement).addEventListener('click', () => void pause(7));
+    (body.querySelector('.p30') as HTMLElement).addEventListener('click', () => void pause(30));
     button('Salva limiti', () => {
       const po = Math.max(0, Math.min(max.order, Number((body.querySelector('.po') as HTMLInputElement).value)));
       const pm = Math.max(0, Math.min(max.month, Number((body.querySelector('.pm') as HTMLInputElement).value)));
@@ -200,7 +221,7 @@ async function accountScreen(env: A.Env) {
           <h4>Ordini aperti</h4><div class="oo">${ord.length ? '' : '<span class="muted">Nessuno</span>'}</div>
           <h4>Nuovo ordine</h4>
           <div class="grid2">
-            <label>Simbolo (es. ${classes().includes('crypto') ? 'BTC/USD' : 'un ticker USA'})<input class="tx sym" spellcheck="false"></label>
+            <label>Simbolo (es. ${classes().includes('crypto') ? 'BTC/USD' : 'un ticker USA'})<span class="row"><input class="tx sym" spellcheck="false" style="flex:1"><button class="btn chart" title="Grafico a candele prima di decidere">Grafico</button></span></label>
             <label>Lato<select class="tx side"><option value="buy">Acquisto</option><option value="sell">Vendita</option></select></label>
             <label>Tipo<select class="tx typ"><option value="market">A mercato</option>${hasTech(TECH.LIMIT) ? '<option value="limit">Limite</option>' : ''}${hasTech(TECH.STOP) ? '<option value="stop">Stop</option>' : ''}</select></label>
             <label>Importo ($)<input class="tx amt" type="number" min="1" step="1" value="10"></label>
@@ -208,6 +229,12 @@ async function accountScreen(env: A.Env) {
           </div>
           <p class="small muted">Il gioco non suggerisce titoli: la scelta è solo tua. Classi consentite dal tuo percorso: ${classes().map((c) => (c === 'crypto' ? 'cripto' : c === 'etf' ? 'ETF (us_equity)' : 'azioni (us_equity)')).join(', ')}.</p>
           <p class="msg"></p>`;
+        (body.querySelector('.chart') as HTMLButtonElement).addEventListener('click', () => {
+          const sym = (body.querySelector('.sym') as HTMLInputElement).value.trim().toUpperCase();
+          if (!sym) { toast('Scrivi prima il simbolo.'); return; }
+          const p = pos.find((x) => x.symbol === sym);
+          void realChart(sym, p ? { price: Number(p.avg_entry_price), label: 'carico' } : undefined);
+        });
         const oo = body.querySelector('.oo') as HTMLElement;
         ord.forEach((o) => {
           const r = el('div', 'row small', `${esc(o.side)} ${esc(o.type)} ${esc(o.symbol)} ${o.notional ? o.notional + ' $' : o.qty} · ${esc(o.status)}`);
@@ -264,7 +291,11 @@ function button2(body: HTMLElement, env: A.Env, reload: () => Promise<void>) {
         order.qty = isCrypto ? q.toFixed(6) : String(q);
       }
       if (type === 'limit') order.limit_price = String(pr);
-      if (type === 'stop') order.stop_price = String(pr);
+      if (type === 'stop') {
+        order.stop_price = String(pr);
+        // Alpaca non accetta stop "a mercato" sulle cripto: si usa uno stop limit con un margine del 3%
+        if (isCrypto) { order.type = 'stop_limit'; order.limit_price = String(+(side === 'sell' ? pr * 0.97 : pr * 1.03).toPrecision(8)); }
+      }
       const out = await A.submitOrder(env, order, confirmWord);
       let refPx = pr;
       if (!refPx) { try { refPx = (await A.latest(sym, isCrypto ? 'crypto' : 'stocks')).price; } catch { refPx = 0; } }

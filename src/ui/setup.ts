@@ -6,7 +6,7 @@ import { PAL, titleBackdrop, portrait, playerPal, PLAYER_COLOR_LIST } from '../a
 import { getStage } from './core';
 import { controlsTutorial } from './tutorial';
 import { pushHandler, popHandler, type Key } from './input';
-import { newPortfolio } from '../systems/portfolio';
+import { newPortfolio, presetTarget } from '../systems/portfolio';
 import { keysOf } from '../systems/controls';
 
 export async function disclaimer(): Promise<void> {
@@ -77,7 +77,8 @@ export async function onboarding(): Promise<void> {
 export async function portfolioSetup(): Promise<void> {
   await say(['Ciao, sono la Dott.ssa Ratio! Lavoro nelle Cliniche del Portafoglio di tutta la regione.', 'Il Professore mi ha chiesto di aprirti il tuo Conto di Prova: denaro finto, lezioni vere.'], 'Dott.ssa Ratio');
   const res = await modal<{ cap: number; monthly: number; drip: boolean; risky: number; def: number; cash: number }>('Il tuo Conto di Prova', ({ body, button, close }) => {
-    const t = S.profile === 'prudente' ? [40, 50, 10] : S.profile === 'audace' ? [80, 10, 10] : [60, 30, 10];
+    const pt = presetTarget(S.profile);
+    const t = [pt.risky, pt.defensive, pt.cash];
     body.innerHTML = `
       <p class="small">Tutto in <b>Crediti</b> (1 Credito = 1 dollaro virtuale). I punteggi sono in percentuale: un capitale più grande non dà vantaggi.</p>
       <div class="grid2">

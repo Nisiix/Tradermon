@@ -8,6 +8,9 @@ import { recordAnswer } from '../systems/quiz';
 import { shuffle } from '../systems/rng';
 import { portrait, portraitBack, playerPal } from '../art/art';
 import { beep } from '../systems/audio';
+import { markDuelDone } from './savebtn';
+import { FIDUCIA_PER_CORRECT } from '../systems/balance';
+import { studyHint } from '../data/quiz/hint';
 
 export interface DuelOpts {
   foeName: string;
@@ -17,11 +20,11 @@ export interface DuelOpts {
   need: number;
   damage: number;
   intro?: string;
-  /** Sfida a numero fisso di domande (Mentori e Lega): si rispondono sempre tutte, anche a Fiducia esaurita. */
+  /** Sfida a numero fisso di domande (Mentori e Lega): si rispondono tutte, ma a Fiducia zero si va in tilt. */
   fixed?: boolean;
 }
 
-export interface DuelResult { win: boolean; correct: number; total: number; perfect: boolean; ids: string[] }
+export interface DuelResult { win: boolean; correct: number; total: number; perfect: boolean; tilted: boolean; ids: string[]; wrong: string[] }
 
 /** Transizione d'ingresso al duello: due lampi, poi bande nere che si chiudono da lati alterni. */
 export async function battleTransition(): Promise<void> {
@@ -55,6 +58,8 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
     let correct = 0;
     let idx = 0;
     let perfect = true;
+    let tilted = false;
+    const wrongIds: string[] = [];
     const per = 100 / o.need;
     let handler: ((k: Key) => void) | null = null;
     const setHandler = (h: ((k: Key) => void) | null) => {
@@ -68,13 +73,16 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       await wait(400);
       root.remove();
       if (prevTrack) play(prevTrack); else stop();
+      markDuelDone();
       if (win && o.damage > 0) { track('duel_win'); if (perfect) track('duel_perfect'); jingle('win'); }
-      resolve({ win, correct, total: idx, perfect: perfect && win, ids: o.questions.slice(0, idx).map((q) => q.id) });
+      if (!win && o.damage > 0) track('duel_loss');
+      resolve({ win, correct, total: idx, perfect: perfect && win, tilted, ids: o.questions.slice(0, idx).map((q) => q.id), wrong: wrongIds });
     };
 
     const ask = async () => {
       if (!o.fixed && foe <= 0.01) return finish(true);
-      if (!o.fixed && S.stats.fiducia <= 0) return finish(false);
+      // Fiducia esaurita: tilt, in ogni sfida con danno (anche Mentori e Lega)
+      if (o.damage > 0 && S.stats.fiducia <= 0) { tilted = true; return finish(false); }
       if (idx >= o.questions.length) return finish(correct >= o.need);
       const q = o.questions[idx];
       idx++;
@@ -116,10 +124,12 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         if (ok) {
           correct++;
           foe = Math.max(0, foe - per);
+          if (o.damage > 0) S.stats.fiducia = Math.min(100, S.stats.fiducia + FIDUCIA_PER_CORRECT);
           beep('ok');
           ($('.foe') as HTMLElement).classList.add('shake');
         } else {
           perfect = false;
+          wrongIds.push(q.id);
           S.stats.fiducia = Math.max(0, S.stats.fiducia - o.damage);
           beep('bad');
           ($('.me') as HTMLElement).classList.add('shake');
@@ -129,7 +139,8 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         $('.fv').textContent = String(S.stats.fiducia);
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
         const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(q.options[q.answer])}`;
-        $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}</p>`;
+        const hint = ok ? '' : studyHint(q);
+        $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
         const cont = el('button', 'btn primary', 'Continua ▶');
         cont.style.marginTop = '6px';
         $('.exp').appendChild(cont);

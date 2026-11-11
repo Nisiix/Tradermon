@@ -41,15 +41,16 @@ export const clock = (env: Env) => call<{ is_open: boolean; next_open: string; n
 export const asset = (env: Env, symbol: string) => call<{ symbol: string; class: string; tradable: boolean; fractionable: boolean; name: string }>(`/api/alpaca/${env}/assets/${encodeURIComponent(symbol)}`);
 export const cancelOrder = (env: Env, id: string) => call<unknown>(`/api/alpaca/${env}/orders/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
-export interface OrderReq { symbol: string; side: 'buy' | 'sell'; type: 'market' | 'limit' | 'stop'; notional?: string; qty?: string; limit_price?: string; stop_price?: string; time_in_force: 'day' | 'gtc' | 'ioc'; client_order_id: string }
+export interface OrderReq { symbol: string; side: 'buy' | 'sell'; type: 'market' | 'limit' | 'stop' | 'stop_limit'; notional?: string; qty?: string; limit_price?: string; stop_price?: string; time_in_force: 'day' | 'gtc' | 'ioc'; client_order_id: string }
 
 export function submitOrder(env: Env, o: OrderReq, confirmWord?: string) {
   return call<AlpacaOrder>(`/api/alpaca/${env}/orders`, { method: 'POST', body: JSON.stringify(o), headers: confirmWord ? { 'x-tradermon-confirm': confirmWord } : {} });
 }
 
 export interface Bar { t: string; o: number; h: number; l: number; c: number; v: number }
-export function bars(symbol: string, cls: 'stocks' | 'crypto', start: string, end: string) {
-  return call<{ bars: Bar[] }>(`/api/data/bars?symbol=${encodeURIComponent(symbol)}&class=${cls}&start=${start}&end=${end}`);
+export type BarTimeframe = '5Min' | '15Min' | '1Hour' | '4Hour' | '1Day';
+export function bars(symbol: string, cls: 'stocks' | 'crypto', start: string, end: string, timeframe: BarTimeframe = '1Day') {
+  return call<{ bars: Bar[] }>(`/api/data/bars?symbol=${encodeURIComponent(symbol)}&class=${cls}&start=${start}&end=${end}&timeframe=${timeframe}`);
 }
 export function latest(symbol: string, cls: 'stocks' | 'crypto') {
   return call<{ price: number }>(`/api/data/latest?symbol=${encodeURIComponent(symbol)}&class=${cls}`);
@@ -57,3 +58,21 @@ export function latest(symbol: string, cls: 'stocks' | 'crypto') {
 
 export const ALPACA_DASHBOARD = 'https://app.alpaca.markets/';
 export const ALPACA_SIGNUP = 'https://alpaca.markets/';
+
+/** Il gioco gira sul computer del giocatore (server locale) oppure è la versione online senza server? */
+export function isLocalHost(): boolean {
+  try { return ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname); } catch { return false; }
+}
+
+/** Spiegazione unica quando il server locale (e quindi Alpaca) non è raggiungibile. */
+export function noServerLines(what: string): string[] {
+  return isLocalHost()
+    ? [`Per ${what} serve il server locale di Tradermon, che ora non risponde.`, 'Avvialo con "npm start" (oppure "npm run dev"): le istruzioni sono nel file LEGGIMI e nella sezione Guida della pagina iniziale.', ...ACCOUNT_LINES]
+    : [`Per ${what} serve un conto Alpaca collegato con le chiavi API, e il server locale che le custodisce: qui online non c'è.`, 'La sezione Guida della pagina iniziale spiega passo per passo come creare il conto (Paper o Live) e avviare il gioco sul tuo computer.', ...ACCOUNT_LINES];
+}
+
+/** Perché serve un conto Alpaca: senza chiavi resta solo il percorso di apprendimento con il mercato simulato. */
+export const ACCOUNT_LINES = [
+  'Senza un conto Alpaca collegato (anche solo Paper, gratuito e con denaro finto) puoi seguire tutto il percorso di apprendimento, ma non le sfide sui grafici e sui titoli reali.',
+];
+

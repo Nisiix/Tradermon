@@ -2,11 +2,14 @@ import type { Question, QuizTopic, Track, AssetClass } from '../../types';
 import * as C from './core';
 import * as T from './tracks';
 
-export type QRow = [1 | 2 | 3, string, string, string, string, string, string, string];
+/** Riga di una domanda: [difficoltà, domanda, giusta, sbagliata×3, spiegazione, fonte, id?].
+ *  L'id esplicito (9° elemento) tiene stabile il riferimento nei salvataggi anche se si riordinano o inseriscono righe;
+ *  se manca, l'id è posizionale (`argomento_N`). */
+export type QRow = [1 | 2 | 3 | 4, string, string, string, string, string, string, string, string?];
 
 function build(topic: QuizTopic, rows: QRow[]): Question[] {
   return rows.map((r, i) => ({
-    id: `${topic}_${i + 1}`,
+    id: r[8] ?? `${topic}_${i + 1}`,
     topic,
     diff: r[0],
     q: r[1],
@@ -43,6 +46,11 @@ const TABLE: Record<QuizTopic, QRow[]> = {
 
 export const QUESTIONS: Question[] = (Object.keys(TABLE) as QuizTopic[]).flatMap((t) => build(t, TABLE[t]));
 export const BY_ID: Record<string, Question> = Object.fromEntries(QUESTIONS.map((q) => [q.id, q]));
+if (Object.keys(BY_ID).length !== QUESTIONS.length) {
+  const seen = new Set<string>();
+  const dup = QUESTIONS.map((q) => q.id).filter((id) => seen.size === seen.add(id).size);
+  throw new Error(`Id domanda duplicati: ${dup.join(', ')}`);
+}
 
 export function byTopic(topic: QuizTopic): Question[] {
   return QUESTIONS.filter((q) => q.topic === topic);

@@ -92,8 +92,14 @@ export async function choose(options: string[], opts: ChooseOpts = {}): Promise<
       return it;
     });
     if (opts.pos === 'center') { m.style.left = '50%'; m.style.top = '50%'; m.style.transform = 'translate(-50%,-50%)'; }
-    else { m.style.right = '10px'; m.style.bottom = promptBox ? '118px' : '10px'; }
+    else m.style.right = '10px';
     stage.appendChild(m);
+    if (opts.pos !== 'center') {
+      // sopra la domanda, qualunque sia la sua altezza (sui telefoni il riquadro è più basso)
+      const bottom = promptBox ? promptBox.offsetHeight + 18 : 10;
+      m.style.bottom = `${bottom}px`;
+      m.style.maxHeight = `calc(100% - ${bottom + 8}px)`;
+    }
     let sel = 0;
     const render = () => { items.forEach((it, i) => it.classList.toggle('sel', i === sel)); opts.onMove?.(sel); };
     const done = (v: number) => { popHandler(h); m.remove(); promptBox?.remove(); resolve(v); };
@@ -197,6 +203,7 @@ export function ask(prompt: string, def = '', maxLen = 10): Promise<string | nul
 
 let toastTimer = 0;
 export function toast(msg: string) {
+  if (typeof document === 'undefined' || !stage) return;
   document.querySelectorAll('.toast').forEach((t) => t.remove());
   const t = el('div', 'box toast', esc(msg));
   stage.appendChild(t);

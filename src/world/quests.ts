@@ -5,7 +5,7 @@ import { say, choose, toast } from '../ui/core';
 import { track } from '../systems/progress';
 import { jingle } from '../systems/music';
 import { runDuel } from '../ui/battle';
-import { pickQuestions } from '../systems/quiz';
+import { pickQuestions, targetDiff, storyStage } from '../systems/quiz';
 import { RESIDENT_BY_ID } from '../data/residents';
 import { LESSONS } from '../data/lessons';
 import type { GameEvent } from '../systems/progress';
@@ -156,7 +156,7 @@ export async function questTalk(rid: string, who: string): Promise<boolean> {
   if (st.kind === 'duel') {
     const ok = (await choose(['Sono pronto', 'Più tardi'], { prompt: st.say[0], who })) === 0;
     if (!ok) return true;
-    const qs = pickQuestions(st.topics ?? ['regole'], 3, { maxDiff: 2 });
+    const qs = pickQuestions(st.topics ?? ['regole'], 3, { target: Math.min(2.5, targetDiff(storyStage())) });
     const prevFid = S.stats.fiducia;
     const r = await runDuel({ foeName: RESIDENT_BY_ID[rid]?.name ?? who, foeTitle: q.title, foePal: RESIDENT_BY_ID[rid]?.pal ?? 0, questions: qs, need: 2, damage: 5 });
     S.stats.fiducia = prevFid;

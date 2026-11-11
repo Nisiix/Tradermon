@@ -10,6 +10,7 @@ import { S, save, advanceDays, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc, choose } from '../ui/core';
 import { pauseMenu } from '../ui/menu';
+import { initSaveButton, setSaveGuard, takeDuelDone } from '../ui/savebtn';
 import { canSwim, canCut, canSeeDark, boulderFlag, ABILITY } from '../world/travel';
 import { hiddenPage, findPage, isTapeShelf, tapeShelf, atHodlStone, hodlRitual } from '../world/secrets';
 import { SECRET_FLAGS, HODL_MS } from '../world/secretsData';
@@ -98,6 +99,8 @@ export class WorldScene extends Phaser.Scene {
   create() {
     this.hud = el('div', 'hud');
     getStage().appendChild(this.hud);
+    initSaveButton();
+    setSaveGuard(() => !this.busy && !this.moving && !uiActive());
     this.overlay = this.add.rectangle(0, 0, 10, 10, 0x000000, 0).setOrigin(0).setScrollFactor(0).setDepth(100);
     this.weather = this.add.graphics().setScrollFactor(0).setDepth(99);
     // post-processing della camera (filtri nativi di Phaser 4, solo WebGL): vignetta morbida e colori un po' più vivi
@@ -569,6 +572,8 @@ export class WorldScene extends Phaser.Scene {
     this.busy = true;
     clearWorld();
     try { await fn(); } catch (e) { console.error(e); toast('Errore: ' + (e as Error).message); }
+    // dopo ogni sfida a quiz con un personaggio (vinta o persa) la partita si salva da sola
+    if (takeDuelDone()) save();
     clearWorld();
     this.busy = false;
     this.refreshNpcs();

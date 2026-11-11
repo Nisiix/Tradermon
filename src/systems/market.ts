@@ -15,6 +15,20 @@ export interface Scenario {
   phases: Phase[];
   shocks: DayShock[];
   historical?: string;
+  /** Spostamento casuale (in giorni, ±) di fasi e shock, deciso dal seme: il giocatore sa che lo shock arriverà, non quando. */
+  jitter?: number;
+}
+
+/** Scenario concreto per un seme: fasi e shock spostati dello stesso numero di giorni, così restano coerenti tra loro. */
+export function resolveScenario(sc: Scenario, seed: number): Scenario {
+  if (!sc.jitter) return sc;
+  const off = Math.round((mulberry32(seed ^ 0x5bd1e995)() * 2 - 1) * sc.jitter);
+  const clampDay = (d: number) => Math.max(1, Math.min(sc.days, d + off));
+  return {
+    ...sc,
+    phases: sc.phases.map((ph) => ({ ...ph, until: ph.until >= sc.days ? ph.until : clampDay(ph.until) })),
+    shocks: sc.shocks.map((sh) => ({ ...sh, day: clampDay(sh.day) })),
+  };
 }
 
 const START_PRICE: Record<string, number> = {};
@@ -55,7 +69,8 @@ export function phaseAt(phases: Phase[], day: number): Phase {
 }
 
 /** Genera l'intera serie di prezzi di uno scenario (deterministica dal seed). */
-export function generateScenario(sc: Scenario, assets: AssetDef[], seed: number): { prices: Record<string, number[]>; index: number[] } {
+export function generateScenario(sc0: Scenario, assets: AssetDef[], seed: number): { prices: Record<string, number[]>; index: number[] } {
+  const sc = resolveScenario(sc0, seed);
   const rng = mulberry32(seed);
   const prices: Record<string, number[]> = {};
   assets.forEach((a) => (prices[a.id] = [startPrice(a.id)]));
@@ -91,7 +106,9 @@ export function createWorldMarket(seed: number): MarketState {
 
 export function advanceWorldMarket(st: MarketState, shock?: DayShock): Record<string, number> {
   const rng = mulberry32(st.seed + st.day * 7919 + st.index.length);
-  const regime = st.climate === 'orso' ? { d: -0.05, v: 0.2 } : st.climate === 'tempesta' ? { d: 0, v: 0.3 } : { d: 0.07, v: 0.15 };
+  // Il regime (deriva e volatilità) viene da cicli nascosti decisi dal seme, non dal clima osservato:
+  // così il clima descrive il mercato senza alimentarlo, e non restano fasi ribassiste infinite.
+  const regime = hiddenRegime(st.seed, st.day);
   const { market, ret } = stepReturns(rng, ASSETS, regime.d, regime.v, shock);
   st.index.push(st.index[st.index.length - 1] * (1 + market));
   if (st.index.length > 400) st.index.shift();
@@ -106,6 +123,26 @@ export function advanceWorldMarket(st: MarketState, shock?: DayShock): Record<st
   st.day += 1;
   st.climate = computeClimate(st.index, rng);
   return ret;
+}
+
+/**
+ * Cicli di mercato nascosti: ogni fase dura 40-120 giorni e viene scelta a caso dal seme
+ * (60% rialzo moderato, 25% ribasso, 15% alta volatilità). Il clima mostrato al giocatore
+ * è calcolato a posteriori dall'indice (computeClimate) e non influenza i prezzi.
+ */
+export function hiddenRegime(seed: number, day: number): { d: number; v: number } {
+  let t = 0;
+  let k = 0;
+  for (;;) {
+    const r = mulberry32((seed ^ 0x9e3779b9) + k * 104729);
+    const len = 40 + Math.floor(r() * 81);
+    if (day < t + len) {
+      const x = r();
+      return x < 0.6 ? { d: 0.08, v: 0.15 } : x < 0.85 ? { d: -0.12, v: 0.22 } : { d: 0, v: 0.3 };
+    }
+    t += len;
+    k++;
+  }
 }
 
 export function computeClimate(index: number[], rng?: Rng): MarketState['climate'] {

@@ -29,4 +29,14 @@ describe('server locale Alpaca', () => {
     const r = await fetch(base + '/api/alpaca/paper/orders', { method: 'POST', headers: { origin: base, 'content-type': 'application/json' }, body: JSON.stringify({ symbol: 'rm -rf', side: 'buy', type: 'market', time_in_force: 'day', qty: 1 }) });
     expect(r.status).toBeGreaterThanOrEqual(400);
   });
+  it('applica le regole di Alpaca: niente stop semplice sulle cripto, frazionari solo a mercato', async () => {
+    const post = (b: object) => fetch(base + '/api/alpaca/paper/orders', { method: 'POST', headers: { origin: base, 'content-type': 'application/json' }, body: JSON.stringify(b) });
+    const c = await post({ symbol: 'BTC/USD', side: 'sell', type: 'stop', time_in_force: 'gtc', qty: 0.01, stop_price: 50000 });
+    expect(c.status).toBe(400);
+    expect((await c.json()).message).toMatch(/stop limit/);
+    const f = await post({ symbol: 'AAPL', side: 'buy', type: 'limit', time_in_force: 'day', notional: 50, limit_price: 100 });
+    expect(f.status).toBe(400);
+    const p = await post({ symbol: 'AAPL', side: 'buy', type: 'limit', time_in_force: 'day', qty: 1, limit_price: 0 });
+    expect(p.status).toBe(400);
+  });
 });

@@ -13,6 +13,11 @@ export function spreadOf(a: AssetDef): number {
   return a.cls === 'crypto' ? 0.005 : 0.001;
 }
 
+/** Allocazione obiettivo suggerita dal profilo di rischio (rischiosi, difensivi, liquidità). */
+export function presetTarget(profile: string): { risky: number; defensive: number; cash: number } {
+  return profile === 'prudente' ? { risky: 40, defensive: 50, cash: 10 } : profile === 'audace' ? { risky: 80, defensive: 10, cash: 10 } : { risky: 60, defensive: 30, cash: 10 };
+}
+
 export function newPortfolio(initial: number, monthly: number, profile: string): Portfolio {
   const target = profile === 'prudente' ? { risky: 40, defensive: 50, cash: 10 } : profile === 'audace' ? { risky: 80, defensive: 10, cash: 10 } : { risky: 60, defensive: 30, cash: 10 };
   return {
@@ -32,8 +37,12 @@ export function weights(b: Book, prices: Record<string, number>): { id: string; 
 
 export interface TradeResult { ok: boolean; msg: string; qty?: number; price?: number; fee?: number; atLoss?: boolean }
 
-export function marketBuy(b: Book, id: string, amount: number, prices: Record<string, number>, day: number, maxSlots: number, type = 'mercato'): TradeResult {
-  const a = ASSET_BY_ID[id];
+/** Asset di riferimento: quelli del gioco, oppure quelli passati dal simulatore (per esempio un simbolo reale di Alpaca). */
+export type AssetDefs = Record<string, AssetDef>;
+const defOf = (id: string, defs?: AssetDefs): AssetDef | undefined => defs?.[id] ?? ASSET_BY_ID[id];
+
+export function marketBuy(b: Book, id: string, amount: number, prices: Record<string, number>, day: number, maxSlots: number, type = 'mercato', defs?: AssetDefs): TradeResult {
+  const a = defOf(id, defs);
   if (!a) return { ok: false, msg: 'Asset sconosciuto.' };
   if (amount <= FEE) return { ok: false, msg: 'Importo troppo basso.' };
   if (amount > b.cash + 1e-9) return { ok: false, msg: 'Liquidità insufficiente: niente margine né prestiti.' };
@@ -47,8 +56,8 @@ export function marketBuy(b: Book, id: string, amount: number, prices: Record<st
   return { ok: true, msg: `Comprate ${fmtQty(qty)} ${a.ticker} a ${fmtPx(px)}.`, qty, price: px, fee: FEE };
 }
 
-export function marketSell(b: Book, id: string, qty: number, prices: Record<string, number>, day: number, type = 'mercato'): TradeResult {
-  const a = ASSET_BY_ID[id];
+export function marketSell(b: Book, id: string, qty: number, prices: Record<string, number>, day: number, type = 'mercato', defs?: AssetDefs): TradeResult {
+  const a = defOf(id, defs);
   const pos = b.positions.find((p) => p.id === id);
   if (!a || !pos) return { ok: false, msg: 'Non possiedi questo asset: le vendite allo scoperto non sono consentite.' };
   qty = Math.min(qty, pos.qty);
@@ -71,7 +80,7 @@ export function placeOrder(b: Book, o: Omit<OpenOrder, 'id'>): OpenOrder {
 }
 
 /** Esegue gli ordini limite/stop compatibili con i prezzi del giorno. */
-export function processOrders(b: Book, prices: Record<string, number>, day: number, maxSlots: number): string[] {
+export function processOrders(b: Book, prices: Record<string, number>, day: number, maxSlots: number, defs?: AssetDefs): string[] {
   const msgs: string[] = [];
   for (const o of b.orders.slice()) {
     const px = prices[o.asset];
@@ -85,8 +94,8 @@ export function processOrders(b: Book, prices: Record<string, number>, day: numb
     if (o.type === 'limit') execPrices[o.asset] = o.side === 'buy' ? Math.min(px, o.price) : Math.max(px, o.price);
     const tag = o.type === 'limit' ? 'limite' : 'stop';
     const r = o.side === 'buy'
-      ? marketBuy(b, o.asset, Math.min(b.cash, o.qty * execPrices[o.asset] + FEE), execPrices, day, maxSlots, tag)
-      : marketSell(b, o.asset, o.qty, execPrices, day, tag);
+      ? marketBuy(b, o.asset, Math.min(b.cash, o.qty * execPrices[o.asset] + FEE), execPrices, day, maxSlots, tag, defs)
+      : marketSell(b, o.asset, o.qty, execPrices, day, tag, defs);
     msgs.push(r.ok ? `Ordine ${tag} eseguito. ${r.msg}` : `Ordine ${tag} annullato: ${r.msg}`);
   }
   return msgs;
