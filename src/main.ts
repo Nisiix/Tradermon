@@ -83,6 +83,10 @@ async function boot() {
     roundPixels: true,
     backgroundColor: '#101018',
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    // sotto i 5 fps Phaser conterebbe 16 ms a fotogramma (timer e dissolvenze rallentano): accetta fino a 500 ms
+    // e, dopo un cambio di scheda, torna al tempo reale dopo 20 fotogrammi invece di 120;
+    // così su un dispositivo lento la resa 2.5D va a scatti ma il gioco scorre a tempo reale
+    fps: { min: 2, panicMax: 20 },
     scene: [WorldScene],
   });
   (window as unknown as { __game: Phaser.Game }).__game = game;
