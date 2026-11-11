@@ -7,10 +7,10 @@ import type { RiskProfile, Track } from '../src/types';
 const PROFILES: RiskProfile[] = ['prudente', 'equilibrato', 'audace'];
 
 describe('profilo di rischio', () => {
-  it('soglie sulle 4 domande di rischio (0-8)', () => {
-    expect([0, 1, 2].map(profileFromScore)).toEqual(['prudente', 'prudente', 'prudente']);
-    expect([3, 4, 5].map(profileFromScore)).toEqual(['equilibrato', 'equilibrato', 'equilibrato']);
-    expect([6, 7, 8].map(profileFromScore)).toEqual(['audace', 'audace', 'audace']);
+  it('soglie sulle 3 domande di rischio (0-6)', () => {
+    expect([0, 1].map(profileFromScore)).toEqual(['prudente', 'prudente']);
+    expect([2, 3].map(profileFromScore)).toEqual(['equilibrato', 'equilibrato']);
+    expect([4, 5, 6].map(profileFromScore)).toEqual(['audace', 'audace', 'audace']);
   });
 
   it('non cambia le regole: timer e missioni uguali per tutti', () => {

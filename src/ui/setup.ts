@@ -22,30 +22,25 @@ export async function disclaimer(): Promise<void> {
   }, { serious: true, closable: false });
 }
 
-/** Domande che misurano la propensione al rischio: ogni risposta vale 0, 1 o 2 punti (totale 0-8). */
+/** Tre domande sulla propensione al rischio: ogni risposta vale 0, 1 o 2 punti (totale 0-6).
+ *  Il profilo che ne esce è quello DICHIARATO: lo Specchio dell'investitore lo confronterà con le scelte vere. */
 const QUESTIONS: [string, string[]][] = [
   ['Il tuo portafoglio perde il 20% in un mese. Cosa fai?', ['Vendo tutto', 'Aspetto e ripasso il piano', 'Compro ancora']],
-  ['Cosa preferisci?', ['+3% quasi certo', '+7% con oscillazioni', '+15% oppure −15%']],
   ['Per quanto tempo non ti servono questi soldi?', ['Meno di 3 anni', 'Da 3 a 10 anni', 'Più di 10 anni']],
   ['Una perdita del 30% per te sarebbe...', ['Inaccettabile', 'Dura ma gestibile', 'Parte del gioco']],
 ];
-/** L'esperienza è conoscenza, non propensione al rischio: si registra ma non entra nel punteggio. */
-const EXPERIENCE: [string, string[]] = ['Quanta esperienza hai con gli investimenti?', ['Nessuna', 'Ho letto qualcosa', 'Ho già investito']];
 
 export async function questionnaire(): Promise<number> {
-  await say(['Rispondi con sincerità: non ci sono risposte giuste o sbagliate.', 'È ispirato ai questionari di adeguatezza dei consulenti. Qui serve a conoscerti e a proporti un\'allocazione di partenza: non cambia le regole del gioco.'], 'Prof. Saldi');
+  await say(['Rispondi con sincerità: non ci sono risposte giuste o sbagliate.', 'Il profilo non ti darà vantaggi né svantaggi. Nelle missioni però osserverò come ti comporti davvero quando il mercato scende: alla Clinica lo Specchio dell\'investitore ti mostrerà se dire e fare coincidono.'], 'Prof. Saldi');
   let score = 0;
   for (const [q, opts] of QUESTIONS) {
     const c = await choose(opts, { prompt: q, who: 'Prof. Saldi' });
     score += c;
     if (q.startsWith('Per quanto')) S.horizon = opts[c];
   }
-  const e = await choose(EXPERIENCE[1], { prompt: EXPERIENCE[0], who: 'Prof. Saldi' });
-  S.flags.experience = EXPERIENCE[1][e];
   return score;
 }
 
-/** playerName: il nome del giocatore Supabase (univoco); senza account il Professore lo chiede. */
 export async function onboarding(playerName?: string): Promise<void> {
   await disclaimer();
   await controlsTutorial();
@@ -72,7 +67,7 @@ export async function onboarding(playerName?: string): Promise<void> {
   S.profileScore = score;
   S.profile = profileFromScore(score);
   const desc = { prudente: 'PRUDENTE: preferisci la stabilità e oscillazioni contenute.', equilibrato: 'EQUILIBRATO: cerchi un compromesso tra crescita e tranquillità.', audace: 'AUDACE: tolleri bene le oscillazioni. Attento però: audace non vuol dire avventato!' }[S.profile];
-  await say([`Il tuo profilo è ${desc}`, 'Ricorda: non è una raccomandazione e non ti dà vantaggi né svantaggi. Serve a proporti l\'allocazione obiettivo del conto, che potrai cambiare.', 'Se un giorno cambi idea, puoi rivedere il profilo in ogni Clinica.'], 'Prof. Saldi');
+  await say([`Il tuo profilo è ${desc}`, 'Ricorda: non è una raccomandazione. Lo userò per proporti l\'allocazione obiettivo del conto, che potrai cambiare.', 'Vedremo nelle missioni se le tue scelte gli somigliano.'], 'Prof. Saldi');
   await say('Questo è mio nipote. Siete cresciuti insieme, ma investe in modo molto diverso da te...', 'Prof. Saldi');
   S.rival = (await ask('Come si chiama il tuo rivale?', 'Leo', 10)) || 'Leo';
   await say([`Giusto, ${S.rival}! Ora vai a casa a riposare.`, 'Domani vieni al mio Laboratorio: ti aspetta una scelta importante.'], 'Prof. Saldi');

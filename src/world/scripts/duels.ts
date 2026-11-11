@@ -1,4 +1,5 @@
 // Duelli di conoscenza e missioni: allenatori, allievi, Mentori, Lega, Torre, eremiti, duelli condivisi e del giorno.
+import { recordMission, mirrorEpilogue } from '../../systems/mirror';
 import { getMap, type NpcDef } from '../maps';
 import { S, save, slots, addRep, card, learnBias, clampStat, advanceDays, classes, LIVE_LIMITS, newGamePlus } from '../../systems/state';
 import { say, choose, modal } from '../../ui/core';
@@ -155,6 +156,7 @@ async function runMission(m: Mission): Promise<{ ok: boolean; detail: string } |
   await say(['Benvenuto nella Macchina del Tempo!', 'Usa il pulsante ▶ per far scorrere i giorni, compra e vendi quando vuoi. Gli asset sono quelli didattici della missione.'], 'Macchina del Tempo');
   const r = await runSim({ mission: m });
   if (!r) return null;
+  recordMission(m.id, r);
   if (r.ok && r.lossSales === 0 && r.orders > 0) S.flags.missionNoLossSale = true;
   // il processo conta anche se l'obiettivo non è raggiunto: le stelle danno Conoscenza e restano nella Cartella
   const pr = processReview(r);
@@ -283,7 +285,8 @@ export async function league(i: number, w: WorldApi) {
   if (i === 4) {
     S.flags.champion = true;
     await say(['Congratulazioni, Campione!', 'Il titolo non ti rende infallibile: i mercati cambiano, e chi smette di imparare torna principiante.', 'Ora alla Torre delle Sfide ti aspettano le crisi leggendarie e i piani infiniti.', 'E se vuoi, puoi iniziare una Nuova Partita+ in un altro percorso, conservando avatar, record e carte dorate.'], 'Prof. Saldi');
-    await say(epilogue(), 'Epilogo');
+    const mirror = mirrorEpilogue();
+    await say(mirror ? [...epilogue(), mirror] : epilogue(), 'Epilogo');
     await credits();
   }
   w.refresh();
@@ -316,6 +319,7 @@ export async function tower() {
   if (c <= LEGENDS.length) {
     const l = LEGENDS[c - 1];
     const r = await runSim({ mission: l });
+    if (r) recordMission(l.id, r);
     if (r?.ok && !S.legends.includes(l.id)) { S.legends.push(l.id); reward({ rep: REWARD.rep.legend, event: 'legend', save: false }); beep('badge'); await say(`Hai superato ${l.title}! Carta leggendaria ottenuta (cosmetica).`, 'Custode della Torre'); save(); }
     return;
   }

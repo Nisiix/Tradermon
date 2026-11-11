@@ -11,6 +11,7 @@ import { beep } from '../systems/audio';
 import { openAlpacaHub, openObservatory } from './live';
 import { journalPrompt } from './journal';
 import { questionnaire } from './setup';
+import { mirrorReport } from '../systems/mirror';
 import { shuffle } from '../systems/rng';
 import { onBuy, onSell } from '../systems/character';
 import { openChart } from './chart';
@@ -31,7 +32,7 @@ export async function openClinic(townIdx: number) {
   for (;;) {
     const opts = [
       'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Cura: ribilanciamento', 'Lezione sui bias',
-      'Uova dei dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Conto Alpaca (paper e reale)', 'Osservatorio Alpaca (sola lettura)', 'Rivedi il profilo', 'Arrivederci',
+      'Uova dei dividendi', 'Depositi e prelievi', 'Cartella clinica', 'Conto Alpaca (paper e reale)', 'Osservatorio Alpaca (sola lettura)', 'Specchio dell\'investitore', 'Arrivederci',
     ];
     const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Cura') && !hasTech(TECH.REBAL)));
     const c = await choose(opts, { cancel: true, title: 'CLINICA DEL PORTAFOGLIO', disabled: dis });
@@ -56,11 +57,12 @@ export async function openClinic(townIdx: number) {
       case 'Cartella clinica': await records(); break;
       case 'Conto Alpaca (paper e reale)': await openAlpacaHub(); break;
       case 'Osservatorio Alpaca (sola lettura)': await openObservatory(); break;
-      case 'Rivedi il profilo': {
+      case 'Specchio dell\'investitore': {
         const before = S.profile;
+        await say(mirrorReport().lines, NURSE);
         const t0 = S.portfolio.target;
-        const redo = await choose(['Sì, rifacciamolo', 'No, va bene così'], { prompt: `Il tuo profilo è ${S.profile.toUpperCase()} (orizzonte: ${S.horizon || '—'}), obiettivo del conto ${t0.risky}/${t0.defensive}/${t0.cash}. Il profilo non cambia le regole del gioco: serve solo a proporti l'allocazione. Vuoi rifare il questionario?`, who: NURSE });
-        if (redo !== 0) break;
+        const redo = await choose(['No, va bene così', 'Rifaccio il questionario'], { prompt: `Profilo dichiarato ${S.profile.toUpperCase()} (orizzonte: ${S.horizon || '—'}), obiettivo del conto ${t0.risky}/${t0.defensive}/${t0.cash}. Vuoi rifare il questionario? Le tue scelte nelle missioni restano nello Specchio.`, who: NURSE });
+        if (redo !== 1) break;
         const sc = await questionnaire();
         S.profileScore = sc;
         S.profile = profileFromScore(sc);

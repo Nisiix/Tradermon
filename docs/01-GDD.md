@@ -52,21 +52,23 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 
 Obiettivo di design dal piano: entro 3 minuti di gioco effettivo il giocatore ha già fatto la scelta e vinto un mini-quiz; entro 10 minuti ha fatto il primo acquisto simulato.
 
-### 2.2 Questionario del profilo di rischio
+### 2.2 Questionario del profilo e Specchio dell'investitore
 
-Cinque domande ispirate ai questionari di adeguatezza (MiFID II), semplificate e senza valore legale. Le quattro domande sul rischio valgono 0, 1 o 2 punti; la domanda sull'esperienza si registra ma non entra nel punteggio, perché misura la conoscenza e non la propensione al rischio.
+Tre domande ispirate ai questionari di adeguatezza (MiFID II), semplificate e senza valore legale. Ogni risposta vale 0, 1 o 2 punti.
 
 | Domanda | 0 punti | 1 punto | 2 punti |
 |---|---|---|---|
 | Il tuo portafoglio perde il 20% in un mese. Cosa fai? | Vendo tutto | Aspetto e ripasso il piano | Compro ancora |
-| Preferisci… | +3% quasi certo | +7% con oscillazioni | +15% o −15% |
 | Per quanto non ti servono questi soldi? | < 3 anni | 3-10 anni | > 10 anni |
 | Una perdita del 30% per te sarebbe… | Inaccettabile | Dura ma gestibile | Parte del gioco |
-| Quanta esperienza hai? (non conta) | Nessuna | Ho letto qualcosa | Ho già investito |
 
-Totale 0-2 → **Prudente**, 3-5 → **Equilibrato**, 6-8 → **Audace**.
+Totale 0-1 → **Prudente**, 2-3 → **Equilibrato**, 4-6 → **Audace**. È il profilo **dichiarato**.
 
-Scopo: insegnare che prima di investire si conosce sé stessi, come fa una banca con il questionario di adeguatezza. Il profilo **non è una leva di gioco**: timer dei duelli e soglie delle missioni sono uguali per tutti, così nessuno ha interesse a mentire. Effetti: propone l'allocazione obiettivo del Conto di Prova (Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10, sempre modificabile), che usano Diagnosi e ribilanciamento; il rivale sceglie lo stile opposto (una volta, al Laboratorio); profilo e orizzonte compaiono nella scheda Profilo. Il Professore spiega che il profilo **non è una raccomandazione**. In ogni Clinica la voce "Rivedi il profilo" mostra il profilo attuale e, se lo si rifà e cambia, chiede se aggiornare anche l'allocazione obiettivo.
+Scopo: insegnare il divario tra la tolleranza al rischio che dichiariamo a mente fredda e quella che mostriamo quando le perdite sono vere (avversione alle perdite). Il profilo **non è una leva di gioco**: timer dei duelli e soglie delle missioni sono uguali per tutti, quindi mentire non porta vantaggi e rovina solo lo Specchio.
+
+**Specchio dell'investitore** (`systems/mirror.ts`). A fine di ogni missione della Macchina del Tempo (Mentori, Lega, Leggende) con almeno un ordine il gioco registra, senza dirlo, quota investita, peso massimo, vendite in perdita, massimo drawdown e ordini (l'ultima prova per missione, in `flags.mirror`). Ogni missione vale 0-2 sulla stessa scala del questionario: investito ≥ 75% → 1 (≥ 40% → 0,5), una posizione oltre il 40% → +0,5, drawdown oltre il 12% → +0,5, due o più vendite in perdita → −0,5. La media dà il profilo **rivelato** (< 0,7 Prudente, < 1,3 Equilibrato, altrimenti Audace), disponibile dopo 2 missioni.
+
+Dove si vede: alla Clinica la voce "Specchio dell'investitore" confronta dichiarato e rivelato con i fatti osservati e una breve lezione, poi permette di rifare il questionario (se il profilo cambia, propone di aggiornare l'allocazione obiettivo); la scheda Profilo mostra entrambi; l'epilogo dopo la Lega aggiunge una frase dello Specchio. Il profilo dichiarato propone anche l'allocazione obiettivo del Conto di Prova (Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10, sempre modificabile) e fa scegliere al rivale lo stile opposto. Il Professore spiega che il profilo **non è una raccomandazione**.
 
 ### 2.3 La scelta delle Valigette
 
@@ -430,7 +432,7 @@ La Dott.ssa Ratio accoglie con: "Benvenuto alla Clinica del Portafoglio! Curiamo
 | Cartella clinica | Storico ordini, rendimento nel tempo, export CSV | Sì | Sì | Subito |
 | Collega Alpaca | Inserimento chiavi Paper | — | Chiavi Live dopo la Licenza | Paper subito, Live dopo l'esame |
 | Limiti e pausa | — | — | Limiti per ordine e al mese, pausa ≥ 24 h, scollegamento | Licenza |
-| Rivedi il profilo | Mostra il profilo, permette di rifare il questionario e di aggiornare l'allocazione obiettivo | — | — | Subito |
+| Specchio dell'investitore | Confronta profilo dichiarato e rivelato dalle missioni, permette di rifare il questionario e di aggiornare l'allocazione obiettivo | — | — | Subito |
 
 ### 7.1 Salute del portafoglio
 
