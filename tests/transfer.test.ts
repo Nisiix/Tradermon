@@ -37,6 +37,19 @@ describe('trasloco del salvataggio', () => {
     expect(dst.getItem('tradermon.prefs')).toBe('{"a":1}');
   });
 
+  it('le chiavi Alpaca e le scelte sul collegamento restano sul dispositivo: non entrano in un link e un link non le scrive', async () => {
+    const src = new Mem(); src.setItem('tradermon.save.v1', game('Ada', 1000));
+    src.setItem('tradermon.alpaca.g1.live', '{"ciphertext":"x","iv":"y"}'); src.setItem('tradermon.alpaca.relay', '1');
+    expect(Object.keys(collect(src).keys)).toEqual(['tradermon.save.v1']);
+    // un link costruito ad arte non può attivare il passaggio dal servizio né piazzare dati al posto delle chiavi
+    const forged = { ...collect(src), keys: { ...collect(src).keys, 'tradermon.alpaca.relay': '1', 'tradermon.alpaca.g1.paper': 'z' } };
+    const dst = new Mem();
+    await merge(forged, async () => true, dst);
+    expect(dst.getItem('tradermon.alpaca.relay')).toBeNull();
+    expect(dst.getItem('tradermon.alpaca.g1.paper')).toBeNull();
+    expect(dst.getItem('tradermon.save.v1')).not.toBeNull();
+  });
+
   it('tiene la partita più avanti e conserva l\'altra come copia', async () => {
     const src = new Mem(); src.setItem('tradermon.save.v1', game('Vecchia', 5000));
     const dst = new Mem(); dst.setItem('tradermon.save.v1', game('Nuova', 100)); dst.setItem('tradermon.prefs', 'mie');

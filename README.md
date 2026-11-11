@@ -24,7 +24,7 @@ Il sito ha due pagine: la **landing** (`index.html`, codice in `landing/`) con l
 
 La porta predefinita del server locale è **8888**. Per usarne un'altra imposta la variabile `TRADERMON_PORT`, ad esempio `TRADERMON_PORT=9000 npm start` (su Windows PowerShell: `$env:TRADERMON_PORT=9000; npm start`). Vale anche per `npm run dev`.
 
-Il gioco è una PWA: dal browser si può "installare" e giocare anche offline. Le funzioni Alpaca richiedono la rete e un intermediario di Tradermon: sul tuo computer il server locale (Paper e conto reale), sul sito pubblico la funzione Supabase `alpaca` (solo Paper, serve essere entrati con il proprio giocatore).
+Il gioco è una PWA: dal browser si può "installare" e giocare anche offline. Le funzioni Alpaca richiedono la rete. Sul tuo computer passano dal server locale di Tradermon; dal sito pubblico è il browser a parlare direttamente con Alpaca (Paper e conto reale), con le chiavi custodite solo sul dispositivo: serve essere entrati con il proprio giocatore.
 
 ## Giocatore e salvataggi (Supabase)
 
@@ -32,7 +32,7 @@ Al primo avvio, prima del tutorial, il gioco chiede di creare un **giocatore**: 
 
 - La partita (tutto l'oggetto di gioco: posizione, storia, portafoglio, opzioni) è salvata su **Supabase**, tabella `saves`, una riga per giocatore. Il gioco la invia a ogni salvataggio (pulsante, menu, entrata e uscita dagli edifici, dopo ogni sfida) e il tempo di gioco ogni minuto.
 - Sul dispositivo resta solo una copia di lavoro: serve a giocare senza rete. Quello che salvi offline parte appena torna la connessione.
-- Le **chiavi Alpaca**, giocando sul proprio computer, restano sul server locale. In più ne va una copia su Supabase (tabella `alpaca_keys`), **cifrata nel browser** con AES-256-GCM. La chiave che la apre è derivata dalla password del giocatore (PBKDF2-SHA256, 600.000 iterazioni) e non lascia mai il dispositivo: sul server ci sono solo dati illeggibili, anche per chi amministra il database. Su un altro computer il gioco le ripristina nel server locale dopo aver chiesto la password. Giocando dal sito pubblico non c'è un server locale: il gioco apre la copia cifrata sul dispositivo, tiene le chiavi **Paper** in memoria per la sessione (mai in `localStorage`) e le manda a ogni richiesta, su connessione cifrata, alla funzione Supabase `alpaca`, che le usa per parlare con Alpaca e non le salva né le scrive nei log. Le chiavi **Live** non passano mai dal sito.
+- Le **chiavi Alpaca** restano **solo sul dispositivo del giocatore**, mai su Supabase e mai nel salvataggio. Giocando sul proprio computer le custodisce il server locale. Giocando dal sito pubblico sono salvate nel browser (`localStorage`), **cifrate** con AES-256-GCM: la chiave che le apre nasce dalla password del giocatore (PBKDF2-SHA256, 600.000 iterazioni), vive nel browser in forma non estraibile e non lascia mai il dispositivo. Il browser le tiene in memoria per la sessione e le invia soltanto ad Alpaca, su connessione cifrata. Su un altro dispositivo vanno inserite di nuovo; cancellando i dati del sito si perdono e si rigenerano dalla dashboard di Alpaca. Le copie cifrate che le versioni precedenti tenevano su Supabase (tabella `alpaca_keys`) vengono portate sul dispositivo al primo accesso e cancellate.
 - Non c'è un'email collegata, quindi **la password non si recupera**: se la dimentichi, la partita resta su Supabase ma non puoi rientrare.
 - *Opzioni → Esci dal giocatore* toglie la sessione e la copia locale da questo dispositivo (la partita resta online). *Esporta salvataggio* scarica comunque un file JSON.
 - Le partite fatte prima di questo aggiornamento restano nel browser: al primo accesso il gioco chiede se portarle nel giocatore.
@@ -69,12 +69,13 @@ All'inizio un mini tutorial fa provare i comandi, con la versione per tastiera o
 
 ## Conto Alpaca: Paper per giocare, reale facoltativo
 
-Le chiavi **non sono mai nel codice né nel salvataggio**. Si inseriscono nel gioco dal menu, voce **Chiavi API** (c'è anche in Clinica). Su Supabase ne resta solo una copia cifrata con la tua password (vedi sopra).
+Le chiavi **non sono mai nel codice né nel salvataggio**. Si inseriscono nel gioco dal menu, voce **Chiavi API** (c'è anche in Clinica). Restano solo sul tuo dispositivo (vedi sopra): prima di inserirle il gioco mostra un avviso che spiega dove restano, a chi vengono inviate e che cosa comporta.
 
 1. Crea un account su [alpaca.markets](https://alpaca.markets) e genera le chiavi **Paper** dalla dashboard.
 2. Nel gioco scegli *Collega Alpaca Paper* e incolla Key ID e Secret.
-3. Sul tuo computer il server locale verifica le chiavi presso Alpaca e le salva solo lì, in `server/.secrets/keys.json` (permessi 600, escluso da git). Dal sito pubblico le verifica la funzione Supabase `alpaca`, senza salvarle: resta solo la copia cifrata con la tua password.
-   - Dal sito funziona tutta la parte pratica della storia (Prove, Sigilli, Lega, Boss) sul conto Paper. Il conto reale si usa solo sul proprio computer.
+3. Sul tuo computer il server locale verifica le chiavi presso Alpaca e le salva solo lì, in `server/.secrets/keys.json` (permessi 600, escluso da git). Dal sito pubblico le verifica il browser, leggendo il conto direttamente da Alpaca, e le salva cifrate sul dispositivo.
+   - Dal sito funziona tutto: la parte pratica della storia (Prove, Sigilli, Lega, Boss) sul conto Paper e, per chi lo vuole, il conto reale. La pagina pubblicata ha una Content-Security-Policy: esegue solo il codice del gioco e può chiamare solo Alpaca e il servizio dei salvataggi.
+   - Se il browser non riesce a raggiungere Alpaca (rete o blocco di contenuti), il gioco chiede se far passare il **solo conto Paper** dalla funzione Supabase `alpaca`, che usa le chiavi per quella richiesta e non le salva. È una scelta del giocatore, vale per quel dispositivo e si può ritirare. Le chiavi Live non seguono mai quella strada.
 4. Il conto **reale** si sblocca dopo il 1º Attestato e l'Esame di Abilitazione (9 risposte giuste su 10). Ogni ordine reale:
    - chiede di scrivere `CONFERMO`;
    - rispetta i limiti per ordine e per mese, che crescono con gli Attestati;
@@ -94,7 +95,7 @@ I dati di Alpaca non si possono ridistribuire: ogni giocatore li scarica con le 
 - `src/proto/hd2d.ts` + `hd2d.html`: pagina di prova dello stesso motore 2.5D con camera libera (`/hd2d.html?map=t0&x=11&y=9`, parametri `map`, `x`, `y`, `dist`, `tilt`, `night`, `fx`).
 - `public/assets3d/`: facoltativo, modelli `.glb` esterni che sostituiscono gli oggetti generati (vedi il README nella cartella). `npm run assets:ai` genera immagini o modelli con servizi che hanno un piano gratuito (Pollinations, Meshy) usando le tue chiavi.
 - `server/index.mjs`: il server locale che serve il gioco e fa da tramite verso Alpaca.
-- `supabase/functions/alpaca/`: lo stesso tramite per il sito pubblico (funzione Edge, solo Paper). `core.js` contiene le regole e le rotte condivise con il server locale; `index.ts` aggiunge accesso del giocatore, CORS e limite di richieste. Si pubblica con `supabase functions deploy alpaca --no-verify-jwt` (la funzione verifica da sé il token del giocatore).
+- `supabase/functions/alpaca/`: `core.js` contiene le regole e le rotte sugli ordini, condivise da server locale, browser (collegamento diretto del sito) e funzione Edge. La funzione Edge è la riserva del sito, solo Paper e solo se il giocatore la sceglie: `index.ts` aggiunge accesso del giocatore, CORS e limite di richieste. Si pubblica con `supabase functions deploy alpaca --no-verify-jwt` (la funzione verifica da sé il token del giocatore).
 - `supabase/functions/registra-giocatore/` e `supabase/migrations/`: registrazione dei giocatori e tabelle.
 - `tests/`: i test automatici (`npm test`).
 

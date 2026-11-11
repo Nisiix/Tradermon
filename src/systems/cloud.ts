@@ -131,6 +131,9 @@ export async function unlockVault(password: string): Promise<void> {
   }
 }
 
+/** Chiave della cassaforte del giocatore collegato (per cifrare ciò che resta sul dispositivo). Lancia 'LOCKED' se serve la password. */
+export function vaultKey(): Promise<{ user: string; key: CryptoKey }> { return dataKey(); }
+
 async function dataKey(): Promise<{ user: string; key: CryptoKey }> {
   const p = await currentPlayer();
   if (!p) throw new Error('Nessun giocatore collegato.');
@@ -163,18 +166,13 @@ export async function deleteSave(): Promise<void> {
   await client().from('saves').delete().eq('user_id', p.id);
 }
 
-// ---------- chiavi Alpaca (Paper e Live), sempre cifrate ----------
+// ---------- vecchie copie cifrate delle chiavi Alpaca su Supabase ----------
+// Le chiavi ora restano solo sul dispositivo (systems/keystore.ts). Queste funzioni servono a portare lì le copie
+// salvate in passato e a cancellarle da Supabase: il gioco non ne scrive più di nuove.
 
 export interface AlpacaKeyPair { keyId: string; secret: string }
 /** Il dato cifrato è legato a giocatore e conto: una riga copiata su un altro conto non si apre. */
 const aad = (user: string, env: KeyEnv) => `tradermon:alpaca:${user}:${env}`;
-
-export async function storeAlpacaKeys(env: KeyEnv, k: AlpacaKeyPair): Promise<void> {
-  const { user, key } = await dataKey();
-  const s = await seal(key, { keyId: k.keyId, secret: k.secret }, aad(user, env));
-  const { error } = await client().from('alpaca_keys').upsert({ user_id: user, env, ciphertext: s.ciphertext, iv: s.iv });
-  if (error) throw new Error(netMsg(error) ?? 'Chiavi non salvate su Supabase.');
-}
 
 export async function loadAlpacaKeys(env: KeyEnv): Promise<AlpacaKeyPair | null> {
   const { user, key } = await dataKey();
