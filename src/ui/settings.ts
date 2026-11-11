@@ -1,9 +1,9 @@
-// Pannello impostazioni ⚙ (in alto a destra, o tasto O): comandi e touch, volume, ritorno alla home.
+// Pannello impostazioni ⚙ (in alto a destra, o tasto Impostazioni: Esc di default): comandi e touch, volume, ritorno alla home.
 import { modal, el, esc, getStage, toast } from './core';
-import { captureNextKey, onSettingsKey } from './input';
+import { captureNextKey, onSettingsKey, press } from './input';
 import { controlsTutorial } from './tutorial';
 import {
-  ACTIONS, MAX_KEYS, bindKey, unbindKey, resetBindings, keyName, prefs, setMasterVolume, setTouchMode,
+  ACTIONS, MAX_KEYS, keysOf, bindKey, unbindKey, resetBindings, keyName, prefs, setMasterVolume, setTouchMode,
   onPrefsChange, isTouchDevice, type Action, type TouchMode,
 } from '../systems/controls';
 import { S, save } from '../systems/state';
@@ -29,11 +29,14 @@ let open = false;
 
 export function initSettings() {
   const b = el('button', 'gear-btn', '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1h2l.4 2 1.3.6 1.7-1.2 1.4 1.4-1.2 1.7.6 1.3 2 .4v2l-2 .4-.6 1.3 1.2 1.7-1.4 1.4-1.7-1.2-1.3.6L9 15H7l-.4-2-1.3-.6-1.7 1.2-1.4-1.4 1.2-1.7L2.8 9.2 1 9V7l2-.4.6-1.3-1.2-1.7 1.4-1.4 1.7 1.2 1.3-.6z M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z" fill-rule="evenodd"/></svg>');
-  b.title = 'Impostazioni (O)';
+  const tip = () => { b.title = `Impostazioni (${keysOf('settings')[0] ?? '⚙'})`; };
+  tip();
+  onPrefsChange(tip);
   b.setAttribute('aria-label', 'Impostazioni');
   b.addEventListener('click', () => { void openSettings(); });
   getStage().appendChild(b);
-  onSettingsKey(() => { void openSettings(); });
+  // il tasto Impostazioni (Esc di default) apre il pannello e, se è già aperto, chiude la finestra in cima
+  onSettingsKey(() => { if (open) press('b'); else void openSettings(); });
   onPrefsChange(applyAudio);
   applyAudio();
 }
@@ -42,6 +45,7 @@ export function initSettings() {
 export async function openSettings() {
   if (open) return;
   open = true;
+  window.dispatchEvent(new Event('tradermon:settings'));
   try {
     const r = await modal<'controls' | 'home'>('⚙ Impostazioni', ({ body, button, close }) => {
       mark(body);
@@ -83,7 +87,7 @@ export async function openControls() {
       body.innerHTML = `
         <p><b>Comandi touch</b> <span class="small muted">croce direzionale e pulsanti A, B e MENU sullo schermo</span></p>
         <div class="row touch-modes">${modes.map(([m, l]) => `<button class="btn tm-${m} ${prefs.touch === m ? 'primary' : ''}" data-m="${m}">${prefs.touch === m ? '● ' : ''}${l}</button>`).join('')}</div>
-        <p style="margin-top:10px"><b>Tasti della tastiera</b> <span class="small muted">clicca un tasto (o selezionalo e premi A) e poi premi il nuovo tasto (Esc annulla); ✕ lo toglie</span></p>
+        <p style="margin-top:10px"><b>Tasti della tastiera</b> <span class="small muted">clicca un tasto (o selezionalo e premi A) e poi premi il nuovo tasto; ✕ lo toglie</span></p>
         <table class="t keys-t">${ACTIONS.map((a) => `<tr><td><b>${esc(a.name)}</b><div class="small muted">${esc(a.use)}</div></td><td class="kcell">${
           prefs.keys[a.id].map((c, i) => `<span class="kchip"><button class="btn kb-b" data-a="${a.id}" data-i="${i}">${esc(keyName(c))}</button>${prefs.keys[a.id].length > 1 ? `<button class="btn kx" data-a="${a.id}" data-i="${i}" aria-label="Togli ${esc(keyName(c))}">✕</button>` : ''}</span>`).join('')
         }${prefs.keys[a.id].length < MAX_KEYS ? `<button class="btn kb-b add" data-a="${a.id}" data-i="${prefs.keys[a.id].length}">＋</button>` : ''}</td></tr>`).join('')}</table>`;
@@ -93,7 +97,6 @@ export async function openControls() {
         b.textContent = 'Premi un tasto…';
         b.classList.add('wait');
         captureNextKey((code) => {
-          if (code === 'Escape') { render(); return; } // Esc annulla la scelta
           const stolen = bindKey(a, i, code);
           if (stolen) toast(`${keyName(code)} tolto da "${ACTIONS.find((x) => x.id === stolen)!.name}".`);
           if (prefs.keys.a.length === 0 || prefs.keys.b.length === 0) toast('Attento: Conferma e Indietro devono avere almeno un tasto.');

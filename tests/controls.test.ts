@@ -5,8 +5,9 @@ describe('comandi personalizzabili', () => {
   it('ha i tasti predefiniti', () => {
     resetBindings();
     expect(actionFor('KeyZ')).toBe('a');
-    expect(actionFor('Escape')).toBe('b');
-    expect(actionFor('KeyO')).toBe('settings');
+    expect(actionFor('KeyX')).toBe('b');
+    expect(actionFor('Escape')).toBe('settings');
+    expect(actionFor('KeyO')).toBeUndefined();
   });
   it('riassegna un tasto e lo toglie dal comando che lo usava', () => {
     resetBindings();

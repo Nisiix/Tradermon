@@ -15,7 +15,7 @@ export const ACTIONS: ActionInfo[] = [
   { id: 'a', name: 'Conferma (A)', use: 'Parla con chi hai davanti, legge i cartelli, conferma una scelta e fa scorrere i dialoghi.' },
   { id: 'b', name: 'Indietro (B)', use: 'Chiude la finestra aperta, annulla una scelta e torna al passo precedente.' },
   { id: 'menu', name: 'Menu', use: 'Apre il menu di gioco: Investidex, Portafoglio, Agenda, Diario, Lezioni, Salva e Opzioni.' },
-  { id: 'settings', name: 'Impostazioni', use: 'Apre il pannello ⚙ in alto a destra: comandi, touch, volume e ritorno alla home.' },
+  { id: 'settings', name: 'Impostazioni', use: 'Apre e chiude il pannello ⚙ (anche nel mondo): comandi, touch, volume e ritorno alla home.' },
 ];
 
 export const MAX_KEYS = 3;
@@ -26,9 +26,9 @@ export const DEFAULT_BINDINGS: Record<Action, string[]> = {
   left: ['ArrowLeft', 'KeyA'],
   right: ['ArrowRight', 'KeyD'],
   a: ['KeyZ', 'Enter', 'Space'],
-  b: ['KeyX', 'Escape', 'Backspace'],
+  b: ['KeyX', 'Backspace'],
   menu: ['KeyM'],
-  settings: ['KeyO'],
+  settings: ['Escape'],
 };
 
 export interface Prefs { keys: Record<Action, string[]>; touch: TouchMode; volume: number }
@@ -53,6 +53,11 @@ function read(): Prefs {
     for (const a of ACTIONS) {
       const v = p.keys?.[a.id];
       if (Array.isArray(v) && v.every((c) => typeof c === 'string')) keys[a.id] = v.slice(0, MAX_KEYS);
+    }
+    // prima versione: Impostazioni su O ed Esc su Indietro → passa ai nuovi predefiniti (Esc = Impostazioni)
+    if (keys.settings.length === 1 && keys.settings[0] === 'KeyO') {
+      keys.settings = ['Escape'];
+      keys.b = keys.b.filter((c) => c !== 'Escape');
     }
     return {
       keys,

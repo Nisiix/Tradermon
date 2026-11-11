@@ -273,3 +273,4 @@ button, input, select, textarea { font-variant-ligatures: none; font-feature-set
 @media (max-width: 640px) { .kbd-map .keys { flex-wrap: wrap; } }
 /* lascia libera la colonna dell'icona ⚙ in alto a destra */
 .modal-wrap:not(.settings-wrap), .tutorial { padding-left: 52px; padding-right: 52px; }
+.gear-btn.hint { background: #f8d030; animation: pulse .6s ease-in-out infinite alternate; }
