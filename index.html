@@ -133,9 +133,35 @@
     <form method="dialog"><button class="btn btn-white">Chiudi</button></form>
   </dialog>
 
+  <dialog id="report-box" class="box" aria-labelledby="report-title">
+    <h3 id="report-title">Segnala un problema</h3>
+    <form id="report-form" class="report" novalidate>
+      <label>Di cosa si tratta
+        <select name="tipo">
+          <option>Errore nel gioco</option>
+          <option>Problema con il conto Paper</option>
+          <option>Testo o regola poco chiara</option>
+          <option>Problema con questa pagina</option>
+          <option>Altro</option>
+        </select>
+      </label>
+      <label>Cosa è successo
+        <textarea name="testo" rows="5" required maxlength="3000" placeholder="Descrivi il problema e, se puoi, cosa stavi facendo."></textarea>
+      </label>
+      <label class="check"><input type="checkbox" name="info" checked> Aggiungi browser e dimensioni dello schermo</label>
+      <p class="small">Si apre il tuo programma di posta con il messaggio già scritto: controlli e lo invii tu. Non scrivere password o chiavi API.</p>
+      <p class="report-error" id="report-error" role="alert"></p>
+      <div class="report-actions">
+        <button type="submit" class="btn btn-blue">Prepara l'email</button>
+        <button type="button" class="btn btn-white" id="report-close">Chiudi</button>
+      </div>
+      <p class="small" id="report-fallback" hidden>Non si è aperto nulla? Scrivi a <code id="report-address"></code>.</p>
+    </form>
+  </dialog>
+
   <footer class="foot">
     <div class="cols">
-      <div><h4>Progetto</h4><a href="https://github.com/Nisiix/Tradermon/issues" target="_blank" rel="noopener">Segnala un problema</a><a href="./privacy/">Informativa sulla privacy</a></div>
+      <div><h4>Progetto</h4><a href="#segnala" id="report-link" hidden>Segnala un problema</a><a href="./privacy/">Informativa sulla privacy</a></div>
       <div><h4>Note</h4><span>Tradermon è un gioco educativo e non fornisce consulenza finanziaria.</span><span>Nel gioco si usa solo denaro finto: nessun soldo reale.</span><span>Fuori dal gioco, investire comporta il rischio di perdere il capitale.</span><span>Dati di mercato e conti forniti da Alpaca.</span></div>
     </div>
     <div class="ground"><canvas id="walkers" aria-hidden="true"></canvas></div>

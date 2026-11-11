@@ -20,7 +20,7 @@ npm run build
 npm start          # apri http://localhost:8888 (landing) oppure http://localhost:8888/gioca/ (gioco)
 ```
 
-Il sito ha due pagine: la **landing** (`index.html`, codice in `landing/`) con la Guida completa nella sezione `#guida`, e il **gioco** (`gioca/index.html`). Gli indirizzi per le donazioni in crypto si inseriscono in `landing/config/donazioni.json` (istruzioni in `landing/config/README.md`); se la lista è vuota il pulsante non compare.
+Il sito ha due pagine: la **landing** (`index.html`, codice in `landing/`) con la Guida completa nella sezione `#guida`, e il **gioco** (`gioca/index.html`). Gli indirizzi per le donazioni in crypto si inseriscono in `landing/config/donazioni.json` (istruzioni in `landing/config/README.md`); se la lista è vuota il pulsante non compare. L'indirizzo che riceve le segnalazioni del modulo "Segnala un problema" va in `landing/config/segnalazioni.json`; se è vuoto il link non compare.
 
 La porta predefinita del server locale è **8888**. Per usarne un'altra imposta la variabile `TRADERMON_PORT`, ad esempio `TRADERMON_PORT=9000 npm start` (su Windows PowerShell: `$env:TRADERMON_PORT=9000; npm start`). Vale anche per `npm run dev`.
 

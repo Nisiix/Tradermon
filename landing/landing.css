@@ -151,6 +151,18 @@ kbd { display: inline-block; font: 13px var(--font); background: #fff; border: 2
 .warn { background: #ffe0e0; border: 2px solid var(--bad); padding: 6px 8px; font-size: 15px; }
 .bubble-ok { color: var(--green); min-height: 1.4em; margin: 0; }
 
+/* ---------- Segnala un problema ---------- */
+.report { display: grid; gap: 12px; }
+.report label { display: grid; gap: 4px; font-size: 16px; }
+.report select, .report textarea { font: 16px var(--font); color: var(--ink); background: #fff; border: 2px solid var(--line); border-radius: 4px; padding: 6px 8px; width: 100%; }
+.report textarea { resize: vertical; min-height: 110px; }
+.report .check { display: flex; align-items: center; gap: 8px; }
+.report .small { margin: 0; color: var(--muted); }
+.report-error { margin: 0; color: var(--bad); min-height: 0; }
+.report-error:empty { display: none; }
+.report-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.report code { word-break: break-all; }
+
 /* ---------- Footer ---------- */
 .foot { margin-top: 64px; background: #14141c; border-top: 4px solid #000; }
 .cols { max-width: 1040px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 28px 16px 8px; }

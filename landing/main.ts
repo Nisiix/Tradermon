@@ -9,6 +9,7 @@ import { marketClock } from '../src/systems/market';
 import { mentor, TOWNS } from '../src/data/story';
 import type { Track } from '../src/types';
 import donazioni from './config/donazioni.json';
+import segnalazioni from './config/segnalazioni.json';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -303,6 +304,34 @@ if (list.length) {
   document.querySelectorAll('[data-donate]').forEach((b) => b.addEventListener('click', open));
 }
 function esc(s: string): string { return s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`); }
+
+// ---------------- Segnala un problema ----------------
+// Il modulo prepara un'email verso l'indirizzo scelto in config/segnalazioni.json e la apre nel programma di posta:
+// la pagina non spedisce nulla da sola (sito statico, nessun server).
+
+const reportTo = String((segnalazioni as { email?: string }).email ?? '').trim();
+if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(reportTo)) {
+  const link = $<HTMLAnchorElement>('#report-link');
+  const box = $<HTMLDialogElement>('#report-box');
+  const form = $<HTMLFormElement>('#report-form');
+  const err = $('#report-error');
+  link.hidden = false;
+  link.addEventListener('click', (e) => { e.preventDefault(); err.textContent = ''; box.showModal(); });
+  $('#report-close').addEventListener('click', () => box.close());
+  $('#report-address').textContent = reportTo;
+  form.querySelector('textarea')!.addEventListener('input', () => { err.textContent = ''; });
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const testo = String(data.get('testo') ?? '').trim();
+    if (testo.length < 10) { err.textContent = 'Scrivi almeno una frase su cosa è successo.'; form.querySelector('textarea')!.focus(); return; }
+    err.textContent = '';
+    const tipo = String(data.get('tipo') ?? 'Altro');
+    const info = data.get('info') ? `\n\n---\nBrowser: ${navigator.userAgent}\nSchermo: ${innerWidth}×${innerHeight}\nPagina: ${location.href.split('#')[0]}` : '';
+    location.href = `mailto:${reportTo}?subject=${encodeURIComponent(`[Tradermon] ${tipo}`)}&body=${encodeURIComponent(testo + info)}`;
+    $('#report-fallback').hidden = false;
+  });
+}
 
 // ---------------- Abitanti che passeggiano nel footer ----------------
 
