@@ -96,7 +96,8 @@ I dati di Alpaca non si possono ridistribuire: ogni giocatore li scarica con le 
 - `public/assets3d/`: facoltativo, modelli `.glb` esterni che sostituiscono gli oggetti generati (vedi il README nella cartella). `npm run assets:ai` genera immagini o modelli con servizi che hanno un piano gratuito (Pollinations, Meshy) usando le tue chiavi.
 - `server/index.mjs`: il server locale che serve il gioco e fa da tramite verso Alpaca.
 - `supabase/functions/alpaca/`: `core.js` contiene le regole e le rotte sugli ordini, condivise da server locale, browser (collegamento diretto del sito) e funzione Edge. La funzione Edge è la riserva del sito, solo Paper e solo se il giocatore la sceglie: `index.ts` aggiunge accesso del giocatore, CORS e limite di richieste. Si pubblica con `supabase functions deploy alpaca --no-verify-jwt` (la funzione verifica da sé il token del giocatore).
-- `supabase/functions/registra-giocatore/` e `supabase/migrations/`: registrazione dei giocatori e tabelle.
+- `supabase/functions/registra-giocatore/`, `supabase/functions/elimina-giocatore/` e `supabase/migrations/`: registrazione e cancellazione dei giocatori, tabelle.
+- `privacy/index.html`: informativa sulla privacy.
 - `tests/`: i test automatici (`npm test`).
 
 ## Comandi

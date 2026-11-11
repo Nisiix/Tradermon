@@ -65,6 +65,16 @@ function adopt(id: string, pending: boolean) { set(OWNER_KEY, id); if (pending) 
 /** Toglie dal dispositivo la copia della partita (all'uscita dal giocatore). */
 export function clearLocal(): void { del(SAVE_KEY); del(OWNER_KEY); del(PENDING_KEY); }
 
+/**
+ * Dopo la cancellazione del giocatore: toglie da questo browser tutto ciò che lo riguarda (partita, chiavi Alpaca
+ * cifrate, scelta del collegamento). Restano le preferenze del dispositivo (comandi, grafica) e i dati di altri giocatori.
+ */
+export function forgetPlayerOnDevice(user: string): void {
+  clearLocal();
+  del('tradermon.alpaca.relay');
+  for (const env of ['paper', 'live']) del(`tradermon.alpaca.${user}.${env}`);
+}
+
 let timer: ReturnType<typeof setTimeout> | null = null;
 let inFlight: Promise<void> | null = null;
 let warned = false;
