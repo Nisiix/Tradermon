@@ -54,19 +54,19 @@ Obiettivo di design dal piano: entro 3 minuti di gioco effettivo il giocatore ha
 
 ### 2.2 Questionario del profilo di rischio
 
-Cinque domande ispirate ai questionari di adeguatezza (MiFID II), semplificate e senza valore legale. Ogni risposta vale 0, 1 o 2 punti.
+Cinque domande ispirate ai questionari di adeguatezza (MiFID II), semplificate e senza valore legale. Le quattro domande sul rischio valgono 0, 1 o 2 punti; la domanda sull'esperienza si registra ma non entra nel punteggio, perché misura la conoscenza e non la propensione al rischio.
 
 | Domanda | 0 punti | 1 punto | 2 punti |
 |---|---|---|---|
 | Il tuo portafoglio perde il 20% in un mese. Cosa fai? | Vendo tutto | Aspetto e ripasso il piano | Compro ancora |
 | Preferisci… | +3% quasi certo | +7% con oscillazioni | +15% o −15% |
 | Per quanto non ti servono questi soldi? | < 3 anni | 3-10 anni | > 10 anni |
-| Quanta esperienza hai? | Nessuna | Ho letto qualcosa | Ho già investito |
 | Una perdita del 30% per te sarebbe… | Inaccettabile | Dura ma gestibile | Parte del gioco |
+| Quanta esperienza hai? (non conta) | Nessuna | Ho letto qualcosa | Ho già investito |
 
-Totale 0-3 → **Prudente**, 4-6 → **Equilibrato**, 7-10 → **Audace**.
+Totale 0-2 → **Prudente**, 3-5 → **Equilibrato**, 6-8 → **Audace**.
 
-Effetti: il timer delle domande è 30 s per Prudente, 25 s per Equilibrato, 20 s per Audace; le missioni dei Prudenti hanno soglie di drawdown più severe ma obiettivi di rendimento più bassi; i dialoghi del Professore e della Dott.ssa Ratio cambiano registro. Il Professore spiega sempre che il profilo **non è una raccomandazione** e che si può rifare il questionario alla Clinica.
+Scopo: insegnare che prima di investire si conosce sé stessi, come fa una banca con il questionario di adeguatezza. Il profilo **non è una leva di gioco**: timer dei duelli e soglie delle missioni sono uguali per tutti, così nessuno ha interesse a mentire. Effetti: propone l'allocazione obiettivo del Conto di Prova (Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10, sempre modificabile), che usano Diagnosi e ribilanciamento; il rivale sceglie lo stile opposto (una volta, al Laboratorio); profilo e orizzonte compaiono nella scheda Profilo. Il Professore spiega che il profilo **non è una raccomandazione**. In ogni Clinica la voce "Rivedi il profilo" mostra il profilo attuale e, se lo si rifà e cambia, chiede se aggiornare anche l'allocazione obiettivo.
 
 ### 2.3 La scelta delle Valigette
 
@@ -186,7 +186,7 @@ Schermata a due lati, avversario in alto a destra, giocatore in basso a sinistra
 
 - Barra del giocatore: **Fiducia** (0-100).
 - Barra dell'avversario: **Convinzione** (100). Ogni risposta giusta la riduce di 100 / numero di risposte giuste necessarie.
-- Domande a scelta multipla con 4 opzioni, a tempo (timer dal profilo). Dopo ogni risposta compare la spiegazione (la fonte è nei dati e in Opzioni → Crediti e fonti, non a schermo).
+- Domande a scelta multipla con 4 opzioni, a tempo (timer uguale per tutti, 25 s). Dopo ogni risposta compare la spiegazione (la fonte è nei dati e in Opzioni → Crediti e fonti, non a schermo).
 - Si vince portando a 0 la Convinzione prima di finire le domande o prima che la Fiducia arrivi a 0.
 
 | Avversario | Domande | Giuste necessarie | Danno per errore |
@@ -384,7 +384,7 @@ Metriche finali: rendimento totale, volatilità annualizzata, **indice di Sharpe
 | 7 | Mercato con bolle e notizie euforiche | 90 | Al massimo 6 ordini e valore finale ≥ 95% del capitale |
 | 8 | Crollo improvviso | 90 | Drawdown massimo ≤ 12% (≤ 20% per Cripto) |
 
-Le soglie si adattano al profilo: Prudente −2 punti di drawdown consentito, Audace +2.
+Le soglie sono uguali per tutti i profili.
 
 ### 6.3 Missioni della Lega
 
@@ -430,7 +430,7 @@ La Dott.ssa Ratio accoglie con: "Benvenuto alla Clinica del Portafoglio! Curiamo
 | Cartella clinica | Storico ordini, rendimento nel tempo, export CSV | Sì | Sì | Subito |
 | Collega Alpaca | Inserimento chiavi Paper | — | Chiavi Live dopo la Licenza | Paper subito, Live dopo l'esame |
 | Limiti e pausa | — | — | Limiti per ordine e al mese, pausa ≥ 24 h, scollegamento | Licenza |
-| Rifai il questionario | Ricalcola il profilo | — | — | Subito |
+| Rivedi il profilo | Mostra il profilo, permette di rifare il questionario e di aggiornare l'allocazione obiettivo | — | — | Subito |
 
 ### 7.1 Salute del portafoglio
 
