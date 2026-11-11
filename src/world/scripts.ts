@@ -156,7 +156,7 @@ async function prof(w: WorldApi) {
 }
 
 async function licenseTalk() {
-  await say(['Per ora giocherai con monete di prova: denaro finto, lezioni vere.', 'Batti il primo Mentore e potrai sostenere l\'Esame di Abilitazione per la Licenza di Investitore.', 'Con la Licenza potrai collegare il tuo vero conto Alpaca, se lo vorrai, con limiti che crescono insieme alle tue Medaglie.', 'Ma potrai anche restare in prova per sempre: la storia non cambia.'], 'Prof. Saldi');
+  await say(['Per ora giocherai con monete di prova: denaro finto, lezioni vere.', 'Batti il primo Mentore e potrai sostenere l\'Esame di Abilitazione per la Licenza di Investitore.', 'Con la Licenza potrai collegare il tuo vero wallet digitale, se lo vorrai, con limiti che crescono insieme alle tue Medaglie.', 'Ma potrai anche restare in prova per sempre: la storia non cambia.'], 'Prof. Saldi');
 }
 
 async function chooseCase(n: NpcDef, w: WorldApi) {
