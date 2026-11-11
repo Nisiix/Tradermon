@@ -7,6 +7,7 @@ import { getStage } from './core';
 import { controlsTutorial } from './tutorial';
 import { pushHandler, popHandler, type Key } from './input';
 import { newPortfolio } from '../systems/portfolio';
+import { keysOf } from '../systems/controls';
 
 export async function disclaimer(): Promise<void> {
   await modal('Prima di iniziare', ({ body, button, close }) => {
@@ -118,7 +119,7 @@ export function titleScreen(hasSave: boolean): Promise<'new' | 'continue' | 'imp
     const t = el('div', 'title-screen');
     t.style.backgroundImage = `url(${titleBackdrop()})`;
     t.innerHTML = `<h1>TRADERMON</h1><div class="sub">IL VIAGGIO DELL'INVESTITORE</div><div class="opts row" style="flex-direction:column;gap:10px;margin-top:14px"></div>
-      <div class="foot">Gioco educativo · non è consulenza finanziaria · mondo e personaggi originali<br>Frecce/WASD per muoverti · Z/Invio conferma · X/Esc indietro · M menu</div>`;
+      <div class="foot">Gioco educativo · non è consulenza finanziaria · mondo e personaggi originali<br>${[0, 1].map((i) => (['up', 'left', 'down', 'right'] as const).map((a) => keysOf(a)[i] ?? '').join('')).filter(Boolean).join('/')} per muoverti · ${keysOf('a').slice(0, 2).join('/')} conferma · ${keysOf('b').slice(0, 2).join('/')} indietro · ${keysOf('menu')[0] ?? '—'} menu · ⚙ impostazioni</div>`;
     const opts = t.querySelector('.opts')!;
     const add = (label: string, v: 'new' | 'continue' | 'import') => {
       const b = el('button', 'btn' + (opts.children.length === 0 ? ' primary' : ''), esc(label));

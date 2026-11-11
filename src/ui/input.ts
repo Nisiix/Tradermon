@@ -1,3 +1,5 @@
+import { actionFor, onPrefsChange, touchActive } from '../systems/controls';
+
 export type Key = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'menu';
 
 type Handler = (k: Key, ev?: KeyboardEvent) => boolean | void;
@@ -5,13 +7,13 @@ const stack: Handler[] = [];
 export const held = new Set<Key>();
 const worldPressed: Key[] = [];
 
-const MAP: Record<string, Key> = {
-  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
-  KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
-  KeyZ: 'a', Enter: 'a', Space: 'a',
-  KeyX: 'b', Escape: 'b', Backspace: 'b',
-  KeyM: 'menu',
-};
+let settingsOpener: (() => void) | null = null;
+/** Il tasto Impostazioni (O di default) apre il pannello ⚙ da qualunque schermata. */
+export function onSettingsKey(fn: () => void) { settingsOpener = fn; }
+
+/** Mentre si sceglie un nuovo tasto nelle impostazioni, la pressione va solo a chi la sta aspettando. */
+let capture: ((code: string) => void) | null = null;
+export function captureNextKey(fn: ((code: string) => void) | null) { capture = fn; }
 
 export function pushHandler(h: Handler) { stack.push(h); held.clear(); }
 export function popHandler(h: Handler) { const i = stack.lastIndexOf(h); if (i >= 0) stack.splice(i, 1); }
@@ -30,14 +32,17 @@ export function press(k: Key, ev?: KeyboardEvent) {
 
 export function initInput() {
   window.addEventListener('keydown', (ev) => {
+    if (capture) { ev.preventDefault(); ev.stopImmediatePropagation(); const f = capture; capture = null; f(ev.code); return; }
     const tgt = ev.target as HTMLElement | null;
     const toggle = tgt && tgt.tagName === 'INPUT' && ['checkbox', 'radio'].includes((tgt as HTMLInputElement).type);
     const typing = tgt && !toggle && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.tagName === 'SELECT');
     if (typing && ev.code !== 'Escape') return;
     const isBtn = tgt && (tgt.tagName === 'BUTTON' || (toggle && ev.code === 'Space'));
     if (isBtn && (ev.code === 'Enter' || ev.code === 'Space')) return; // lascia il click nativo
-    const k = MAP[ev.code];
-    if (!k) return;
+    const act = actionFor(ev.code);
+    if (!act) return;
+    if (act === 'settings') { ev.preventDefault(); if (!ev.repeat) settingsOpener?.(); return; }
+    const k: Key = act;
     if (!stack.length) {
       ev.preventDefault();
       if (!ev.repeat) worldPressed.push(k);
@@ -48,8 +53,8 @@ export function initInput() {
     press(k, ev);
   });
   window.addEventListener('keyup', (ev) => {
-    const k = MAP[ev.code];
-    if (k) held.delete(k);
+    const k = actionFor(ev.code);
+    if (k && k !== 'settings') held.delete(k);
   });
   window.addEventListener('blur', () => held.clear());
 }
@@ -71,6 +76,11 @@ export function initTouch(root: HTMLElement) {
       <button data-k="a" style="margin-bottom:24px">A</button>
     </div>`;
   root.appendChild(wrap);
+  // la scelta tra automatico, sempre attivo e disattivato è nelle impostazioni ⚙
+  const sync = () => document.body.classList.toggle('touch-on', touchActive());
+  sync();
+  onPrefsChange(sync);
+  window.matchMedia?.('(pointer: coarse)').addEventListener?.('change', sync);
   // Su telefono i pulsanti A/B coprirebbero quelli delle finestre: mentre una finestra è aperta
   // si toccano direttamente i suoi pulsanti e i comandi touch diventano trasparenti.
   const stageEl = document.getElementById('stage');

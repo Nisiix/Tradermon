@@ -14,6 +14,7 @@ import { play, unlock } from './systems/music';
 import { refreshAgenda } from './systems/progress';
 import { applyOptions } from './ui/menu';
 import { controlsTutorial, controlsSeen } from './ui/tutorial';
+import { initSettings, setPhase } from './ui/settings';
 import { newGame, load, hasSave, importSave } from './systems/state';
 
 function pickFile(): Promise<string | null> {
@@ -33,6 +34,7 @@ async function boot() {
   initUI();
   initInput();
   initTouch(document.getElementById('app')!);
+  initSettings();
   unlock();
   play('title');
   for (;;) {
@@ -46,9 +48,11 @@ async function boot() {
     }
     newGame();
     applyOptions();
+    setPhase('onboarding');
     await onboarding();
     break;
   }
+  setPhase('game');
   applyOptions();
   refreshAgenda();
   if (!controlsSeen()) await controlsTutorial();

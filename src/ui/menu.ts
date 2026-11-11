@@ -9,14 +9,13 @@ import { mentor, TOWNS } from '../data/story';
 import { checkupHtml, download } from './clinic';
 import { mastery } from '../systems/quiz';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
-import { setVolume } from '../systems/audio';
-import { setMusicVolume } from '../systems/music';
+import { applyAudio, openControls } from './settings';
+import { prefs } from '../systems/controls';
 import { availableTitles, track } from '../systems/progress';
 import { openAgenda } from './agenda';
 import { openJournal } from './journal';
 import type { BiasId } from '../types';
 import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
-import { controlsTutorial } from './tutorial';
 
 export async function pauseMenu(onTravel: (id: string) => void) {
   for (;;) {
@@ -148,6 +147,7 @@ async function options() {
       <label style="display:block;margin-top:6px">Dimensione del testo <select class="tx fs"><option value="0.9">Piccola</option><option value="1">Normale</option><option value="1.2">Grande</option><option value="1.4">Molto grande</option></select></label>
       <label style="display:block;margin-top:6px">Effetti sonori <input class="vol" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
       <label style="display:block;margin-top:6px">Musica <input class="mus" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
+      <p class="small muted" style="margin:4px 0 0">Volume generale: <b>${prefs.volume === 0 ? 'muto' : Math.round(prefs.volume * 100) + '%'}</b> (si regola dall'icona ⚙ in alto a destra).</p>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="hc"> Contrasto alto</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="sm"> Modalità Studio (nessun timer nei quiz, Reputazione dimezzata nei duelli)</label>
       <p class="small muted">Il salvataggio è nel browser. Esportalo per sicurezza o per spostarlo su un altro dispositivo. Le chiavi Alpaca non sono mai nel salvataggio.</p>`;
@@ -158,7 +158,7 @@ async function options() {
     q<HTMLInputElement>('.mus').value = String(S.options.music);
     q<HTMLInputElement>('.hc').checked = S.options.contrast;
     q<HTMLInputElement>('.sm').checked = S.options.studyMode;
-    button('Comandi', () => { close(); void controlsTutorial(); });
+    button('Comandi', () => { close(); void openControls(); });
     button('Esporta salvataggio', () => download(`tradermon-${S.name}.json`, exportSave()));
     button('Applica', () => {
       S.options.textSpeed = Number(q<HTMLSelectElement>('.ts').value);
@@ -177,6 +177,5 @@ async function options() {
 export function applyOptions() {
   document.documentElement.style.setProperty('--fs-scale', String(S.options.fontScale));
   document.body.classList.toggle('contrast', S.options.contrast);
-  setVolume(S.options.volume);
-  setMusicVolume(S.options.music);
+  applyAudio();
 }
