@@ -6,7 +6,7 @@ import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW,
 import { getMap, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, type WorldApi } from '../world/scripts';
 import { S, save, advanceDays, hasTech, TECH } from '../systems/state';
-import { held, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
+import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc } from '../ui/core';
 import { pauseMenu } from '../ui/menu';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
@@ -20,6 +20,12 @@ interface NpcSprite { def: NpcDef; spr?: Phaser.GameObjects.Sprite; shadow?: Pha
 /** Personaggi che passeggiano o si guardano intorno quando il giocatore non interagisce. */
 const WANDER_KINDS = new Set(['talk', 'resident', 'student', 'daily']);
 const STEP_MS = 180;
+/** Tocco breve da fermi: il personaggio si gira sul posto; tenendo premuto oltre questo tempo cammina. */
+const TURN_MS = 85;
+/** Appena fermati, un cambio di direzione riparte subito senza la pausa di rotazione. */
+const MOMENTUM_MS = 110;
+type Dir = 'up' | 'down' | 'left' | 'right';
+interface Walk { fx: number; fy: number; tx: number; ty: number; di: number; t: number; chain: boolean; done: () => void }
 
 export class WorldScene extends Phaser.Scene {
   map!: MapDef;
@@ -42,6 +48,10 @@ export class WorldScene extends Phaser.Scene {
   walkFrame = 0;
   turnLock = 0;
   bumpLock = 0;
+  bumpToken = 0;
+  /** Passo in corso, avanzato a mano in update() così da concatenare i passi senza scatti. */
+  walk?: Walk;
+  lastStepEnd = -1e9;
   lastSignMap = '';
   playerShadow?: Phaser.GameObjects.Image;
   grassOver?: Phaser.GameObjects.Sprite;
@@ -104,6 +114,7 @@ export class WorldScene extends Phaser.Scene {
     this.map = getMap(id);
     if (id === 'home') this.map = decorateHome(this.map);
     S.map = id; S.x = x; S.y = y; S.facing = DIR_NAME[dir];
+    this.walk = undefined;
     this.children.list.filter((c) => c !== this.overlay && c !== this.weather).forEach((c) => c.destroy());
     this.tilemap?.destroy();
     this.animFrame = 0;
@@ -237,16 +248,21 @@ export class WorldScene extends Phaser.Scene {
     S.playMs += now - this.lastMs;
     this.lastMs = now;
     this.updateWeather(delta);
+    if (this.walk) return void this.advanceWalk(Math.min(delta, 100));
     if (this.busy || this.moving || uiActive()) return;
     if (this.time.now < this.turnLock) return;
     const p = takeWorldPress();
     if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => travelTo(id, this.api())));
     if (p === 'a') return void this.interactFront();
-    let dir: Key | undefined;
-    for (const k of ['up', 'down', 'left', 'right'] as Key[]) if (held.has(k)) dir = k;
-    if (!dir && p && ['up', 'down', 'left', 'right'].includes(p)) dir = p;
-    if (dir) this.tryMove(dir as 'up' | 'down' | 'left' | 'right');
+    const dir = this.nextDir();
+    if (dir) this.tryMove(dir, this.time.now - this.lastStepEnd < MOMENTUM_MS);
     void time;
+  }
+
+  /** Direzione voluta: l'ultimo tasto tenuto premuto, altrimenti un tocco breve rimasto in memoria. */
+  nextDir(): Dir | undefined {
+    const tap = takeDirTap();
+    return (heldDir() ?? tap) as Dir | undefined;
   }
 
   setFacing(d: 'up' | 'down' | 'left' | 'right') {
@@ -260,24 +276,25 @@ export class WorldScene extends Phaser.Scene {
     if (now < this.bumpLock) return;
     this.bumpLock = now + 380;
     beep('bump');
-    this.moving = true;
+    // l'animazione non blocca i comandi: si può girare e ripartire subito
     this.walkFrame = (this.walkFrame + 1) % 2;
     this.player.setFrame(S.avatar * 12 + di * 3 + 1 + this.walkFrame);
-    this.time.delayedCall(200, () => { this.player.setFrame(S.avatar * 12 + di * 3); this.moving = false; });
+    const token = ++this.bumpToken;
+    this.time.delayedCall(200, () => { if (token === this.bumpToken && !this.walk) this.player.setFrame(S.avatar * 12 + DIRS[S.facing][2] * 3); });
   }
 
-  tryMove(d: 'up' | 'down' | 'left' | 'right') {
+  /** continuing: il giocatore stava già camminando, quindi un cambio di direzione cammina subito. */
+  tryMove(d: Dir, continuing = false, carry = 0) {
     const [dx, dy, di] = DIRS[d];
     const turned = S.facing !== d;
-    this.setFacing(d);
-    // un tocco breve gira il personaggio sul posto; tenendo premuto si cammina
-    if (turned && !this.moving) { this.turnLock = this.time.now + 70; }
+    if (turned) { this.setFacing(d); this.bumpToken++; }
+    // da fermi un tocco breve gira il personaggio sul posto; tenendo premuto si cammina
+    if (turned && !continuing) this.turnLock = this.time.now + TURN_MS;
     const nx = S.x + dx, ny = S.y + dy;
     const warp = this.map.warps.find((w) => w.x === nx && w.y === ny) ?? (this.map.tiles[ny]?.[nx] === TILE.DOOR ? undefined : undefined);
     if (warp && !this.blockedNpcOnly(nx, ny)) {
       if (warp.lock === 'archive' && S.badges < 5) { void this.runScript(() => say(['La porta dell\'Archivio è chiusa.', 'Una targa dice: "Si apre solo a chi sa leggere oltre la superficie" (Mentore 5).'], 'Archivio')); return; }
       if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione della Lega.'], 'Torre')); return; }
-      this.moving = true;
       this.walkTo(nx, ny, di, () => {
         beep('door');
         this.moving = true;
@@ -287,33 +304,51 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     if (this.blocked(nx, ny)) {
-      if (!turned) this.bump(di);
+      if (!turned || continuing) this.bump(di);
       return;
     }
-    if (turned) return;
-    this.walkTo(nx, ny, di, () => this.afterStep());
+    if (turned && !continuing) return;
+    this.walkTo(nx, ny, di, () => this.afterStep(), carry, true);
   }
 
   blockedNpcOnly(x: number, y: number) { return !!this.npcAt(x, y); }
 
-  walkTo(nx: number, ny: number, di: number, done: () => void) {
+  walkTo(nx: number, ny: number, di: number, done: () => void, carry = 0, chain = false) {
     this.moving = true;
+    this.bumpToken++;
     this.walkFrame = (this.walkFrame + 1) % 2;
-    const base = S.avatar * 12 + di * 3;
-    this.player.setFrame(base + 1 + this.walkFrame);
-    const intoGrass = this.map.tiles[ny]?.[nx] === TILE.MARKET;
-    this.tweens.add({
-      targets: this.player, x: nx * P + P / 2, y: ny * P + P, duration: STEP_MS,
-      onStart: () => this.player.setDepth(10 + Math.max(ny, S.y)),
-      // primo mezzo passo con il piede avanti, secondo mezzo in piedi: l'andatura dei classici
-      onUpdate: (tw) => { if (tw.progress > 0.5) this.player.setFrame(base); this.playerShadow?.setPosition(this.player.x, this.player.y - RS); },
-      onComplete: () => {
-        S.x = nx; S.y = ny; this.player.setFrame(base); this.moving = false;
-        this.updateGrass();
-        if (intoGrass) this.rustle(nx, ny);
-        done();
-      },
-    });
+    this.player.setDepth(10 + Math.max(ny, S.y));
+    this.walk = { fx: S.x, fy: S.y, tx: nx, ty: ny, di, t: carry, chain, done };
+    this.renderWalk();
+  }
+
+  /** Posizione e fotogramma del passo in corso. */
+  renderWalk() {
+    const w = this.walk!;
+    const k = Math.min(1, w.t / STEP_MS);
+    this.player.setPosition((w.fx + (w.tx - w.fx) * k) * P + P / 2, (w.fy + (w.ty - w.fy) * k) * P + P);
+    // primo mezzo passo con il piede avanti, secondo mezzo in piedi: l'andatura dei classici
+    const base = S.avatar * 12 + w.di * 3;
+    this.player.setFrame(k < 0.5 ? base + 1 + this.walkFrame : base);
+    this.playerShadow?.setPosition(this.player.x, this.player.y - RS);
+  }
+
+  /** Avanza il passo; a fine casella, se una direzione è ancora premuta, riparte subito con il tempo avanzato. */
+  advanceWalk(delta: number) {
+    const w = this.walk!;
+    w.t += delta;
+    this.renderWalk();
+    if (w.t < STEP_MS) return;
+    const extra = Math.min(w.t - STEP_MS, STEP_MS / 2);
+    this.walk = undefined;
+    S.x = w.tx; S.y = w.ty; this.moving = false;
+    this.lastStepEnd = this.time.now;
+    this.updateGrass();
+    if (this.map.tiles[w.ty]?.[w.tx] === TILE.MARKET) this.rustle(w.tx, w.ty);
+    w.done();
+    if (!w.chain || this.walk || this.busy || this.moving || uiActive() || hasWorldPress()) return;
+    const dir = this.nextDir();
+    if (dir) this.tryMove(dir, true, extra);
   }
 
   afterStep() {
