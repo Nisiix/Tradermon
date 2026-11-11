@@ -225,12 +225,14 @@ export function profileTimer(): number {
 
 export function newGamePlus(track: Track) {
   // il conto di gioco è reale e segue il giocatore: capitale, posizioni, difficoltà ed esercizi di tappa non ripartono
-  const keep = { name: S.name, avatar: S.avatar, rival: S.rival, tower: S.tower, legends: S.legends, gold: Object.entries(S.cards).filter(([, c]) => c.gold), ng: S.ngPlus + 1, options: S.options,
+  const keep = { name: S.name, avatar: S.avatar, rival: S.rival, tower: S.tower, legends: S.legends, gold: Object.entries(S.cards).filter(([, c]) => c.gold), ng: S.ngPlus + 1, options: S.options, bankrupt: !!S.flags.bankrupt,
     portfolio: S.portfolio, market: S.market, saveId: S.saveId, difficulty: S.difficulty, exDone: S.exDone, levExam: S.levExam, boss: S.boss, license: S.license, liveLimits: S.liveLimits, liveAudit: S.liveAudit, createdAt: S.createdAt };
   newGame();
   Object.assign(S, { name: keep.name, avatar: keep.avatar, rival: keep.rival, tower: keep.tower, legends: keep.legends, ngPlus: keep.ng, options: keep.options, track,
     portfolio: keep.portfolio, market: keep.market, saveId: keep.saveId, difficulty: keep.difficulty, exDone: keep.exDone, levExam: keep.levExam, boss: keep.boss, license: keep.license, liveLimits: keep.liveLimits, liveAudit: keep.liveAudit, createdAt: keep.createdAt });
   keep.gold.forEach(([id, c]) => (S.cards[id] = c));
+  // la parte pratica chiusa da una bancarotta definitiva resta chiusa: il conto è lo stesso
+  if (keep.bankrupt) S.flags.bankrupt = true;
 }
 
 /** Profilo dichiarato dal punteggio delle 3 domande sul rischio (0-6). */

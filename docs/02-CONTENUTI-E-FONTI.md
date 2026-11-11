@@ -7,7 +7,7 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 - Domande: **348** in 21 argomenti
 - Lezioni: **26**
 - Consigli degli abitanti: **62** in 30 case
-- Asset didattici (di fantasia): **24**
+- Asset didattici (di fantasia): **32**
 - Fonti: **70**
 
 ## Domande per argomento
@@ -239,30 +239,38 @@ Tutti di fantasia: nessun nome reale, così il gioco non suggerisce titoli da co
 
 | Ticker | Nome | Classe | Settore | Rischio |
 |---|---|---|---|---|
-| SLR | Solaria Energia | stocks | Energia | ★★★ |
-| BYT | Bytefonte | stocks | Tecnologia | ★★★★ |
-| CDB | Credito di Borgo | stocks | Finanza | ★★★ |
-| VTL | Vitalis Farmaci | stocks | Salute | ★★ |
-| PNE | Pane & Co. | stocks | Consumi | ★★ |
-| ACQ | Acquedotti Uniti | stocks | Utility | ★★ |
-| RZM | Razzomania | stocks | Tecnologia | ★★★★★ |
-| MCN | Meccanica Nord | stocks | Consumi | ★★★ |
-| ORX | Oryx Petroli | stocks | Energia | ★★★ |
-| GLB | Globo Mondo ETF | etf | Globale | ★★★ |
-| USX | Stelle Unite 500 ETF | etf | Globale | ★★★ |
-| EUR | Continente ETF | etf | Globale | ★★★ |
-| EMG | Emergenti ETF | etf | Globale | ★★★★ |
-| GOV | Titoli di Stato ETF | etf | Obbligazioni | ★ |
-| CRP | Obbligazioni Aziendali ETF | etf | Obbligazioni | ★★ |
-| ORO | Lingotto ETC | etf | Oro | ★★★ |
-| TKE | Tecno Settore ETF | etf | Tecnologia | ★★★★ |
-| BIL | Bilanciato 60/40 ETF | etf | Globale | ★★ |
-| GRN | Granito | crypto | Cripto | ★★★★★ |
-| LMN | Lumen | crypto | Cripto | ★★★★★ |
-| ANC | Ancora USD | crypto | Stablecoin | ★★ |
-| FLX | Flusso | crypto | Cripto | ★★★★★ |
-| MEM | Gattomoneta | crypto | Cripto | ★★★★★ |
-| ORT | Oro Tokenizzato | crypto | Oro | ★★★ |
+| AAPL | Apple | stocks | Tecnologia | ★★★ |
+| JNJ | Johnson & Johnson | stocks | Salute | ★★ |
+| JPM | JPMorgan Chase | stocks | Finanza | ★★★ |
+| KO | Coca-Cola | stocks | Consumi | ★★ |
+| NEE | NextEra Energy | stocks | Utility | ★★ |
+| XOM | Exxon Mobil | stocks | Energia | ★★★ |
+| MSFT | Microsoft | stocks | Tecnologia | ★★★ |
+| PG | Procter & Gamble | stocks | Consumi | ★★ |
+| NVDA | NVIDIA | stocks | Tecnologia | ★★★★★ |
+| UNH | UnitedHealth | stocks | Salute | ★★★ |
+| V | Visa | stocks | Finanza | ★★★ |
+| DUK | Duke Energy | stocks | Utility | ★★ |
+| TSLA | Tesla | stocks | Consumi | ★★★★★ |
+| CVX | Chevron | stocks | Energia | ★★★ |
+| SPY | SPDR S&P 500 ETF | etf | Globale | ★★★ |
+| VGK | Vanguard FTSE Europe ETF | etf | Globale | ★★★ |
+| VT | Vanguard Total World Stock ETF | etf | Globale | ★★★ |
+| EEM | iShares MSCI Emerging Markets ETF | etf | Globale | ★★★★ |
+| SHY | iShares 1-3 Year Treasury Bond ETF | etf | Obbligazioni | ★ |
+| LQD | iShares iBoxx Investment Grade Corporate Bond ETF | etf | Obbligazioni | ★★ |
+| GLD | SPDR Gold Shares | etf | Oro | ★★★ |
+| QQQ | Invesco QQQ Trust | etf | Tecnologia | ★★★★ |
+| IEF | iShares 7-10 Year Treasury Bond ETF | etf | Obbligazioni | ★★ |
+| AOR | iShares Core Growth Allocation ETF | etf | Globale | ★★ |
+| EWI | iShares MSCI Italy ETF | etf | Globale | ★★★★ |
+| BTC | Bitcoin | crypto | Cripto | ★★★★★ |
+| ETH | Ethereum | crypto | Cripto | ★★★★★ |
+| SOL | Solana | crypto | Cripto | ★★★★★ |
+| USDC | USD Coin | crypto | Stablecoin | ★ |
+| LTC | Litecoin | crypto | Cripto | ★★★★★ |
+| DOGE | Dogecoin | crypto | Cripto | ★★★★★ |
+| LINK | Chainlink | crypto | Cripto | ★★★★★ |
 
 ## Come vengono scritte le domande
 

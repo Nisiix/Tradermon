@@ -312,6 +312,8 @@ function button2(body: HTMLElement, env: A.Env, reload: () => Promise<void>) {
       if (!isCrypto && !allowed.includes('stocks') && !allowed.includes('etf')) throw new Error('Il tuo percorso comprende solo cripto.');
       if (!info.tradable) throw new Error('Questo asset non è negoziabile su Alpaca.');
       let confirmWord: string | undefined;
+      // leva sul conto reale: solo dopo l'Esame della Leva, solo azioni ed ETF, entro il potere d'acquisto che Alpaca concede
+      let useMargin = false;
       if (env === 'live') {
         const L = LIVE_LIMITS[Math.min(8, S.badges)];
         const perOrder = Math.min(S.liveLimits.perOrder, isCrypto ? L.cOrder : L.order);
@@ -319,7 +321,12 @@ function button2(body: HTMLElement, env: A.Env, reload: () => Promise<void>) {
         if (S.liveLimits.monthKey !== monthKey()) { S.liveLimits.monthKey = monthKey(); S.liveLimits.spentThisMonth = 0; }
         if (side === 'buy' && amt > perOrder) throw new Error(`Supera il tuo limite per ordine (${perOrder} $).`);
         if (side === 'buy' && S.liveLimits.spentThisMonth + amt > perMonth) throw new Error(`Supera il tuo limite mensile (${perMonth} $, già usati ${S.liveLimits.spentThisMonth.toFixed(2)} $).`);
-        confirmWord = await typedConfirm(`${side === 'buy' ? 'ACQUISTO' : 'VENDITA'} ${type === 'market' ? 'a mercato' : type === 'limit' ? `limite a ${pr}` : `stop a ${pr}`} di ${sym} per circa ${amt.toFixed(2)} $. Costi: eventuale spread${isCrypto ? ' e commissione cripto di Alpaca' : ''}. Limiti: ${perOrder} $ per ordine, ${perMonth} $ al mese.`);
+        if (side === 'buy' && !isCrypto && S.levExam) {
+          const acc = await A.account('live');
+          useMargin = amt > Number(acc.cash);
+          if (useMargin && !(await confirm(`Questo ordine supera la liquidità del conto reale (${Number(acc.cash).toFixed(2)} $): per eseguirlo Alpaca ti presterebbe la differenza. È LEVA con denaro vero: paghi interessi, e se i titoli scendono Alpaca può venderli senza avvisarti e puoi perdere più di quanto hai versato. Vuoi davvero usare il margine?`))) { msg.textContent = 'Ordine annullato: niente margine.'; return; }
+        }
+        confirmWord = await typedConfirm(`${useMargin ? 'CON MARGINE (denaro in prestito da Alpaca). ' : ''}${side === 'buy' ? 'ACQUISTO' : 'VENDITA'} ${type === 'market' ? 'a mercato' : type === 'limit' ? `limite a ${pr}` : `stop a ${pr}`} di ${sym} per circa ${amt.toFixed(2)} $. Costi: eventuale spread${isCrypto ? ' e commissione cripto di Alpaca' : ''}. Limiti: ${perOrder} $ per ordine, ${perMonth} $ al mese.`);
         if (!confirmWord) { msg.textContent = 'Ordine annullato.'; return; }
       }
       const fractional = type === 'market' && info.fractionable !== false;
@@ -337,7 +344,7 @@ function button2(body: HTMLElement, env: A.Env, reload: () => Promise<void>) {
         // Alpaca non accetta stop "a mercato" sulle cripto: si usa uno stop limit con un margine del 3%
         if (isCrypto) { order.type = 'stop_limit'; order.limit_price = String(+(side === 'sell' ? pr * 0.97 : pr * 1.03).toPrecision(8)); }
       }
-      const out = await A.submitOrder(env, order, confirmWord);
+      const out = await A.submitOrder(env, order, confirmWord, useMargin);
       let refPx = pr;
       if (!refPx) { try { refPx = (await A.latest(sym, isCrypto ? 'crypto' : 'stocks')).price; } catch { refPx = 0; } }
       if (env === 'live') {

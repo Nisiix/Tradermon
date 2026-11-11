@@ -52,6 +52,16 @@ src/
 server/index.mjs      file statici + API /api verso Alpaca (paper e live)
 ```
 
+### Dati reali e conto di gioco
+
+- `src/systems/realdata.ts`: unico ingresso dei prezzi. `refreshWorld` scarica ultimi prezzi e storico giornaliero; `loadWindow` e `alignBars` preparano i periodi storici dei replay. Nessun prezzo generato: se Alpaca non risponde, il gioco lo dice.
+- `src/systems/account.ts`: registro del conto di gioco dentro il conto Alpaca Paper (ordini con `client_order_id` `tm-<partita>-<n>`, riconciliazione, rate e Riserva, esercizi di tappa, Sigilli, leva, chiamata di margine, bancarotta, aumenti di capitale).
+- `src/systems/boss.ts` e `src/ui/boss.ts`: Boss dei Mercati (punteggi puri nel primo, flusso nel secondo).
+- `src/ui/broker.ts`: voce "Chiavi API", guida, apertura del conto, difficoltà, tappe, sportello della leva, avvisi, "Mentre eri via".
+- `src/ui/timemachine.ts` e `src/data/missions.ts`: replay su finestre reali (`RealWindow`), prezzi a base 100 e nomi anonimi fino alla fine.
+- `server/index.mjs`: `/api/data/daily`, `/api/data/snapshot`, lettura di un ordine per id, intestazione `x-tradermon-margin`. `TRADERMON_ALPACA_MOCK` (solo `http://127.0.0.1:<porta>`) e `TRADERMON_SECRETS_DIR` servono ai test.
+- Salvataggio versione 3: la migrazione dalla 2 azzera portafoglio e mercato simulati, tiene studio e Attestati.
+
 ## Flusso dei dati
 
 - Lo stato di gioco è un unico oggetto `S` (`systems/state.ts`), esportabile in JSON. Non contiene mai chiavi.

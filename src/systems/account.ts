@@ -15,9 +15,9 @@
 //    titoli di quanti Alpaca ne ha davvero.
 import type { Portfolio, PendingOrder, AssetDef } from '../types';
 import * as A from './alpaca';
-import { S, save, slots } from './state';
+import { S, save, slots, addRep } from './state';
 import { ASSET_BY_ID, unlockedAssets } from '../data/assets';
-import { DIFFICULTY, RATE, STAGES, STAGE_TOOL, LEVERAGE } from './balance';
+import { DIFFICULTY, RATE, STAGES, STAGE_TOOL, LEVERAGE, REWARD } from './balance';
 import { value, fmtMoney, fmtPx, fmtQty } from './portfolio';
 import { refreshWorld } from './realdata';
 import { tradingDaysBetween } from './market';
@@ -57,10 +57,15 @@ function unreachable(e: unknown): string {
 
 const fee = () => DIFFICULTY[S.difficulty].fee;
 
+/** Ha già vinto la Lega almeno una volta (anche in una partita precedente: la Nuova Partita+ azzera i flag, non il conto). */
+export function graduated(): boolean {
+  return !!S.flags.champion || S.ngPlus > 0;
+}
+
 /** Quota di capitale liberata dalle rate: una per tappa aperta, tutto dopo la Lega. */
 export function releasedFrac(): number {
   if (!S.flags.starter) return 0;
-  if (S.flags.champion || S.ngPlus > 0) return 1;
+  if (graduated()) return 1;
   return Math.min(STAGES, Math.min(8, S.badges) + 1) * RATE;
 }
 
@@ -85,7 +90,7 @@ export function equity(pf: Portfolio = S.portfolio): number {
 
 /** Leva sul conto: dopo l'Esame della Leva e la Medaglia dello Scudo, solo azioni ed ETF, mai oltre il tetto di Alpaca. */
 export function leverageOpen(): boolean {
-  return S.levExam && S.badges >= LEVERAGE.fromBadge;
+  return S.levExam && (S.badges >= LEVERAGE.fromBadge || graduated());
 }
 
 /** Prestito ancora disponibile con la leva. */
@@ -160,6 +165,9 @@ export function grantSeals(): number[] {
     if (S.badges < m || !S.flags[`m${m}_mission`] || S.exDone < m + 1 || S.flags.bankrupt) break;
     S.seals = m;
     got.push(m);
+    // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (missione dal Mentore o esercizio in Clinica)
+    addRep(REWARD.rep.badge / 2);
+    S.stats.xp += REWARD.xp.badge / 2;
   }
   return got;
 }
@@ -535,7 +543,7 @@ export async function restartAfterBankruptcy(): Promise<string[]> {
  */
 export async function deposit(amount: number): Promise<string> {
   const pf = S.portfolio;
-  if (!S.flags.champion) return 'Il capitale si può aumentare solo dopo la Lega.';
+  if (!graduated()) return 'Il capitale si può aumentare solo dopo la Lega.';
   try {
     const acc = await A.account(ENV);
     if (Number(acc.equity) < equity(pf) + amount) return `Il tuo conto Paper su Alpaca vale ${fmtMoney(Number(acc.equity))}: non basta per un conto di gioco più grande. Puoi azzerarlo o ricaricarlo dalla dashboard Paper di Alpaca.`;

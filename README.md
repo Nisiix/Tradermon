@@ -1,8 +1,8 @@
 # Tradermon · Il viaggio dell'investitore
 
-Tradermon è un gioco di ruolo educativo sugli investimenti, nello stile dei giochi per console portatili dei primi anni 2000. Il mondo, i personaggi e la grafica sono originali. Ci si muove su una mappa, si sfidano gli altri investitori con quiz di finanza e si superano missioni di trading in un mercato simulato. Si sconfiggono 8 Mentori, poi si affronta la Lega degli Investitori.
+Tradermon è un gioco di ruolo educativo sugli investimenti, nello stile dei giochi per console portatili dei primi anni 2000. Il mondo, i personaggi e la grafica sono originali. Ci si muove su una mappa, si sfidano gli altri investitori con quiz di finanza e si superano missioni di trading su periodi veri di mercato. Si sconfiggono 8 Mentori, poi si affronta la Lega degli Investitori. Titoli, prezzi e grafici sono reali: arrivano da Alpaca, con le chiavi del giocatore. Nel gioco non esistono titoli o andamenti inventati.
 
-> **Non è consulenza finanziaria.** Tutto il gioco si completa con denaro finto. Il collegamento a un conto reale (Alpaca) è facoltativo, si sblocca solo dopo la prima Medaglia e un esame, ed è limitato da tetti prudenti.
+> **Non è consulenza finanziaria.** Tutto il gioco si completa con denaro finto, su un conto Alpaca **Paper** (gratuito, basta un'email). Senza conto collegato resta aperto tutto il percorso di studio (storia, duelli, biblioteche, Attestati), ma non la parte pratica (Sigilli, Lega, grafici e titoli reali). Il collegamento a un conto reale (Live) è facoltativo, fuori dalla storia, si sblocca solo dopo il primo Attestato e un esame, ed è limitato da tetti prudenti.
 
 ## Avvio rapido
 
@@ -50,29 +50,33 @@ All'inizio un mini tutorial fa provare i comandi, con la versione per tastiera o
 
 1. All'inizio crei il tuo giocatore (nome e password); il Prof. Saldi ti chiama con quel nome e ti chiede l'aspetto. Poi fai un breve questionario sul profilo di rischio.
 2. Nel Laboratorio scegli una delle tre Valigette: Titoli (azioni), Indici (ETF) o Cripto. Parlando con il Prof puoi scegliere anche il Sentiero Misto.
-3. La Dott.ssa Ratio apre il tuo **Conto di Prova**. Scegli il capitale virtuale e l'allocazione obiettivo. Il gioco non aggiunge né toglie mai denaro da solo: il conto cambia solo con le tue operazioni e con il mercato.
-4. Ogni Mentore si batte in due fasi: un duello di conoscenza e una missione nella **Macchina del Tempo**, un mercato simulato con ordini, costi, dividendi e notizie.
-5. Entra nelle case: ogni abitante (single, coppie, famiglie) ti insegna un concetto diverso, che resta annotato nell'Investidex.
-6. Nelle Cliniche del Portafoglio salvi, fai il check-up, la diagnosi e il ribilanciamento, e impari a riconoscere i bias.
-7. L'erba alta è solo decorativa: non ci sono incontri casuali né stati alterati.
-8. Dal menu, l'**Agenda** propone tre missioni al giorno e una alla settimana (leggere, vincere duelli, fare il check-up, camminare...). Completarle dà solo punti Conoscenza. I **traguardi** sbloccano titoli (da mostrare nel profilo e nei duelli) e oggetti con cui si arreda la casa a Borgo Semina.
-9. Gli investitori battuti chiedono la **rivincita** dopo tre giorni, con domande più difficili. Alcuni abitanti, alla seconda visita, raccontano una **storia a tappe** (sei in tutto) che porta a parlare con altri, leggere una lezione o superare una prova.
-10. Dopo ogni acquisto o vendita il **Diario dell'investitore** chiede il perché; dopo 30 giorni propone di rileggerlo con il senno di poi. In Biblioteca e in Zona Simulazione ci sono quattro **minigiochi** (grafici, interesse composto, diversificazione, bilanci), gli **scenari storici** spiegati e la **sfida della settimana** con classifica locale e codice da scambiare con gli amici.
-11. Il clima di mercato si vede anche nel cielo: pioggia con l'orso, temporale con lampi nella tempesta, scintille con il toro, lucciole e finestre accese di notte. La musica è chiptune originale, generata in codice, e cambia con il luogo, la notte, i duelli e il clima.
+3. La **difficoltà** scelta all'inizio fissa il capitale del **conto di gioco** e non si cambia più: Apprendista 10.000 $, Investitore 5.000 $, Stratega 2.500 $, Leggenda 1.000 $ (con costi didattici e tolleranze sempre più strette). La Dott.ssa Ratio apre il conto: è un registro dentro il tuo conto Alpaca Paper, e cambia solo con gli ordini inviati dal gioco, ai prezzi veri di esecuzione.
+4. Il capitale si libera a **rate**: il 10% con la Valigetta e un altro 10% a ogni Attestato; il resto sta nella Riserva dell'Accademia fino alla Lega. Ogni tappa ha un **esercizio** sul conto (versare la rata usando la Tecnica appena imparata). Gli ordini si possono inviare anche a mercato chiuso: Alpaca li esegue all'apertura.
+5. Ogni **Medaglia** ha due metà. L'**Attestato** si vince con il duello di conoscenza del Mentore e apre la strada. Il **Sigillo pratico** chiede una missione nella **Macchina del Tempo** (un periodo vero di mercato, con i nomi dei titoli nascosti fino alla fine) e l'esercizio della tappa sul conto. Per entrare nella Lega servono tutti e otto i Sigilli.
+6. Dal 5º Attestato si può sostenere l'**Esame della Leva**: vale subito nei replay e, dall'8º Attestato, anche sul conto di gioco (massimo 2×, solo azioni ed ETF), con interessi, chiamata di margine e bancarotta. Dopo la Lega: aumento del capitale, crisi leggendarie e tre **Boss dei Mercati** (quiz, poi un solo piano su un grafico vero, valutato dopo ore o settimane).
+7. Entra nelle case: ogni abitante (single, coppie, famiglie) ti insegna un concetto diverso, che resta annotato nell'Investidex.
+8. Nelle Cliniche del Portafoglio salvi, fai il check-up, la diagnosi e il ribilanciamento, e impari a riconoscere i bias.
+9. L'erba alta è solo decorativa: non ci sono incontri casuali né stati alterati.
+10. Dal menu, l'**Agenda** propone tre missioni al giorno e una alla settimana (leggere, vincere duelli, fare il check-up, camminare...). Completarle dà solo punti Conoscenza. I **traguardi** sbloccano titoli (da mostrare nel profilo e nei duelli) e oggetti con cui si arreda la casa a Borgo Semina.
+11. Gli investitori battuti chiedono la **rivincita** dopo tre giorni, con domande più difficili. Alcuni abitanti, alla seconda visita, raccontano una **storia a tappe** (sei in tutto) che porta a parlare con altri, leggere una lezione o superare una prova.
+12. Dopo ogni acquisto o vendita il **Diario dell'investitore** chiede il perché; dopo 30 giorni propone di rileggerlo con il senno di poi. In Biblioteca e in Zona Simulazione ci sono quattro **minigiochi** (grafici, interesse composto, diversificazione, bilanci), gli **scenari storici** spiegati e la **sfida della settimana** con classifica locale e codice da scambiare con gli amici.
+13. Il clima di mercato si vede anche nel cielo: pioggia con l'orso, temporale con lampi nella tempesta, scintille con il toro, lucciole e finestre accese di notte. La musica è chiptune originale, generata in codice, e cambia con il luogo, la notte, i duelli e il clima.
 
-## Conto reale Alpaca (facoltativo)
+## Conto Alpaca: Paper per giocare, reale facoltativo
 
-Le chiavi **non sono mai nel codice né nel salvataggio**. Si inseriscono nel gioco: *Clinica → Conto Alpaca*. Su Supabase ne resta solo una copia cifrata con la tua password (vedi sopra).
+Le chiavi **non sono mai nel codice né nel salvataggio**. Si inseriscono nel gioco dal menu, voce **Chiavi API** (c'è anche in Clinica). Su Supabase ne resta solo una copia cifrata con la tua password (vedi sopra).
 
 1. Crea un account su [alpaca.markets](https://alpaca.markets) e genera le chiavi **Paper** dalla dashboard.
 2. Nel gioco scegli *Collega Alpaca Paper* e incolla Key ID e Secret.
 3. Il server locale verifica le chiavi presso Alpaca. Poi le salva solo sul tuo computer, in `server/.secrets/keys.json` (permessi 600, escluso da git).
-4. Il conto **reale** si sblocca dopo la 1ª Medaglia e l'Esame di Abilitazione (9 risposte giuste su 10). Ogni ordine reale:
+4. Il conto **reale** si sblocca dopo il 1º Attestato e l'Esame di Abilitazione (9 risposte giuste su 10). Ogni ordine reale:
    - chiede di scrivere `CONFERMO`;
-   - rispetta i limiti per ordine e per mese, che crescono con le Medaglie;
+   - rispetta i limiti per ordine e per mese, che crescono con gli Attestati;
    - viene annotato in `server/.secrets/audit.log`.
 
-Vendite allo scoperto e margine non sono ammessi. Puoi abbassare il tetto massimo per ordine con la variabile `TRADERMON_LIVE_MAX_ORDER`, che vale 2500 dollari se non la imposti. Puoi attivare una pausa di riflessione di 1, 7 o 30 giorni. Depositi e prelievi si fanno sempre dalla dashboard di Alpaca.
+Le vendite allo scoperto non sono ammesse. La progressione del gioco vive solo sul Paper: nessun premio dipende dal denaro vero. Sul conto reale i prelievi si fanno sempre dal sito di Alpaca e i depositi non passano mai dal gioco.
+
+I dati di Alpaca non si possono ridistribuire: ogni giocatore li scarica con le proprie chiavi e nel repository non c'è alcun prezzo storico. Per controllare che i periodi usati da missioni e crisi abbiano dati per tutti i titoli: `npm start` e, in un altro terminale, `node scripts/check-windows.mjs`. I test automatici usano un finto Alpaca locale con prezzi generati (`tests/helpers/fake-alpaca.ts`). Puoi abbassare il tetto massimo per ordine con la variabile `TRADERMON_LIVE_MAX_ORDER`, che vale 2500 dollari se non la imposti. Puoi attivare una pausa di riflessione di 1, 7 o 30 giorni. Depositi e prelievi si fanno sempre dalla dashboard di Alpaca.
 
 ## Struttura
 

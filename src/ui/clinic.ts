@@ -335,7 +335,7 @@ async function deposit() {
     'Durante il viaggio non si aggiunge e non si toglie denaro: il conto cambia solo con le tue operazioni e con il mercato. L\'Accademia libera il capitale a rate, una per tappa.',
     'Conto reale: i PRELIEVI si possono sempre fare, dal sito di Alpaca. I DEPOSITI non passano mai dal gioco, e Tradermon non ti chiederà mai di versare denaro.',
   ];
-  if (!S.flags.champion) { await say([...lines, 'Dopo la Lega potrai aumentare il capitale del conto di gioco da qui.'], NURSE); return; }
+  if (!Acc.graduated()) { await say([...lines, 'Dopo la Lega potrai aumentare il capitale del conto di gioco da qui.'], NURSE); return; }
   await say([...lines, 'Sei Campione: ora puoi aumentare il capitale del conto di gioco. È sempre denaro finto del conto Paper.'], NURSE);
   const steps = [0.25, 0.5, 1];
   const c = await choose([...steps.map((f) => `Aggiungi ${fmtMoney(pf.initial * f)}`), 'Niente'], { cancel: true, who: NURSE });

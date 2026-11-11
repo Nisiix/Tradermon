@@ -170,7 +170,6 @@ async function sealChallenge(m: number, w: WorldApi) {
   }
   const got = Acc.grantSeals();
   if (got.includes(m)) {
-    reward({ rep: REWARD.rep.badge / 2, xp: REWARD.xp.badge / 2, save: false });
     beep('badge'); jingle('badge');
     await say([`Missione superata ed esercizio fatto: ecco il Sigillo pratico. La ${md.badge} adesso è completa!`, m === 8 ? 'Con tutti e otto i Sigilli la Guardia della Lega ti lascerà passare.' : `Sigilli pratici: ${S.seals}/8.`], md.name);
     w.refresh(); save();
@@ -237,7 +236,7 @@ async function winBadge(m: number, w: WorldApi) {
 
 export async function guard(n: NpcDef, w: WorldApi) {
   const b = n.data?.badge as number;
-  if (n.data?.league) await say(['Alt! Nella Lega entra solo chi ha completato tutte e otto le Medaglie: Attestato e Sigillo pratico.', `Hai ${S.seals} Sigilli su 8. ${nextSealLine()}`, 'Nella Lega si opera su mercati veri: per questo serve aver fatto pratica sul conto.'], n.name);
+  if (n.data?.league) await say(['Alt! Nella Lega entra solo chi ha completato tutte e otto le Medaglie: Attestato e Sigillo pratico.', `Hai ${S.seals} Sigilli su 8. ${nextSealLine()}`, 'Nella Lega le prove sono su periodi veri di mercato: per questo serve aver fatto pratica sul conto.'], n.name);
   else await say([`Alt! Per proseguire serve l'Attestato della ${mentor(b, S.track).badge}.`, `Lo consegna il Mentore dell'Accademia di ${TOWNS[b].name}, a chi vince il suo duello.`], n.name);
   w.bumpBack();
 }
@@ -332,7 +331,7 @@ export async function league(i: number, w: WorldApi) {
 }
 
 export async function tower() {
-  const opts = ['Torre delle Sfide (piani infiniti)', ...LEGENDS.map((l) => `Crisi leggendaria: ${l.title}${S.legends.includes(l.id) ? ' ✓' : ''}`), `Boss dei Mercati${S.flags.champion ? '' : ' (dopo la Lega)'}`, 'Nuova Partita+', 'Esci'];
+  const opts = ['Torre delle Sfide (piani infiniti)', ...LEGENDS.map((l) => `Crisi leggendaria: ${l.title}${S.legends.includes(l.id) ? ' ✓' : ''}`), `Boss dei Mercati${Acc.graduated() ? '' : ' (dopo la Lega)'}`, 'Nuova Partita+', 'Esci'];
   const c = await choose(opts, { cancel: true, prompt: `Record personale: piano ${S.tower.best}.`, who: 'Custode della Torre' });
   if (c < 0 || c === opts.length - 1) return;
   if (c === 0) {
@@ -363,7 +362,7 @@ export async function tower() {
     return;
   }
   if (opts[c].startsWith('Boss dei Mercati')) {
-    if (!S.flags.champion) return say(['I Boss dei Mercati sfidano solo i Campioni della Lega.', 'Si battono con un quiz e poi con una sola decisione su un grafico vero, che può durare ore o settimane.'], 'Custode della Torre');
+    if (!Acc.graduated()) return say(['I Boss dei Mercati sfidano solo i Campioni della Lega.', 'Si battono con un quiz e poi con una sola decisione su un grafico vero, che può durare ore o settimane.'], 'Custode della Torre');
     return bossMenu();
   }
   if (opts[c] === 'Nuova Partita+') {

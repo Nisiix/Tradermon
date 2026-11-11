@@ -14,6 +14,16 @@ Regole d'oro del progetto:
 
 ---
 
+
+> **Aggiornamento: gioco sui dati reali (sostituisce le parti sul "mercato simulato" e sul "Conto di Prova" qui sotto).**
+> - Titoli, prezzi e grafici sono solo quelli reali di Alpaca; i titoli di fantasia e l'indice "Capitalia 100" non esistono più. Senza conto Alpaca Paper collegato resta il percorso di studio.
+> - Difficoltà scelta all'inizio (Apprendista 10.000 $, Investitore 5.000 $, Stratega 2.500 $, Leggenda 1.000 $): fissa capitale, costo didattico per ordine, tolleranza sulle rate e regola della bancarotta. Non si cambia.
+> - Conto di gioco: registro dentro il conto Alpaca Paper, aggiornato solo dagli ordini inviati dal gioco e riconciliato con le posizioni vere. Capitale liberato a rate del 10% (Valigetta più una per Attestato), il resto nella Riserva dell'Accademia fino alla Lega.
+> - Medaglia = Attestato (duello, apre il mondo) più Sigillo pratico (missione su un periodo reale con nomi nascosti più esercizio di tappa sul conto). La Lega chiede otto Sigilli.
+> - Leva: esame dal 5º Attestato (vale nei replay), sul conto dall'8º, massimo 2×, interessi 6,5%, mantenimento 30%, chiamata di margine di tre giorni di mercato, bancarotta sotto il 10% del capitale.
+> - Dopo la Lega: tutto il capitale libero, aumenti di capitale, crisi leggendarie su periodi reali, tre Boss dei Mercati (quiz più un solo piano valutato sulle candele reali dopo 2 ore, 3 giorni o 4 settimane).
+> - Il conto reale (Live) resta facoltativo e fuori dalla storia. Numeri in `src/systems/balance.ts`; regole in `src/systems/account.ts`, `realdata.ts`, `boss.ts`.
+
 ## 1. Esperienza del giocatore in sintesi
 
 | Fase | Durata indicativa | Cosa impara | Cosa sblocca |

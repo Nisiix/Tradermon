@@ -24,6 +24,7 @@ import { rendererType, guardRendering } from './systems/render';
 import { cloudEnabled, currentPlayer } from './systems/cloud';
 import { syncAtBoot, startCloudSync, cloudPlayer } from './systems/sync';
 import { accountScreen, legacyPrompt } from './ui/account';
+import { whileAway } from './ui/broker';
 
 function pickFile(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -105,7 +106,11 @@ async function boot() {
     scene: [WorldScene],
   });
   (window as unknown as { __game: Phaser.Game }).__game = game;
-  game.events.once(Phaser.Core.Events.READY, () => guardRendering(game, 'world'));
+  game.events.once(Phaser.Core.Events.READY, () => {
+    guardRendering(game, 'world');
+    // il mercato vero si è mosso mentre il gioco era chiuso: allinea il conto e racconta che cosa è cambiato
+    void whileAway().catch(() => undefined);
+  });
 }
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
