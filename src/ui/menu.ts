@@ -27,6 +27,7 @@ import { safariAtRisk, SAFARI_TEXT } from './storageNotice';
 import { cloudPlayer, flush, clearLocal } from '../systems/sync';
 import { logout } from '../systems/cloud';
 import { deletePlayerForm, PRIVACY_URL } from './account';
+import { busy } from './loading';
 import { openRegionMap } from './regionmap';
 import { ABILITY, canSwim, canTransfer } from '../world/travel';
 
@@ -217,13 +218,13 @@ async function options() {
 /** Esce dal giocatore su questo dispositivo: la partita resta su Supabase, la copia locale e la chiave della cassaforte si cancellano. */
 async function leavePlayer() {
   save();
-  const sent = await flush();
+  const sent = await busy('Salvo la partita', flush());
   const ask = sent
     ? 'Uscire dal giocatore su questo dispositivo? La partita resta salvata online: per riprenderla basta rientrare con nome e password.'
     : 'Il servizio dei salvataggi non è raggiungibile e gli ultimi progressi non sono ancora stati inviati: uscendo adesso li perderesti. Uscire lo stesso?';
   const c = await choose(['Esci', 'Resta'], { prompt: ask, cancel: true });
   if (c !== 0) return;
-  await logout();
+  await busy('Esco dal giocatore', logout());
   clearLocal();
   location.reload();
 }

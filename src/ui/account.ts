@@ -4,6 +4,7 @@ import { modal, el, esc } from './core';
 import * as C from '../systems/cloud';
 import { formatPlayTime } from '../systems/playtime';
 import { forgetPlayerOnDevice, type LegacyChoice } from '../systems/sync';
+import { busy } from './loading';
 
 const PRIVACY = 'La partita viene salvata online, legata al tuo giocatore: puoi continuarla da qualsiasi browser o dispositivo entrando con nome e password. Le chiavi Alpaca, se le colleghi, restano solo su questo dispositivo, cifrate con la tua password: non vanno online e non entrano nel salvataggio.';
 export const PRIVACY_URL = '../privacy/';
@@ -82,7 +83,7 @@ function registerForm(): Promise<C.Player | null> {
       b.disabled = true;
       msg.textContent = 'Creo il giocatore...';
       try {
-        const p = await C.register(name.input.value, pw.input.value);
+        const p = await busy('Creo il giocatore', C.register(name.input.value, pw.input.value));
         pw.input.value = pw2.input.value = '';
         close(p);
       } catch (e) { msg.innerHTML = `<span class="bad">${esc((e as Error).message)}</span>`; b.disabled = false; }
@@ -106,7 +107,7 @@ function loginForm(): Promise<C.Player | null> {
       b.disabled = true;
       msg.textContent = 'Accesso in corso...';
       try {
-        const p = await C.login(name.input.value, pw.input.value);
+        const p = await busy('Entro nel gioco', C.login(name.input.value, pw.input.value));
         pw.input.value = '';
         close(p);
       } catch (e) { msg.innerHTML = `<span class="bad">${esc((e as Error).message)}</span>`; b.disabled = false; }
@@ -128,7 +129,7 @@ export function unlockForm(why: string): Promise<boolean> {
     const go = async () => {
       b.disabled = true;
       msg.textContent = 'Apro la cassaforte...';
-      try { await C.unlockVault(pw.input.value); pw.input.value = ''; close(true); }
+      try { await busy('Apro la cassaforte', C.unlockVault(pw.input.value)); pw.input.value = ''; close(true); }
       catch (e) { msg.innerHTML = `<span class="bad">${esc((e as Error).message)}</span>`; b.disabled = false; }
     };
     pw.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); void go(); } });
@@ -168,7 +169,7 @@ export function deletePlayerForm(player: C.Player): Promise<boolean> {
       b.disabled = true;
       msg.textContent = 'Cancello il giocatore...';
       try {
-        await C.deletePlayer(pw.input.value);
+        await busy('Cancello il giocatore', C.deletePlayer(pw.input.value));
         pw.input.value = '';
         forgetPlayerOnDevice(player.id);
         try { sessionStorage.setItem(DELETED, '1'); } catch { /* niente */ }

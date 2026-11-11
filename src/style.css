@@ -404,3 +404,26 @@ body { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .touch .pad { touch-action: none; }
 .touch .pad button { pointer-events: none; }
 .touch .pad button.on { background: rgba(255,255,255,.55); }
+
+/* ---------- Caricamento a tema (ui/loading.ts): un grafico a candele che si disegna mentre si aspetta ---------- */
+.loading-wrap { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; padding: 10px; background: rgba(16,20,32,.62); outline: none; cursor: progress; animation: ld-in .18s steps(3) both; }
+.loading { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 18px 12px; width: min(300px, 86%); }
+.ld-screen { position: relative; width: 100%; aspect-ratio: 2 / 1; border: 3px solid var(--line); border-radius: 4px; overflow: hidden;
+  background: #182438; box-shadow: inset 0 0 0 2px #2c3c58, inset 0 6px 0 rgba(0,0,0,.25); }
+.ld-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(120,144,192,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(120,144,192,.12) 1px, transparent 1px); background-size: 100% 25%, 12.5% 100%; }
+.cdl { --c: #48e070; --cd: #208840; position: absolute; left: calc(6% + var(--i) * 12.9%); width: 7%; top: 8%; bottom: 8%; animation: ld-cdl 2.4s steps(1) infinite; animation-delay: calc(var(--i) * .24s); opacity: 0; }
+.cdl.dn { --c: #f05858; --cd: #a02828; }
+/* stoppino (min-max) e corpo (apertura-chiusura) dentro l'altezza utile */
+.cdl::before { content: ''; position: absolute; left: calc(50% - 1px); width: 2px; bottom: var(--lo); top: calc(100% - var(--hi)); background: var(--cd); }
+.cdl::after { content: ''; position: absolute; left: 0; right: 0; bottom: var(--b0); top: calc(100% - var(--b1)); background: var(--c); box-shadow: inset -2px -2px 0 var(--cd), inset 2px 2px 0 rgba(255,255,255,.35); }
+@keyframes ld-cdl { 0% { opacity: 0; } 4% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+.ld-label { margin: 0; font-family: var(--font); font-size: calc(var(--fs) * 1.15); text-align: center; }
+.ld-dots::after { content: ''; display: inline-block; width: 1.6em; text-align: left; animation: ld-dots 1.2s steps(1) infinite; }
+@keyframes ld-dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+@keyframes ld-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .loading-wrap { animation: none; }
+  .cdl { animation: none; opacity: 1; }
+  .ld-dots::after { animation: none; content: '...'; }
+}
+.ld-slow { margin: 0; max-width: 26em; text-align: center; }
