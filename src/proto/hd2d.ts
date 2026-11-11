@@ -3,7 +3,7 @@
 // Non è collegato al gioco: serve a valutare la resa. Nessun modello di terze parti: tutte le texture vengono da src/art/art.ts.
 import * as THREE from 'three';
 import { getMap } from '../world/maps';
-import { drawTiles, drawCharacters, visualTiles, TILE, TILE_ATLAS_COLS, tileIndex, P, CH, RS } from '../art/art';
+import { drawTiles, drawCharacters, visualTiles, TILE, TILE_ATLAS_COLS, tileIndex, P, CH, RS, CHAR_PER_ROW } from '../art/art';
 
 const params = new URLSearchParams(location.search);
 const mapId = params.get('map') ?? 't0';
@@ -138,8 +138,8 @@ for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
 }
 const CROWS = charsCv.height / (CH * RS);
 function charUv(pal: number, dir: number): [number, number, number, number] {
-  const fx = (dir * 3) / 12, fx1 = (dir * 3 + 1) / 12;
-  return [fx, 1 - (pal + 1) / CROWS, fx1, 1 - pal / CROWS];
+  const col = (pal % CHAR_PER_ROW) * 12 + dir * 3, row = Math.floor(pal / CHAR_PER_ROW), FR = 12 * CHAR_PER_ROW;
+  return [col / FR, 1 - (row + 1) / CROWS, (col + 1) / FR, 1 - row / CROWS];
 }
 const PX = Number(params.get('x') ?? Math.floor(W / 2)), PY = Number(params.get('y') ?? Math.floor(H / 2));
 billboard(charUv(0, 0), chars, 1, 1.5, PX + 0.5, PY + 0.6);
