@@ -22,6 +22,8 @@ import { onBuy, onSell } from '../systems/character';
 
 const NURSE = 'Dott.ssa Ratio';
 
+const provaName = (k: number) => (k === 0 ? 'della Valigetta' : `della tappa ${k}`);
+
 export function extraUnlocked(): string[] {
   return Object.keys(S.cards);
 }
@@ -163,7 +165,7 @@ export async function trade(guided = false): Promise<boolean> {
       body.innerHTML = `${msg ? `<p class="${msg.startsWith('!') ? 'bad' : 'good'}">${esc(msg.replace(/^!/, ''))}</p>` : ''}
         <p class="small">Puoi investire <b>${fmtMoney(Acc.usableCash(pf) + (useLev ? Acc.credit(pf) : 0))}</b>${useLev ? ' (leva attiva)' : ''} · patrimonio ${fmtMoney(v - pf.loan)} (bancarotta a zero) · slot ${pf.positions.length}/${slots()} · ${fee ? `costo didattico ${(fee * 100).toFixed(2).replace('.', ',')}% per ordine` : 'nessun costo didattico'}.<br>
         ${clk.open ? '<span class="good">Borsa USA aperta</span>: gli ordini a mercato si eseguono subito.' : `${clk.label}: puoi ordinare lo stesso, azioni ed ETF si eseguono alla prossima apertura (le cripto sempre).`} <span class="muted">${asOfLabel()}.</span><br>
-        ${ex.allDone ? '' : ex.open ? `<b>Prova sul conto ${ex.stage === 0 ? 'della Valigetta' : 'della tappa ' + ex.stage}:</b> ${ex.got + 0.005 >= ex.need ? 'quota minima investita' : `al minimo mancano ${fmtMoney(ex.need - ex.got)} di acquisti (puoi investire anche di più)`}${ex.toolOk ? '' : ` · ${esc(ex.tool)}`}` : ''}${guided ? ' <b>Suggerimento:</b> apri la Valigetta con il titolo che hai scelto in vetrina.' : ''}</p>`;
+        ${ex.allDone ? '' : ex.open ? `<b>Prova sul conto ${ex.stage === 0 ? 'della Valigetta' : 'della tappa ' + ex.stage}:</b> ${ex.got + 0.005 >= ex.need ? 'quota minima investita' : `al minimo mancano ${fmtMoney(ex.need - ex.got)} di acquisti (puoi investire anche di più)`}${ex.toolOk ? '' : ` · ${esc(ex.tool)}`}${Acc.exBarred().length ? ` · <span class="bad">Prova annullata da una vendita: rifalla con un altro titolo (non contano ${esc(Acc.exBarred().map((id) => ASSET_BY_ID[id]?.ticker ?? id).join(', '))})</span>` : ''}` : ''}${guided ? ' <b>Suggerimento:</b> apri la Valigetta con il titolo che hai scelto in vetrina.' : ''}</p>`;
       const tbl = el('table', 't');
       tbl.innerHTML = '<tr><th>Asset</th><th class="n">Prezzo $</th><th class="n">1 mese</th><th class="n">Possiedi</th><th></th></tr>';
       for (const a of list) {
@@ -188,7 +190,7 @@ export async function trade(guided = false): Promise<boolean> {
           const r = await fn();
           busy = false;
           if (r.ok) after?.(r);
-          render(r.ok ? [r.msg, r.exercise].filter(Boolean).join(' ') : '!' + r.msg);
+          render(r.ok ? (r.cancelled ? '!' : '') + [r.msg, r.cancelled, r.exercise].filter(Boolean).join(' ') : '!' + r.msg);
         };
         const b = el('button', 'btn', 'Compra');
         b.addEventListener('click', async () => {
@@ -202,9 +204,10 @@ export async function trade(guided = false): Promise<boolean> {
         td.append(inp, b);
         if (pos) {
           const s = el('button', 'btn', 'Vendi');
-          s.addEventListener('click', () => {
+          s.addEventListener('click', async () => {
             const amt = Number(inp.value);
             const qty = amt > 0 ? Math.min(pos.qty, amt / px[a.id]) : pos.qty;
+            if (!(await sellOk(a.id, qty, pos.qty))) return;
             void run(() => Acc.sell(a.id, qty), (r) => {
               onSell(pf, a.id, !!r.atLoss, S.market.day);
               void journalPrompt({ asset: a.id, side: 'sell', amount: qty * (r.price ?? px[a.id]), price: r.price ?? px[a.id], account: 'paper' });
@@ -214,7 +217,11 @@ export async function trade(guided = false): Promise<boolean> {
           if (hasTech(TECH.STOP)) {
             const st = el('button', 'btn', 'Stop −10%');
             st.title = 'Ordine stop reale: vende se il prezzo scende del 10%';
-            st.addEventListener('click', () => void run(() => Acc.sell(a.id, pos.qty, { type: 'stop', price: px[a.id] * 0.9 })));
+            st.addEventListener('click', async () => {
+              const hit = Acc.sellCancels(a.id);
+              if (hit && !(await confirm(`${a.ticker} è un titolo della tua Prova sul conto ${provaName(hit.stage)}. Mettere lo stop non annulla nulla, ma se lo stop scatta è una vendita: la Prova viene annullata e la rifai con un altro titolo. Metto lo stop?`, NURSE))) return;
+              void run(() => Acc.sell(a.id, pos.qty, { type: 'stop', price: px[a.id] * 0.9 }));
+            });
             td.append(st);
           }
         }
@@ -230,6 +237,18 @@ export async function trade(guided = false): Promise<boolean> {
       body.appendChild(tbl);
       if (!list.length) body.appendChild(el('p', 'bad', 'Nessun prezzo disponibile per i tuoi titoli in questo momento: riprova tra poco.'));
       body.appendChild(el('p', 'small muted', 'Ogni pulsante invia un ordine vero al tuo conto Alpaca Paper: denaro finto, prezzi e orari reali. La vetrina è scelta dal gioco per insegnare, non è un consiglio. Prima di decidere apri il Grafico. Scegli l\'importo in dollari: compri anche una frazione di titolo, non serve una quota intera. Gli stop su quote frazionarie valgono fino alla chiusura della seduta: è una regola di Alpaca.'));
+    };
+    // la vendita del titolo di una Prova la annulla: il giocatore deve dirlo in modo esplicito, anche per una parte
+    const sellOk = async (id: string, qty: number, held: number) => {
+      const hit = Acc.sellCancels(id);
+      if (!hit) return true;
+      const tick = ASSET_BY_ID[id].ticker;
+      const partial = qty < held * 0.999;
+      const c = await choose([partial ? 'Vendo una parte per annullare la Prova' : 'Vendo per annullare la Prova', 'Non vendo'], {
+        cancel: true, who: NURSE,
+        prompt: `${tick} è un titolo della tua Prova sul conto ${provaName(hit.stage)}. Decidere di venderlo, anche solo in parte, annulla la Prova: la quota della tappa riparte da zero e la rifai con un altro titolo (gli acquisti di ${tick} non conteranno finché non la completi). ${partial ? `Stai vendendo solo una parte (${fmtMoney(qty * S.market.prices[id])} su ${fmtMoney(held * S.market.prices[id])}): vale lo stesso.` : ''} ${Acc.ignoreOn() ? 'Hai attivato "Prosegui anche se la Prova va male": l\'annullamento verrà ignorato e la Prova conterà come superata.' : 'Confermi che vendi per annullare la Prova e rifarla con un altro titolo?'}`,
+      });
+      return c === 0;
     };
     const summaryOk = async (id: string, amt: number) => {
       const a = ASSET_BY_ID[id];
@@ -290,11 +309,13 @@ async function rebalance() {
   await say(['Ecco la cura che propongo per tornare alla tua allocazione obiettivo, calcolata su tutto il conto.', 'Confermerai tu ogni singolo ordine: io propongo, non eseguo da sola. Sono ordini veri sul conto Paper.'], NURSE);
   for (const p of plan) {
     const a = ASSET_BY_ID[p.id];
-    const ok = (await choose(['Conferma', 'Salta'], { prompt: `${p.side === 'buy' ? 'Comprare' : 'Vendere'} circa ${fmtMoney(p.amount)} di ${a.name}?`, who: NURSE })) === 0;
+    const hit = p.side === 'sell' ? Acc.sellCancels(p.id) : null;
+    const ok = (await choose([hit ? 'Vendo per annullare la Prova' : 'Conferma', 'Salta'], { prompt: `${p.side === 'buy' ? 'Comprare' : 'Vendere'} circa ${fmtMoney(p.amount)} di ${a.name}?${hit ? ` Attenzione: ${a.ticker} è un titolo della tua Prova sul conto ${provaName(hit.stage)}. Venderne anche solo una parte annulla la Prova, che rifarai con un altro titolo.` : ''}`, who: NURSE })) === 0;
     if (!ok) continue;
     const px = S.market.prices;
     const r = p.side === 'buy' ? await Acc.buy(p.id, Math.min(p.amount, Acc.usableCash()), { tag: 'ribilanciamento' }) : await Acc.sell(p.id, p.amount / px[p.id], { tag: 'ribilanciamento' });
     toast(r.msg);
+    if (r.cancelled) await say(r.cancelled, NURSE);
   }
   track('rebalance');
   S.stats.disciplina = Math.min(100, S.stats.disciplina + 3);

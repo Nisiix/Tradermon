@@ -12,7 +12,8 @@ import { guideUrl } from '../systems/home';
 import { LEVERAGE_EXAM } from '../data/leverage';
 import { PAL } from '../art/art';
 import { shuffle } from '../systems/rng';
-import { say, choose, modal, toast } from './core';
+import { say, choose, modal, toast, esc } from './core';
+import { ASSET_BY_ID } from '../data/assets';
 import { runDuel } from './battle';
 import { keysForm, openAlpacaHub, restoreKeys } from './live';
 
@@ -31,7 +32,8 @@ export const GUIDE_LINES = [
   'Ogni tappa chiede una quota MINIMA da investire: un importo fisso, calcolato sul capitale di partenza e non su quello che ti resta, più alto nelle difficoltà più dure. Sopra il minimo sei libero: puoi investire tutto il capitale fin dal primo giorno.',
   'BANCAROTTA: quando il conto arriva a zero, in ogni difficoltà. Ci si arriva con la leva oppure vendendo in perdita: finché tieni un titolo la perdita è sulla carta, quando lo vendi diventa vera. Chi opera con metodo arriva alla Lega con capitale in tasca; quanti errori ti puoi permettere dipende dalla difficoltà.',
   'Le vendite fatte fuori dal gioco (per esempio dal sito di Alpaca) non sfuggono: alla sincronizzazione il gioco le registra al prezzo vero di esecuzione e aggiorna conto, perdite realizzate e controllo della bancarotta.',
-  'Se in una prova non riesci ad arrivare all\'obiettivo con un titolo puoi venderlo, anche solo in parte, e puntare su un altro. Nei mandati dei Boss la decisione di vendere annulla la sfida: si ripete da capo con un titolo diverso.',
+  'Se in una sfida non riesci ad arrivare all\'obiettivo con un titolo puoi venderlo e puntare su un altro. Decidere di vendere il titolo di una sfida, anche solo una parte, la annulla: vale per le Prove sul conto (la quota della tappa riparte da zero e il titolo venduto non conta più) e per i mandati dei Boss (si ripete da capo, quiz compreso). Prima della vendita il gioco ti chiede di confermare che vendi per annullare la sfida e rifarla con un altro titolo. Vale anche se lo stop scatta o se vendi dal sito di Alpaca. Anche la vendita forzata della leva e la bancarotta annullano la Prova in corso. Nelle verifiche della Lega si guarda il conto com\'è: lì una vendita non annulla nulla.',
+  'In Apprendista e Investitore puoi attivare, dalle Impostazioni (⚙) o da Menu, Opzioni, "Prove sul conto: prosegui anche se vanno male": la Prova non viene saltata, ma se finisce male il risultato viene ignorato e prosegui lo stesso. È una scelta sconsigliata se vuoi imparare a investire o a fare trading in modo efficiente e corretto.',
   'DOVE SI OPERA: dal sito gli ordini del conto Paper passano da Supabase (serve essere entrati con il proprio giocatore); le chiavi restano cifrate con la tua password e la funzione che parla con Alpaca non le salva. Il conto reale si usa solo giocando sul proprio computer.',
   'Gli ordini sono anche frazionati: scegli un importo in dollari e compri la frazione di titolo corrispondente, senza dover arrivare a una quota intera.',
   'Il conto reale (Live) è facoltativo e separato dalla storia: si collega dopo il primo Attestato e l\'Esame di Abilitazione, con chiavi Live distinte. Potrebbe non essere disponibile per tutti i Paesi: lo decide Alpaca in fase di verifica.',
@@ -170,16 +172,16 @@ export function stageHtml(): string {
   const rows = Array.from({ length: STAGES }, (_, k) => {
     const done = S.exDone > k;
     const open = !!S.flags.starter && k <= S.badges;
-    return `<tr><td>${k === 0 ? 'Valigetta' : `Tappa ${k}`}</td><td>${STAGE_TOOL[k].text}</td><td class="n">${fmtMoney(Acc.exNeed(k))}</td><td>${done ? '<span class="good">fatto</span>' : open ? '<b>da fare</b>' : `<span class="muted">con l'Attestato ${k}</span>`}</td></tr>`;
+    return `<tr><td>${k === 0 ? 'Valigetta' : `Tappa ${k}`}</td><td>${STAGE_TOOL[k].text}</td><td class="n">${fmtMoney(Acc.exNeed(k))}</td><td>${done ? `<span class="good">fatto</span>${Acc.ignored().includes(k) ? ' <span class="muted">(esito ignorato)</span>' : ''}` : open ? '<b>da fare</b>' : `<span class="muted">con l'Attestato ${k}</span>`}</td></tr>`;
   }).join('');
   const eq = Acc.equity();
   const missing = Acc.exMissing();
   return `
     <p><b>Attestati</b> ${S.badges}/8 · <b>Sigilli pratici</b> ${S.seals}/8 · <b>Prove sul conto</b> ${S.exDone}/${STAGES}</p>
     <p class="small">Capitale ${fmtMoney(pf.initial)} (${D.name}) · puoi investire ancora ${fmtMoney(Acc.usableCash())} · patrimonio ${fmtMoney(eq)} · bancarotta se il conto arriva a zero.</p>
-    ${ex.allDone ? '<p class="good">Tutte le Prove sul conto sono completate.</p>' : `<p class="small">${ex.open ? `<b>Prova in corso (${ex.stage === 0 ? 'Valigetta' : 'tappa ' + ex.stage}):</b> acquisti ${fmtMoney(ex.got)} su un minimo di ${fmtMoney(ex.need)} in totale${ex.toolOk ? '' : ' · manca: ' + ex.tool}` : `La prossima Prova si apre con l'Attestato del Mentore ${ex.stage}.`}</p>`}
+    ${ex.allDone ? '<p class="good">Tutte le Prove sul conto sono completate.</p>' : `<p class="small">${ex.open ? `<b>Prova in corso (${ex.stage === 0 ? 'Valigetta' : 'tappa ' + ex.stage}):</b> acquisti ${fmtMoney(ex.got)} su un minimo di ${fmtMoney(ex.need)} in totale${ex.toolOk ? '' : ' · manca: ' + ex.tool}${Acc.exBarred().length ? ` · <span class="bad">annullata da una vendita: rifalla con un altro titolo (non contano ${esc(Acc.exBarred().map((id) => ASSET_BY_ID[id]?.ticker ?? id).join(', '))})</span>` : ''}` : `La prossima Prova si apre con l'Attestato del Mentore ${ex.stage}.`}</p>`}
     <table class="t"><tr><th>Tappa</th><th>Prova sul conto</th><th class="n">Acquisti minimi in totale</th><th></th></tr>${rows}</table>
-    <p class="small muted">${nextSealLine()} La quota di tappa è un minimo fisso (${fmtMoney(Acc.stageQuota())} per tappa in ${D.name}), calcolato sul capitale di partenza di ${fmtMoney(Acc.startCapital())} e non su quello che ti resta: sopra il minimo investi quanto vuoi.${!ex.allDone && ex.open && missing > Math.max(0, eq) ? ' Il tuo patrimonio è sotto la quota che manca: per la Prova contano gli acquisti fatti, quindi puoi arrivarci reinvestendo ciò che vendi.' : ''}${!ex.allDone && ex.open ? ' Se con un titolo non riesci ad arrivare all\'obiettivo della Prova puoi venderlo, anche solo in parte, e puntare su un altro: per la quota contano gli acquisti fatti. Una vendita in perdita resta una perdita vera, e le perdite realizzate sono la strada che porta il conto verso lo zero.' : ''} Una Prova vale quando Alpaca accetta l'ordine, anche a mercato chiuso; se poi l'ordine viene annullato o scade senza essere eseguito, la Prova torna da fare.</p>`;
+    <p class="small muted">${nextSealLine()} La quota di tappa è un minimo fisso (${fmtMoney(Acc.stageQuota())} per tappa in ${D.name}), calcolato sul capitale di partenza di ${fmtMoney(Acc.startCapital())} e non su quello che ti resta: sopra il minimo investi quanto vuoi.${!ex.allDone && ex.open && missing > Math.max(0, eq) ? ' Il tuo patrimonio è sotto la quota che manca: per la Prova contano gli acquisti fatti, quindi puoi arrivarci reinvestendo ciò che vendi.' : ''}${!ex.allDone && ex.open ? ' Se con un titolo non riesci ad arrivare all\'obiettivo della Prova puoi venderlo e puntare su un altro. Decidere di vendere un titolo comprato per la Prova in corso, anche solo una parte, annulla la Prova: la quota della tappa riparte da zero e la rifai con un altro titolo. Una vendita in perdita resta una perdita vera, e le perdite realizzate sono la strada che porta il conto verso lo zero.' : ''} Una Prova vale quando Alpaca accetta l'ordine, anche a mercato chiuso; se poi l'ordine viene annullato o scade senza essere eseguito, la Prova torna da fare.</p>`;
 }
 
 export async function stageScreen(): Promise<void> {
@@ -236,7 +238,10 @@ export async function accountAlerts(): Promise<void> {
     m = Acc.margin();
     if (m.daysLeft <= 0 && !first) {
       await say(['La chiamata di margine non è stata coperta nei tre giorni di mercato.', 'Come farebbe un broker vero, vendo io quanto basta a rimborsare il prestito. Succede solo qui, sul conto Paper.'], NURSE);
-      (await Acc.liquidate()).forEach((n) => toast(n));
+      const sold = await Acc.liquidate();
+      sold.forEach((n) => toast(n));
+      const hit = sold.find((n) => n.includes('Prova sul conto'));
+      if (hit) await say(hit, NURSE);
     } else {
       await say([`CHIAMATA DI MARGINE: il tuo margine è al ${(m.ratio * 100).toFixed(0)}%, sotto il minimo del ${Math.round(LEVERAGE.maintenance * 100)}%.`, `Hai ${m.daysLeft} giorni di mercato per vendere una parte dei titoli e rimborsare il prestito (${fmtMoney(m.loan)}). Se non lo fai, vendo io.`, 'Nella realtà il broker può vendere anche subito e senza avvisare: qui ti lascio il tempo di capire.'], NURSE);
     }
@@ -256,7 +261,10 @@ async function bankruptcy(): Promise<void> {
     return;
   }
   if (!(await requireAccount('chiudere le posizioni e ripartire'))) return;
-  (await Acc.restartAfterBankruptcy()).forEach((n) => toast(n));
+  const closed = await Acc.restartAfterBankruptcy();
+  closed.forEach((n) => toast(n));
+  const hit = closed.find((n) => n.includes('Prova sul conto'));
+  if (hit) await say(hit, NURSE);
   await say([`Chiudo tutto e riparti con ${fmtMoney(S.portfolio.initial)}: metà del capitale di partenza. Attestati, Sigilli e Prove già fatte restano tuoi, e le quote di tappa non cambiano.`, 'Nessun versamento aggiuntivo: nella realtà rincorrere le perdite con altro denaro è l\'errore che le raddoppia.'], NURSE);
 }
 

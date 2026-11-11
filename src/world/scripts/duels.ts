@@ -159,7 +159,9 @@ export async function mentorBattle(m: number, w: WorldApi) {
  * I Mentori non propongono replay: i periodi del passato si rivivono solo nella Macchina del Tempo (Zona Simulazione).
  */
 /** Promemoria delle sfide sul conto: se con un titolo non ci si arriva, si può vendere e puntare su un altro. */
-export const SWITCH_LINE = 'Se con un titolo non riesci ad arrivare all\'obiettivo della prova puoi venderlo, anche solo in parte, da "Compra / Vendi" e puntare su un altro titolo. Una vendita in perdita però è una perdita vera sul conto di gioco.';
+export const SWITCH_LINE = 'Se con un titolo non riesci ad arrivare all\'obiettivo della Prova puoi venderlo da "Compra / Vendi" e puntare su un altro. Decidere di vendere, anche solo una parte, annulla la Prova: prima della vendita ti viene chiesto di confermare che vendi per annullarla, poi la quota della tappa riparte da zero e la rifai con un altro titolo. Una vendita in perdita resta una perdita vera sul conto di gioco.';
+/** Nelle verifiche della Lega si guarda il conto com'è: non c'è un titolo della prova, quindi una vendita non annulla nulla. */
+export const LEAGUE_SWITCH_LINE = 'Se un titolo non ti porta dove serve puoi venderlo, anche solo in parte, da "Compra / Vendi" e puntare su un altro: qui guardo il conto com\'è, quindi la verifica si rifà semplicemente da capo. Una vendita in perdita resta una perdita vera sul conto di gioco.';
 
 async function sealChallenge(m: number, w: WorldApi) {
   const md = mentor(m, S.track);
@@ -348,11 +350,16 @@ async function accountTrial(t: Trial, who: string): Promise<boolean> {
     const r = runTrial(t);
     const lines = r.checks.map((c) => `${c.ok ? '✓' : '✗'} ${c.label} (ora: ${c.now})`);
     if (r.ok) { await say(['Controllo il conto…', ...lines, 'Tutto in ordine.'], who); return true; }
-    lines.push(SWITCH_LINE);
+    lines.push(LEAGUE_SWITCH_LINE);
     if (r.waiting) lines.push(`Hai ${r.waiting === 1 ? 'un acquisto' : `${r.waiting} acquisti`} in coda: per questa prova contano gli ordini eseguiti. A mercato chiuso torna dopo l'apertura.`);
-    const c = await choose(['Opero adesso', 'Controlla di nuovo', 'Torno più tardi'], { cancel: true, prompt: lines.join(' · '), who });
+    const lenient = Acc.ignoreOn();
+    const c = await choose(['Opero adesso', 'Controlla di nuovo', ...(lenient ? ['Proseguo lo stesso (esito ignorato)'] : []), 'Torno più tardi'], { cancel: true, prompt: lines.join(' · '), who });
     if (c === 0) { await trade(); continue; }
     if (c === 1) continue;
+    if (lenient && c === 2) {
+      await say(['Hai attivato "Prosegui anche se la Prova va male": ignoro l\'esito negativo di questa verifica e ti lascio passare.', Acc.IGNORE_WARNING], who);
+      return true;
+    }
     await say('Il duello l\'hai già vinto: quando torni ripeterai solo questa verifica.', who);
     return false;
   }

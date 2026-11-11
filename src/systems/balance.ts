@@ -88,6 +88,8 @@ export const DIFFICULTY: Record<Difficulty, DifficultyDef> = {
   leggenda: { name: 'Leggenda', capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', desc: 'Capitale minimo, costo dello 0,50% per ordine. A ogni tappa devi investire almeno il 9,5% del capitale: quasi tutto resta esposto al mercato. Alla bancarotta la parte pratica finisce. Si sblocca con la Nuova Partita+.' },
 };
 export const DIFFICULTIES = Object.keys(DIFFICULTY) as Difficulty[];
+/** Difficoltà in cui il giocatore può chiedere, dalle opzioni, di proseguire anche quando una Prova sul conto va male. */
+export const PROVA_IGNORE: Difficulty[] = ['apprendista', 'investitore'];
 
 /** Tappe: la 0 è la Valigetta, la k si apre con l'Attestato del Mentore k. Nove quote minime, ognuna una parte del 10% del capitale. */
 export const STAGES = 9;

@@ -30,7 +30,9 @@ Puoi viaggiare con i soli Attestati, ma **nella Lega degli Investitori entra sol
 
 Al conto a zero si arriva in due modi: usando la **leva**, oppure **vendendo in perdita**. Finché tieni un titolo la perdita è sulla carta; quando lo vendi diventa vera e il capitale non torna. Vale per le vendite fatte nel gioco e per quelle fatte fuori, per esempio dal sito di Alpaca: alla sincronizzazione successiva il gioco se ne accorge, le registra al prezzo vero di esecuzione e aggiorna conto, perdite realizzate e controllo della bancarotta.
 
-Se in una prova sul conto non riesci ad arrivare all'obiettivo con un titolo, puoi venderlo, anche solo in parte, e puntare su un altro.
+Se in una Prova sul conto non riesci ad arrivare all'obiettivo con un titolo, puoi venderlo e puntare su un altro. **Decidere di vendere il titolo di una Prova, anche solo una parte, annulla la Prova**: prima della vendita il gioco ti chiede di confermare che vendi per annullarla e rifarla con un altro titolo, poi la quota della tappa riparte da zero e gli acquisti del titolo venduto non contano finché non la completi. Le Prove già completate restano. Vale anche se scatta uno stop o se vendi dal sito di Alpaca. Anche la vendita forzata della leva e la bancarotta annullano la Prova in corso (senza escludere titoli, perché non sono una tua scelta). Vendere un titolo che non hai comprato per la Prova in corso non annulla nulla, e nelle verifiche della Lega si guarda il conto com'è: lì una vendita non annulla niente.
+
+**Prosegui anche se la Prova va male**: in Apprendista e Investitore puoi attivare questa opzione dalle Impostazioni (⚙) o da Menu, Opzioni. Non salta la Prova, che va comunque affrontata: se finisce male il risultato viene ignorato e prosegui lo stesso. È una scelta sconsigliata se vuoi imparare a investire o a fare trading in modo efficiente e corretto. In Stratega e Leggenda non esiste.
 
 ### La Lega
 
@@ -40,7 +42,7 @@ I periodi veri del passato si rivivono solo nella Macchina del Tempo (la Zona Si
 
 ### Dopo la Lega
 
-Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati. Con un Boss presenti un piano su un titolo vero: ingresso, stop e obiettivo. Se vedi che l'obiettivo non arriva puoi **vendere prima della scadenza**, anche solo una parte: la decisione di vendere annulla la sfida, che si ripete da capo con un titolo diverso. Non conta come sconfitta.
+Aumenti di capitale, crisi leggendarie, Torre delle Sfide e tre Boss dei Mercati. Con un Boss presenti un piano su un titolo vero: ingresso, stop e obiettivo. Se vedi che l'obiettivo non arriva puoi **vendere prima della scadenza**, tutto o solo una parte: in tutti e due i casi dichiari che vendi per annullare la sfida, che si ripete da capo con un titolo diverso. Non conta come sconfitta.
 
 La **Nuova Partita+** riparte da zero (conto, Attestati e Sigilli si riguadagnano) conservando solo i trofei, e sblocca la difficoltà Leggenda.
 

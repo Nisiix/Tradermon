@@ -1,6 +1,6 @@
 // Pannello impostazioni ⚙ (in alto a destra, o tasto Impostazioni: Esc di default): comandi e touch, volume, ritorno alla home.
 import { fullscreenSupported, isFullscreen, enterFullscreen, exitFullscreen } from './mobile';
-import { modal, el, esc, getStage, toast } from './core';
+import { modal, el, esc, getStage, toast, say } from './core';
 import { captureNextKey, onSettingsKey, press } from './input';
 import { controlsTutorial } from './tutorial';
 import {
@@ -11,6 +11,7 @@ import { S, save } from '../systems/state';
 import { setVolume, beep } from '../systems/audio';
 import { setMusicVolume } from '../systems/music';
 import { homeUrl } from '../systems/home';
+import * as Acc from '../systems/account';
 
 export type Phase = 'title' | 'onboarding' | 'game';
 let phase: Phase = 'title';
@@ -56,6 +57,9 @@ export async function openSettings() {
           <div class="vol-ctl"><button class="btn vmin" aria-label="Abbassa">−</button><input class="vrange" type="range" min="0" max="100" step="5" aria-label="Volume generale"><button class="btn vplus" aria-label="Alza">+</button><button class="btn vmute"></button></div>
           <p class="small muted">Portalo a zero per togliere musica ed effetti. Il bilanciamento tra musica ed effetti è in Menu → Opzioni.</p></div></div>
         ${fullscreenSupported() ? `<div class="set-row"><div><b>Schermo intero</b><p class="small muted">Nasconde le barre del browser; sul telefono blocca anche lo schermo in orizzontale.</p></div><button class="btn fs">${isFullscreen() ? 'Esci' : 'Attiva'}</button></div>` : ''}
+        ${phase === 'game' ? `<div class="set-row"><div><b>Prove sul conto: prosegui anche se vanno male</b> <span class="ign-val"></span>
+          <p class="small muted">Se una Prova sul conto finisce male (annullata da una vendita, da uno stop, dalla vendita forzata della leva o da una bancarotta) il risultato viene ignorato e prosegui lo stesso. Non salta la Prova: va comunque affrontata. Vale solo in Apprendista e Investitore.</p>
+          <p class="small bad">${esc(Acc.IGNORE_WARNING)}</p></div><button class="btn ign"></button></div>` : ''}
         <div class="set-row"><div><b>3. Home</b><p class="small muted">Esci dal gioco e torna alla pagina principale di Tradermon.</p></div><button class="btn home">Torna alla home</button></div>`;
       const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
       let before = prefs.volume || 0.8;
@@ -77,6 +81,21 @@ export async function openSettings() {
         if (isFullscreen()) await exitFullscreen(); else await enterFullscreen();
         b.textContent = isFullscreen() ? 'Esci' : 'Attiva';
       });
+      const ign = body.querySelector<HTMLButtonElement>('.ign');
+      if (ign) {
+        const showIgn = () => {
+          const ok = Acc.ignoreAllowed();
+          ign.disabled = !ok;
+          ign.textContent = !ok ? 'Non disponibile' : Acc.ignoreOn() ? 'Disattiva' : 'Attiva';
+          q('.ign-val').textContent = !ok ? '· solo Apprendista e Investitore' : Acc.ignoreOn() ? '· attiva' : '· spenta';
+        };
+        ign.addEventListener('click', () => {
+          const msg = Acc.setIgnore(!Acc.ignoreOn());
+          showIgn();
+          if (msg) { close(); void say(msg); } else toast(Acc.ignoreOn() ? 'Opzione attiva: una Prova andata male non ti ferma più. Resta una scelta sconsigliata per chi vuole imparare.' : 'Opzione spenta: una Prova annullata va rifatta.');
+        });
+        showIgn();
+      }
       show();
       button('Chiudi', () => close(), 'primary');
     });
