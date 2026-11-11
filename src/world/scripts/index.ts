@@ -89,7 +89,7 @@ async function resident(n: NpcDef) {
     await say(r.lines, who);
     S.tipsHeard.push(r.id);
     S.stats.xp += 5;
-    toast(`Consiglio annotato nell'Investidex (${S.tipsHeard.length}/${ALL_RESIDENTS.length})`);
+    toast(`Lezione annotata nell'Investidex (${S.tipsHeard.length}/${ALL_RESIDENTS.length})`);
     track('tip');
     return;
   }

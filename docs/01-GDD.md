@@ -262,7 +262,7 @@ Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 
 |---|---|---|---|
 | Lettura del Ticker | 1 | Investidex mostra il livello 2 delle carte | — |
 | Ordine Limite | 2 | Ordini limite nella Clinica e nella Macchina del Tempo | — |
-| Ribilanciamento | 3 | La Clinica propone gli ordini per tornare all'allocazione obiettivo | — |
+| Ribilanciamento | 3 | La Clinica calcola lo scostamento dall'allocazione obiettivo; gli ordini li sceglie il giocatore | — |
 | Piano di Accumulo | 4 | Acquisti ricorrenti automatici nel simulatore | — |
 | Lettura del Bilancio (Titoli) / Analisi del Prospetto (ETF) / Custodia Sicura (Cripto) / Visione d'Insieme (Misto) | 5 | Livello 3 delle carte, domande con dati | Apre l'Archivio di Bilancia |
 | Reinvestimento | 6 | Uova dei dividendi più rapide | — |
