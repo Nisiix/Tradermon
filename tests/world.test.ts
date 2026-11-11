@@ -56,3 +56,23 @@ describe('mappe', () => {
     }
   });
 });
+
+describe('Accademie: gli allievi non si saltano', () => {
+  it('ogni allievo sbarra la strada tra l\'ingresso e il Mentore', () => {
+    for (const id of allMapIds().filter((x) => x.startsWith('academy_'))) {
+      const m = getMap(id);
+      const mentor = m.npcs.find((n) => n.kind === 'mentor')!;
+      const entranceY = m.h - 2;
+      const students = m.npcs.filter((n) => n.kind === 'student');
+      expect(students.length, id).toBeGreaterThan(0);
+      for (const s of students) {
+        expect(s.guardY, `${id}/${s.id} senza guardY`).toBeDefined();
+        // l'ingresso è prima della linea, la casella davanti al Mentore è oltre
+        expect(entranceY >= s.guardY!, `${id}/${s.id}`).toBe(true);
+        expect(mentor.y + 1 < s.guardY!, `${id}/${s.id}`).toBe(true);
+        // l'allievo sta sulla sua linea, quindi lo si incrocia per forza
+        expect(s.y >= s.guardY!, `${id}/${s.id}`).toBe(true);
+      }
+    }
+  });
+});

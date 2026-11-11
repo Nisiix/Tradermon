@@ -18,6 +18,8 @@ export interface NpcDef {
   lines?: string[];
   data?: Record<string, unknown>;
   sight?: number;
+  /** Allievo che sbarra la strada al Mentore: se il giocatore sale oltre questa riga senza averlo battuto, si gira e lo sfida. */
+  guardY?: number;
   hiddenSprite?: boolean;
 }
 
@@ -249,8 +251,8 @@ function buildTown(n: number) {
   rect(ac.tiles, 5, 2, 3, 1, TILE.RUG);
   ac.npcs.push(
     { id: `mentor_${n}`, x: 6, y: 3, pal: 0, dir: 0, name: 'Mentore', kind: 'mentor', data: { n } },
-    { id: `student_${n}_a`, x: 4, y: 9, pal: 21, dir: 3, name: 'Allievo', kind: 'student', data: { n }, sight: 3 },
-    { id: `student_${n}_b`, x: 8, y: 5, pal: 22, dir: 2, name: 'Allieva', kind: 'student', data: { n }, sight: 3 },
+    { id: `student_${n}_a`, x: 4, y: 9, pal: 21, dir: 3, name: 'Allievo', kind: 'student', data: { n }, sight: 3, guardY: 9 },
+    { id: `student_${n}_b`, x: 8, y: 5, pal: 22, dir: 2, name: 'Allieva', kind: 'student', data: { n }, sight: 3, guardY: 5 },
   );
   MAPS[ac.id] = ac;
 
