@@ -133,7 +133,9 @@ export async function mentorBattle(m: number, w: WorldApi) {
   }
   if (S.badges < m - 1) return say(['Sei arrivato qui troppo presto!', `Prima ti serve l'Attestato del Mentore ${S.badges + 1}.`], md.name);
   if (!allStudentsBeaten(m)) return say(['Benvenuto nella mia Accademia.', 'Prima di sfidarmi devi battere tutti i miei allievi.'], md.name);
-  await say([md.intro, 'La Medaglia ha due metà. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada. Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco.'], md.name);
+  // la regola della Medaglia la spiega il primo Mentore, quando serve; gli altri non la ripetono
+  await say([md.intro, ...(m > 1 || S.flags.medalRule ? [] : ['La mia Medaglia ha due metà. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada verso la città successiva.', 'Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che ti ho appena insegnato. Puoi viaggiare con i soli Attestati, ma nella Lega degli Investitori entra solo chi ha tutti e otto i Sigilli.'])], md.name);
+  S.flags.medalRule = true;
   const unread = mentorBooks(m, S.track, S.mixedClasses).filter((b) => !S.booksRead.includes(b.id)).length;
   if (unread) await say([`Un consiglio da Mentore: nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, 'Le domande del duello vengono da lì.'], md.name);
   // dopo una sconfitta si torna solo dopo aver studiato: un libro della sezione o un ripasso in Biblioteca
@@ -181,9 +183,10 @@ async function sealChallenge(m: number, w: WorldApi) {
       : [
         `Prova sul conto, tappa ${m}: ${STAGE_TOOL[m].text}`,
         `In tutto servono ${Acc.exNeed(m).toFixed(0)} $ di acquisti sul tuo conto (finora ${ex.got.toFixed(0)} $). È il minimo: se vuoi investire di più, sei libero di farlo.`,
-        'Sono ordini veri sul mercato di oggi: nessuno ti chiede un rendimento, si guarda il metodo. A mercato chiuso l\'ordine vale quando Alpaca lo accetta e si esegue all\'apertura.',
-        SWITCH_LINE,
+        // la spiegazione completa alla prima Prova; dopo basta il promemoria breve
+        ...(S.flags.provaRules ? ['Se vendi il titolo della Prova, anche solo una parte, la Prova si annulla e la rifai con un altro titolo.'] : ['Sono ordini veri sul mercato di oggi: nessuno ti chiede un rendimento, si guarda il metodo. A mercato chiuso l\'ordine vale quando Alpaca lo accetta e si esegue all\'apertura.', SWITCH_LINE]),
       ];
+    if (!(S.seals < m - 1 || ex.stage < m)) S.flags.provaRules = true;
     const c = await choose(['Opero adesso', 'Più tardi'], { cancel: true, prompt: lines.join(' '), who: md.name });
     if (c !== 0) return say('Si fa anche da qualsiasi Clinica: il Sigillo arriva da solo, non serve tornare qui.', md.name);
     if (!(await trade())) return;
@@ -255,7 +258,7 @@ async function winBadge(m: number, w: WorldApi) {
   jingle('badge');
   track('badge');
   await say([md.win, mentorCharacterLine(), `Hai ottenuto l'Attestato della ${md.badge}!`, `Nuova Tecnica: ${md.technique}. ${md.techDesc}`, `Slot di portafoglio: ${slots()}.`, newCards.length ? `Nuove Asset Card: ${newCards.map((a) => a.name).join(', ')}.` : '',
-    S.flags.bankrupt ? '' : `Si apre la Prova sul conto della tappa ${m}, quella che vale il Sigillo. ${STAGE_TOOL[m].text} Il minimo in tutto è ${Acc.exNeed(m).toFixed(0)} $ di acquisti: sopra il minimo decidi tu.`].filter(Boolean), md.name);
+    S.flags.bankrupt ? '' : `Si apre la Prova sul conto della tappa ${m}, quella che vale il Sigillo.`].filter(Boolean), md.name);
   const extra: string[] = [];
   if (m === 2) extra.push('Con l\'abbonamento al treno puoi viaggiare tra le città visitate dalle stazioni.');
   if (m === 5) extra.push('L\'Archivio di Bilancia ora è aperto. E in Clinica puoi sostenere l\'Esame della Leva: per ora vale solo nei replay.');

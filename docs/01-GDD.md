@@ -486,7 +486,7 @@ Tradermon è un gioco volto solo all'apprendimento: la parte pratica usa esclusi
 
 ### 8.2 Chiavi Alpaca
 
-- Il giocatore le crea su alpaca.markets (account Paper gratuito, basta un'email).
+- Il giocatore le crea su alpaca.markets (account Paper gratuito, basta registrarsi sulla piattaforma).
 - Le inserisce dal menu o dalla Clinica (voce "Chiavi API"). Dal sito restano solo sul dispositivo, cifrate con la password del giocatore; sul proprio computer il browser le invia una sola volta al **server locale** di Tradermon, che le salva in `server/.secrets/keys.json` (escluso da Git, permessi 600) e non le restituisce mai al browser.
 - Indirizzi: conto Paper (`paper-api.alpaca.markets`) e dati di mercato (`data.alpaca.markets`). Il gioco, il server locale e la funzione Supabase non accettano altri conti.
 - "Scollega" cancella le chiavi dal dispositivo o dal server.
