@@ -67,7 +67,9 @@ Vendite allo scoperto e margine non sono ammessi. Puoi abbassare il tetto massim
 - `docs/02-CONTENUTI-E-FONTI.md`: domande, lezioni e fonti citate (generato con `npm run docs:content`).
 - `docs/03-ARCHITETTURA.md`: come è fatto il codice.
 - `src/`: il gioco (TypeScript, Phaser 4).
-- `src/proto/hd2d.ts` + `hd2d.html`: prototipo di resa 2.5D "HD-2D" con Three.js (non è il gioco: serve a valutare il passaggio a una grafica tipo Pokémon DS). Si apre su `/hd2d.html?map=t0&x=11&y=9` (parametri: `map`, `x`, `y`, `dist`, `tilt`, `night`).
+- `src/render3d/`: la resa 2.5D "HD-2D" del mondo (Three.js): diorama con case, muri e oggetti in rilievo ricavati dalla pixel art, personaggi come sprite in piedi, ombre, luci di notte e post-produzione (occlusione ambientale, bagliore, tilt-shift). Si attiva/disattiva da Menu → Opzioni → Grafica (2.5D o 2D classica) con un livello di effetti per i computer meno potenti.
+- `src/proto/hd2d.ts` + `hd2d.html`: pagina di prova dello stesso motore 2.5D con camera libera (`/hd2d.html?map=t0&x=11&y=9`, parametri `map`, `x`, `y`, `dist`, `tilt`, `night`, `fx`).
+- `public/assets3d/`: facoltativo, modelli `.glb` esterni che sostituiscono gli oggetti generati (vedi il README nella cartella). `npm run assets:ai` genera immagini o modelli con servizi che hanno un piano gratuito (Pollinations, Meshy) usando le tue chiavi.
 - `server/index.mjs`: il server locale che serve il gioco e fa da tramite verso Alpaca.
 - `tests/`: i test automatici (`npm test`).
 
@@ -80,6 +82,7 @@ Vendite allo scoperto e margine non sono ammessi. Puoi abbassare il tetto massim
 | `npm start` | Server di produzione su 127.0.0.1:8888 |
 | `npm test` | Test di dati, mappe, portafoglio, server, agenda, storie e sfide |
 | `npm run docs:content` | Rigenera il documento dei contenuti |
+| `npm run assets:ai image\|model "descrizione" file` | Genera una risorsa grafica con Pollinations (immagine) o Meshy (modello 3D, chiave `MESHY_API_KEY`) in `public/assets3d/` |
 
 ## Fonti didattiche
 

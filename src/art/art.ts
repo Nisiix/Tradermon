@@ -564,6 +564,16 @@ reg('case_orange', (c, o) => briefcase(c, o, '#f08830'));
 
 export const TILE_ATLAS_COLS = COLS;
 export function tileIndex(name: string): number { return IDX[name]; }
+export function tileName(idx: number): string { return REG[idx]?.name ?? ''; }
+
+/** Un singolo tile alla risoluzione logica 16×16 (senza Scale3x): serve alla resa 2.5D per ricavare maschere e colori. */
+export function drawTileRaw(name: string): HTMLCanvasElement {
+  const cv = document.createElement('canvas');
+  cv.width = T; cv.height = T;
+  const r = REG[IDX[name]];
+  if (r) r.draw(cv.getContext('2d')!, { x: 0, y: 0 });
+  return cv;
+}
 
 export function drawTiles(): HTMLCanvasElement {
   const cv = document.createElement('canvas');

@@ -12,6 +12,7 @@
     "start": "node server/index.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "assets:ai": "node scripts/ai-assets.mjs",
     "docs:content": "esbuild scripts/content-report.ts --bundle --platform=node --format=esm --outfile=scripts/.cr.mjs --log-level=warning && node scripts/.cr.mjs"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@types/three": "^0.187.0",
+    "postprocessing": "^6.39.6",
     "three": "^0.187.0",
     "typescript": "5.9.3",
     "vite": "6.4.5",

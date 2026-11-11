@@ -16,6 +16,7 @@ import { SECRET_FLAGS, HODL_MS } from '../world/secretsData';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { beep } from '../systems/audio';
 import { addPlayTime, formatPlayTime, startPlayTimeAutosave } from '../systems/playtime';
+import { View3D, type MirrorFrame, type MirrorItem, type Painter } from '../render3d/view';
 
 const DIRS: Record<string, [number, number, 0 | 1 | 2 | 3]> = { down: [0, 1, 0], up: [0, -1, 1], left: [-1, 0, 2], right: [1, 0, 3] };
 const DIR_NAME = ['down', 'up', 'left', 'right'] as const;
@@ -63,6 +64,9 @@ export class WorldScene extends Phaser.Scene {
   playerShadow?: Phaser.GameObjects.Image;
   raft?: Phaser.GameObjects.Graphics;
   grassOver?: Phaser.GameObjects.Sprite;
+  /** Resa 2.5D (Opzioni → Grafica): rispecchia questa scena in un diorama Three.js; la logica resta qui. */
+  view3d?: View3D;
+  view3dFx = '';
 
   constructor() { super('world'); }
 
@@ -99,12 +103,62 @@ export class WorldScene extends Phaser.Scene {
       const cm = cam.filters.internal.addColorMatrix();
       cm.colorMatrix.saturate(0.12).contrast(0.05);
     } catch { /* renderer Canvas: nessun filtro */ }
+    this.applyGraphics();
+    window.addEventListener('tradermon:options', () => this.applyGraphics());
     this.loadMap(S.map, S.x, S.y, (DIR_NAME.indexOf(S.facing) as 0 | 1 | 2 | 3));
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.updateHud() });
     this.time.addEvent({ delay: 550, loop: true, callback: () => this.animateTiles() });
     this.time.addEvent({ delay: 250, loop: true, callback: () => this.idleNpcs() });
     this.lastMs = performance.now();
     startPlayTimeAutosave();
+  }
+
+  /** Accende o spegne la resa 2.5D secondo le Opzioni. Se il WebGL non regge, resta il 2D. */
+  applyGraphics() {
+    const want = S.options.gfx === '3d' ? S.options.fx : '';
+    if (want === this.view3dFx) return;
+    this.view3d?.destroy(); this.view3d = undefined;
+    this.view3dFx = want;
+    if (want) {
+      try {
+        this.view3d = new View3D(document.getElementById('game')!, want as 'alti' | 'bassi');
+        if (this.map) { this.syncMood(); this.view3d.loadMap(this.map, this.night, this.animFrame); }
+      } catch (e) { console.error(e); this.view3d = undefined; this.view3dFx = ''; S.options.gfx = '2d'; toast('Grafica 2.5D non disponibile su questo dispositivo: resta il 2D.'); }
+    }
+    this.game.canvas.style.display = this.view3d ? 'none' : '';
+    if (!this.view3d) this.scale.refresh();
+  }
+
+  syncMood() {
+    const clk = marketClock();
+    this.view3d?.setMood({ night: clk.night, climate: S.market.climate, interior: this.map.interior, dark: this.map.tiles.some((r) => r.includes(TILE.CAVE)) && !canSeeDark() });
+  }
+
+  /** Stato del fotogramma per la resa 2.5D: camera, dissolvenze, tinta e tutti gli sprite della scena. */
+  mirror(): MirrorFrame {
+    const cam = this.cameras.main;
+    const items: MirrorItem[] = [];
+    type GO = { texture?: { key: string }; frame?: { name: string | number }; x: number; y: number; alpha: number; visible: boolean; scaleX: number; type: string; fillColor?: number; getData?: (k: string) => unknown };
+    for (const c of this.children.list as unknown as GO[]) {
+      if (!c.visible || c.alpha <= 0) continue;
+      const key = c.texture?.key;
+      if (key === 'chars') items.push({ kind: 'char', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: c.y / P, alpha: c.alpha });
+      else if (key === 'tiles' && c.type === 'Sprite' && c !== (this.grassOver as unknown as GO)) items.push({ kind: 'tile', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: c.y / P, alpha: c.alpha });
+      else if (key === 'bubble') items.push({ kind: 'bubble', x: c.x / P, y: (c.y + 24 * RS) / P, scale: c.scaleX });
+      else if (c.type === 'Rectangle' && c.getData && c.getData('z0') !== undefined) { const z0 = Number(c.getData('z0')); items.push({ kind: 'leaf', x: c.x / P, z: z0 / P, h: (z0 - c.y) / P + 0.15, color: c.fillColor ?? 0x88d058, alpha: c.alpha }); }
+    }
+    if (this.raft?.visible) items.push({ kind: 'raft', x: this.player.x / P, y: this.player.y / P });
+    type Fx = { isRunning?: boolean; isComplete?: boolean; alpha?: number; red?: number; green?: number; blue?: number };
+    const fe = (cam as unknown as { fadeEffect?: Fx }).fadeEffect, fl = (cam as unknown as { flashEffect?: Fx }).flashEffect, sh = (cam as unknown as { shakeEffect?: Fx }).shakeEffect;
+    return {
+      cx: (cam.scrollX + cam.width / 2) / P, cy: (cam.scrollY + cam.height / 2) / P,
+      shake: !!sh?.isRunning,
+      fade: fe && (fe.isRunning || fe.isComplete) ? { r: fe.red ?? 0, g: fe.green ?? 0, b: fe.blue ?? 0, a: fe.alpha ?? 0 } : undefined,
+      flash: fl?.isRunning ? { r: fl.red ?? 255, g: fl.green ?? 255, b: fl.blue ?? 255, a: fl.alpha ?? 0 } : undefined,
+      // in 2.5D la notte è già fatta di luci e ombre: la tinta 2D resta leggera
+      tint: { color: this.overlay.fillColor, alpha: this.overlay.fillAlpha * 0.35 },
+      items,
+    };
   }
 
   api(): WorldApi {
@@ -177,6 +231,7 @@ export class WorldScene extends Phaser.Scene {
     if (/^h\d+_/.test(id) && !S.flags[`visited_${id}`]) { S.flags[`visited_${id}`] = true; track('house_unique'); }
     this.updateHud(true);
     this.applyTint();
+    if (this.view3d) { this.syncMood(); this.view3d.loadMap(this.map, this.night, this.animFrame); }
   }
 
   /** Crea o rimuove gli sprite dei personaggi. Chi compare o sparisce a mappa già caricata lo fa con una dissolvenza. */
@@ -253,6 +308,7 @@ export class WorldScene extends Phaser.Scene {
   rustle(x: number, y: number) {
     for (let i = 0; i < 4; i++) {
       const leaf = this.add.rectangle(x * P + P / 2, y * P + P * 0.75, 2 * RS, 2 * RS, i % 2 ? 0x58a838 : 0x88d058).setDepth(30 + y);
+      leaf.setData('z0', leaf.y);
       this.tweens.add({ targets: leaf, x: leaf.x + (i - 1.5) * 5 * RS, y: leaf.y - (5 + Math.random() * 4) * RS, alpha: 0, duration: 380, ease: 'Quad.easeOut', onComplete: () => leaf.destroy() });
     }
   }
@@ -283,7 +339,10 @@ export class WorldScene extends Phaser.Scene {
     addPlayTime(now - this.lastMs);
     this.lastMs = now;
     this.updateWeather(delta);
-    if (this.walk) { this.idleMs = 0; return void this.advanceWalk(Math.min(delta, 100)); }
+    this.view3d?.frame(this.mirror());
+    // tempo reale (non quello "addolcito" da Phaser, che sui fotogrammi lenti conta 16 ms): così il passo dura
+    // lo stesso anche quando la resa 2.5D va sotto i 5 fps
+    if (this.walk) { this.idleMs = 0; return void this.advanceWalk(Math.min(this.game.loop.rawDelta || delta, 100)); }
     if (this.busy || this.moving || uiActive()) { this.idleMs = 0; return; }
     if (this.time.now < this.turnLock) return;
     const p = takeWorldPress();
@@ -569,12 +628,12 @@ export class WorldScene extends Phaser.Scene {
     if (kind !== this.weatherKind) {
       this.weatherKind = kind;
       this.drops = [];
-      if (clk.night !== this.night) { this.night = clk.night; this.refreshNpcs(); this.animateTiles(); }
+      if (clk.night !== this.night) { this.night = clk.night; this.refreshNpcs(); this.animateTiles(); this.syncMood(); }
       const n = kind.startsWith('orso') ? 90 : kind.startsWith('tempesta') ? 160 : kind.startsWith('toro') ? 28 : kind ? 10 : 0;
       for (let i = 0; i < n; i++) this.drops.push({ x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, s: 1 + Math.random(), a: Math.random(), k: Math.random() });
       if (clk.night && kind) for (let i = 0; i < 14; i++) this.drops.push({ x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, s: 0.4 + Math.random() * 0.5, a: Math.random(), k: 2 + Math.random() });
     }
-    const g = this.weather;
+    const g: Painter = this.view3d ? this.view3d.painter : this.weather;
     g.clear();
     if (!kind) return;
     const dt = Math.min(50, delta) / 16.7;
@@ -619,6 +678,7 @@ export class WorldScene extends Phaser.Scene {
     this.animFrame = 1 - this.animFrame;
     const vis = visualTiles(this.map.tiles, this.animFrame, this.night);
     for (const [x, y] of this.animCells) this.layer.putTileAt(vis[y][x], x, y);
+    this.view3d?.animate(this.animFrame, this.night);
   }
 
   applyTint() {

@@ -30,7 +30,7 @@ export function newGame(): SaveData {
     portfolio: newPortfolio(10000, 0, 'equilibrato'), market: createWorldMarket(seed), review: {}, answered: {}, daily: { lastDate: '', streak: 0 },
     tower: { best: 0 }, legends: [], stepCounter: 0, lastClinic: { map: 'home', x: 4, y: 4 }, license: 'apprendista', examLastFail: 0,
     liveLimits: { perOrder: 0, perMonth: 0, pauseUntil: 0, monthKey: '', spentThisMonth: 0 }, liveAudit: [], ngPlus: 0, playMs: 0,
-    options: { textSpeed: 2, fontScale: 1, contrast: false, studyMode: false, volume: 0.5, music: 0.5 },
+    options: { textSpeed: 2, fontScale: 1, contrast: false, studyMode: false, volume: 0.5, music: 0.5, gfx: '3d', fx: 'alti' },
     counters: {}, agenda: { day: '', week: '', daily: [], weekly: [], dailyDone: 0 }, achievements: [], title: '', decor: [], rematch: {},
     quests: {}, journal: [], minigames: {}, challenges: [], npcMemory: {},
   };

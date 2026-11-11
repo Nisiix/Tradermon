@@ -171,7 +171,7 @@ export interface SaveData {
   liveAudit: { t: number; symbol: string; side: string; notional: number; status: string; id: string }[];
   ngPlus: number;
   playMs: number;
-  options: { textSpeed: number; fontScale: number; contrast: boolean; studyMode: boolean; volume: number; music: number };
+  options: { textSpeed: number; fontScale: number; contrast: boolean; studyMode: boolean; volume: number; music: number; gfx: '2d' | '3d'; fx: 'alti' | 'bassi' };
   // ---- novità: agenda, traguardi, casa, storie, diario, minigiochi, sfide ----
   counters: Record<string, number>;
   agenda: { day: string; week: string; daily: AgendaTask[]; weekly: AgendaTask[]; dailyDone: number };

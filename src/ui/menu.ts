@@ -147,6 +147,8 @@ async function options() {
       <label style="display:block;margin-top:6px">Effetti sonori <input class="vol" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
       <label style="display:block;margin-top:6px">Musica <input class="mus" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
       <p class="small muted" style="margin:4px 0 0">Volume generale: <b>${prefs.volume === 0 ? 'muto' : Math.round(prefs.volume * 100) + '%'}</b> (si regola dall'icona ⚙ in alto a destra).</p>
+      <label style="display:block;margin-top:6px">Grafica <select class="tx gfx"><option value="3d">2.5D (diorama con luci e ombre)</option><option value="2d">2D classica</option></select></label>
+      <label style="display:block;margin-top:6px">Effetti 2.5D <select class="tx fx"><option value="alti">Alti (occlusione, tilt-shift, alta risoluzione)</option><option value="bassi">Bassi (per computer meno potenti)</option></select></label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="hc"> Contrasto alto</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="sm"> Modalità Studio (nessun timer nei quiz, Reputazione dimezzata nei duelli)</label>
       <p class="small muted">Il salvataggio è nel browser. Esportalo per sicurezza o per spostarlo su un altro dispositivo. Le chiavi Alpaca non sono mai nel salvataggio.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
@@ -155,6 +157,8 @@ async function options() {
     q<HTMLSelectElement>('.fs').value = String(S.options.fontScale);
     q<HTMLInputElement>('.vol').value = String(S.options.volume);
     q<HTMLInputElement>('.mus').value = String(S.options.music);
+    q<HTMLSelectElement>('.gfx').value = S.options.gfx;
+    q<HTMLSelectElement>('.fx').value = S.options.fx;
     q<HTMLInputElement>('.hc').checked = S.options.contrast;
     q<HTMLInputElement>('.sm').checked = S.options.studyMode;
     button('Comandi', () => { close(); void openControls(); });
@@ -165,6 +169,8 @@ async function options() {
       S.options.fontScale = Number(q<HTMLSelectElement>('.fs').value);
       S.options.volume = Number(q<HTMLInputElement>('.vol').value);
       S.options.music = Number(q<HTMLInputElement>('.mus').value);
+      S.options.gfx = q<HTMLSelectElement>('.gfx').value as '2d' | '3d';
+      S.options.fx = q<HTMLSelectElement>('.fx').value as 'alti' | 'bassi';
       S.options.contrast = q<HTMLInputElement>('.hc').checked;
       S.options.studyMode = q<HTMLInputElement>('.sm').checked;
       applyOptions();
@@ -189,7 +195,7 @@ async function credits() {
       <h4>Dati di mercato</h4>
       <p class="small">Il mercato del gioco è simulato; gli scenari storici sono ricostruzioni semplificate. Conto, posizioni e prezzi dell'Osservatorio e del conto collegato sono forniti da Alpaca solo per il tuo uso personale e non vengono ridistribuiti.</p>
       <h4>Software e caratteri</h4>
-      <p class="small">Motore Phaser (licenza MIT). Caratteri Press Start 2P, Pixelify Sans e DotGothic16 (SIL Open Font License 1.1) tramite Fontsource. Grafica e musica generate dal gioco.</p>
+      <p class="small">Motore Phaser (licenza MIT); resa 2.5D con Three.js (MIT) e postprocessing (Zlib). Caratteri Press Start 2P, Pixelify Sans e DotGothic16 (SIL Open Font License 1.1) tramite Fontsource. Grafica e musica generate dal gioco.</p>
       <p class="small muted">Contenuti a scopo educativo, non sono consulenza finanziaria.</p>`;
     button('Chiudi', () => close(), 'primary');
   }, { wide: true });
@@ -199,4 +205,6 @@ export function applyOptions() {
   document.documentElement.style.setProperty('--fs-scale', String(S.options.fontScale));
   document.body.classList.toggle('contrast', S.options.contrast);
   applyAudio();
+  // la scena del mondo ascolta e cambia resa (2D / 2.5D) senza ricaricare
+  window.dispatchEvent(new CustomEvent('tradermon:options'));
 }
