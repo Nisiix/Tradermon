@@ -82,14 +82,16 @@ export interface DifficultyDef {
   replayLeverage: number;
   /** Cosa succede alla bancarotta del conto di gioco. */
   bankrupt: 'riparti' | 'una-volta' | 'game-over';
+  /** Fiducia recuperata a ogni duello con rischio vinto (fino a 100): più alta la difficoltà, meno si recupera. */
+  fiduciaWin: number;
   desc: string;
 }
 
 export const DIFFICULTY: Record<Difficulty, DifficultyDef> = {
-  apprendista: { name: 'Apprendista', capital: 10000, fee: 0, tolerance: 0.5, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale ampio, nessun costo didattico. A ogni tappa devi investire almeno il 5% del capitale: molta liquidità di scorta, tanti errori concessi. Per chi parte da zero.' },
-  investitore: { name: 'Investitore', capital: 5000, fee: 0.001, tolerance: 0.3, replayLeverage: 2, bankrupt: 'riparti', desc: 'Capitale medio, costo dello 0,10% per ordine. A ogni tappa devi investire almeno il 7% del capitale.' },
-  stratega: { name: 'Stratega', capital: 2500, fee: 0.0025, tolerance: 0.15, replayLeverage: 3, bankrupt: 'una-volta', desc: 'Capitale ridotto, costo dello 0,25% per ordine. A ogni tappa devi investire almeno l\'8,5% del capitale: poca liquidità di scorta. Una sola ripartenza dopo una bancarotta.' },
-  leggenda: { name: 'Leggenda', capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', desc: 'Capitale minimo, costo dello 0,50% per ordine. A ogni tappa devi investire almeno il 9,5% del capitale: quasi tutto resta esposto al mercato. Alla bancarotta la parte pratica finisce. Si sblocca con la Nuova Partita+.' },
+  apprendista: { name: 'Apprendista', capital: 10000, fee: 0, tolerance: 0.5, replayLeverage: 2, bankrupt: 'riparti', fiduciaWin: 40, desc: 'Capitale ampio, nessun costo didattico. A ogni tappa devi investire almeno il 5% del capitale: molta liquidità di scorta, tanti errori concessi. Per chi parte da zero. Ogni duello vinto ridà 40 punti di Fiducia.' },
+  investitore: { name: 'Investitore', capital: 5000, fee: 0.001, tolerance: 0.3, replayLeverage: 2, bankrupt: 'riparti', fiduciaWin: 30, desc: 'Capitale medio, costo dello 0,10% per ordine. A ogni tappa devi investire almeno il 7% del capitale. Ogni duello vinto ridà 30 punti di Fiducia.' },
+  stratega: { name: 'Stratega', capital: 2500, fee: 0.0025, tolerance: 0.15, replayLeverage: 3, bankrupt: 'una-volta', fiduciaWin: 20, desc: 'Capitale ridotto, costo dello 0,25% per ordine. A ogni tappa devi investire almeno l\'8,5% del capitale: poca liquidità di scorta. Una sola ripartenza dopo una bancarotta. Ogni duello vinto ridà 20 punti di Fiducia.' },
+  leggenda: { name: 'Leggenda', capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', fiduciaWin: 10, desc: 'Capitale minimo, costo dello 0,50% per ordine. A ogni tappa devi investire almeno il 9,5% del capitale: quasi tutto resta esposto al mercato. Alla bancarotta la parte pratica finisce. Si sblocca con la Nuova Partita+. Ogni duello vinto ridà 10 punti di Fiducia.' },
 };
 export const DIFFICULTIES = Object.keys(DIFFICULTY) as Difficulty[];
 /** Difficoltà in cui il giocatore può chiedere, dalle opzioni, di proseguire anche quando una Prova sul conto va male. */

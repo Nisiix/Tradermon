@@ -11,9 +11,9 @@ import { portrait, playerPal } from '../art/art';
 import { arenaTransition, mountArena, ARENA_ACCENT, ARENA_TAPE, type Arena } from './arena';
 import { beep } from '../systems/audio';
 import { markDuelDone } from './savebtn';
-import { FIDUCIA_PER_CORRECT } from '../systems/balance';
+import { FIDUCIA_PER_CORRECT, DIFFICULTY } from '../systems/balance';
 import { studyHint } from '../data/quiz/hint';
-import { errorsAllowed, errorsLeft, lifeAfterWrong, lifeShown } from '../systems/duelLife';
+import { errorsAllowed, errorsLeft, lifeAfterWrong, lifeShown, fiduciaAfterWin } from '../systems/duelLife';
 
 export interface DuelOpts {
   foeName: string;
@@ -113,7 +113,11 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       root.remove();
       if (prevTrack) play(prevTrack); else stop();
       markDuelDone();
-      if (win && o.damage > 0) { track('duel_win'); if (perfect) track('duel_perfect'); jingle('win'); }
+      if (win && o.damage > 0) {
+        // vincere ridà Fiducia, tanto più quanto è bassa la difficoltà scelta a inizio partita
+        S.stats.fiducia = fiduciaAfterWin(S.stats.fiducia, DIFFICULTY[S.difficulty].fiduciaWin);
+        track('duel_win'); if (perfect) track('duel_perfect'); jingle('win');
+      }
       if (!win && o.damage > 0) track('duel_loss');
       resolve({ win, correct, total: idx, perfect: perfect && win, tilted, ids: o.questions.slice(0, idx).map((q) => q.id), wrong: wrongIds });
     };
