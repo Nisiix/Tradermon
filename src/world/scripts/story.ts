@@ -2,7 +2,7 @@
 import { type NpcDef } from '../maps';
 import type { AssetClass } from '../../types';
 import { S, save, addRep, card, classes, capital } from '../../systems/state';
-import { say, choose, modal, esc, wait } from '../../ui/core';
+import { say, choose, modal, esc, wait, el } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { trade } from '../../ui/clinic';
 import { openGameAccount } from '../../ui/broker';
@@ -85,14 +85,34 @@ export async function chooseCase(n: NpcDef, w: WorldApi) {
 }
 
 /** Vetrina della Valigetta: il primo titolo vero, scelto dal giocatore tra pochi nomi curati. Non è un consiglio. */
-async function chooseStarter(cls: AssetClass): Promise<string> {
+export async function chooseStarter(cls: AssetClass): Promise<string> {
   const opts = starterOptions(cls);
   const px = S.market.prices;
   for (;;) {
     const id = await modal<string>('La vetrina della Valigetta', ({ body, button, close }) => {
-      body.innerHTML = `<p class="small">Scegli il tuo primo titolo. Sono titoli veri, messi in vetrina perché si prestano a imparare: non è un consiglio, e gli altri li ritroverai tutti dopo il primo Attestato.</p>
-        <div class="cards">${opts.map((a) => `<div class="card"><b>${esc(a.name)}</b> (${esc(a.ticker)})<br><span class="small">${SECTOR_LABEL[a.sector]} · rischio indicativo ${'★'.repeat(a.risk)}${hasPrices() && px[a.id] ? ` · ${fmtPx(px[a.id])} $` : ''}</span><br><span class="small">${esc(a.desc)}</span></div>`).join('')}</div>`;
-      opts.forEach((a) => button(a.ticker, () => close(a.id)));
+      // si sceglie toccando la card, poi si conferma con l'unico pulsante OK (come nel Carrello diversificato)
+      let pick = '';
+      body.innerHTML = `<p class="small">Scegli il tuo primo titolo: tocca la sua scheda, poi premi OK. Sono titoli veri, messi in vetrina perché si prestano a imparare: non è un consiglio, e gli altri li ritroverai tutti dopo il primo Attestato.</p>`;
+      const grid = el('div', 'cards');
+      const cards = opts.map((a) => {
+        const c = el('button', 'card pick', `<span><b>${esc(a.name)}</b> (${esc(a.ticker)})<br><span class="small">${SECTOR_LABEL[a.sector]} · rischio indicativo ${'★'.repeat(a.risk)}${hasPrices() && px[a.id] ? ` · ${fmtPx(px[a.id])} $` : ''}</span><br><span class="small">${esc(a.desc)}</span></span>`);
+        c.type = 'button';
+        c.dataset.id = a.id;
+        c.setAttribute('aria-pressed', 'false');
+        c.addEventListener('click', (ev) => {
+          pick = a.id;
+          for (const o of cards) { const on = o.dataset.id === pick; o.classList.toggle('gold', on); o.setAttribute('aria-pressed', String(on)); }
+          ok.disabled = false;
+          // da tastiera o pulsante A (clic senza puntatore) si passa subito a OK: un altro A conferma
+          if (ev.detail === 0) ok.focus();
+        });
+        grid.appendChild(c);
+        return c;
+      });
+      body.appendChild(grid);
+      const ok = button('OK', () => { if (pick) close(pick); }, 'primary');
+      ok.disabled = true;
+      setTimeout(() => cards[0]?.focus(), 40);
     }, { closable: false, wide: true });
     if (id) return id;
   }
