@@ -297,6 +297,8 @@ button, input, select, textarea { font-variant-ligatures: none; font-feature-set
 .tut-legend .lg-round, .tut-legend .lg-pill, .tut-legend .lg-pad { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: #505868; color: #fff; font-family: var(--font); font-size: calc(var(--fs) * .85); }
 .tut-legend .lg-round { background: #c03028; }
 .tut-foot { align-items: center; }
+.tut-foot .tut-skip { border: 0; background: none; padding: 4px 6px; font: inherit; font-size: calc(var(--fs) * .8); color: #687088; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.tut-foot .tut-skip:hover, .tut-foot .tut-skip:focus-visible { color: var(--accent); }
 .kbd-map .keys { gap: 10px; max-width: none; flex-wrap: nowrap; }
 .kgrp { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .kgrp > div:first-child:not(.arrows) { display: flex; gap: 3px; }

@@ -87,9 +87,10 @@ export function controlsTutorial(): Promise<void> {
         ${done
           ? `<h3>${all ? 'Perfetto!' : 'Ecco tutti i comandi'}</h3><p>${all ? 'Hai provato tutti i comandi.' : 'Qui sotto trovi a cosa serve ogni comando, anche quelli che hai saltato.'} Questa guida si riapre da <b>⚙ → Comandi</b>.</p>${legend(touch, null)}<p class="tut-try">${touch ? 'Tocca <b>A</b>' : `Premi ${kbd('a')}`} o <b>Prosegui</b> per iniziare l'avventura.</p>`
           : `<h3>${i + 1}. ${s.title}</h3>${touch ? touchPad(s.hint) : keyboard(s.hint)}<p>${touch ? s.touch : s.desk()}</p><p class="tut-try">Prova adesso!</p>${legend(touch, s.hint)}`}
-        <div class="tut-foot"><button class="btn custom" title="Cambia i tasti e i comandi touch">Personalizza</button><button class="btn primary next">Prosegui</button></div>`;
+        <div class="tut-foot"><button class="btn custom" title="Cambia i tasti e i comandi touch">Personalizza</button>${done ? '' : '<button class="tut-skip" type="button">Salta la guida</button>'}<button class="btn primary next">Prosegui</button></div>`;
       box.querySelector('.tut-foot .next')!.addEventListener('click', next);
       box.querySelector('.tut-foot .custom')!.addEventListener('click', () => { void customize(); });
+      box.querySelector('.tut-foot .tut-skip')?.addEventListener('click', () => { if (!customizing) finish(); });
       if (!done && s.hint === 'settings') document.querySelector('.gear-btn')?.classList.add('hint');
       else if (touch && !done) document.querySelector(`.touch button[data-k="${s.hint}"]`)?.classList.add('hint');
     };
