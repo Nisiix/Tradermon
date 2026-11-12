@@ -181,7 +181,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   // segreti della seconda parte (dalla Medaglia 4): restano "???" finché non li trovi
   { id: 'secret_ledger', name: 'Il Libro Mastro Perduto', desc: 'Ritrova le sei pagine nascoste di Mastro Ventura', title: 'Custode del Libro Mastro', decor: 'ledger', secret: true, check: () => ledgerDone() },
   { id: 'secret_tape', name: 'Lettore del Nastro', desc: 'Trova la Sala del Nastro e batti la Vecchia del Nastro', title: 'Lettore del Nastro', decor: 'tape', secret: true, check: () => !!S.flags[SECRET_FLAGS.tape] },
-  { id: 'secret_whale', name: 'Avvistamento', desc: 'Incontra la Balena nel fine settimana', title: 'Avvistatore di Balene', secret: true, check: () => !!S.flags[SECRET_FLAGS.whale] },
+  { id: 'secret_whale', name: 'Avvistamento', desc: 'Incontra lo Squalo nel fine settimana', title: 'Avvistatore di Squali', secret: true, check: () => !!S.flags[SECRET_FLAGS.whale] },
   { id: 'secret_hodl', name: 'Mani di Diamante', desc: 'Compi il rituale della pietra sul Percorso 6', title: 'Mani di Diamante', secret: true, check: () => !!S.flags[SECRET_FLAGS.hodl] },
   { id: 'secret_all', name: 'Cacciatore di Segreti', desc: 'Scopri tutti i segreti della regione', title: 'Cacciatore di Segreti', decor: 'lamp', secret: true, check: () => ledgerDone() && !!S.flags[SECRET_FLAGS.tape] && !!S.flags[SECRET_FLAGS.whale] && !!S.flags[SECRET_FLAGS.hodl] },
 ];

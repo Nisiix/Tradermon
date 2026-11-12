@@ -685,7 +685,7 @@ function buildSecrets() {
   r6.tiles[HODL_STONE.y][HODL_STONE.x - 1] = TILE.FLOWERS; r6.tiles[HODL_STONE.y][HODL_STONE.x + 1] = TILE.FLOWERS;
   r6.signs.push({ x: HODL_STONE.x, y: HODL_STONE.y, text: ['Una pietra antica con due mani scolpite, chiuse a pugno.', 'Sotto, un\'incisione consumata: "CHI NON SI MUOVE, VEDE."'] });
 
-  // La Balena (solo nel fine settimana) e il Sussurratore del Casinò
-  MAPS[WHALE.map].npcs.push({ id: 'secret_whale', x: WHALE.x, y: WHALE.y, pal: 12, dir: 2, name: 'La Balena', kind: 'secret', data: { key: 'whale' } });
+  // Lo Squalo (solo nel fine settimana) e il Sussurratore del Casinò
+  MAPS[WHALE.map].npcs.push({ id: 'secret_whale', x: WHALE.x, y: WHALE.y, pal: 12, dir: 2, name: 'Lo Squalo', kind: 'secret', data: { key: 'whale' } });
   MAPS.casino.npcs.push({ id: 'secret_rumors', x: 9, y: 5, pal: 17, dir: 2, name: 'Il Sussurratore', kind: 'secret', data: { key: 'rumors' } });
 }

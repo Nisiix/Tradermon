@@ -35,7 +35,7 @@ export const HODL_STONE = { map: 'r6', x: 40, y: 2, standX: 40, standY: 3, facin
 /** Quanto restare immobili davanti alla pietra (millisecondi di gioco reali). */
 export const HODL_MS = 60_000;
 
-/** La Balena compare sull'Isola del Relitto solo nel fine settimana (giorni locali del giocatore). */
+/** Lo Squalo compare sull'Isola del Relitto solo nel fine settimana (giorni locali del giocatore). */
 export const WHALE = { map: 'sea', x: 36, y: 7 } as const;
 export function isWeekend(d = new Date()): boolean { const g = d.getDay(); return g === 0 || g === 6; }
 
