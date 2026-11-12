@@ -43,7 +43,7 @@ export const QUESTS: Quest[] = [
       { kind: 'event', target: 'tip', need: 3, say: ['Tu sai cosa fanno i grandi con i soldi? Io voglio capirlo!', 'Vai a chiedere a tre vicini cosa fanno con i loro risparmi, poi torna a raccontarmelo.'],
         done: ['Quindi ognuno fa una cosa diversa? Che confusione... ma che bello!'] },
       { kind: 'duel', topics: ['regole', 'rischio'], say: ['Adesso ti faccio io tre domande, come fanno i grandi. Pronto?'],
-        done: ['Sei bravissimo! Quando sarò grande voglio capire i mercati come te.'] },
+        done: ['Sei bravissim{o|a}! Quando sarò grande voglio capire i mercati come te.'] },
     ],
   },
   {
@@ -53,7 +53,7 @@ export const QUESTS: Quest[] = [
         targetLine: ['Gennaro ti ha mandato per il motore? Guarda: vendere di fretta vuol dire accettare il prezzo che c\'è, non quello che vorresti.', 'Le spese che sai già di avere vanno tenute in liquidità, non in azioni.'],
         done: ['Ah, ecco: le spese programmate vanno tenute liquide. Rosa ha sempre ragione.'] },
       { kind: 'event', target: 'checkup', need: 1, say: ['Fammi vedere come fai tu: vai in Banca e controlla quanta liquidità hai per le spese dei prossimi mesi.'],
-        done: ['Bravo. Chi pesca sa che il mare non si comanda: nemmeno il mercato.'] },
+        done: ['Brav{o|a}. Chi pesca sa che il mare non si comanda: nemmeno il mercato.'] },
       { kind: 'badge', need: 2, say: ['Torna a trovarmi quando avrai due Medaglie: voglio vedere se la lezione ti è rimasta.'],
         done: ['Due Medaglie! Tieni, l\'acquario del mio vecchio negozio: ricorda che i pesci, come i risparmi, vanno tenuti nell\'acqua giusta.'] },
     ],
@@ -154,11 +154,11 @@ export async function questTalk(rid: string, who: string): Promise<boolean> {
   const st = q.steps[i];
   let done = stepDone(q, i);
   if (st.kind === 'duel') {
-    const ok = (await choose(['Sono pronto', 'Più tardi'], { prompt: st.say[0], who })) === 0;
+    const ok = (await choose(['Sono pront{o|a}', 'Più tardi'], { prompt: st.say[0], who })) === 0;
     if (!ok) return true;
     const qs = pickQuestions(st.topics ?? ['regole'], 3, { target: Math.min(2.5, targetDiff(storyStage())) });
     const prevFid = S.stats.fiducia;
-    const r = await runDuel({ foeName: RESIDENT_BY_ID[rid]?.name ?? who, foeTitle: q.title, foePal: RESIDENT_BY_ID[rid]?.pal ?? 0, questions: qs, need: 2, damage: 5 });
+    const r = await runDuel({ foeName: RESIDENT_BY_ID[rid]?.name ?? who, foeTitle: q.title, foePal: RESIDENT_BY_ID[rid]?.pal ?? 0, questions: qs, need: 2, damage: 1 });
     S.stats.fiducia = prevFid;
     done = r.win;
     if (!done) { await say('Quasi! Ripassa un po\' e torna da me.', who); return true; }

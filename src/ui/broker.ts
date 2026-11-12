@@ -25,22 +25,12 @@ const pctTxt = (x: number) => (x * 100).toFixed(2).replace('.', ',').replace(/,?
 /** Guida breve: come si apre il conto e che cosa il gioco può e non può fare. */
 export const GUIDE_LINES = [
   PAPER_ONLY,
-  '1) Crea un account su alpaca.markets: per il conto Paper basta l\'email. È gratuito e usa denaro finto con prezzi veri.',
+  '1) Registrati sulla piattaforma di Alpaca (alpaca.markets): per il conto Paper basta questo, ed è gratuito.',
   '2) Nella dashboard, in modalità Paper, genera una coppia di chiavi API (Key ID e Secret) e inseriscile alla voce "Chiavi API" del menu.',
   '3) Le chiavi restano solo sul tuo dispositivo. Dal sito sono cifrate con la password del tuo giocatore e il browser le usa per parlare direttamente con Alpaca: non vanno online e nessun server di Tradermon le riceve. Giocando sul tuo computer le custodisce il server locale di Tradermon, che non le rimanda mai al browser.',
-  'Il conto Paper è il conto di gioco: capitale fissato dalla difficoltà, Prove sul conto, Sigilli e Lega vivono lì.',
-  'La Medaglia ha due metà. L\'ATTESTATO si vince con il duello di conoscenza del Mentore e apre la strada verso la città successiva. Il SIGILLO pratico si guadagna con la Prova sul conto: ordini veri sul mercato di oggi, dal conto Paper. Per entrare nella Lega servono tutti e otto i Sigilli.',
-  'Ogni tappa chiede una quota MINIMA da investire: un importo fisso, calcolato sul capitale di partenza e non su quello che ti resta, più alto nelle difficoltà più dure. Sopra il minimo sei libero: puoi investire tutto il capitale fin dal primo giorno.',
-  'BANCAROTTA: quando il conto arriva a zero, in ogni difficoltà. Ci si arriva con la leva oppure vendendo in perdita: finché tieni un titolo la perdita è sulla carta, quando lo vendi diventa vera. Chi opera con metodo arriva alla Lega con capitale in tasca; quanti errori ti puoi permettere dipende dalla difficoltà.',
-  'Le vendite fatte fuori dal gioco (per esempio dal sito di Alpaca) non sfuggono: alla sincronizzazione il gioco le registra al prezzo vero di esecuzione e aggiorna conto, perdite realizzate e controllo della bancarotta.',
-  'Se in una sfida non riesci ad arrivare all\'obiettivo con un titolo puoi venderlo e puntare su un altro. Decidere di vendere il titolo di una sfida, anche solo una parte, la annulla: vale per le Prove sul conto (la quota della tappa riparte da zero e il titolo venduto non conta più) e per i mandati dei Boss (si ripete da capo, quiz compreso). Prima della vendita il gioco ti chiede di confermare che vendi per annullare la sfida e rifarla con un altro titolo. Vale anche se lo stop scatta o se vendi dal sito di Alpaca. Anche la vendita forzata della leva e la bancarotta annullano la Prova in corso. Nelle verifiche della Lega si guarda il conto com\'è: lì una vendita non annulla nulla.',
-  'BOSS DEI MERCATI (dopo la Lega): anche il piano che presenti a un Boss muove ordini veri sul conto di gioco. All\'invio compri il titolo, per un importo deciso dal rischio che scegli (capitale × rischio ÷ distanza dello stop), e parte uno stop vero. Il punteggio si legge sulle candele reali, il denaro segue gli ordini: se perdi rifai la sfida da capo e la perdita su quella posizione resta sul conto.',
-  'In Apprendista e Investitore puoi attivare, dalle Impostazioni (⚙) o da Menu, Opzioni, "Prove sul conto: prosegui anche se vanno male": la Prova non viene saltata, ma se finisce male il risultato viene ignorato e prosegui lo stesso. È una scelta sconsigliata se vuoi imparare a investire o a fare trading in modo efficiente e corretto.',
-  'DOVE SI OPERA: dal sito è il tuo browser a inviare gli ordini direttamente al conto Paper di Alpaca; serve essere entrati con il proprio giocatore, perché la sua password apre le chiavi. Su un altro dispositivo le chiavi vanno inserite di nuovo. Se il browser non riesce a raggiungere Alpaca, il gioco ti chiede se far passare il conto Paper dal servizio di Tradermon.',
-  'Gli ordini sono anche frazionati: scegli un importo in dollari e compri la frazione di titolo corrispondente, senza dover arrivare a una quota intera.',
-  'Tradermon non sposta denaro e non ti chiederà mai di versarne: il conto Paper è finto, e il gioco serve solo a imparare.',
-  'Il conto Paper è in dollari, come i mercati americani da cui arrivano i prezzi.',
-  'Limiti di Alpaca da conoscere: gli stop su quote frazionarie valgono solo per la giornata; il Paper non paga dividendi, che nel gioco restano un argomento di teoria; le cripto non hanno leva.',
+  'DOVE SI OPERA: dal sito è il tuo browser a inviare gli ordini direttamente al conto Paper di Alpaca; devi entrare con il tuo giocatore, perché la tua password apre le chiavi. Su un altro dispositivo le chiavi vanno inserite di nuovo. Se il browser non riesce a raggiungere Alpaca, il gioco ti chiede se far passare il conto Paper dal servizio di Tradermon.',
+  'Il conto Paper diventa il tuo conto di gioco, in dollari come i mercati americani da cui arrivano i prezzi. Gli ordini si danno in dollari e comprano anche frazioni di titolo. Tradermon non ti chiederà mai di versare denaro.',
+  'Le regole del viaggio (Prove sul conto, Sigilli, leva, Boss) te le spiegano i personaggi quando servono. Il riepilogo delle tappe è nel menu, alla voce "Tappe, Prove e Sigilli".',
 ];
 
 /** Voce "Chiavi API" del menu: stato del collegamento al conto Alpaca Paper, chiavi, guida. */
@@ -159,18 +149,17 @@ export async function openGameAccount(): Promise<boolean> {
   const D = DIFFICULTY[S.difficulty];
   await say([
     'Ciao, sono la Dott.ssa Ratio! Lavoro nelle Banche del Portafoglio di tutta la regione.',
-    'Il Professore mi ha chiesto di aprirti il conto di gioco. A Capitalia si studia; i titoli veri si comprano sui Mercati di Fuori, attraverso un broker che si chiama Alpaca.',
-    `Il tuo conto parte da ${fmtMoney(D.capital)}: è la difficoltà ${D.name}, e non cambia più. È denaro finto su un conto Paper, ma prezzi, orari e ordini sono quelli veri.`,
+    'Il Professore mi ha chiesto di aprirti il conto di gioco, presso un broker dei Mercati di Fuori che si chiama Alpaca.',
+    `Il tuo conto parte da ${fmtMoney(D.capital)}, come vuole la difficoltà ${D.name}. È denaro finto su un conto Paper, ma prezzi, orari e ordini sono quelli veri.`,
     `Il capitale è tutto tuo da subito. Ogni tappa ti chiede solo un minimo da investire: ${fmtMoney(D.capital * RATE * (1 - D.tolerance))} adesso, con la Valigetta, e altrettanto a ogni Attestato. Sopra il minimo decidi tu, anche tutto il capitale.`,
-    `Le quote si calcolano sempre sul capitale di partenza, non su quello che ti resta: se perdi, pesano di più. Se il conto arriva a zero è bancarotta. Chi opera con metodo arriva alla Lega con capitale in tasca.`,
-    'E ricorda come funziona la Medaglia. L\'Attestato lo vinci dal Mentore, con il duello di conoscenza, e ti apre la strada. Il Sigillo pratico lo guadagni qui, con la Prova sul conto: ordini veri sul mercato di oggi. Per la Lega servono tutti e otto i Sigilli.',
+    `Le quote si calcolano sempre sul capitale di partenza, non su quello che ti resta: se perdi, pesano di più. Se il conto arriva a zero è bancarotta: finché tieni un titolo la perdita è sulla carta, quando lo vendi diventa vera.`,
   ], NURSE);
   const res = await allocationForm('Il tuo conto di gioco', `<p class="small">Importi in <b>dollari ($)</b>, la valuta dei mercati dove comprerai. Capitale <b>${fmtMoney(D.capital)}</b> (${D.name})${D.fee ? `, costo didattico ${pctTxt(D.fee)} per ordine` : ', nessun costo didattico'}. Nessun deposito e nessuna ricarica: il conto cambia solo con le tue operazioni e con il mercato.</p>`, null, false);
   if (res) S.portfolio.target = res;
   save();
   const link = await Acc.checkLink(true);
   if (link.paper) { await Acc.sync(true); await say(['Il tuo conto Alpaca Paper è già collegato: la Valigetta si può aprire subito.'], NURSE); return true; }
-  await say(['Per aprire la Valigetta serve il conto Alpaca Paper: gratuito, basta un\'email, denaro finto.', ...(link.server ? ['Ti apro "Chiavi API": se non hai ancora le chiavi, la Guida spiega tutto in tre passi.'] : [link.reason])], NURSE);
+  await say(['Per aprire la Valigetta serve il conto Alpaca Paper: è gratuito e basta registrarsi sulla piattaforma di Alpaca.', ...(link.server ? ['Ti apro "Chiavi API": se non hai ancora le chiavi, la Guida spiega tutto in tre passi.'] : [link.reason])], NURSE);
   if (link.server) await apiKeysMenu();
   const ok = (await Acc.checkLink(true)).paper;
   if (ok) await Acc.sync(true);

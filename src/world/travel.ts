@@ -13,7 +13,7 @@ export const TRANSFER_BADGE = 4;
 
 export const ABILITY = {
   swim: { name: 'Flusso di Liquidità', badge: SWIM_BADGE, desc: 'Attraversi l\'acqua su una zattera: la liquidità scorre dove serve. Apre le Isole della Liquidità sui Percorsi 3, 5 e 7 e, dal molo di Porto Ordini, il Mare della Liquidità.' },
-  transfer: { name: 'Trasferimento di Capitale', badge: TRANSFER_BADGE, desc: 'Dalla Mappa della Regione sposti il tuo capitale (e te stesso) in una città già visitata. Il regolamento è T+1: passa un giorno di mercato.' },
+  transfer: { name: 'Trasferimento di Capitale', badge: TRANSFER_BADGE, desc: 'Dalla Mappa della Regione sposti il tuo capitale (e te stess{o|a}) in una città già visitata. Il regolamento è T+1: passa un giorno di mercato.' },
   cut: { name: 'Taglio dei Costi', badge: 4, desc: 'Frantumi i Massi delle Commissioni che bloccano sentieri e grotte, come la Galleria del Dark Pool sul Percorso 2.' },
   dark: { name: 'Lanterna della Due Diligence', badge: 5, desc: 'Illumini le grotte buie: la Miniera dei Lingotti (Percorso 5 ↔ Valdividendo) e la Grotta delle Perle nel Mare della Liquidità.' },
   cold: { name: 'Mente Fredda', badge: 7, desc: 'Le notizie urlate non ti smuovono: attraversi il Muro del Rumore sul Percorso 7.' },

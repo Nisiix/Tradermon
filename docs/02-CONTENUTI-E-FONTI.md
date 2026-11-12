@@ -41,33 +41,33 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 |---|---|---:|---|
 | SEC – Investor.gov | Introduction to Investing | 5 | https://www.investor.gov/introduction-investing |
 | SEC – Investor.gov | Market Order | 4 | https://www.investor.gov/introduction-investing/investing-basics/glossary/market-order |
-| SEC – Investor.gov | Stop Order | 4 | https://www.investor.gov/introduction-investing/investing-basics/glossary/stop-order |
+| SEC – Investor.gov | Stop Order | 5 | https://www.investor.gov/introduction-investing/investing-basics/glossary/stop-order |
 | SEC – Investor.gov | Types of Orders | 14 | https://www.investor.gov/introduction-investing/investing-basics/how-stock-markets-work/types-orders |
-| SEC – Investor.gov | Diversify Your Investments | 15 | https://www.investor.gov/introduction-investing/investing-basics/save-and-invest/diversify-your-investments |
-| SEC – Investor.gov | Asset Allocation | 17 | https://www.investor.gov/introduction-investing/investing-basics/glossary/asset-allocation |
-| SEC – Investor.gov | Compound Interest Calculator | 5 | https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator |
+| SEC – Investor.gov | Diversify Your Investments | 16 | https://www.investor.gov/introduction-investing/investing-basics/save-and-invest/diversify-your-investments |
+| SEC – Investor.gov | Asset Allocation | 16 | https://www.investor.gov/introduction-investing/investing-basics/glossary/asset-allocation |
+| SEC – Investor.gov | Compound Interest Calculator | 6 | https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator |
 | SEC – Investor.gov | Dividend | 10 | https://www.investor.gov/introduction-investing/investing-basics/glossary/dividend |
 | SEC – Investor.gov | Ponzi Scheme | 8 | https://www.investor.gov/protect-your-investments/fraud/types-fraud/ponzi-scheme |
 | SEC – Investor.gov | Pump-and-Dump Schemes | 5 | https://www.investor.gov/introduction-investing/investing-basics/glossary/pump-and-dump-schemes |
 | SEC – Investor.gov | Exchange-Traded Funds (ETFs) | 7 | https://www.investor.gov/introduction-investing/investing-basics/investment-products/mutual-funds-and-exchange-traded-2 |
 | SEC – Investor.gov | Mutual Funds | 0 | https://www.investor.gov/introduction-investing/investing-basics/investment-products/mutual-funds-and-exchange-traded-funds-etfs/mutual-funds |
-| Investopedia | Stock | 10 | https://www.investopedia.com/terms/s/stock.asp |
-| Investopedia | Exchange-Traded Fund (ETF) | 1 | https://www.investopedia.com/terms/e/etf.asp |
+| Investopedia | Stock | 9 | https://www.investopedia.com/terms/s/stock.asp |
+| Investopedia | Exchange-Traded Fund (ETF) | 3 | https://www.investopedia.com/terms/e/etf.asp |
 | Investopedia | Cryptocurrency | 4 | https://www.investopedia.com/terms/c/cryptocurrency.asp |
-| Investopedia | Blockchain | 7 | https://www.investopedia.com/terms/b/blockchain.asp |
-| Investopedia | Sharpe Ratio | 4 | https://www.investopedia.com/terms/s/sharperatio.asp |
-| Investopedia | Maximum Drawdown (MDD) | 6 | https://www.investopedia.com/terms/m/maximum-drawdown-mdd.asp |
+| Investopedia | Blockchain | 8 | https://www.investopedia.com/terms/b/blockchain.asp |
+| Investopedia | Sharpe Ratio | 3 | https://www.investopedia.com/terms/s/sharperatio.asp |
+| Investopedia | Maximum Drawdown (MDD) | 2 | https://www.investopedia.com/terms/m/maximum-drawdown-mdd.asp |
 | Investopedia | Beta | 2 | https://www.investopedia.com/terms/b/beta.asp |
 | Investopedia | Volatility | 4 | https://www.investopedia.com/terms/v/volatility.asp |
-| Investopedia | Bid-Ask Spread | 5 | https://www.investopedia.com/terms/b/bid-askspread.asp |
+| Investopedia | Bid-Ask Spread | 6 | https://www.investopedia.com/terms/b/bid-askspread.asp |
 | Investopedia | Dollar-Cost Averaging (DCA) | 5 | https://www.investopedia.com/terms/d/dollarcostaveraging.asp |
 | Investopedia | Rebalancing | 10 | https://www.investopedia.com/terms/r/rebalancing.asp |
-| Investopedia | Earnings Per Share (EPS) | 4 | https://www.investopedia.com/terms/e/eps.asp |
-| Investopedia | Price-to-Earnings (P/E) Ratio | 10 | https://www.investopedia.com/terms/p/price-earningsratio.asp |
+| Investopedia | Earnings Per Share (EPS) | 3 | https://www.investopedia.com/terms/e/eps.asp |
+| Investopedia | Price-to-Earnings (P/E) Ratio | 9 | https://www.investopedia.com/terms/p/price-earningsratio.asp |
 | Investopedia | Debt-to-Equity (D/E) Ratio | 6 | https://www.investopedia.com/terms/d/debtequityratio.asp |
 | Investopedia | Tracking Error | 4 | https://www.investopedia.com/terms/t/trackingerror.asp |
 | Investopedia | Synthetic ETF | 3 | https://www.investopedia.com/terms/s/synthetic-etf.asp |
-| Investopedia | Expense Ratio | 9 | https://www.investopedia.com/terms/e/expenseratio.asp |
+| Investopedia | Expense Ratio | 7 | https://www.investopedia.com/terms/e/expenseratio.asp |
 | Investopedia | Index Fund | 5 | https://www.investopedia.com/terms/i/indexfund.asp |
 | Investopedia | Stablecoin | 6 | https://www.investopedia.com/terms/s/stablecoin.asp |
 | Investopedia | Private Key | 4 | https://www.investopedia.com/terms/p/private-key.asp |
@@ -79,23 +79,23 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 | Investopedia | Herd Instinct | 2 | https://www.investopedia.com/terms/h/herdinstinct.asp |
 | Investopedia | Fear of Missing Out (FOMO) | 3 | https://www.investopedia.com/terms/f/fear-missing-out-fomo.asp |
 | Investopedia | Overconfidence Bias | 4 | https://www.investopedia.com/terms/o/overconfidence-bias.asp |
-| Investopedia | Rule of 72 | 2 | https://www.investopedia.com/terms/r/ruleof72.asp |
+| Investopedia | Rule of 72 | 1 | https://www.investopedia.com/terms/r/ruleof72.asp |
 | Investopedia | Inflation | 7 | https://www.investopedia.com/terms/i/inflation.asp |
-| Investopedia | Stop-Loss Order | 3 | https://www.investopedia.com/terms/s/stop-lossorder.asp |
-| Investopedia | Position Sizing | 7 | https://www.investopedia.com/terms/p/positionsizing.asp |
+| Investopedia | Stop-Loss Order | 5 | https://www.investopedia.com/terms/s/stop-lossorder.asp |
+| Investopedia | Position Sizing | 6 | https://www.investopedia.com/terms/p/positionsizing.asp |
 | Investopedia | Leverage | 9 | https://www.investopedia.com/terms/l/leverage.asp |
-| Investopedia | Bond | 10 | https://www.investopedia.com/terms/b/bond.asp |
-| Investopedia | Duration | 6 | https://www.investopedia.com/terms/d/duration.asp |
+| Investopedia | Bond | 11 | https://www.investopedia.com/terms/b/bond.asp |
+| Investopedia | Duration | 5 | https://www.investopedia.com/terms/d/duration.asp |
 | Investopedia | Yield Curve | 3 | https://www.investopedia.com/terms/y/yieldcurve.asp |
 | Investopedia | Central Bank | 6 | https://www.investopedia.com/terms/c/centralbank.asp |
 | Investopedia | Correlation | 6 | https://www.investopedia.com/terms/c/correlation.asp |
 | Investopedia | Compound Interest | 2 | https://www.investopedia.com/terms/c/compoundinterest.asp |
 | Investopedia | Dividend Reinvestment Plan (DRIP) | 3 | https://www.investopedia.com/terms/d/dividendreinvestmentplan.asp |
 | Investopedia | Payout Ratio | 4 | https://www.investopedia.com/terms/p/payoutratio.asp |
-| Investopedia | Market Capitalization | 4 | https://www.investopedia.com/terms/m/marketcapitalization.asp |
+| Investopedia | Market Capitalization | 5 | https://www.investopedia.com/terms/m/marketcapitalization.asp |
 | Investopedia | Moving Average (MA) | 2 | https://www.investopedia.com/terms/m/movingaverage.asp |
 | Investopedia | Relative Strength Index (RSI) | 1 | https://www.investopedia.com/terms/r/rsi.asp |
-| Investopedia | Fundamental Analysis | 12 | https://www.investopedia.com/terms/f/fundamentalanalysis.asp |
+| Investopedia | Fundamental Analysis | 14 | https://www.investopedia.com/terms/f/fundamentalanalysis.asp |
 | Investopedia | Technical Analysis | 6 | https://www.investopedia.com/terms/t/technicalanalysis.asp |
 | Investopedia | Liquidity | 4 | https://www.investopedia.com/terms/l/liquidity.asp |
 | Investopedia | Bear Market | 2 | https://www.investopedia.com/terms/b/bearmarket.asp |
@@ -104,10 +104,10 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 | Investopedia | Martingale System | 1 | https://www.investopedia.com/terms/m/martingalesystem.asp |
 | Investopedia | House Edge | 2 | https://www.investopedia.com/terms/h/houseedge.asp |
 | Investopedia | Paper Trade | 2 | https://www.investopedia.com/terms/p/paper-trade.asp |
-| Investopedia | Asset Allocation | 6 | https://www.investopedia.com/terms/a/assetallocation.asp |
+| Investopedia | Asset Allocation | 8 | https://www.investopedia.com/terms/a/assetallocation.asp |
 | Banca d'Italia | L'economia per tutti | 14 | https://economiapertutti.bancaditalia.it/ |
 | Consob | Educazione finanziaria | 16 | https://www.consob.it/web/investor-education |
-| CFA Institute | Investment Foundations | 29 | https://www.cfainstitute.org/ |
+| CFA Institute | Investment Foundations | 28 | https://www.cfainstitute.org/ |
 | ESMA | Avvertenze per gli investitori | 12 | https://www.esma.europa.eu/ |
 
 ## Lezioni
@@ -174,7 +174,7 @@ Ogni abitante insegna un argomento diverso (controllato dai test).
 
 - **Andrea Bianchi** (analista, Casa Bianchi): In tempi normali molti titoli si muovono in modo diverso. Nelle crisi le correlazioni salgono e scendono quasi tutti insieme. Per questo diversifico anche tra classi di attivo, come azioni e obbligazioni, non solo tra titoli. _Fonte: Investopedia_
 - **Chiara Bianchi** (architetta, Casa Bianchi): Molti investono quasi tutto nel proprio Paese perché lo conoscono meglio. Ma l'Italia è una piccola parte dell'economia mondiale: diversificare per area geografica riduce la dipendenza da un solo Paese. _Fonte: SEC – Investor.gov_
-- **Matilde Bianchi** (bambina, Casa Bianchi): Il papà dice che un ETF su un indice mondiale contiene migliaia di aziende di tanti Paesi diversi. Con una sola quota sei già diversificato. Che furbata! _Fonte: Investopedia_
+- **Matilde Bianchi** (bambina, Casa Bianchi): Il papà dice che un ETF su un indice mondiale contiene migliaia di aziende di tanti Paesi diversi. Con una sola quota sei già diversificat{o|a}. Che furbata! _Fonte: Investopedia_
 - **Filippo Lombardi** (cuoco, Casa Lombardi): Avevo investito tutto nelle azioni dell'azienda dove lavoravo. Quando è andata in crisi ho perso lavoro e risparmi insieme. Mai legare stipendio e investimenti alla stessa azienda. _Fonte: SEC – Investor.gov_
 - **Mirella Lombardi** (pediatra, Casa Lombardi): Ribilancio solo quando una classe di attivo si allontana di più di 5 punti dal mio obiettivo. Così non opero troppo spesso e, senza pensarci, vendo un po' di ciò che è salito e compro ciò che è sceso. _Fonte: Investopedia_
 - **Umberto** (statistico, Casa di Umberto): Con 20-30 titoli di settori diversi si elimina buona parte del rischio legato alle singole aziende. Il rischio del mercato nel suo insieme però resta: quello non si diversifica, si gestisce con l'allocazione. _Fonte: CFA Institute_
@@ -226,7 +226,7 @@ Ogni abitante insegna un argomento diverso (controllato dai test).
 - **Monica Serra** (ingegnera, Casa Serra): Prima di entrare guardo il rapporto rischio/rendimento. Se rischio 1 per guadagnare 2, mi basta avere ragione 4 volte su 10 per restare in attivo, al netto dei costi. Senza questo conto, anche molte operazioni giuste possono lasciarti in perdita. _Fonte: CFA Institute_
 - **Massimo Rota** (vigile del fuoco, Casa Rota): Con una leva di 10 volte, un calo del 10% azzera il capitale. La leva amplifica gli errori quanto i successi, e il mercato non aspetta che tu abbia ragione. _Fonte: Investopedia_
 - **Federica Rota** (commercialista, Casa Rota): Per chi preleva dal portafoglio, come un pensionato, un crollo nei primi anni fa molto più danno dello stesso crollo più avanti. Per questo, avvicinandosi all'obiettivo, si riduce gradualmente il rischio. _Fonte: Investopedia_
-- **Gemma Rota** (bambina, Casa Rota): Ho imparato che lo stop loss si decide prima di comprare, quando sei calmo. Non quando il prezzo sta già crollando e hai il cuore che batte forte! _Fonte: Investopedia_
+- **Gemma Rota** (bambina, Casa Rota): Ho imparato che lo stop loss si decide prima di comprare, quando sei calm{o|a}. Non quando il prezzo sta già crollando e hai il cuore che batte forte! _Fonte: Investopedia_
 - **Livio** (ex trader giornaliero, Casa di Livio): Gli avvisi obbligatori dei broker europei sui CFD dicono che la maggior parte dei conti dei piccoli investitori perde denaro. Ci ho provato per due anni. Oggi investo a lungo termine e dormo molto meglio. _Fonte: ESMA_
 - **Ivan Leone** (pilota, Casa Leone): Una strategia che sui dati passati sembra perfetta spesso è solo cucita addosso al caso. La provo su periodi che non ho usato per costruirla e poi in simulazione, prima di metterci soldi veri. _Fonte: Investopedia_
 - **Nadia Leone** (ricercatrice, Casa Leone): Il mio piano ha regole scritte: cosa compro, quando entro, dove esco e quanto rischio. Una regola che non è scritta, nel panico, la cambierò. _Fonte: CFA Institute_

@@ -14,7 +14,7 @@ export function newGame(): SaveData {
   // identificativo breve della partita: marca gli ordini inviati ad Alpaca (client_order_id)
   const saveId = Math.floor(Math.random() * 36 ** 6).toString(36).padStart(6, '0');
   S = {
-    version: SAVE_VERSION, createdAt: Date.now(), name: 'Alex', avatar: 0, rival: 'Leo', profile: 'equilibrato', profileScore: 3,
+    version: SAVE_VERSION, createdAt: Date.now(), name: 'Alex', avatar: 0, gender: 'm', rival: 'Leo', profile: 'equilibrato', profileScore: 3,
     goal: '', horizon: '', track: 'stocks', mixedClasses: [], map: 'home', x: 4, y: 4, facing: 'down', flags: {}, badges: 0, techniques: [],
     stats: { xp: 0, fiducia: 100, disciplina: 50, pazienza: 50, reputazione: 0 }, bias: null, biasSeen: [], cards: {}, lessonsRead: [], booksRead: [], tipsHeard: [], defeated: [], visited: ['t0'],
     portfolio: newPortfolio(DIFFICULTY.investitore.capital, 0, 'equilibrato'), market: emptyMarket(), saveId, difficulty: 'investitore', seals: 0, exDone: 0, exTools: { limit: false, stop: false }, levExam: false,
@@ -238,7 +238,7 @@ export function newGamePlus(track: Track) {
   newGame();
   Object.assign(S, {
     // chi sei
-    name: old.name, avatar: old.avatar, rival: old.rival, options: old.options, track, createdAt: old.createdAt, playMs: old.playMs,
+    name: old.name, avatar: old.avatar, gender: old.gender, rival: old.rival, options: old.options, track, createdAt: old.createdAt, playMs: old.playMs,
     profile: old.profile, profileScore: old.profileScore, goal: old.goal, horizon: old.horizon,
     ngPlus: old.ngPlus + 1,
     // trofei

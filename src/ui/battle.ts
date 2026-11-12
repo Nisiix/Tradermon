@@ -1,3 +1,4 @@
+import { gtext } from '../systems/gender';
 import { play, stop, currentTrack, jingle } from '../systems/music';
 import { track } from '../systems/progress';
 import type { Question } from '../types';
@@ -12,6 +13,7 @@ import { beep } from '../systems/audio';
 import { markDuelDone } from './savebtn';
 import { FIDUCIA_PER_CORRECT } from '../systems/balance';
 import { studyHint } from '../data/quiz/hint';
+import { errorsAllowed, errorsLeft, lifeAfterWrong, lifeShown } from '../systems/duelLife';
 
 export interface DuelOpts {
   foeName: string;
@@ -19,21 +21,41 @@ export interface DuelOpts {
   foePal: number;
   questions: Question[];
   need: number;
+  /**
+   * > 0: sfida con rischio, la barra del giocatore è la sua Fiducia e gli errori la consumano davvero.
+   * 0: sfida senza rischio, la barra parte piena e la Fiducia resta com'era.
+   * In entrambi i casi ogni errore toglie 100 / (errori concessi + 1): vedi systems/duelLife.ts.
+   */
   damage: number;
   intro?: string;
   /** Sfida a numero fisso di domande (Mentori e Lega): si rispondono tutte, ma a Fiducia zero si va in tilt. */
   fixed?: boolean;
+  /** Allenamento a punteggio (Ripasso, sfide con codice): si risponde a tutte le domande e la barra del giocatore non c'è. */
+  practice?: boolean;
   /** Luogo della sfida: decide sfondo, colori e nastro (predefinito: la piazza delle quotazioni). */
   arena?: Arena;
 }
 
 export interface DuelResult { win: boolean; correct: number; total: number; perfect: boolean; tilted: boolean; ids: string[]; wrong: string[] }
 
+/**
+ * Esito dell'ultimo duello: in tilt solo se la Fiducia è finita PRIMA di esaurire gli errori concessi
+ * (si era partiti con poca Fiducia). Perdere per troppi errori porta la barra a zero ma non è un tilt.
+ */
+export let lastDuelTilted = false;
+
 export async function runDuel(o: DuelOpts): Promise<DuelResult> {
   const prevTrack = currentTrack();
   play('battle');
   const theme: Arena = o.arena ?? 'piazza';
   await arenaTransition(theme);
+  lastDuelTilted = false;
+  const total = o.questions.length;
+  const allowed = errorsAllowed(total, o.need);
+  const risky = o.damage > 0;
+  // con rischio la barra è la Fiducia di adesso; senza rischio parte piena e non tocca la Fiducia salvata
+  let life = risky ? S.stats.fiducia : 100;
+  let wrongs = 0;
   return new Promise((resolve) => {
     const stage = getStage();
     const root = el('div', `battle th-${theme}`);
@@ -44,8 +66,8 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       <div class="tape" aria-hidden="true"><div class="tape-in">${words}${words}</div></div>
       <div class="arena">
         <div class="side me">
-          <div class="plate me-p"><div class="nm">${esc(S.name)}</div>${S.title ? `<div class="tt">${esc(S.title)}</div>` : '<div class="tt">Sfidante</div>'}<div class="row-m"><span class="lb">Fiducia</span><b class="fv">${S.stats.fiducia}</b></div><div class="mebar">${bar(S.stats.fiducia)}</div></div>
-          <div class="fig"><img class="sprite" src="${portrait(playerPal(S.avatar))}" alt=""></div>
+          <div class="plate me-p"><div class="nm">${esc(S.name)}</div>${S.title ? `<div class="tt">${esc(S.title)}</div>` : '<div class="tt">Sfidante</div>'}${o.practice ? '<div class="row-m"><span class="lb">Allenamento</span><b>nessun rischio</b></div>' : `<div class="row-m"><span class="lb">${risky ? 'Fiducia' : 'Tenuta'}</span><b class="fv">${lifeShown(life)}</b></div><div class="mebar">${bar(lifeShown(life))}</div><div class="small el"></div>`}</div>
+          <div class="fig"><img class="sprite" src="${portrait(playerPal(S.avatar, S.gender))}" alt=""></div>
           <div class="desk"><i></i></div>
         </div>
         <div class="side foe">
@@ -65,6 +87,18 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
     let tilted = false;
     const wrongIds: string[] = [];
     const per = 100 / o.need;
+    const errLeft = () => {
+      if (lifeShown(life) <= 0) return wrongs > allowed ? 'troppi errori' : 'Fiducia esaurita';
+      const left = errorsLeft(life, wrongs, total, o.need);
+      return left === 0 ? 'nessun errore concesso' : left === 1 ? '1 errore concesso' : `${left} errori concessi`;
+    };
+    const drawMe = () => {
+      if (o.practice) return;
+      $('.mebar').innerHTML = bar(lifeShown(life));
+      $('.fv').textContent = String(lifeShown(life));
+      $('.el').textContent = errLeft();
+    };
+    drawMe();
     let handler: ((k: Key) => void) | null = null;
     const setHandler = (h: ((k: Key) => void) | null) => {
       if (handler) popHandler(handler);
@@ -86,13 +120,14 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
 
     const ask = async () => {
       if (!o.fixed && foe <= 0.01) return finish(true);
-      // Fiducia esaurita: tilt, in ogni sfida con danno (anche Mentori e Lega)
-      if (o.damage > 0 && S.stats.fiducia <= 0) { tilted = true; return finish(false); }
+      // Barra del giocatore a zero (anche Mentori e Lega): troppi errori per vincere, oppure tilt se la Fiducia
+      // è finita prima degli errori concessi. Negli allenamenti a punteggio si risponde comunque a tutto.
+      if (!o.practice && lifeShown(life) <= 0) { tilted = wrongs <= allowed; lastDuelTilted = tilted; return finish(false); }
       if (idx >= o.questions.length) return finish(correct >= o.need);
       const q = o.questions[idx];
       idx++;
       $('.qn').textContent = `Domanda ${idx}/${o.questions.length} · servono ${o.need} risposte giuste`;
-      $('.qt').textContent = q.q;
+      $('.qt').textContent = gtext(q.q);
       $('.exp').innerHTML = '';
       const order = shuffle([0, 1, 2, 3]);
       const optsEl = $('.opts');
@@ -100,7 +135,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       const render = () => {
         optsEl.innerHTML = '';
         order.forEach((oi, i) => {
-          const b = el('button', 'btn' + (i === sel ? ' sel' : ''), `${'ABCD'[i]}. ${esc(q.options[oi])}`);
+          const b = el('button', 'btn' + (i === sel ? ' sel' : ''), `${'ABCD'[i]}. ${esc(gtext(q.options[oi]))}`);
           b.addEventListener('click', () => answer(i));
           optsEl.appendChild(b);
         });
@@ -129,24 +164,25 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         if (ok) {
           correct++;
           foe = Math.max(0, foe - per);
-          if (o.damage > 0) S.stats.fiducia = Math.min(100, S.stats.fiducia + FIDUCIA_PER_CORRECT);
+          if (risky) life = Math.min(100, life + FIDUCIA_PER_CORRECT);
           beep('ok');
           $('.foe .fig').classList.add('shake');
         } else {
           perfect = false;
           wrongIds.push(q.id);
-          S.stats.fiducia = Math.max(0, S.stats.fiducia - o.damage);
+          wrongs++;
+          life = lifeAfterWrong(life, wrongs, total, o.need);
           beep('bad');
           $('.me .fig').classList.add('shake');
         }
         $('.foebar').innerHTML = bar(foe);
         $('.cv').textContent = String(Math.round(foe));
-        $('.mebar').innerHTML = bar(S.stats.fiducia);
-        $('.fv').textContent = String(S.stats.fiducia);
+        if (risky) S.stats.fiducia = lifeShown(life);
+        drawMe();
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
-        const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(q.options[q.answer])}`;
+        const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(gtext(q.options[q.answer]))}`;
         const hint = ok ? '' : studyHint(q);
-        $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
+        $('.exp').innerHTML = `<p>${verdict} ${esc(gtext(q.explain))}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
         const cont = el('button', 'btn primary', 'Continua ▶');
         cont.style.marginTop = '6px';
         $('.exp').appendChild(cont);
@@ -163,7 +199,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       });
     };
 
-    if (o.intro) $('.qt').textContent = o.intro;
+    if (o.intro) $('.qt').textContent = gtext(o.intro);
     setTimeout(() => void ask(), o.intro ? 1400 : 300);
   });
 }

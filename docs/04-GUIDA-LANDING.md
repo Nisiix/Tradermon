@@ -22,7 +22,7 @@ In ogni città un Mentore assegna una Medaglia in due metà. **L'Attestato** si 
 
 ### #02 Il conto di gioco
 
-Serve un conto **Alpaca Paper**: gratuito, basta un'email, prezzi veri e denaro finto. Senza conto puoi comunque studiare e vincere gli Attestati. La **difficoltà** scelta all'inizio fissa il capitale; ogni tappa chiede solo una quota minima da investire, il resto lo decidi tu.
+Serve un conto **Alpaca Paper**: gratuito, basta registrarsi sulla piattaforma di Alpaca, prezzi veri e denaro finto. Senza conto puoi comunque studiare e vincere gli Attestati. La **difficoltà** scelta all'inizio fissa il capitale; ogni tappa chiede solo una quota minima da investire, il resto lo decidi tu.
 
 | Livello | Capitale | Quota minima per tappa | Dopo una bancarotta |
 |---|---|---|---|
@@ -49,7 +49,7 @@ Crei un giocatore con nome e password: la partita si salva online e la ritrovi s
 
 ### #07 Come collegare Alpaca
 
-1. Crea un account su alpaca.markets: per il conto Paper basta l'email.
+1. Registrati sulla piattaforma alpaca.markets: per il conto Paper basta questo, ed è gratuito.
 2. Nella dashboard, in modalità **Paper**, genera le chiavi API (Key ID e Secret).
 3. Nel gioco apri il menu, voce **Chiavi API**, e inseriscile.
 

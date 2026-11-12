@@ -764,7 +764,7 @@ const SIDE_STEP = [
 
 function mirrorHalf(rows: string[]): string[] { return rows.map((r) => r + r.split('').reverse().join('')); }
 
-export interface CharPal { skin: string; hair: string; shirt: string; pants: string; extra?: string; cap?: string }
+export interface CharPal { skin: string; hair: string; shirt: string; pants: string; extra?: string; cap?: string; long?: boolean }
 
 // Cappellino del protagonista: righe 2-7 della testa (q tessuto, Q riflesso, b visiera, w stemma).
 const CAP_FRONT_HALF = ['.....ooo', '...ooqqq', '..oqqqQw', '.oqqqqQQ', '.obbbbbb', '.ohdhhhh'];
@@ -774,6 +774,22 @@ const CAP_SIDE = ['.....ooooo......', '...ooqqqqqoo....', '..oqqqqQQqqqo...', '.
 function withCap(rows: string[], dir: number): string[] {
   const cap = dir === 0 ? mirrorHalf(CAP_FRONT_HALF) : dir === 1 ? mirrorHalf(CAP_BACK_HALF) : CAP_SIDE;
   return rows.map((r, y) => (y >= 2 && y < 2 + cap.length ? cap[y - 2] : r));
+}
+
+// Capelli lunghi della protagonista (righe 11-17): ciocche ai lati del viso, chioma sciolta sulla schiena.
+// Sovrapposizioni: '.' lascia il pixel del corpo com'è.
+const LONG_FRONT_HALF = ['.od.....', '.odh....', '.odh....', '.odhh...', '.odd....', '..oo....'];
+const LONG_BACK_HALF = ['...oddhh', '..odhhhH', '..odhhhh', '..oddhhh', '...oddhh', '....oooo'];
+const LONG_SIDE = ['.odh', '.odh', '.odh', '.odh', '.odd', '..oo'];
+
+function withLongHair(rows: string[], dir: number): string[] {
+  const over = dir === 0 ? mirrorHalf(LONG_FRONT_HALF) : dir === 1 ? mirrorHalf(LONG_BACK_HALF) : LONG_SIDE;
+  const top = dir === 1 ? 12 : 11;
+  return rows.map((r, y) => {
+    const o = over[y - top];
+    if (!o) return r;
+    return r.split('').map((ch, x) => (o[x] && o[x] !== '.' ? o[x] : ch)).join('');
+  });
 }
 // ---------------- Personaggi ----------------
 
@@ -826,12 +842,14 @@ export const PALETTES: CharPal[] = [
   { skin: '#f0c0a0', hair: '#e8e0d0', shirt: '#4858a0', pants: '#585868', extra: '#c84848' }, // 31 abitante
   // 32+ protagonista: stesso viso e capelli, vestiti e cappellino del colore scelto dal Prof. Saldi
   ...PLAYER_COLOR_LIST.map((c) => ({ skin: '#f5c9a0', hair: '#5a3418', shirt: c.hex, pants: '#2d3b6b', extra: '#f2f2f2', cap: c.hex })),
+  // poi la protagonista: stessi colori, capelli lunghi con la coda di cavallo
+  ...PLAYER_COLOR_LIST.map((c) => ({ skin: '#f5c9a0', hair: '#5a3418', shirt: c.hex, pants: '#2d3b6b', extra: '#f2f2f2', cap: c.hex, long: true })),
 ];
 
-/** Riga della palette del protagonista per il colore scelto (S.avatar). */
-export function playerPal(avatar: number): number {
+/** Riga della palette del protagonista per il colore scelto (S.avatar) e il genere (S.gender). */
+export function playerPal(avatar: number, gender?: 'm' | 'f'): number {
   const n = PLAYER_COLOR_LIST.length;
-  return PLAYER_PAL_BASE + (((avatar | 0) % n) + n) % n;
+  return PLAYER_PAL_BASE + (gender === 'f' ? n : 0) + (((avatar | 0) % n) + n) % n;
 }
 
 export const PAL = { PROF: 3, NURSE: 4, RIVAL: 5, SPEC: 15, GUARD: 20, LIB: 23 };
@@ -887,7 +905,8 @@ function frameRows(dir: number, frame: number): { rows: string[]; flip: boolean 
 function drawChar(c: Ctx, ox: number, oy: number, p: CharPal, dir: number, frame: number) {
   // l'ombra a terra è uno sprite separato nella scena
   const fr = frameRows(dir, frame);
-  const rows = p.cap ? withCap(fr.rows, dir) : fr.rows;
+  const capped = p.cap ? withCap(fr.rows, dir) : fr.rows;
+  const rows = p.long ? withLongHair(capped, dir) : capped;
   paint(c, ox, oy + (frame ? -1 : 0) * 0, rows, colorsFor(p), fr.flip);
 }
 

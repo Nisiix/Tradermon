@@ -15,7 +15,7 @@ export async function disclaimer(): Promise<void> {
     body.innerHTML = `
       <p><b>Tradermon è un gioco educativo.</b> Non fornisce consulenza finanziaria né raccomandazioni personalizzate.</p>
       <p>Il mondo e i personaggi di Capitalia sono di fantasia. <b>Titoli, prezzi e grafici sono reali</b>: arrivano da Alpaca, un broker, attraverso un conto Paper gratuito (denaro finto) che colleghi tu. I titoli in vetrina sono scelti per insegnare, non per consigliarti. I quiz citano fonti pubbliche di educazione finanziaria (SEC Investor.gov, Investopedia, Consob, Banca d'Italia, CFA Institute, ESMA).</p>
-      <p><b>È un gioco per imparare, con denaro finto.</b> Tradermon è pensato per aiutarti a entrare nel mondo degli investimenti e del trading, e serve solo all'apprendimento: usa esclusivamente il conto Paper di Alpaca e non usa mai soldi reali. Senza conto collegato resta il percorso di studio. Fuori dal gioco, investire denaro vero comporta il rischio di perderlo.</p>
+      <p><b>È un gioco per imparare:</b> usa esclusivamente il conto Paper di Alpaca e non usa mai soldi reali. Senza conto collegato resta il percorso di studio. Fuori dal gioco, investire denaro vero comporta il rischio di perderlo.</p>
       <label><input type="checkbox" class="ck"> <span>Ho capito: è un gioco educativo, con denaro finto, e non è consulenza.</span></label>`;
     const b = button('Inizia', () => close(), 'primary');
     b.disabled = true;
@@ -49,7 +49,7 @@ export async function onboarding(playerName?: string): Promise<void> {
   const intro = el('div', 'intro-stage', `<div class="fig"><img class="sprite" src="${portrait(PAL.PROF)}" alt="Prof. Saldi"></div><div class="desk"></div>`);
   getStage().prepend(intro);
   const unmountIntro = mountArena(intro, 'aula', 'prof');
-  await say(['Ciao! Benvenuto nella Regione di Capitalia!', 'Mi chiamo Bruno Saldi, ma tutti mi chiamano "il Prof".', 'Ho passato trent\'anni a gestire i risparmi degli altri. Ho visto bolle, crolli e riprese.', 'Oggi insegno ai giovani investitori a non ripetere i miei errori.'], 'Prof. Saldi');
+  await say(['Ciao! Ti do il benvenuto nella Regione di Capitalia!', 'Mi chiamo Bruno Saldi, ma tutti mi chiamano "il Prof".', 'Ho passato trent\'anni a gestire i risparmi degli altri. Ho visto bolle, crolli e riprese.', 'Oggi insegno ai giovani investitori a non ripetere i miei errori.'], 'Prof. Saldi');
   if (playerName) {
     S.name = playerName;
     await say(`Tu devi essere ${S.name}! Il tuo nome è già scritto nel registro dei giovani investitori.`, 'Prof. Saldi');
@@ -57,9 +57,14 @@ export async function onboarding(playerName?: string): Promise<void> {
     S.name = (await ask('Come ti chiami?', 'Alex', 10)) || 'Alex';
     await say(`${S.name}! Che bel nome.`, 'Prof. Saldi');
   }
-  // il colore scelto tinge vestiti e cappellino del protagonista ovunque (mappa, sfide); anteprima dal vivo dietro il banco
   const img = intro.querySelector('img')!;
-  const looks = PLAYER_COLOR_LIST.map((_, i) => portrait(playerPal(i)));
+  // il genere accorda i testi ({maschile|femminile}) e sceglie lo sprite; anteprima dal vivo dietro il banco
+  const genders = ['m', 'f'] as const;
+  const bodies = genders.map((gd) => portrait(playerPal(0, gd)));
+  const gi = await choose(['Ragazzo', 'Ragazza'], { prompt: 'Dimmi, sei un ragazzo o una ragazza?', who: 'Prof. Saldi', onMove: (i) => { img.src = bodies[i]; img.alt = S.name; } });
+  S.gender = genders[gi];
+  // il colore scelto tinge vestiti e cappellino del protagonista ovunque (mappa, sfide); anteprima dal vivo dietro il banco
+  const looks = PLAYER_COLOR_LIST.map((_, i) => portrait(playerPal(i, S.gender)));
   const av = await choose(PLAYER_COLOR_LIST.map((c) => c.name), { prompt: 'Qual è il tuo colore preferito? Vestiti e cappellino saranno di quel colore (non cambia nulla nel gioco).', who: 'Prof. Saldi', onMove: (i) => { img.src = looks[i]; img.alt = S.name; } });
   S.avatar = av;
   await say(`Ti sta proprio bene, ${S.name}!`, 'Prof. Saldi');
@@ -68,8 +73,8 @@ export async function onboarding(playerName?: string): Promise<void> {
   const score = await questionnaire();
   S.profileScore = score;
   S.profile = profileFromScore(score);
-  const desc = { prudente: 'PRUDENTE: preferisci la stabilità e oscillazioni contenute.', equilibrato: 'EQUILIBRATO: cerchi un compromesso tra crescita e tranquillità.', audace: 'AUDACE: tolleri bene le oscillazioni. Attento però: audace non vuol dire avventato!' }[S.profile];
-  await say([`Il tuo profilo è ${desc}`, 'Ricorda: non è una raccomandazione. Serve a conoscerti: l\'allocazione del conto la scriverai tu, quando lo aprirai.', 'Vedremo nelle missioni se le tue scelte gli somigliano.'], 'Prof. Saldi');
+  const desc = { prudente: 'PRUDENTE: preferisci la stabilità e oscillazioni contenute.', equilibrato: 'EQUILIBRATO: cerchi un compromesso tra crescita e tranquillità.', audace: 'AUDACE: tolleri bene le oscillazioni. Attent{o|a} però: audace non vuol dire avventato!' }[S.profile];
+  await say([`Il tuo profilo è ${desc}`, 'Non è una raccomandazione: l\'allocazione del conto la scriverai tu, quando lo aprirai.'], 'Prof. Saldi');
   // il rivale: un bambino rimasto senza famiglia che il Prof ha adottato; ha un nome suo, non lo sceglie il giocatore
   S.rival = 'Leo';
   img.src = portrait(PAL.RIVAL); img.alt = 'Leo';
@@ -78,7 +83,7 @@ export async function onboarding(playerName?: string): Promise<void> {
   await say([`Ora vai a casa a riposare, ${S.name}.`, 'Domani vieni al mio Laboratorio: ti aspetta una scelta importante.'], 'Prof. Saldi');
   unmountIntro();
   intro.remove();
-  await say(['Un\'ultima scelta, e questa non si cambia più: la difficoltà.', 'Decide quanto capitale avrà il tuo conto di gioco e quanto margine di errore ti lascio lungo il viaggio. I punteggi sono in percentuale: un capitale più grande non dà vantaggi.'], 'Prof. Saldi');
+  await say(['Un\'ultima scelta: la difficoltà.', 'Decide quanto capitale avrà il tuo conto di gioco e quanto margine di errore ti lascio lungo il viaggio. I punteggi sono in percentuale: un capitale più grande non dà vantaggi.'], 'Prof. Saldi');
   applyDifficulty(await chooseDifficulty());
   S.map = 'home'; S.x = 2; S.y = 4; S.facing = 'down';
   save();

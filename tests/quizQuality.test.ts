@@ -42,9 +42,23 @@ describe('qualità delle domande: la forma non tradisce la risposta', () => {
       t.n++;
       if (longest(q.options)) t.long++;
     }
-    for (const [t, v] of Object.entries(by)) expect(v.long / v.n, `${t}: ${v.long}/${v.n}`).toBeLessThanOrEqual(0.5);
+    // con quattro opzioni il caso puro darebbe 25%: si resta vicini a quel valore
+    for (const [t, v] of Object.entries(by)) expect(v.long / v.n, `${t}: ${v.long}/${v.n}`).toBeLessThanOrEqual(0.36);
     const tot = Object.values(by).reduce((a, v) => ({ n: a.n + v.n, long: a.long + v.long }), { n: 0, long: 0 });
-    expect(tot.long / tot.n).toBeLessThanOrEqual(0.45);
+    expect(tot.long / tot.n).toBeLessThanOrEqual(0.3);
+  });
+
+  it('nessuna domanda chiede un calcolo: le risposte non sono numeri da ricavare', () => {
+    const numeric = /^[\s+−-]*(circa\s+|esattamente\s+)?[\d.,]+\s*(%|euro|anni)?$/i;
+    for (const q of QUESTIONS) for (const o of q.options) expect(numeric.test(o), `${q.id}: «${o}»`).toBe(false);
+    for (const t of TEMPLATES) for (let seed = 1; seed <= 20; seed++) {
+      const g = generate(t, t.topics[0], mulberry32(seed));
+      if (g) for (const o of g.options) expect(numeric.test(o), `${t.id}: «${o}»`).toBe(false);
+    }
+  });
+
+  it('le risposte stanno in due righe al massimo', () => {
+    for (const q of QUESTIONS) for (const o of q.options) expect(o.length, `${q.id}: «${o}»`).toBeLessThanOrEqual(115);
   });
 });
 
@@ -72,13 +86,12 @@ describe('domande generate con numeri nuovi', () => {
     }
   });
 
-  it('un duello ha fino a una domanda generata ogni tre, senza cambiare il mix di difficoltà', () => {
+  it('un duello ha al massimo una domanda generata ogni tre, senza cambiare il mix di difficoltà', () => {
     for (const [track, mixed] of [['stocks', []], ['etf', []], ['crypto', []], ['mixed', ['stocks', 'etf', 'crypto']]] as const) for (let m = 1; m <= 8; m++) {
       const topics = mentorTopics(m, track, [...mixed]);
       const target = targetDiff(m - 1);
       const qs = pickQuestions(topics, 8, { target, rng: mulberry32(m) });
       const gen = qs.filter((q) => isGenerated(q.id));
-      expect(gen.length, `${track} Mentore ${m}`).toBeGreaterThanOrEqual(1);
       expect(gen.length, `${track} Mentore ${m}`).toBeLessThanOrEqual(generatedCount(8));
       expect(qs.reduce((s, q) => s + q.diff, 0) / 8).toBeCloseTo(target, 1);
       for (const g of gen) expect(topics, `${g.id} fuori argomento`).toContain(g.topic);
@@ -88,8 +101,8 @@ describe('domande generate con numeri nuovi', () => {
   });
 
   it('una sfida condivisa dà le stesse domande e gli stessi numeri a tutti', () => {
-    const a = pickQuestions(['rischio', 'ordini', 'costi'], 5, { rng: mulberry32(42), shared: true });
-    const b = pickQuestions(['rischio', 'ordini', 'costi'], 5, { rng: mulberry32(42), shared: true });
+    const a = pickQuestions(['ordini', 'bias'], 6, { rng: mulberry32(42), shared: true });
+    const b = pickQuestions(['ordini', 'bias'], 6, { rng: mulberry32(42), shared: true });
     expect(a.map((q) => q.q)).toEqual(b.map((q) => q.q));
     expect(a.some((q) => isGenerated(q.id))).toBe(true);
   });
