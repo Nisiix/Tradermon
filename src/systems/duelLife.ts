@@ -37,3 +37,8 @@ export function errorsLeft(life: number, wrongs: number, questions: number, need
   const byLife = Math.ceil(life / lifeStep(questions, need) - 1e-9) - 1;
   return Math.max(0, Math.min(byRule, byLife));
 }
+
+/** Fiducia dopo un duello con rischio vinto: si recupera la quota della difficoltà, senza superare 100. */
+export function fiduciaAfterWin(fiducia: number, gain: number): number {
+  return Math.min(100, Math.max(0, fiducia) + gain);
+}

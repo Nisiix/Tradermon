@@ -50,3 +50,14 @@ describe('errori ancora possibili', () => {
     expect(errorsLeft(30, 0, 8, 6)).toBe(0);
   });
 });
+
+describe('Fiducia recuperata vincendo', () => {
+  it('scende con la difficoltà e non supera 100', async () => {
+    const { DIFFICULTY, DIFFICULTIES } = await import('../src/systems/balance');
+    const { fiduciaAfterWin } = await import('../src/systems/duelLife');
+    const gains = DIFFICULTIES.map((d) => DIFFICULTY[d].fiduciaWin);
+    for (let i = 1; i < gains.length; i++) expect(gains[i]).toBeLessThan(gains[i - 1]);
+    expect(fiduciaAfterWin(90, 40)).toBe(100);
+    expect(fiduciaAfterWin(4, 10)).toBe(14);
+  });
+});
