@@ -1,6 +1,6 @@
 // Resa 2.5D "HD-2D" del mondo (stile Pokémon su DS): la mappa logica diventa un diorama con Three.js,
 // gli oggetti sono volumi ricavati dalla stessa pixel art del gioco (vedi relief.ts), i personaggi
-// restano sprite in piedi, la camera è inclinata, con ombre, luci di notte e post-produzione
+// sono sagome spesse in volume (vedi actors.ts), la camera è inclinata, con ombre, luci di notte e post-produzione
 // (occlusione ambientale SSAO, bagliore, tilt-shift) dalla libreria postprocessing.
 //
 // La logica del gioco resta nella scena Phaser (scenes/world.ts): questa classe la "rispecchia" ogni
@@ -14,6 +14,7 @@ import type { MapDef } from '../world/maps';
 import { reprOf, HOUSE_ROOFS, HOUSE_WALLS, WALL_LIKE } from './props';
 import { propSprite, propAtlas, GeoBuilder, uprightRelief, flatRelief, crossPlanes, billboardQuad, propUv } from './relief';
 import { assetManifest, externalModel, type AssetManifest } from './assets';
+import { ActorGeometries, charNormalMap, ACTOR_LEAN } from './actors';
 
 /** Le stesse chiamate di Phaser.GameObjects.Graphics usate dal meteo. */
 export interface Painter {
@@ -67,6 +68,8 @@ export class View3D {
   private matProps: THREE.MeshLambertMaterial;
   private matSides: THREE.MeshLambertMaterial;
   private matChar: THREE.MeshLambertMaterial;
+  private matCharSides: THREE.MeshLambertMaterial;
+  private actorGeo: ActorGeometries;
   private matBubble: THREE.MeshBasicMaterial;
   private matShadow: THREE.MeshBasicMaterial;
   private matLeaf: THREE.MeshLambertMaterial;
@@ -131,10 +134,19 @@ export class View3D {
     this.chars = new THREE.CanvasTexture(charsCv);
     this.chars.magFilter = THREE.LinearFilter; this.chars.minFilter = THREE.LinearFilter; this.chars.colorSpace = THREE.SRGBColorSpace;
     this.charRows = charsCv.height / (CH * RS);
+    // rilievo dei personaggi: normali "a cuscino" ricavate dalla sagoma, così la luce li modella come figure tonde
+    // (solo con effetti alti: con effetti bassi niente texture in più, restano lo spessore e l'inclinazione)
+    let charsNormal: THREE.CanvasTexture | null = null;
+    if (fx === 'alti') {
+      charsNormal = new THREE.CanvasTexture(charNormalMap(charsCv));
+      charsNormal.magFilter = THREE.LinearFilter; charsNormal.minFilter = THREE.LinearFilter; charsNormal.colorSpace = THREE.NoColorSpace;
+    }
+    this.actorGeo = new ActorGeometries(charsCv);
     this.matTiles = new THREE.MeshLambertMaterial({ map: this.atlas, vertexColors: true });
     this.matProps = new THREE.MeshLambertMaterial({ map: propAtlas(), transparent: false, alphaTest: 0.5, side: THREE.DoubleSide, vertexColors: true });
     this.matSides = new THREE.MeshLambertMaterial({ vertexColors: true });
-    this.matChar = new THREE.MeshLambertMaterial({ map: this.chars, alphaTest: 0.5, side: THREE.DoubleSide, transparent: true });
+    this.matChar = new THREE.MeshLambertMaterial({ map: this.chars, normalMap: charsNormal, normalScale: new THREE.Vector2(0.85, 0.85), alphaTest: 0.5, transparent: true });
+    this.matCharSides = new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true });
     this.matBubble = new THREE.MeshBasicMaterial({ map: this.bubbleTexture(), alphaTest: 0.5, side: THREE.DoubleSide });
     this.matShadow = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false });
     this.matLeaf = new THREE.MeshLambertMaterial({ vertexColors: false, transparent: true });
@@ -219,13 +231,6 @@ export class View3D {
     const cx = idx % this.acols, cy = Math.floor(idx / this.acols);
     const e = 0.3 / T;
     return [(cx + e) / this.acols, 1 - (cy + 1 - e) / this.arows, (cx + 1 - e) / this.acols, 1 - (cy + e) / this.arows];
-  }
-
-  private charUv(frame: number): [number, number, number, number] {
-    const pal = Math.floor(frame / 12), f = frame % 12;
-    const col = (pal % CHAR_PER_ROW) * 12 + f, row = Math.floor(pal / CHAR_PER_ROW), FR = 12 * CHAR_PER_ROW;
-    const e = 0.3 / T;
-    return [(col + e) / FR, 1 - (row + 1 - e / 1.5) / this.charRows, (col + 1 - e) / FR, 1 - (row + e / 1.5) / this.charRows];
   }
 
   /** Colore medio (lineare) di un tile, per i fianchi dei blocchi. */
@@ -528,12 +533,19 @@ export class View3D {
     let raft = false;
     for (const it of f.items) {
       if (it.kind === 'char') {
-        const m = this.pooled(this.charPool, ci++, () => { const mm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.5), this.matChar.clone()); mm.castShadow = true; mm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: this.chars, alphaTest: 0.5 }); return mm; });
-        this.setPlaneUv(m, this.charUv(it.frame));
+        // sagoma spessa appoggiata ai piedi e inclinata un po' verso la camera (vedi actors.ts)
+        const m = this.pooled(this.charPool, ci++, () => {
+          const mm = new THREE.Mesh(this.actorGeo.get(0), [this.matChar.clone(), this.matCharSides.clone()]);
+          mm.castShadow = true; mm.rotation.order = 'YXZ';
+          mm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: this.chars, alphaTest: 0.5 });
+          return mm;
+        });
+        m.geometry = this.actorGeo.get(it.frame);
         const lift = it.lift ?? 0;
-        m.position.set(it.x, 0.75 + lift * 2.6, it.y - 0.38 - lift * 0.3);
+        m.position.set(it.x, lift * 2.6, it.y - 0.38 - lift * 0.3);
         m.rotation.y = this.yaw;
-        (m.material as THREE.MeshLambertMaterial).opacity = it.alpha;
+        m.rotation.x = -ACTOR_LEAN;
+        for (const mat of m.material as THREE.MeshLambertMaterial[]) mat.opacity = it.alpha;
         const sh = this.pooled(this.shadowPool, si++, () => { const mm = new THREE.Mesh(new THREE.CircleGeometry(0.5, 20), this.matShadow); mm.rotation.x = -Math.PI / 2; mm.scale.set(0.42, 0.26, 1); return mm; });
         sh.position.set(it.x, 0.012, it.y - 0.45);
         sh.scale.set(0.42 * (1 - 0.5 * lift), 0.26 * (1 - 0.5 * lift), 1);
