@@ -21,7 +21,7 @@ export interface NpcDef {
   lines?: string[];
   data?: Record<string, unknown>;
   sight?: number;
-  /** Allievo che sbarra la strada al Mentore: se il giocatore sale oltre questa riga senza averlo battuto, si gira e lo sfida. */
+  /** Allievo che sbarra la strada alla Whale: se il giocatore sale oltre questa riga senza averlo battuto, si gira e lo sfida. */
   guardY?: number;
   hiddenSprite?: boolean;
 }
@@ -213,7 +213,7 @@ function buildHomeTown() {
       { id: 't0_aide', x: w - 2, y: 9, pal: 22, dir: 2, name: 'Assistente', kind: 'aide' },
       { id: 't0_kid', x: 12, y: 10, pal: 21, dir: 0, name: 'Bambina', kind: 'talk', lines: ['Il mio papà dice che i soldi sotto il materasso perdono valore. Si chiama inflazione!'] },
       { id: 't0_old', x: 17, y: 10, pal: 19, dir: 1, name: 'Nonno Elio', kind: 'talk', lines: ['Ai miei tempi si diceva: "Non mettere tutte le uova nello stesso paniere".', 'Vale ancora oggi, sai?'] },
-      { id: 't0_student', x: 21, y: 12, pal: 23, dir: 3, name: 'Studentessa', kind: 'talk', lines: ['Torno ora dalla Biblioteca di Ponte Cedola: ogni città dalla prossima ne ha una.', 'Gli scaffali in alto a sinistra sono la Sezione del Mentore: ci sono i libri sull\'argomento del suo duello.', 'Li ho letti tutti prima della sfida e ho risposto a quasi ogni domanda!'] },
+      { id: 't0_student', x: 21, y: 12, pal: 23, dir: 3, name: 'Studentessa', kind: 'talk', lines: ['Torno ora dalla Biblioteca di Ponte Cedola: ogni città dalla prossima ne ha una.', 'Gli scaffali in alto a sinistra sono la Sezione della Whale: ci sono i libri sull\'argomento del suo duello.', 'Li ho letti tutti prima della sfida e ho risposto a quasi ogni domanda!'] },
     ],
     warps: [
       { x: home.dx, y: home.dy, to: 'home', tx: 4, ty: 6, dir: 1 },
@@ -315,19 +315,19 @@ function buildTown(n: number) {
       { x: acad.dx, y: acad.dy, to: `academy_${n}`, tx: 6, ty: 11, dir: 1 },
       ...houseWarps,
     ],
-    signs: [{ x: 2, y: 8, text: [def.name.toUpperCase(), `Accademia di ${def.name}: Mentore n. ${n}.`] }],
-    plaques: [plaque(clinic, 'BANCA', 'clinic'), plaque(lib, 'BIBLIOTECA'), plaque(acad, 'PALESTRA', 'gym')],
+    signs: [{ x: 2, y: 8, text: [def.name.toUpperCase(), `Exchange di ${def.name}: Whale n. ${n}.`] }],
+    plaques: [plaque(clinic, 'BANCA', 'clinic'), plaque(lib, 'BIBLIOTECA'), plaque(acad, 'EXCHANGE', 'gym')],
   };
   if (n === 3) m.npcs.push({ id: 't3_rival', x: 15, y: 10, pal: 5, dir: 2, name: 'Rivale', kind: 'rival', data: { n: 3 } });
   addClinic(n, clinic.dx, clinic.dy, id);
 
   const lb = interior(`library_${n}`, `Biblioteca di ${def.name}`, 11, 9, id, lib.dx, lib.dy);
   rect(lb.tiles, 1, 2, 4, 1, TILE.SHELF); rect(lb.tiles, 6, 2, 4, 1, TILE.SHELF); rect(lb.tiles, 1, 4, 3, 1, TILE.SHELF); rect(lb.tiles, 7, 4, 3, 1, TILE.SHELF);
-  // sezioni: a sinistra i libri del Mentore della città (l'argomento del suo duello), a destra le lezioni generali,
+  // sezioni: a sinistra i libri della Whale della città (l'argomento del suo duello), a destra le lezioni generali,
   // in basso il ripasso degli errori e l'Investidex
-  lb.tiles[1][2] = TILE.POSTER; lb.tiles[1][7] = TILE.FRAME; // manifesto sopra la Sezione del Mentore, quadro sopra quella generale
+  lb.tiles[1][2] = TILE.POSTER; lb.tiles[1][7] = TILE.FRAME; // manifesto sopra la Sezione della Whale, quadro sopra quella generale
   lb.sections = [
-    { x: 1, y: 2, w: 4, kind: 'mentor', label: `Sezione del Mentore n. ${n}` },
+    { x: 1, y: 2, w: 4, kind: 'mentor', label: `Sezione della Whale n. ${n}` },
     { x: 6, y: 2, w: 4, kind: 'general', label: 'Sezione generale: lezioni' },
     { x: 1, y: 4, w: 3, kind: 'review', label: 'Archivio del ripasso' },
     { x: 7, y: 4, w: 3, kind: 'index', label: 'Investidex' },
@@ -338,12 +338,12 @@ function buildTown(n: number) {
   );
   MAPS[lb.id] = lb;
 
-  const ac = interior(`academy_${n}`, `Accademia di ${def.name}`, 13, 13, id, acad.dx, acad.dy);
+  const ac = interior(`academy_${n}`, `Exchange di ${def.name}`, 13, 13, id, acad.dx, acad.dy);
   rect(ac.tiles, 1, 2, 1, 10, TILE.SHELF); rect(ac.tiles, 11, 2, 1, 10, TILE.SHELF);
   rect(ac.tiles, 4, 7, 2, 1, TILE.TABLE); rect(ac.tiles, 7, 7, 2, 1, TILE.TABLE);
   rect(ac.tiles, 5, 2, 3, 1, TILE.RUG);
   ac.npcs.push(
-    { id: `mentor_${n}`, x: 6, y: 3, pal: 0, dir: 0, name: 'Mentore', kind: 'mentor', data: { n } },
+    { id: `mentor_${n}`, x: 6, y: 3, pal: 0, dir: 0, name: 'Whale', kind: 'mentor', data: { n } },
     { id: `student_${n}_a`, x: 4, y: 9, pal: 21, dir: 3, name: 'Allievo', kind: 'student', data: { n }, sight: 3, guardY: 9 },
     { id: `student_${n}_b`, x: 8, y: 5, pal: 22, dir: 2, name: 'Allieva', kind: 'student', data: { n }, sight: 3, guardY: 5 },
   );
@@ -385,7 +385,7 @@ const TOWN_TALK = [
   'La Dott.ssa Ratio dice che il mio portafoglio "ha la febbre". Troppa tecnologia, a quanto pare.',
   'Lo sapevi? Dopo un −50% serve un +100% per tornare in pari!',
   'Mio nonno ha fatto un piano di accumulo per 30 anni. Dice che il segreto è stato non guardare troppo spesso.',
-  'Le Guardie della Borsa ti lasciano passare con l\'Attestato del Mentore della città: lo vinci nel duello.',
+  'Le Guardie della Borsa ti lasciano passare con l\'Attestato della Whale della città: lo vinci nel duello.',
   'In Biblioteca il ripasso ti ripropone le domande al momento giusto. Io ci passo ogni giorno!',
   'Le cripto non dormono mai: sono aperte anche la domenica!',
   'Un signore elegante mi ha offerto il 20% al mese. Gli ho detto di no. Ho fatto bene, vero?',
@@ -396,12 +396,12 @@ const TOWN_TALK = [
   'Le Zone di Mercato, quelle con l\'erba alta e il grafico, sono piene di sorprese.',
   'Il mio portafoglio è diversificato: azioni, obbligazioni e un po\' di liquidità. Dormo tranquillo.',
   'Dicono che nel Casinò di Interessa il banco vinca sempre. Matematicamente, è vero.',
-  'Per sfidare la Lega servono otto Medaglie complete: Attestato e Sigillo pratico, guadagnato sul conto Paper.',
+  'Per sfidare Wall Street servono otto Medaglie complete: Attestato e Sigillo pratico, guadagnato sul conto Paper.',
   'Un buon investitore scrive il suo piano a mente fredda.',
   'L\'Archivio di Bilancia si apre solo a chi sa leggere oltre la superficie.',
 ];
 
-// ---------------- Altopiano della Lega ----------------
+// ---------------- Wall Street ----------------
 
 function buildLeagueTown() {
   const w = 26, h = 18;
@@ -415,8 +415,8 @@ function buildLeagueTown() {
   rect(t, league.dx, league.dy + 1, 1, 11 - league.dy - 1, TILE.PATH);
   rect(t, clinic.dx, clinic.dy + 1, 1, 11 - clinic.dy - 1, TILE.PATH);
   rect(t, tower.dx, tower.dy + 1, 1, 11 - tower.dy - 1, TILE.PATH);
-  const m: MapDef = { id: 't9', name: 'Altopiano della Lega', w, h, tiles: t, interior: false, town: 9, encounterRate: 0, bg: '#6cc04a',
-    npcs: [{ id: 't9_guard', x: league.dx, y: league.dy + 1, pal: 20, dir: 0, name: 'Guardia della Lega', kind: 'guard', data: { badge: 8, league: true } }],
+  const m: MapDef = { id: 't9', name: 'Wall Street', w, h, tiles: t, interior: false, town: 9, encounterRate: 0, bg: '#6cc04a',
+    npcs: [{ id: 't9_guard', x: league.dx, y: league.dy + 1, pal: 20, dir: 0, name: 'Guardia di Wall Street', kind: 'guard', data: { badge: 8, league: true } }],
     warps: [
       { x: 0, y: 11, to: 'r9', tx: 42, ty: 6, dir: 2 },
       { x: league.dx, y: league.dy, to: 'league', tx: 7, ty: 18, dir: 1 },
@@ -424,11 +424,11 @@ function buildLeagueTown() {
       { x: tower.dx, y: tower.dy, to: 'tower', tx: 5, ty: 7, dir: 1, lock: 'tower' },
     ],
     signs: [],
-    plaques: [plaque(league, 'LEGA'), plaque(clinic, 'BANCA', 'clinic'), plaque(tower, 'TORRE')] };
+    plaques: [plaque(league, 'WALL STREET'), plaque(clinic, 'BANCA', 'clinic'), plaque(tower, 'TORRE')] };
   clearUnderPlaques(m);
   MAPS.t9 = m;
   addClinic(9, clinic.dx, clinic.dy, 't9');
-  const lg = interior('league', 'Lega degli Investitori', 15, 20, 't9', league.dx, league.dy);
+  const lg = interior('league', 'Wall Street', 15, 20, 't9', league.dx, league.dy);
   for (let y = 2; y < 19; y++) { rect(lg.tiles, 0, y, 6, 1, TILE.IWALL); rect(lg.tiles, 9, y, 6, 1, TILE.IWALL); }
   for (let y = 2; y < 19; y++) for (let x = 6; x < 9; x++) lg.tiles[y][x] = TILE.RUG;
   lg.tiles[19][7] = TILE.MAT;

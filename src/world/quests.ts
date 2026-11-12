@@ -88,7 +88,7 @@ export const QUESTS: Quest[] = [
       { kind: 'talk', target: 'livio', say: ['Ora cerca Livio, qui in città. Lui ha usato la leva durante l\'ultima bolla.'],
         targetLine: ['Ottavio ti ha raccontato delle bolle? Io ci ho messo la leva sopra: con i CFD ho perso in due mesi ciò che avevo messo via in sei anni.', 'La leva moltiplica le perdite esattamente come i guadagni. Non dimenticarlo.'],
         done: ['La leva nelle bolle: benzina sul fuoco. Hai imparato più tu in un pomeriggio che molti in dieci anni.'] },
-      { kind: 'event', target: 'legend', need: 1, say: ['Ora vai alla Torre delle Sfide, sull\'Altopiano della Lega, e supera una crisi leggendaria. Poi torna a raccontarmela.'],
+      { kind: 'event', target: 'legend', need: 1, say: ['Ora vai alla Torre delle Sfide di Wall Street e supera una crisi leggendaria. Poi torna a raccontarmela.'],
         done: ['Ce l\'hai fatta. Tieni questo quadro: l\'ho dipinto dopo la crisi del 2008, per ricordarmi che dopo la tempesta torna il sole.'] },
     ],
   },

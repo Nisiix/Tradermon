@@ -1,4 +1,4 @@
-// Prove pratiche della Lega: non sono replay del passato, sono controlli sul conto di gioco com'è adesso.
+// Prove pratiche di Wall Street: non sono replay del passato, sono controlli sul conto di gioco com'è adesso.
 // Il giocatore opera con ordini veri sul mercato attuale (conto Alpaca Paper) e la prova verifica se l'obiettivo
 // è stato raggiunto. Gli obiettivi riguardano il metodo (quanto è investito, come è diviso, come è protetto):
 // mai un rendimento, che nessuno controlla. Una prova non riuscita si sistema con altri ordini e si ripete.

@@ -2,11 +2,11 @@
 
 Versione 1.0 · 9 novembre 2026 · deriva dal piano "Pokenomics 101 – Piano di implementazione".
 
-Tradermon è un RPG 2D top-down in stile palmare a 16 bit in cui il protagonista è un giovane investitore. Al posto delle lotte ci sono **sfide di conoscenza** (quiz) e **missioni di trading** (simulazione), al posto dei capipalestra ci sono **8 Mentori**, alla fine c'è la **Lega degli Investitori**. Il mondo, i personaggi, la mappa, i nomi, la grafica e la musica sono originali: il gioco riprende solo le meccaniche del genere, che non sono protette.
+Tradermon è un RPG 2D top-down in stile palmare a 16 bit in cui il protagonista è un giovane investitore. Al posto delle lotte ci sono **sfide di conoscenza** (quiz) e **missioni di trading** (simulazione), al posto dei capipalestra ci sono **8 Whale**, alla fine c'è la **Wall Street**. Il mondo, i personaggi, la mappa, i nomi, la grafica e la musica sono originali: il gioco riprende solo le meccaniche del genere, che non sono protette.
 
 Regole d'oro del progetto:
 
-1. **Si sblocca solo sapendo.** Nessun oggetto di cattura, nessuna pozione, nessun negozio. Asset, informazioni e tecniche si ottengono solo battendo Mentori e superando sfide.
+1. **Si sblocca solo sapendo.** Nessun oggetto di cattura, nessuna pozione, nessun negozio. Asset, informazioni e tecniche si ottengono solo battendo Whale e superando sfide.
 2. **Solo denaro finto.** Tradermon è pensato per aiutare chi vuole entrare nel mondo degli investimenti e del trading, ed è volto solo all'apprendimento. Tutto il gioco si svolge con denaro finto, sul conto Alpaca Paper: non vengono mai usati soldi reali.
 3. **Premi solo dallo studio e dal conto di gioco.** XP, Medaglie, classifiche e carte si ottengono in simulazione o sul conto Paper.
 4. **Educazione, non consulenza.** Il gioco non dice mai "compra X": il giocatore sceglie da solo.
@@ -19,12 +19,12 @@ Regole d'oro del progetto:
 > - Titoli, prezzi e grafici sono solo quelli reali di Alpaca; i titoli di fantasia e l'indice "Capitalia 100" non esistono più. Senza conto Alpaca Paper collegato resta il percorso di studio.
 > - Difficoltà scelta all'inizio (Apprendista 10.000 $, Investitore 5.000 $, Stratega 2.500 $, Leggenda 1.000 $): fissa capitale, costo didattico per ordine, quota minima di tappa e regola della bancarotta. Non si cambia. Leggenda si sblocca solo con la Nuova Partita+.
 > - Conto di gioco: registro dentro il conto Alpaca Paper, aggiornato solo dagli ordini inviati dal gioco e riconciliato con le posizioni vere. Tutto il capitale è investibile dal primo giorno; ogni tappa chiede una quota minima cumulata (5% / 7% / 8,5% / 9,5% del capitale per tappa), mai un massimo. Ordini anche frazionati.
-> - Medaglia = Attestato (duello, apre la strada) più Sigillo pratico (Prova sul conto: quota della tappa investita con ordini veri sul mercato di oggi, usando la Tecnica appena imparata). La Lega chiede otto Sigilli. I replay vivono solo nella Macchina del Tempo (Zona Simulazione: missioni facoltative, periodi liberi, crisi storiche) e nelle crisi leggendarie della Torre; i Mentori non ne propongono.
-> - Lega: duello più verifica del conto com'è adesso. Marta Macro: almeno metà del patrimonio investito, tre titoli, uno difensivo. Tito Tecnico: nessun titolo oltre il 40% dell'investito e stop attivi su almeno un quarto. Giulia Garante: lo sportello delle offerte (non passa dal conto). Fabio Freddo: quota rischiosa entro 15 punti dal proprio piano e tre decisioni motivate nel Diario. Campione: tutto insieme, senza chiamate di margine. Nessuna prova chiede un rendimento; contano solo gli ordini eseguiti (`src/systems/trials.ts`).
+> - Medaglia = Attestato (duello, apre la strada) più Sigillo pratico (Prova sul conto: quota della tappa investita con ordini veri sul mercato di oggi, usando la Tecnica appena imparata). Wall Street chiede otto Sigilli. I replay vivono solo nella Macchina del Tempo (Zona Simulazione: missioni facoltative, periodi liberi, crisi storiche) e nelle crisi leggendarie della Torre; le Whale non ne propongono.
+> - Wall Street: duello più verifica del conto com'è adesso. Marta Macro: almeno metà del patrimonio investito, tre titoli, uno difensivo. Tito Tecnico: nessun titolo oltre il 40% dell'investito e stop attivi su almeno un quarto. Giulia Garante: lo sportello delle offerte (non passa dal conto). Fabio Freddo: quota rischiosa entro 15 punti dal proprio piano e tre decisioni motivate nel Diario. Campione: tutto insieme, senza chiamate di margine. Nessuna prova chiede un rendimento; contano solo gli ordini eseguiti (`src/systems/trials.ts`).
 > - Bancarotta: quando il conto arriva a zero (sotto 1 $), in ogni difficoltà. Le quote di tappa sono importi fissi sul capitale di partenza della difficoltà, anche dopo perdite o una ripartenza (`stageQuota`, `ZERO`). Ripartenza con metà del capitale di partenza; una sola in Stratega; nessuna in Leggenda.
 > - Leva: esame dal 5º Attestato (vale nei replay), sul conto dall'8º, massimo 2×, interessi 6,5%, mantenimento 30%, chiamata di margine di tre giorni di mercato. Dividendi: solo teoria.
-> - Dopo la Lega: aumenti di capitale, crisi leggendarie su periodi reali, tre Boss dei Mercati (quiz più un solo piano valutato sulle candele reali dopo 2 ore, 3 giorni o 4 settimane; il piano invia ordini veri sul conto di gioco, un acquisto dimensionato sul rischio e uno stop, e in caso di sconfitta la perdita resta sul conto). Nuova Partita+: tutto da zero tranne i trofei, con la difficoltà Leggenda sbloccata.
-> - Bancarotta, come ci si arriva: con la leva oppure con le perdite realizzate. Le vendite in perdita contano sia fatte nel gioco sia fatte fuori (sito di Alpaca): il gioco le riconosce alla sincronizzazione, le registra al prezzo vero di esecuzione e ricontrolla la bancarotta. Nelle Prove sul conto si può vendere un titolo e puntare su un altro, ma decidere di vendere un titolo comprato per la Prova in corso, anche solo una parte, annulla la Prova (decisione dell'utente dell'11 novembre, 15:37Z): il gioco lo chiede in modo esplicito prima della vendita, la quota della tappa riparte da zero e il titolo venduto non conta finché la Prova non è completata con un altro. Vale anche per uno stop che scatta, per le vendite fatte fuori dal gioco, per la vendita forzata della leva e per la bancarotta (decisione delle 15:55Z; in questi ultimi due casi nessun titolo viene escluso); non per le verifiche della Lega, che guardano il conto com'è. Opzione "Prosegui anche se la Prova va male" (decisione delle 15:56Z): solo in Apprendista e Investitore, dalle Impostazioni o da Menu, Opzioni; non salta la Prova, ignora soltanto l'esito negativo e lascia proseguire, con l'avviso che è una scelta sconsigliata per chi vuole imparare. Nei mandati dei Boss la decisione di vendere prima della scadenza annulla la sfida, che si ripete da capo con un titolo diverso e non conta come sconfitta.
+> - Dopo Wall Street: aumenti di capitale, crisi leggendarie su periodi reali, tre Boss dei Mercati (quiz più un solo piano valutato sulle candele reali dopo 2 ore, 3 giorni o 4 settimane; il piano invia ordini veri sul conto di gioco, un acquisto dimensionato sul rischio e uno stop, e in caso di sconfitta la perdita resta sul conto). Nuova Partita+: tutto da zero tranne i trofei, con la difficoltà Leggenda sbloccata.
+> - Bancarotta, come ci si arriva: con la leva oppure con le perdite realizzate. Le vendite in perdita contano sia fatte nel gioco sia fatte fuori (sito di Alpaca): il gioco le riconosce alla sincronizzazione, le registra al prezzo vero di esecuzione e ricontrolla la bancarotta. Nelle Prove sul conto si può vendere un titolo e puntare su un altro, ma decidere di vendere un titolo comprato per la Prova in corso, anche solo una parte, annulla la Prova (decisione dell'utente dell'11 novembre, 15:37Z): il gioco lo chiede in modo esplicito prima della vendita, la quota della tappa riparte da zero e il titolo venduto non conta finché la Prova non è completata con un altro. Vale anche per uno stop che scatta, per le vendite fatte fuori dal gioco, per la vendita forzata della leva e per la bancarotta (decisione delle 15:55Z; in questi ultimi due casi nessun titolo viene escluso); non per le verifiche di Wall Street, che guardano il conto com'è. Opzione "Prosegui anche se la Prova va male" (decisione delle 15:56Z): solo in Apprendista e Investitore, dalle Impostazioni o da Menu, Opzioni; non salta la Prova, ignora soltanto l'esito negativo e lascia proseguire, con l'avviso che è una scelta sconsigliata per chi vuole imparare. Nei mandati dei Boss la decisione di vendere prima della scadenza annulla la sfida, che si ripete da capo con un titolo diverso e non conta come sconfitta.
 > - Dove si opera: sul sito pubblico è il browser a inviare gli ordini direttamente al conto Alpaca Paper (giocatore collegato, chiavi solo sul dispositivo, cifrate con la sua password, con avviso prima dell'inserimento). Se il browser non raggiunge Alpaca, il giocatore può scegliere di far passare il conto Paper dalla funzione Supabase `alpaca`. Giocando sul proprio computer le chiavi restano nel server locale.
 > - Tradermon usa solo il conto Paper, con denaro finto: non esiste un conto con soldi reali. Numeri in `src/systems/balance.ts`; regole in `src/systems/account.ts`, `realdata.ts`, `boss.ts`.
 
@@ -33,11 +33,11 @@ Regole d'oro del progetto:
 | Fase | Durata indicativa | Cosa impara | Cosa sblocca |
 |---|---|---|---|
 | Prologo e onboarding | 8-12 min | Paper trading, profilo di rischio, primo acquisto | Percorso, Valigetta iniziale, tessera da Apprendista |
-| Regione (8 città) | 4-8 h | 8 moduli, uno per Mentore | 8 Medaglie, tecniche, slot di portafoglio, Asset Card |
-| Lega | 1-2 h | Macro, analisi, regole, psicologia | Titolo di Campione, Nuova Partita+ |
+| Regione (8 città) | 4-8 h | 8 moduli, uno per Whale | 8 Medaglie, tecniche, slot di portafoglio, Asset Card |
+| Wall Street | 1-2 h | Macro, analisi, regole, psicologia | Titolo di Campione, Nuova Partita+ |
 | Post-game | illimitato | Crisi storiche, Torre delle Sfide | Carte dorate, record |
 
-Il ciclo base, ripetuto in ogni città: **impara** (Biblioteca, allievi, cartelli) → **verifica** (allievi dell'Accademia, investitori sul percorso) → **applica** (Macchina del Tempo, missioni di analisi) → **sfida il Mentore** (quiz + missione).
+Il ciclo base, ripetuto in ogni città: **impara** (Biblioteca, allievi, cartelli) → **verifica** (allievi dell'Exchange, investitori sul percorso) → **applica** (Macchina del Tempo, missioni di analisi) → **sfida la Whale** (quiz + missione).
 
 ---
 
@@ -80,9 +80,9 @@ Totale 0-1 → **Prudente**, 2-3 → **Equilibrato**, 4-6 → **Audace**. È il 
 
 Scopo: insegnare il divario tra la tolleranza al rischio che dichiariamo a mente fredda e quella che mostriamo quando le perdite sono vere (avversione alle perdite). Il profilo **non è una leva di gioco**: timer dei duelli e soglie delle missioni sono uguali per tutti, quindi mentire non porta vantaggi e rovina solo lo Specchio.
 
-**Specchio dell'investitore** (`systems/mirror.ts`). A fine di ogni missione della Macchina del Tempo (Mentori, Lega, Leggende) con almeno un ordine il gioco registra, senza dirlo, quota investita, peso massimo, vendite in perdita, massimo drawdown e ordini (l'ultima prova per missione, in `flags.mirror`). Ogni missione vale 0-2 sulla stessa scala del questionario: investito ≥ 75% → 1 (≥ 40% → 0,5), una posizione oltre il 40% → +0,5, drawdown oltre il 12% → +0,5, due o più vendite in perdita → −0,5. La media dà il profilo **rivelato** (< 0,7 Prudente, < 1,3 Equilibrato, altrimenti Audace), disponibile dopo 2 missioni.
+**Specchio dell'investitore** (`systems/mirror.ts`). A fine di ogni missione della Macchina del Tempo (Whale, Wall Street, Leggende) con almeno un ordine il gioco registra, senza dirlo, quota investita, peso massimo, vendite in perdita, massimo drawdown e ordini (l'ultima prova per missione, in `flags.mirror`). Ogni missione vale 0-2 sulla stessa scala del questionario: investito ≥ 75% → 1 (≥ 40% → 0,5), una posizione oltre il 40% → +0,5, drawdown oltre il 12% → +0,5, due o più vendite in perdita → −0,5. La media dà il profilo **rivelato** (< 0,7 Prudente, < 1,3 Equilibrato, altrimenti Audace), disponibile dopo 2 missioni.
 
-Dove si vede: alla Banca la voce "Specchio dell'investitore" confronta dichiarato e rivelato con i fatti osservati e una breve lezione, poi permette di rifare il questionario (se il profilo cambia, propone di aggiornare l'allocazione obiettivo); la scheda Profilo mostra entrambi; l'epilogo dopo la Lega aggiunge una frase dello Specchio. Il profilo dichiarato propone anche l'allocazione obiettivo del Conto di Prova (Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10, sempre modificabile) e fa scegliere al rivale lo stile opposto. Il Professore spiega che il profilo **non è una raccomandazione**.
+Dove si vede: alla Banca la voce "Specchio dell'investitore" confronta dichiarato e rivelato con i fatti osservati e una breve lezione, poi permette di rifare il questionario (se il profilo cambia, propone di aggiornare l'allocazione obiettivo); la scheda Profilo mostra entrambi; l'epilogo dopo Wall Street aggiunge una frase dello Specchio. Il profilo dichiarato propone anche l'allocazione obiettivo del Conto di Prova (Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10, sempre modificabile) e fa scegliere al rivale lo stile opposto. Il Professore spiega che il profilo **non è una raccomandazione**.
 
 ### 2.3 La scelta delle Valigette
 
@@ -96,7 +96,7 @@ Nel Laboratorio ci sono tre Valigette sul tavolo, ognuna con un colore e un'etic
 
 Avvicinandosi a ogni Valigetta compare la scheda: cosa si investe, livello di rischio (1-5 stelle), volatilità storica indicativa della classe, esempio di caduta massima storica della classe, tono della storia. Si conferma con un secondo "Sì".
 
-**Percorso Misto.** Parlando col Professore invece che con una Valigetta, lui propone il "Sentiero Misto": il giocatore sceglie 2 o 3 classi. Riceve la Valigetta della prima classe scelta e la Asset Card iniziale delle altre si sblocca col 1° Mentore. I Mentori 5 e 6 parlano di asset allocation, l'antagonista è "l'Alleanza degli Speculatori".
+**Percorso Misto.** Parlando col Professore invece che con una Valigetta, lui propone il "Sentiero Misto": il giocatore sceglie 2 o 3 classi. Riceve la Valigetta della prima classe scelta e la Asset Card iniziale delle altre si sblocca col 1° Whale. Le Whale 5 e 6 parlano di asset allocation, l'antagonista è "l'Alleanza degli Speculatori".
 
 Dopo la scelta il rivale prende la Valigetta "opposta" al profilo del giocatore (se il giocatore è Prudente il rivale è Audace) e lancia il primo duello.
 
@@ -129,30 +129,30 @@ Uno scheletro unico, lineare con deviazioni, condiviso da tutti i percorsi. Ogni
 ```
 Borgo Semina ─ P1 ─ Ponte Cedola ─ P2 ─ Porto Ordini ─ P3 ─ Diversia ─ P4 ─ Interessa
                                                                                │
-Altopiano della Lega ─ P9 ─ Rocca Rischio ─ P8 ─ Mentelucida ─ P7 ─ Valdividendo ─ P6 ─ Bilancia ─ P5
+Wall Street ─ P9 ─ Rocca Rischio ─ P8 ─ Mentelucida ─ P7 ─ Valdividendo ─ P6 ─ Bilancia ─ P5
 ```
 
-| Città | Edifici | Mentore e Medaglia | Particolarità |
+| Città | Edifici | Whale e Medaglia | Particolarità |
 |---|---|---|---|
 | Borgo Semina | Casa, Laboratorio, Banca | — | Scelta delle Valigette |
-| Ponte Cedola | Banca, Biblioteca, Accademia | 1. Gaia Primo – Medaglia Seme | Prima Prova sul conto |
-| Porto Ordini | Banca, Biblioteca, Accademia | 2. Orazio Limite – Medaglia Ordine | Abbonamento al treno |
-| Diversia | Banca, Biblioteca, Accademia, **Zona Simulazione** | 3. Vera Varia – Medaglia Mosaico | Sandbox Macchina del Tempo · abilità Flusso di Liquidità |
-| Interessa | Banca, Biblioteca, Accademia, **Casinò dello Speculatore** | 4. Cosimo Composto – Medaglia Spirale | Mini-gioco sull'azzardo · abilità Trasferimento di Capitale |
-| Bilancia | Banca, Biblioteca, Accademia, **Archivio** (chiuso) | 5. Mentore specifico A – Medaglia Lente | L'Archivio si apre con "Lettura del Bilancio" |
-| Valdividendo | Banca, Biblioteca, Accademia | 6. Mentore specifico B – Medaglia Raccolto | — |
-| Mentelucida | Banca, Biblioteca, Accademia | 7. Serena Bias – Medaglia Specchio | Muro del Rumore sul percorso 7 |
-| Rocca Rischio | Banca, Biblioteca, Accademia | 8. Rocco Rischio – Medaglia Scudo | Ultimo scontro con gli antagonisti |
-| Altopiano della Lega | Banca, Lega, **Torre delle Sfide** (post-game) | 4 Superiori + Campione | Crisi leggendarie dopo la Lega |
+| Ponte Cedola | Banca, Biblioteca, Exchange | 1. Gaia Primo – Medaglia Seme | Prima Prova sul conto |
+| Porto Ordini | Banca, Biblioteca, Exchange | 2. Orazio Limite – Medaglia Ordine | Abbonamento al treno |
+| Diversia | Banca, Biblioteca, Exchange, **Zona Simulazione** | 3. Vera Varia – Medaglia Mosaico | Sandbox Macchina del Tempo · abilità Flusso di Liquidità |
+| Interessa | Banca, Biblioteca, Exchange, **Casinò dello Speculatore** | 4. Cosimo Composto – Medaglia Spirale | Mini-gioco sull'azzardo · abilità Trasferimento di Capitale |
+| Bilancia | Banca, Biblioteca, Exchange, **Archivio** (chiuso) | 5. Whale specifico A – Medaglia Lente | L'Archivio si apre con "Lettura del Bilancio" |
+| Valdividendo | Banca, Biblioteca, Exchange | 6. Whale specifico B – Medaglia Raccolto | — |
+| Mentelucida | Banca, Biblioteca, Exchange | 7. Serena Bias – Medaglia Specchio | Muro del Rumore sul percorso 7 |
+| Rocca Rischio | Banca, Biblioteca, Exchange | 8. Rocco Rischio – Medaglia Scudo | Ultimo scontro con gli antagonisti |
+| Wall Street | Banca, Wall Street, **Torre delle Sfide** (post-game) | 4 Superiori + Campione | Crisi leggendarie dopo Wall Street |
 
 Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta solo decorativa (nessun incontro casuale), cartelli didattici, e all'uscita di ogni città una **Guardia della Borsa** che lascia passare solo con la Medaglia della città.
 
 ### 3.2 Edifici ricorrenti
 
 - **Banca del Portafoglio**: bancone della Dott.ssa Ratio, salvataggio, lezione sui bias, tutte le operazioni di portafoglio (sezione 7).
-- **Biblioteca** (ogni città dalla seconda): quattro sezioni su scaffali interattivi. In alto a sinistra la **Sezione del Mentore** (sotto un manifesto): una guida alla sfida generata dal Mentore locale più due libri per ogni argomento del suo duello, uno di contesto (perché quella città ci tiene) e uno di materia (ciò che chiede); le lezioni sugli stessi temi sono raggiungibili dalla stessa sezione. Leggere un libro dà 5 XP (contatore delle lezioni), completare la sezione +10 Reputazione. A destra la sezione generale (tutte le lezioni sbloccate), in basso l'archivio delle domande sbagliate (ripasso) e l'Investidex. La Bibliotecaria spiega le sezioni alla prima visita e il Mentore, prima del duello, ricorda la sua sezione se restano libri non letti. Il Prof. Saldi e una studentessa a Borgo Semina presentano il meccanismo nel prologo. "Domanda del giorno" (streak) con la Professoressa del giorno. Testi in `src/data/books.ts`.
-- **Insegne**: gli edifici pubblici hanno un'insegna sul muro sopra la porta (CLINICA, PALESTRA per l'Accademia, BIBLIOTECA, LABORATORIO, SIMULAZIONE, CASINÒ, ARCHIVIO, LEGA, TORRE). Le case non ne hanno.
-- **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Gli allievi non si saltano: se provi a superarne uno senza averlo battuto (anche alle sue spalle), si gira, compare il fumetto con il "$", ti raggiunge e ti sfida a quiz; se perdi rinasci nella Banca dello stesso villaggio (Fiducia ricaricata). Il duello col Mentore (e quelli della Lega) ha sempre lo stesso numero di domande, anche nei tentativi successivi a una sconfitta: si risponde a tutte finché la barra della Fiducia non va a zero (troppi errori o tilt), e si vince con il numero minimo di risposte giuste. Il Mentore accetta la sfida solo dopo che hai battuto tutti i suoi allievi.
+- **Biblioteca** (ogni città dalla seconda): quattro sezioni su scaffali interattivi. In alto a sinistra la **Sezione della Whale** (sotto un manifesto): una guida alla sfida generata dalla Whale locale più due libri per ogni argomento del suo duello, uno di contesto (perché quella città ci tiene) e uno di materia (ciò che chiede); le lezioni sugli stessi temi sono raggiungibili dalla stessa sezione. Leggere un libro dà 5 XP (contatore delle lezioni), completare la sezione +10 Reputazione. A destra la sezione generale (tutte le lezioni sbloccate), in basso l'archivio delle domande sbagliate (ripasso) e l'Investidex. La Bibliotecaria spiega le sezioni alla prima visita e la Whale, prima del duello, ricorda la sua sezione se restano libri non letti. Il Prof. Saldi e una studentessa a Borgo Semina presentano il meccanismo nel prologo. "Domanda del giorno" (streak) con la Professoressa del giorno. Testi in `src/data/books.ts`.
+- **Insegne**: gli edifici pubblici hanno un'insegna sul muro sopra la porta (CLINICA, EXCHANGE per l'Exchange, BIBLIOTECA, LABORATORIO, SIMULAZIONE, CASINÒ, ARCHIVIO, LEGA, TORRE). Le case non ne hanno.
+- **Exchange**: 2 allievi (duelli da 4 domande) e la Whale. Gli allievi non si saltano: se provi a superarne uno senza averlo battuto (anche alle sue spalle), si gira, compare il fumetto con il "$", ti raggiunge e ti sfida a quiz; se perdi rinasci nella Banca dello stesso villaggio (Fiducia ricaricata). Il duello con la Whale (e quelli di Wall Street) ha sempre lo stesso numero di domande, anche nei tentativi successivi a una sconfitta: si risponde a tutte finché la barra della Fiducia non va a zero (troppi errori o tilt), e si vince con il numero minimo di risposte giuste. La Whale accetta la sfida solo dopo che hai battuto tutti i suoi allievi.
 - **Case abitate**: ogni città ha 3-4 case visitabili (Borgo Semina una), 30 in tutto. Ogni casa ospita un nucleo: una persona sola, una coppia o una famiglia di tre persone. Gli interni sono arredati in modo diverso secondo il nucleo. Ogni abitante insegna un concetto diverso, per un totale di 62 argomenti, mai ripetuti tra un abitante e l'altro. Ogni consiglio ha una fonte (registrata nei dati, non mostrata in gioco). I temi seguono la città: basi a Borgo Semina e Ponte Cedola, ordini a Porto Ordini, diversificazione a Diversia, costi e interesse composto a Interessa, analisi a Bilancia, dividendi, obbligazioni e tassi a Valdividendo, bias a Mentelucida, gestione del rischio a Rocca Rischio. Si aggiungono temi di macroeconomia, fiscalità italiana e sicurezza. La prima volta che parli con un abitante ottieni +5 XP e il consiglio viene annotato nell'Investidex, dove puoi rileggerlo. Le fonti non compaiono durante il gioco: sono tutte elencate in Opzioni → Crediti e fonti.
 
 ### 3.3 Mercato, orologio e clima
@@ -168,16 +168,16 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 |---|---|---|
 | Professore | Prof. Bruno Saldi | Ex gestore di fondi, ironico, insegna che "la prima regola è non perdere la testa" |
 | Infermiera della Banca | Dott.ssa Ratio | Sempre uguale in ogni città (come da tradizione del genere, è "una delle sorelle Ratio") |
-| Rivale | Leo (nome scelto) | Stile opposto al profilo del giocatore; 4 incontri: Laboratorio, Percorso 2, Diversia, Via della Lega |
+| Rivale | Leo (nome scelto) | Stile opposto al profilo del giocatore; 4 incontri: Laboratorio, Percorso 2, Diversia, Via di Wall Street |
 | Antagonisti | Gli Speculatori (capo: Max Leva) | Variante per percorso: Speculatori (Titoli), Venditori di Commissioni guidati da Carlo Provvigione (ETF), Banda del Rug Pull guidata dal Re Tappeto (Cripto), Alleanza (Misto) |
-| Mentore 1 | Gaia Primo | Fondamenta: cos'è l'asset del percorso, rischio e rendimento |
-| Mentore 2 | Orazio Limite | Ordini, spread, orari di mercato |
-| Mentore 3 | Vera Varia | Diversificazione e correlazione |
-| Mentore 4 | Cosimo Composto | Costi, interesse composto, piano di accumulo |
-| Mentore 5 | Bianca Bilanci / Ivo Indice / Nina Nodo / Alba Allocazione | Specifico A: bilanci (Titoli), replica e TER (ETF), blockchain e custodia (Cripto), asset allocation (Misto) |
-| Mentore 6 | Dario Dividendi / Olga Obbligazioni / Stella Stabile / Alba Allocazione bis → Teo Tassi | Specifico B: dividendi e valutazione, obbligazioni e tassi, stablecoin, DeFi e truffe |
-| Mentore 7 | Serena Bias | Finanza comportamentale |
-| Mentore 8 | Rocco Rischio | Gestione del rischio |
+| Whale 1 | Gaia Primo | Fondamenta: cos'è l'asset del percorso, rischio e rendimento |
+| Whale 2 | Orazio Limite | Ordini, spread, orari di mercato |
+| Whale 3 | Vera Varia | Diversificazione e correlazione |
+| Whale 4 | Cosimo Composto | Costi, interesse composto, piano di accumulo |
+| Whale 5 | Bianca Bilanci / Ivo Indice / Nina Nodo / Alba Allocazione | Specifico A: bilanci (Titoli), replica e TER (ETF), blockchain e custodia (Cripto), asset allocation (Misto) |
+| Whale 6 | Dario Dividendi / Olga Obbligazioni / Stella Stabile / Alba Allocazione bis → Teo Tassi | Specifico B: dividendi e valutazione, obbligazioni e tassi, stablecoin, DeFi e truffe |
+| Whale 7 | Serena Bias | Finanza comportamentale |
+| Whale 8 | Rocco Rischio | Gestione del rischio |
 | Superiori | Marta Macro, Tito Tecnico, Giulia Garante, Fabio Freddo | Macro; analisi tecnica e fondamentale; regole, truffe e tasse; psicologia e piano |
 | Campione | Aurelio Capitale | Prova finale trasversale |
 
@@ -194,7 +194,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 | **Disciplina** (0-100) | Rifiutare truffe, rispettare limiti nelle missioni, ricaricare la Fiducia in Banca | Cedere agli Speculatori, superare il drawdown limite | Moltiplicatore del punteggio missioni (0,8-1,2) |
 | **Diversificazione** (0-100) | Calcolata dal portafoglio simulato: 100 − indice di concentrazione | — | Statistica visibile e input della salute |
 | **Pazienza** (0-100) | Tenere posizioni nei cali senza vendere, pochi ordini nelle missioni | Troppi ordini (overtrading), vendite nel panico | Bonus nelle missioni lunghe |
-| **Reputazione** | Vittorie contro investitori (+20), Mentori (+200), missioni | Tilt | Il "denaro" del genere: solo punteggio e classifica, non compra nulla |
+| **Reputazione** | Vittorie contro investitori (+20), Whale (+200), missioni | Tilt | Il "denaro" del genere: solo punteggio e classifica, non compra nulla |
 
 ### 5.2 Duelli (le lotte)
 
@@ -208,15 +208,15 @@ Schermata a due lati, avversario in alto a destra, giocatore in basso a sinistra
 | Avversario | Domande | Giuste necessarie | Errori concessi | Fiducia per errore |
 |---|---|---|---|---|
 | Investitore sul percorso | 3 | 2 | 1 | 50 |
-| Allievo dell'Accademia | 4 | 3 | 1 | 50 |
+| Allievo dell'Exchange | 4 | 3 | 1 | 50 |
 | Rivale (primo / poi) | 5 | 3 / 4 | 2 / 1 | 33 / 50 |
 | Capo degli Speculatori | 6 | 5 | 1 | 50 |
-| Mentore (fase 1) | 8 | 6 | 2 | 33 |
+| Whale (fase 1) | 8 | 6 | 2 | 33 |
 | Superiore (fase 1) | 10 | 8 | 2 | 33 |
 | Campione (fase 1) | 12 | 10 | 2 | 33 |
 | Torre delle Sfide (piano) | 3 | 3 | 0 | 100 |
 
-**Sfida del Mentore.** Fase 1 duello di quiz; fase 2 **missione pratica** nella Macchina del Tempo (sezione 6). Se si perde la fase 2 si ripete solo la fase 2. Vincere dà: Medaglia, Tecnica, Asset Card del Mentore, slot di portafoglio, sblocchi della Banca, +200 Reputazione.
+**Sfida della Whale.** Fase 1 duello di quiz; fase 2 **missione pratica** nella Macchina del Tempo (sezione 6). Se si perde la fase 2 si ripete solo la fase 2. Vincere dà: Medaglia, Tecnica, Asset Card della Whale, slot di portafoglio, sblocchi della Banca, +200 Reputazione.
 
 **Investitori sul percorso.** Linea di vista di 4 tessere: quando il giocatore entra nella linea, il personaggio mostra il fumetto con il "$", si avvicina e sfida. Una volta battuto non sfida più (ma si può riparlarci per un consiglio).
 
@@ -260,7 +260,7 @@ Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 
 
 ### 5.6 Tecniche (al posto degli strumenti)
 
-| Tecnica | Mentore | Effetto in gioco | Effetto sulla mappa |
+| Tecnica | Whale | Effetto in gioco | Effetto sulla mappa |
 |---|---|---|---|
 | Lettura del Ticker | 1 | Investidex mostra il livello 2 delle carte | — |
 | Ordine Limite | 2 | Ordini limite nella Banca e nella Macchina del Tempo | — |
@@ -288,7 +288,7 @@ Un bias riconosciuto (rispondendo bene alla domanda in Banca, o rifiutando/accet
 
 ### 5.8 Erba alta
 
-L'erba alta dei percorsi è solo decorativa: camminarci non fa partire incontri, domande o stati. Le sfide sono sempre visibili (investitori con linea di vista, Mentori, Accademie). Nel mondo 2.5D ogni cella di erba alta ha il tile fitto come terreno e cinque ciuffi sfalsati che si sovrappongono alle celle vicine; i prati hanno un ciuffo ogni due o tre celle.
+L'erba alta dei percorsi è solo decorativa: camminarci non fa partire incontri, domande o stati. Le sfide sono sempre visibili (investitori con linea di vista, Whale, Accademie). Nel mondo 2.5D ogni cella di erba alta ha il tile fitto come terreno e cinque ciuffi sfalsati che si sovrappongono alle celle vicine; i prati hanno un ciuffo ogni due o tre celle.
 
 ### 5.9 Rivale
 
@@ -313,14 +313,14 @@ Dal menu Profilo si genera un **codice sfida** (seed). Un amico che inserisce lo
 ### 5.14 Post-game: crisi leggendarie e Torre
 
 - **Crisi leggendarie**: 5 scenari ricostruiti (1929, 2000, 2008, 2020, 2022) con obiettivi difficili. Battendole si ottengono le carte "leggendarie" (cosmetiche).
-- **Difficoltà progressiva delle domande** (src/systems/quiz.ts, `targetDiff`): quattro livelli (1 base, 2 intermedio, 3 avanzato, 4 esperto). Ogni tappa della storia alza la difficoltà media di un quarto di livello: Mentore 1 = 1, Mentore 8 = 2,75, Superiori della Lega 3,25 → 4, Campione 4. Un duello mescola i due livelli vicini (es. 1,5 = metà livello 1 e metà livello 2). Gli allievi sono un quarto sotto il loro Mentore; gli avversari dei Percorsi seguono la tappa del Percorso (r − 1 medaglie) o quella raggiunta, se più avanti. Il livello 4 compare solo nella Lega, nella Torre e negli incontri facoltativi più duri.
+- **Difficoltà progressiva delle domande** (src/systems/quiz.ts, `targetDiff`): quattro livelli (1 base, 2 intermedio, 3 avanzato, 4 esperto). Ogni tappa della storia alza la difficoltà media di un quarto di livello: Whale 1 = 1, Whale 8 = 2,75, Superiori di Wall Street 3,25 → 4, Campione 4. Un duello mescola i due livelli vicini (es. 1,5 = metà livello 1 e metà livello 2). Gli allievi sono un quarto sotto il loro Whale; gli avversari dei Percorsi seguono la tappa del Percorso (r − 1 medaglie) o quella raggiunta, se più avanti. Il livello 4 compare solo a Wall Street, nella Torre e negli incontri facoltativi più duri.
 - **Criteri per assegnare la difficoltà** (basati su fonti esterne):
   - *Livello 1, base*: risparmio e investimento, rischio e rendimento, cosa sono azioni, obbligazioni e fondi, prezzi da domanda e offerta, dividendi, idea di diversificazione, i rendimenti passati non garantiscono quelli futuri. Sono i parametri di riferimento per il terzo anno delle medie (grade 8) dei National Standards for Financial Literacy (CEE) e l'area 1 del quadro IOSCO/OECD per gli investitori.
   - *Livello 2, intermedio*: rendimento reale e inflazione, effetto dei costi nel tempo, interesse composto (come concetto, senza calcoli), allocazione per età e orizzonte, politica monetaria di base, rapporto inverso tra prezzi e rendimenti delle obbligazioni. Sono contenuti dell'ultimo anno delle superiori (grade 12) e dell'area 2 IOSCO.
   - *Livello 3, avanzato*: duration e sensibilità ai tassi, margine e vendite allo scoperto, bias comportamentali in situazioni concrete, macroeconomia e cambi, indicatori di bilancio. Nelle indagini FINRA/NFCS le domande sui tassi e sui prezzi delle obbligazioni e sull'interesse composto hanno le percentuali di risposte giuste più basse (circa il 30% nel 2009, il 40% nell'HRS 2008); margine, vendita allo scoperto e opzioni compaiono solo nel quiz FINRA per investitori.
   - *Livello 4, esperto*: situazioni concrete che combinano gli argomenti avanzati (stop e gap di apertura, margine di mantenimento, copertura valutaria, PEG, copertura degli interessi, segnali di frode combinati).
 - **Nessuna domanda chiede calcoli** (scelta dell'utente, 2026-11-12): le risposte non sono numeri da ricavare ma concetti, termini del settore e comportamenti; le formule restano solo nelle spiegazioni e nei libri. Le risposte stanno in due righe e quella giusta non è più lunga delle sbagliate più spesso del caso (`tests/quizQuality.test.ts`). Le poche domande generate rimaste (`data/quiz/generated.ts`) cambiano lo scenario, non chiedono conti.
-  - Anche l'ordine degli argomenti dei Mentori segue questa scala: le basi e il rischio vengono per prime; obbligazioni, bias, leva e margine verso la fine; macroeconomia e regole nella Lega.
+  - Anche l'ordine degli argomenti delle Whale segue questa scala: le basi e il rischio vengono per prime; obbligazioni, bias, leva e margine verso la fine; macroeconomia e regole a Wall Street.
   - Fonti: IOSCO/OECD, *Core Competencies Framework on Financial Literacy for Investors* (2019); Council for Economic Education, *National Standards for Financial Literacy* (benchmark grade 8 e grade 12); FINRA Foundation, *Why Is Measured Financial Literacy Declining?* (NFCS 2009–2021); Lusardi e Mitchell, HRS 2008 (PMC5445927); FINRA, *Investing Knowledge Quiz* (2023).
 - **Torre delle Sfide**: piani infiniti, ogni piano 3 domande casuali di difficoltà crescente; record personale salvato.
 - **Nuova Partita+**: si ricomincia da zero (conto di gioco, Attestati, Sigilli, Prove sul conto, leva, accesso a Torre e Boss), scegliendo di nuovo percorso e difficoltà. Restano solo i trofei (record della Torre, crisi leggendarie, Boss battuti, carte dorate, traguardi, titolo, arredi, Diario) e sblocca la difficoltà Leggenda.
@@ -354,7 +354,7 @@ La Biblioteca propone ogni giorno reale una domanda; rispondere ogni giorno aume
 
 ### 5.17 Riepilogo delle 17 meccaniche adattate
 
-1. Tipi e debolezze → settori ed eventi. 2. Squadra di 6 → slot di portafoglio. 3. Box → watchlist. 4. Allenatori sul percorso → investitori con linea di vista. 5. Rivale → rivale con stile opposto e confronto dei portafogli. 6. MT/MN → tecniche dei Mentori che aprono la mappa. 7. Stati alterati → bias. 8. Evoluzione → livelli delle Asset Card. 9. Giorno/notte → orologio di mercato. 10. Meteo → clima di mercato. 11. Uova → dividendi reinvestiti. 12. Bici/Volo → treno e viaggio rapido. 13. Zona Safari → Zona Simulazione. 14. Casinò → Casinò dello Speculatore. 15. Cavo link → duelli con codice. 16. Leggendari e Torre Lotta → crisi leggendarie e Torre delle Sfide. 17. Shiny → carte dorate.
+1. Tipi e debolezze → settori ed eventi. 2. Squadra di 6 → slot di portafoglio. 3. Box → watchlist. 4. Allenatori sul percorso → investitori con linea di vista. 5. Rivale → rivale con stile opposto e confronto dei portafogli. 6. MT/MN → tecniche delle Whale che aprono la mappa. 7. Stati alterati → bias. 8. Evoluzione → livelli delle Asset Card. 9. Giorno/notte → orologio di mercato. 10. Meteo → clima di mercato. 11. Uova → dividendi reinvestiti. 12. Bici/Volo → treno e viaggio rapido. 13. Zona Safari → Zona Simulazione. 14. Casinò → Casinò dello Speculatore. 15. Cavo link → duelli con codice. 16. Leggendari e Torre Lotta → crisi leggendarie e Torre delle Sfide. 17. Shiny → carte dorate.
 
 Non portati, per scelta: oggetti di cattura, pozioni, negozi, loot box, scambi di asset tra giocatori.
 
@@ -367,7 +367,7 @@ Abilità legate alle Medaglie (non sono oggetti né aiuti nei duelli; codice in 
 | Abilità | Medaglia | Effetto |
 |---|---|---|
 | Flusso di Liquidità | 3 (Mosaico) | Il giocatore attraversa l'acqua su una zattera. Sui Percorsi 3, 5 e 7 un lago circonda un'Isola della Liquidità con un abitante che propone un duello difficile una sola volta (5 domande, 4 giuste, nessuna perdita di Fiducia): +120 Conoscenza e studio per tutte le carte. Le tre isole danno il traguardo "Navigatore di Liquidità". |
-| Trasferimento di Capitale | 4 (Spirale, il Mentore di mezzo) | Dal menu, voce **Mappa della Regione**, ci si sposta in una città già visitata (si entra in una città la prima volta e diventa disponibile). Regolamento T+1: passa un giorno di mercato. Non funziona dentro la Lega. Animazione del volo: il personaggio si solleva mentre la camera si allontana e passano le nuvole, dissolvenza bianca, poi atterraggio nella città scelta (in 2D e in 2.5D). |
+| Trasferimento di Capitale | 4 (Spirale, la Whale di mezzo) | Dal menu, voce **Mappa della Regione**, ci si sposta in una città già visitata (si entra in una città la prima volta e diventa disponibile). Regolamento T+1: passa un giorno di mercato. Non funziona dentro Wall Street. Animazione del volo: il personaggio si solleva mentre la camera si allontana e passano le nuvole, dissolvenza bianca, poi atterraggio nella città scelta (in 2D e in 2.5D). |
 | Taglio dei Costi | 4 (Spirale) | Frantuma i Massi delle Commissioni (restano rotti nel salvataggio). Apre la Galleria del Dark Pool dal Percorso 2. |
 | Lanterna della Due Diligence | 5 (Lente) | Si entra nelle grotte buie: Miniera dei Lingotti e Grotta delle Perle. |
 | Mente Fredda | 7 (Specchio) | Attraversa il Muro del Rumore sul Percorso 7 (già esistente). |
@@ -376,7 +376,7 @@ Abilità legate alle Medaglie (non sono oggetti né aiuti nei duelli; codice in 
 - **Mare della Liquidità**: dal molo di Porto Ordini (Medaglia 3) verso sud. Isola del Faro (Guardiana del Faro, duello unico), Isola del Relitto (la bolla della "Compagnia dei Mari Lontani"), Isola Lontana con la **Grotta delle Perle** (buia, Pescatore di Perle). Traguardo "Capitano di Liquidità".
 - **Galleria del Dark Pool**: da metà del Percorso 2 a Diversia, saltando Porto Ordini. Il masso è sul lato del Percorso 2; da Diversia la galleria è un vicolo finché il masso non è rotto.
 - **Miniera dei Lingotti**: da metà del Percorso 5 a Valdividendo, saltando Bilancia (buia, quindi solo dalla Medaglia 5).
-- `tests/reach.test.ts` simula il mondo per ogni numero di Medaglie: nessuna scorciatoia porta a un'Accademia oltre la successiva, con 8 Medaglie ogni luogo è raggiungibile e da ogni casella si torna a casa.
+- `tests/reach.test.ts` simula il mondo per ogni numero di Medaglie: nessuna scorciatoia porta a un'Exchange oltre la successiva, con 8 Medaglie ogni luogo è raggiungibile e da ogni casella si torna a casa.
 
 La Mappa della Regione è sempre consultabile: mostra città visitate e no (???), percorsi, isole, Muro del Rumore, la posizione del giocatore e lo stato delle abilità. Il treno dalle stazioni resta disponibile dalla seconda Medaglia.
 
@@ -390,9 +390,9 @@ Interfaccia: grafico del prezzo dell'asset selezionato e del valore del portafog
 
 Metriche finali: rendimento totale, volatilità annualizzata, **indice di Sharpe** (tasso privo di rischio 0 per semplicità, dichiarato), **massimo drawdown**, numero di ordini, costi totali, peso massimo di una posizione, numero di settori.
 
-### 6.2 Missioni dei Mentori
+### 6.2 Missioni delle Whale
 
-| Mentore | Scenario | Giorni | Obiettivo |
+| Whale | Scenario | Giorni | Obiettivo |
 |---|---|---|---|
 | 1 | Mercato normale | 60 | Avere investito almeno il 50% a fine periodo e non scendere sotto il 90% del capitale |
 | 2 | Mercato laterale con oscillazioni | 40 | Far eseguire almeno un ordine limite di acquisto |
@@ -405,9 +405,9 @@ Metriche finali: rendimento totale, volatilità annualizzata, **indice di Sharpe
 
 Le soglie sono uguali per tutti i profili.
 
-### 6.3 Missioni della Lega
+### 6.3 Missioni di Wall Street
 
-> Sostituito dalle verifiche sul conto di gioco descritte nell'aggiornamento in testa al documento: la tabella qui sotto descrive i vecchi replay, che non fanno più parte della Lega (resta solo lo sportello delle offerte di Giulia Garante).
+> Sostituito dalle verifiche sul conto di gioco descritte nell'aggiornamento in testa al documento: la tabella qui sotto descrive i vecchi replay, che non fanno più parte di Wall Street (resta solo lo sportello delle offerte di Giulia Garante).
 
 | Avversario | Quiz | Missione | Obiettivo |
 |---|---|---|---|
@@ -507,7 +507,7 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 - Risoluzione logica 240×160 (quella delle console portatili dei primi anni 2000), tessere 16×16, personaggi 16×24, ingrandimento a pixel netti.
 - Stile grafico: pixel art originale disegnata in codice, ispirata alle portatili di metà anni 2000 (stile DS): rampe di 5 tonalità, contorni colorati invece che neri, ombre portate da alberi e facciate, ombre morbide sotto i personaggi, leggera vignettatura. Gli sprite delle sfide sono ingranditi con Scale2x per bordi più morbidi. Bordi automatici per sentieri, acqua e tetti; acqua, fiori e Muro del Rumore animati; erba alta (Zone di Mercato) con riflessi dorati.
 - Finestre nello stile classico: riquadro bianco a doppio bordo, freccia rossa lampeggiante, cursore a triangolo nei menu, tabellone a led del luogo che scorre da sinistra all'ingresso di ogni zona.
-- Schermata di sfida (src/ui/arena.ts): un confronto in sala. Giocatore e sfidante stanno affiancati alla stessa altezza, entrambi rivolti verso lo schermo, ciascuno dietro una postazione con un piccolo monitor; sopra di loro una targhetta da terminale con nome, titolo e barra a segmenti (Fiducia, Convinzione). In alto scorre un nastro di concetti del gioco (mai prezzi o titoli reali). Lo sfondo è dipinto in codice e dipende dal luogo: piazza delle quotazioni (sfide comuni), aula dell'Accademia (allievi, Esame della Leva), sala dei monitor (Mentori), tetto della città al tramonto (rivale), fossa degli speculatori (Speculatori e loro capi), sala grande della Borsa di notte (Boss del dopo-Lega), salone della Lega (Lega, Investitrice Leggendaria), Torre delle Sfide, Biblioteca.
+- Schermata di sfida (src/ui/arena.ts): un confronto in sala. Giocatore e sfidante stanno affiancati alla stessa altezza, entrambi rivolti verso lo schermo, ciascuno dietro una postazione con un piccolo monitor; sopra di loro una targhetta da terminale con nome, titolo e barra a segmenti (Fiducia, Convinzione). In alto scorre un nastro di concetti del gioco (mai prezzi o titoli reali). Lo sfondo è dipinto in codice e dipende dal luogo: piazza delle quotazioni (sfide comuni), aula dell'Exchange (allievi, Esame della Leva), sala dei monitor (Whale), tetto della città al tramonto (rivale), fossa degli speculatori (Speculatori e loro capi), sala grande della Borsa di notte (Boss del dopo-Wall Street), salone di Wall Street (Wall Street, Investitrice Leggendaria), Torre delle Sfide, Biblioteca.
 - Transizione d'ingresso "campanella d'apertura": una linea di prezzo attraversa lo schermo, dietro di lei crescono le candele fino a coprirlo, poi il grafico si apre in due lungo la linea e compare il luogo della sfida. Con "riduci movimento" dura un attimo.
 - Introduzione: il Prof parla dietro il suo banco, davanti alla lavagna dell'aula.
 - Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.

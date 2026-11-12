@@ -91,7 +91,7 @@ export async function openRegionMap(): Promise<string | undefined> {
     body.appendChild(el('p', 'small', `Sei qui: <b>${esc(here.label)}</b> · Città visitate: <b>${S.visited.filter((v) => /^t\d$/.test(v)).length}/${TOWNS.length}</b>`));
     if (canTransfer()) {
       const targets = transferTargets(here.town ?? '');
-      if (inLeague) body.appendChild(el('p', 'small muted', 'Dentro la Lega il Trasferimento di Capitale non funziona: finisci prima le sfide.'));
+      if (inLeague) body.appendChild(el('p', 'small muted', 'Dentro Wall Street il Trasferimento di Capitale non funziona: finisci prima le sfide.'));
       else if (!targets.length) body.appendChild(el('p', 'small muted', 'Visita altre città per poterti trasferire.'));
       else {
         body.appendChild(el('h4', '', 'Trasferimento di Capitale'));
@@ -103,7 +103,7 @@ export async function openRegionMap(): Promise<string | undefined> {
         }
         body.appendChild(grid);
       }
-    } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale lo sblocchi battendo il Mentore di mezzo (Attestato ${TRANSFER_BADGE}). Intanto, dal secondo Attestato, le stazioni collegano le città visitate.`));
+    } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale lo sblocchi battendo la Whale di mezzo (Attestato ${TRANSFER_BADGE}). Intanto, dal secondo Attestato, le stazioni collegano le città visitate.`));
     const ab = [
       { a: ABILITY.swim, ok: canSwim() },
       { a: ABILITY.cut, ok: canCut() },

@@ -36,13 +36,13 @@ export async function prof(w: WorldApi) {
   if (!S.flags.starter) {
     if (!S.flags.profIntro) {
       await say(['Eccoti! Benvenut{o|a} nel mio Laboratorio.', 'A Capitalia si studia. I titoli veri si comprano fuori dalla regione, sui Mercati di Fuori: le borse del mondo reale, con prezzi veri e orari veri.', 'Su quel tavolo ci sono tre Valigette. Ognuna apre un percorso e contiene la scheda del tuo primo titolo vero, scelto da te in una piccola vetrina.', 'Blu: il Sentiero dei Titoli, le azioni delle aziende.', 'Verde: il Sentiero degli Indici, gli ETF.', 'Arancione: il Sentiero Cripto, la frontiera più rischiosa.', 'Avvicinati a una Valigetta per leggere la scheda. Oppure parla con me se vuoi un percorso misto.'], 'Prof. Saldi');
-      await say(['In ogni città c\'è un Mentore: battilo in un duello di conoscenza e avrai il suo Attestato, che apre la strada verso la città successiva. Il resto te lo spiegherà lui.'], 'Prof. Saldi');
+      await say(['In ogni città c\'è una Whale: battilo in un duello di conoscenza e avrai il suo Attestato, che apre la strada verso la città successiva. Il resto te lo spiegherà lui.'], 'Prof. Saldi');
       S.flags.profIntro = true;
     }
     const c = await choose(['Guardo le Valigette', 'Vorrei il Sentiero Misto', 'Si usano soldi veri?'], { cancel: true, prompt: 'Allora, hai deciso?', who: 'Prof. Saldi' });
     if (c === 2) return moneyTalk();
     if (c !== 1) return;
-    await say(['Il Sentiero Misto! Combinerai due o tre classi di attivo.', 'I Mentori 5 e 6 ti parleranno di asset allocation. Scegli le classi.'], 'Prof. Saldi');
+    await say(['Il Sentiero Misto! Combinerai due o tre classi di attivo.', 'Le Whale 5 e 6 ti parleranno di asset allocation. Scegli le classi.'], 'Prof. Saldi');
     const sets: AssetClass[][] = [['stocks', 'etf'], ['stocks', 'crypto'], ['etf', 'crypto'], ['stocks', 'etf', 'crypto']];
     const s = await choose(['Titoli + ETF', 'Titoli + Cripto', 'ETF + Cripto', 'Titoli + ETF + Cripto', 'Ci ripenso'], { cancel: true });
     if (s < 0 || s === 4) return;
@@ -51,7 +51,7 @@ export async function prof(w: WorldApi) {
   }
   if (!caseOpen()) await say(['La tua Valigetta è ancora sigillata: si apre con il primo acquisto sul conto Alpaca Paper.', 'Collega il conto dal menu, voce "Chiavi API", e passa in una Banca. Nel frattempo studia: Attestati e storia non aspettano il conto.'], 'Prof. Saldi');
   if (S.badges >= 8 && S.defeated.includes('league_4')) return say(['{Campione|Campionessa}! Sono fiero di te.', 'Alla Torre delle Sfide trovi le crisi leggendarie e i Boss. E se vuoi, dalla Torre puoi iniziare una Nuova Partita+: da zero, con i tuoi trofei e la difficoltà Leggenda.'], 'Prof. Saldi');
-  return say([`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8${S.badges ? ` · Sigilli pratici: ${S.seals}/8` : ''}.`, S.badges === 0 ? 'Il primo Mentore, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.' : 'Continua così, e ricorda di passare dalle Banche.', 'E non fidarti di chi ti promette guadagni garantiti!'], 'Prof. Saldi');
+  return say([`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8${S.badges ? ` · Sigilli pratici: ${S.seals}/8` : ''}.`, S.badges === 0 ? 'Il prima Whale, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.' : 'Continua così, e ricorda di passare dalle Banche.', 'E non fidarti di chi ti promette guadagni garantiti!'], 'Prof. Saldi');
 }
 
 async function moneyTalk() {
@@ -59,7 +59,7 @@ async function moneyTalk() {
     'No, mai. Tradermon è un gioco per imparare a muovere i primi passi negli investimenti e nel trading.',
     'Il conto di gioco è un conto Alpaca Paper, gratuito, con denaro finto e prezzi veri. Lo colleghi con le chiavi API dal menu, voce "Chiavi API". Lì fai le Prove sul conto e guadagni i Sigilli pratici.',
     'Puoi sbagliare quanto vuoi: le perdite costano capitale di gioco, non soldi tuoi. È proprio per questo che qui si impara.',
-    'Senza quel conto puoi comunque studiare tutto: storia, biblioteche, duelli e Attestati dei Mentori. Ti mancheranno i Sigilli, la Lega e le sfide sui grafici veri.',
+    'Senza quel conto puoi comunque studiare tutto: storia, biblioteche, duelli e Attestati delle Whale. Ti mancheranno i Sigilli, Wall Street e le sfide sui grafici veri.',
   ], 'Prof. Saldi');
 }
 
@@ -76,7 +76,7 @@ export async function chooseCase(n: NpcDef, w: WorldApi) {
       <table class="t"><tr><td>Rischio della classe</td><td>${'★'.repeat(info.stars)}${'☆'.repeat(5 - info.stars)}</td></tr>
       <tr><td>Volatilità tipica</td><td>${info.vol}</td></tr><tr><td>Esempio di caduta storica</td><td>${info.dd}</td></tr>
       <tr><td>Antagonisti</td><td>${antagonist(cls).team}</td></tr><tr><td>Tono della storia</td><td>${info.tone}</td></tr></table>
-      <p class="small muted">Il percorso non si cambia a metà partita: dopo la Lega potrai iniziare una Nuova Partita+ in un altro percorso, ripartendo da zero.</p>`;
+      <p class="small muted">Il percorso non si cambia a metà partita: dopo Wall Street potrai iniziare una Nuova Partita+ in un altro percorso, ripartendo da zero.</p>`;
     button('Scelgo questa Valigetta', () => close(true), 'primary');
     button('Ci penso ancora', () => close(false));
   });
@@ -137,7 +137,7 @@ async function startTrack(track: S_Track, w: WorldApi) {
     else await say('Nessun acquisto per ora: la Valigetta resta sigillata. La apri quando vuoi, da una Banca.', 'Dott.ssa Ratio');
   }
   await say([`Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu${keysOf('menu')[0] ? ` (tasto ${keysOf('menu')[0]})` : ''}, insieme all'Investidex e al tuo Profilo.`], 'Prof. Saldi');
-  await say(['Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.', 'Gli scaffali in alto a sinistra sono la Sezione del Mentore: libri sull\'argomento su cui il Mentore di quella città ti interrogherà nel duello.', 'Leggili prima di sfidarlo: in questo gioco si vince studiando, non indovinando.'], 'Prof. Saldi');
+  await say(['Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.', 'Gli scaffali in alto a sinistra sono la Sezione della Whale: libri sull\'argomento su cui la Whale di quella città ti interrogherà nel duello.', 'Leggili prima di sfidarlo: in questo gioco si vince studiando, non indovinando.'], 'Prof. Saldi');
   save();
   w.refresh();
   await wait(200);
@@ -166,7 +166,7 @@ export async function rival(n: NpcDef, w: WorldApi) {
   const lines: Record<number, string[]> = {
     2: [`${S.name}! Ti stavo aspettando.`, 'Ho guadagnato un sacco questa settimana. E tu?', 'Confrontiamo le nostre conoscenze... e i nostri portafogli!'],
     3: ['Anche tu a Diversia?', 'Qui tutti parlano di correlazioni. Io preferisco i risultati!'],
-    4: ['Sapevo che saresti arrivat{o|a} fin qui.', 'Prima della Lega, un\'ultima sfida tra noi due. Niente sconti!'],
+    4: ['Sapevo che saresti arrivat{o|a} fin qui.', 'Prima di Wall Street, un\'ultima sfida tra noi due. Niente sconti!'],
   };
   await say(lines[k] ?? ['Sfida!'], S.rival);
   await rivalDuel(k, w);

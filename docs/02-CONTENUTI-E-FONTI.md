@@ -276,4 +276,4 @@ Tutti di fantasia: nessun nome reale, così il gioco non suggerisce titoli da co
 1. Ogni domanda nasce da un concetto spiegato in una delle fonti elencate, riformulato in italiano semplice.
 2. La risposta corretta è una sola; le opzioni sbagliate sono errori tipici dei principianti.
 3. La spiegazione dice perché la risposta è giusta e rimanda alla fonte.
-4. I test automatici (`npm test`) controllano che ogni domanda abbia una fonte esistente, nessuna opzione duplicata e che ogni Mentore abbia abbastanza domande.
+4. I test automatici (`npm test`) controllano che ogni domanda abbia una fonte esistente, nessuna opzione duplicata e che ogni Whale abbia abbastanza domande.

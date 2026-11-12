@@ -18,7 +18,7 @@ export type QuizTopic =
 export interface Question {
   id: string;
   topic: QuizTopic;
-  diff: 1 | 2 | 3 | 4; // 1 base, 2 intermedio, 3 avanzato, 4 esperto (Lega)
+  diff: 1 | 2 | 3 | 4; // 1 base, 2 intermedio, 3 avanzato, 4 esperto (Wall Street)
   q: string;
   options: string[];
   answer: number;

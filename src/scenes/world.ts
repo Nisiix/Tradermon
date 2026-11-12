@@ -212,7 +212,7 @@ export class WorldScene extends Phaser.Scene {
     this.map.tiles.forEach((row, yy) => row.forEach((t, xx) => { if (ANIMATED.has(t)) this.animCells.push([xx, yy]); }));
     const ts = this.tilemap.addTilesetImage('tiles', 'tiles', P, P, 0, 0, 0)!;
     this.layer = this.tilemap.createLayer(0, ts, 0, 0)!;
-    // insegne sul muro frontale degli edifici speciali (Banca, Palestra, ...): le case normali non ne hanno
+    // insegne sul muro frontale degli edifici speciali (Banca, Exchange, ...): le case normali non ne hanno
     for (const pl of this.map.plaques ?? []) {
       const key = `plaque_${pl.kind}_${pl.text}`;
       if (!this.textures.exists(key)) this.textures.addCanvas(key, drawPlaque(pl.text, pl.kind));
@@ -409,8 +409,8 @@ export class WorldScene extends Phaser.Scene {
     const nx = S.x + dx, ny = S.y + dy;
     const warp = this.map.warps.find((w) => w.x === nx && w.y === ny) ?? (this.map.tiles[ny]?.[nx] === TILE.DOOR ? undefined : undefined);
     if (warp && !this.blockedNpcOnly(nx, ny)) {
-      if (warp.lock === 'archive' && S.badges < 5) { void this.runScript(() => say(['La porta dell\'Archivio è chiusa.', 'Una targa dice: "Si apre solo a chi sa leggere oltre la superficie" (Mentore 5).'], 'Archivio')); return; }
-      if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione della Lega.'], 'Torre')); return; }
+      if (warp.lock === 'archive' && S.badges < 5) { void this.runScript(() => say(['La porta dell\'Archivio è chiusa.', 'Una targa dice: "Si apre solo a chi sa leggere oltre la superficie" (Whale 5).'], 'Archivio')); return; }
+      if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione di Wall Street.'], 'Torre')); return; }
       if (warp.lock === 'secret' && !S.flags[SECRET_FLAGS.tapeOpen]) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'swim' && !canSwim()) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'dark' && !canSeeDark()) { void this.runScript(() => say(['È buio pesto: non si vede nemmeno dove mettere i piedi.', `Senza la ${ABILITY.dark.name} (Attestato ${ABILITY.dark.badge}) è meglio non entrare.`])); return; }
@@ -496,7 +496,7 @@ export class WorldScene extends Phaser.Scene {
       S.flags.raftTip = true;
       toast('Flusso di Liquidità: la zattera ti porta sull\'acqua. Cerca le Isole della Liquidità sui Percorsi 3, 5 e 7!');
     }
-    // allievi dell'Accademia: chi prova a superarli alle spalle viene fermato
+    // allievi dell'Exchange: chi prova a superarli alle spalle viene fermato
     for (const n of this.npcs) {
       if (n.def.guardY === undefined || S.y >= n.def.guardY || !this.isVisible(n) || S.defeated.includes(n.def.id)) continue;
       if (S.badges >= Number(n.def.data?.n ?? 0)) continue; // Medaglia già presa: nessun blocco
@@ -547,7 +547,7 @@ export class WorldScene extends Phaser.Scene {
     const sec = this.map.sections?.find((sc) => fy === sc.y && fx >= sc.x && fx < sc.x + sc.w);
     if (t === TILE.SHELF && sec) return void this.runScript(() => librarySection(sec, Number(/^library_(\d+)$/.exec(this.map.id)?.[1] ?? 0)));
     if (t === TILE.SHELF) return void this.runScript(() => say('Scaffali pieni di libri di economia. Le lezioni si leggono parlando con la Bibliotecaria o dal menu.'));
-    if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? 'Il rumore delle notizie non ti tocca più: puoi attraversare.' : ['Un muro di notizie urlate, grafici impazziti e "consigli" dai social.', 'Serve una mente fredda per attraversarlo (Mentore 7).']));
+    if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? 'Il rumore delle notizie non ti tocca più: puoi attraversare.' : ['Un muro di notizie urlate, grafici impazziti e "consigli" dai social.', 'Serve una mente fredda per attraversarlo (Whale 7).']));
     if (t === TILE.STATION) { const st = this.npcs.find((x) => x.def.kind === 'station'); if (st) void this.runScript(() => interact(st.def, this.api())); }
     if (t === TILE.BOULDER) return void this.runScript(() => this.breakBoulder(fx, fy));
     if (t === TILE.CAVE_MOUTH) return void this.runScript(() => say('L\'ingresso di una grotta. Cammina verso di lui per entrare.'));

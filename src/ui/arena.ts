@@ -1,7 +1,7 @@
 /**
  * Scenografie delle sfide e transizione d'ingresso, disegnate a mano in codice.
  * Ogni sfida si svolge in un luogo del mondo della finanza (piazza delle quotazioni, aula, sala dei monitor,
- * tetto della città, fossa degli speculatori, salone della Lega, torre, biblioteca): niente prati né pedane ovali.
+ * tetto della città, fossa degli speculatori, salone di Wall Street, torre, biblioteca): niente prati né pedane ovali.
  * Lo sfondo è dipinto su una tela a bassa risoluzione e ingrandito a pixel, come il resto del gioco.
  */
 import { getStage, el } from './core';
@@ -90,7 +90,7 @@ function screen(c: Ctx, x: number, y: number, w: number, h: number, rnd: () => n
 }
 
 const PAINT: Record<Arena, (c: Ctx, W: number, H: number, rnd: () => number) => void> = {
-  // Sala grande della Borsa, di notte: un unico schermo gigante e file di postazioni accese (i Boss del dopo-Lega)
+  // Sala grande della Borsa, di notte: un unico schermo gigante e file di postazioni accese (i Boss del dopo-Wall Street)
   borsa(c, W, H, rnd) {
     const hz = H * 0.62;
     bands(c, 0, hz, W, ['#071418', '#0a1c22', '#0e242c']);
@@ -121,7 +121,7 @@ const PAINT: Record<Arena, (c: Ctx, W: number, H: number, rnd: () => number) => 
     }
     floor(c, hz, W, H, '#d8cdb8', '#cbbfa8', 'rgba(120,100,80,.18)');
   },
-  // Aula dell'Accademia: lavagna con il grafico a gesso, finestre luminose, pavimento in legno
+  // Aula dell'Exchange: lavagna con il grafico a gesso, finestre luminose, pavimento in legno
   aula(c, W, H, rnd) {
     const hz = H * 0.64;
     bands(c, 0, hz, W, ['#e6dcbc', '#e2d7b4', '#ddd1ac']);
@@ -135,7 +135,7 @@ const PAINT: Record<Arena, (c: Ctx, W: number, H: number, rnd: () => number) => 
     R(c, bx + 10, 86, bw - 20, 3, '#5c4028'); R(c, bx + 20, 84, 8, 2, '#f4f4f4');
     floor(c, hz, W, H, '#b88a58', '#a87a4a');
   },
-  // Sala del Mentore: parete di monitor, legno scuro, moquette
+  // Sala della Whale: parete di monitor, legno scuro, moquette
   sala(c, W, H, rnd) {
     const hz = H * 0.64;
     bands(c, 0, hz, W, ['#2a1e1a', '#33251f', '#3c2b23']);
@@ -173,7 +173,7 @@ const PAINT: Record<Arena, (c: Ctx, W: number, H: number, rnd: () => number) => 
     for (let x = -8; x < W; x += 12) { c.fillStyle = '#e0b020'; c.beginPath(); c.moveTo(x, hz); c.lineTo(x + 6, hz); c.lineTo(x + 12, hz - 8); c.lineTo(x + 6, hz - 8); c.fill(); }
     floor(c, hz, W, H, '#2a1a1e', '#22141a', 'rgba(224,72,72,.12)');
   },
-  // Salone della Lega: marmo, colonne dorate, grande tabellone dell'indice, tappeto
+  // Salone di Wall Street: marmo, colonne dorate, grande tabellone dell'indice, tappeto
   lega(c, W, H, rnd) {
     const hz = H * 0.64;
     bands(c, 0, hz, W, ['#efe9dc', '#e8e1d2', '#e1d9c8']);

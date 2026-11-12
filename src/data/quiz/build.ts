@@ -59,7 +59,7 @@ const A_TOPIC: Record<AssetClass, QuizTopic> = { stocks: 'stocks_bilanci', etf: 
 const B_TOPIC: Record<AssetClass, QuizTopic> = { stocks: 'stocks_dividendi', etf: 'etf_obbligazioni', crypto: 'crypto_stable' };
 const BASE_TOPIC: Record<AssetClass, QuizTopic> = { stocks: 'stocks_base', etf: 'etf_base', crypto: 'crypto_base' };
 
-/** Argomenti di ciascun Mentore (1..8) in base al percorso. */
+/** Argomenti di ciascuna Whale (1..8) in base al percorso. */
 export function mentorTopics(n: number, track: Track, mixed: AssetClass[]): QuizTopic[] {
   const classes: AssetClass[] = track === 'mixed' ? mixed : [track];
   switch (n) {

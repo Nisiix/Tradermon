@@ -26,12 +26,12 @@ describe('rinascita in Banca', () => {
 });
 
 describe('insegne degli edifici', () => {
-  it('Banca e Palestra hanno l\'insegna in ogni città, le case no', () => {
+  it('Banca ed Exchange hanno l\'insegna in ogni città, le case no', () => {
     for (let n = 1; n <= 8; n++) {
       const m = getMap(`t${n}`);
       const texts = (m.plaques ?? []).map((p) => p.text);
       expect(texts).toContain('BANCA');
-      expect(texts).toContain('PALESTRA');
+      expect(texts).toContain('EXCHANGE');
       // nessuna insegna davanti alla porta di una casa abitata
       for (const w of m.warps.filter((x) => /^h\d+_/.test(x.to))) expect(m.plaques!.some((p) => p.x === w.x && p.y === w.y - 1)).toBe(false);
     }

@@ -1,4 +1,4 @@
-// Duelli di conoscenza e missioni: allenatori, allievi, Mentori, Lega, Torre, eremiti, duelli condivisi e del giorno.
+// Duelli di conoscenza e missioni: allenatori, allievi, Whale, Wall Street, Torre, eremiti, duelli condivisi e del giorno.
 import { recordMission, mirrorEpilogue } from '../../systems/mirror';
 import { getMap, type NpcDef } from '../maps';
 import { S, save, slots, addRep, card, learnBias, clampStat, classes, newGamePlus } from '../../systems/state';
@@ -91,26 +91,26 @@ export async function speculator(n: NpcDef, w: WorldApi) {
   await afterDuel(r.win, n.id, REWARD.rep.speculator, w, 'Speculatore');
 }
 
-/** Nessuno salta gli allievi: il Mentore si sfida solo dopo averli battuti tutti. */
+/** Nessuno salta gli allievi: la Whale si sfida solo dopo averli battuti tutti. */
 export function allStudentsBeaten(m: number): boolean {
   return getMap(`academy_${m}`).npcs.filter((x) => x.kind === 'student').every((x) => S.defeated.includes(x.id));
 }
 
 export async function student(n: NpcDef, w: WorldApi) {
   const m = n.data?.n as number;
-  if (S.defeated.includes(n.id)) return say(['Il Mentore è là in fondo. Buona fortuna!', pick(TRAINER_TIPS)], n.name);
-  await say('Prima di arrivare al Mentore devi superare me!', n.name);
-  // gli allievi sono un gradino sotto il loro Mentore
+  if (S.defeated.includes(n.id)) return say(['La Whale è là in fondo. Buona fortuna!', pick(TRAINER_TIPS)], n.name);
+  await say('Prima di arrivare alla Whale devi superare me!', n.name);
+  // gli allievi sono un gradino sotto la loro Whale
   const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.student.n, { target: targetDiff(m - 1) - 0.25 });
-  const r = await runDuel({ foeName: n.name, foeTitle: 'Allievo dell\'Accademia', foePal: n.pal, questions: qs, ...DUEL.student, arena: 'aula' });
+  const r = await runDuel({ foeName: n.name, foeTitle: 'Allievo dell\'Exchange', foePal: n.pal, questions: qs, ...DUEL.student, arena: 'aula' });
   tick();
-  if (r.win) { reward({ defeated: n.id, rep: REWARD.rep.student }); await say('Brav{o|a}! Sei pront{o|a} per il Mentore.', n.name); }
+  if (r.win) { reward({ defeated: n.id, rep: REWARD.rep.student }); await say('Brav{o|a}! Sei pront{o|a} per la Whale.', n.name); }
   else { await say('Studia in Biblioteca e torna!', n.name); await defeatRespawn(w); }
 }
 
-// ---------------- Mentori ----------------
+// ---------------- Whale ----------------
 
-/** Medaglia già vinta: dal grado "Rinomato" il Mentore accetta una rivincita con domande di livello esperto. */
+/** Medaglia già vinta: dal grado "Rinomato" la Whale accetta una rivincita con domande di livello esperto. */
 async function mentorRematch(m: number, md: ReturnType<typeof mentor>) {
   if (repTier().index < TIER_MENTOR_REMATCH) return say([`Hai già la ${md.badge}.`, md.win, 'Quando la tua Reputazione sarà da "Rinomato" ti concederò una rivincita da esperto.'], md.name);
   const done = !!S.flags[`m${m}_rematch`];
@@ -118,7 +118,7 @@ async function mentorRematch(m: number, md: ReturnType<typeof mentor>) {
   if (c !== 0) return;
   const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentorRematch.n, { target: 3.5 });
   const prevFid = S.stats.fiducia;
-  const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m} · rivincita`, foePal: md.palette, questions: qs, ...DUEL.mentorRematch, arena: 'sala' });
+  const r = await runDuel({ foeName: md.name, foeTitle: `Whale ${m} · rivincita`, foePal: md.palette, questions: qs, ...DUEL.mentorRematch, arena: 'sala' });
   S.stats.fiducia = Math.max(prevFid, S.stats.fiducia);
   if (r.win && !done) reward({ flag: `m${m}_rematch`, rep: REWARD.rep.mentorRematch, xp: REWARD.xp.mentorRematch });
   await say(r.win ? ['Da esperto a esperto: complimenti.', mentorCharacterLine()] : 'Le domande da esperto non perdonano. Torna quando vuoi.', md.name);
@@ -132,13 +132,13 @@ export async function mentorBattle(m: number, w: WorldApi) {
     if (S.seals >= m) return mentorRematch(m, md);
     return sealChallenge(m, w);
   }
-  if (S.badges < m - 1) return say(['Sei arrivat{o|a} qui troppo presto!', `Prima ti serve l'Attestato del Mentore ${S.badges + 1}.`], md.name);
-  if (!allStudentsBeaten(m)) return say(['Benvenut{o|a} nella mia Accademia.', 'Prima di sfidarmi devi battere tutti i miei allievi.'], md.name);
-  // la regola della Medaglia la spiega il primo Mentore, quando serve; gli altri non la ripetono
-  await say([md.intro, ...(m > 1 || S.flags.medalRule ? [] : ['La mia Medaglia ha due metà. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada verso la città successiva.', 'Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che ti ho appena insegnato. Puoi viaggiare con i soli Attestati, ma entri nella Lega degli Investitori solo se hai tutti e otto i Sigilli.'])], md.name);
+  if (S.badges < m - 1) return say(['Sei arrivat{o|a} qui troppo presto!', `Prima ti serve l'Attestato della Whale ${S.badges + 1}.`], md.name);
+  if (!allStudentsBeaten(m)) return say(['Benvenut{o|a} nel mio Exchange.', 'Prima di sfidarmi devi battere tutti i miei allievi.'], md.name);
+  // la regola della Medaglia la spiega la prima Whale, quando serve; gli altri non la ripetono
+  await say([md.intro, ...(m > 1 || S.flags.medalRule ? [] : ['La mia Medaglia ha due metà. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada verso la città successiva.', 'Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che ti ho appena insegnato. Puoi viaggiare con i soli Attestati, ma entri a Wall Street solo se hai tutti e otto i Sigilli.'])], md.name);
   S.flags.medalRule = true;
   const unread = mentorBooks(m, S.track, S.mixedClasses).filter((b) => !S.booksRead.includes(b.id)).length;
-  if (unread) await say([`Un consiglio da Mentore: nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, 'Le domande del duello vengono da lì.'], md.name);
+  if (unread) await say([`Un consiglio da Whale: nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, 'Le domande del duello vengono da lì.'], md.name);
   // dopo una sconfitta si torna solo dopo aver studiato: un libro della sezione o un ripasso in Biblioteca
   if (!retryUnlocked(`m${m}`)) return say(['Sei tornat{o|a} presto. Prima di riprovare, studia.', `Leggi un libro della mia sezione nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'}, oppure fai il Ripasso: le domande che hai sbagliato sono lì ad aspettarti.`], md.name);
   {
@@ -147,9 +147,9 @@ export async function mentorBattle(m: number, w: WorldApi) {
   }
   const ok = (await choose(['Sono pront{o|a}!', 'Non ancora'], { prompt: 'Iniziamo?' })) === 0;
   if (!ok) return;
-  // il Mentore m si affronta con m − 1 Attestati: dal livello 1 (Mentore 1) a quasi 3 (Mentore 8)
+  // la Whale m si affronta con m − 1 Attestati: dal livello 1 (Whale 1) a quasi 3 (Whale 8)
   const qs = withPreviousMistakes(`m${m}`, pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentor.n, { target: targetDiff(m - 1) }));
-  const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m}`, foePal: md.palette, questions: qs, ...DUEL.mentor, intro: md.intro, arena: 'sala' });
+  const r = await runDuel({ foeName: md.name, foeTitle: `Whale ${m}`, foePal: md.palette, questions: qs, ...DUEL.mentor, intro: md.intro, arena: 'sala' });
   tick();
   if (!r.win) { lockRetry(`m${m}`, r.wrong); await say(['Non ancora. Ripassa e torna: ti aspetto.', 'Le domande che hai sbagliato torneranno nel prossimo duello.'], md.name); return defeatRespawn(w); }
   clearRetry(`m${m}`);
@@ -162,11 +162,11 @@ export async function mentorBattle(m: number, w: WorldApi) {
 
 /**
  * Parte pratica della Medaglia: la Prova sul conto, cioè l'esercizio di tappa fatto con ordini veri sul mercato di oggi.
- * I Mentori non propongono replay: i periodi del passato si rivivono solo nella Macchina del Tempo (Zona Simulazione).
+ * Le Whale non propongono replay: i periodi del passato si rivivono solo nella Macchina del Tempo (Zona Simulazione).
  */
 /** Promemoria delle sfide sul conto: se con un titolo non ci si arriva, si può vendere e puntare su un altro. */
 export const SWITCH_LINE = 'Se con un titolo non riesci ad arrivare all\'obiettivo della Prova puoi venderlo da "Compra / Vendi" e puntare su un altro. Decidere di vendere, anche solo una parte, annulla la Prova: prima della vendita ti viene chiesto di confermare che vendi per annullarla, poi la quota della tappa riparte da zero e la rifai con un altro titolo. Una vendita in perdita resta una perdita vera sul conto di gioco.';
-/** Nelle verifiche della Lega si guarda il conto com'è: non c'è un titolo della prova, quindi una vendita non annulla nulla. */
+/** Nelle verifiche di Wall Street si guarda il conto com'è: non c'è un titolo della prova, quindi una vendita non annulla nulla. */
 export const LEAGUE_SWITCH_LINE = 'Se un titolo non ti porta dove serve puoi venderlo, anche solo in parte, da "Compra / Vendi" e puntare su un altro: qui guardo il conto com\'è, quindi la verifica si rifà semplicemente da capo. Una vendita in perdita resta una perdita vera sul conto di gioco.';
 
 async function sealChallenge(m: number, w: WorldApi) {
@@ -176,7 +176,7 @@ async function sealChallenge(m: number, w: WorldApi) {
     const got = Acc.grantSeals();
     if (got.includes(m)) {
       beep('badge'); jingle('badge');
-      await say([`Prova sul conto superata: ecco il Sigillo pratico. La ${md.badge} adesso è completa!`, m === 8 ? 'Con tutti e otto i Sigilli la Guardia della Lega ti lascerà passare.' : `Sigilli pratici: ${S.seals}/8.`], md.name);
+      await say([`Prova sul conto superata: ecco il Sigillo pratico. La ${md.badge} adesso è completa!`, m === 8 ? 'Con tutti e otto i Sigilli la Guardia di Wall Street ti lascerà passare.' : `Sigilli pratici: ${S.seals}/8.`], md.name);
       w.refresh(); save();
       return;
     }
@@ -198,16 +198,16 @@ async function sealChallenge(m: number, w: WorldApi) {
 }
 
 /**
- * Missioni della Macchina del Tempo: i periodi veri del passato legati agli argomenti dei Mentori, con i nomi dei
+ * Missioni della Macchina del Tempo: i periodi veri del passato legati agli argomenti delle Whale, con i nomi dei
  * titoli nascosti. Si giocano solo qui, nella Zona Simulazione: sono facoltative, non servono né per i Sigilli né
- * per la Lega, e non toccano il conto. Si sbloccano con l'Attestato del Mentore corrispondente.
+ * per Wall Street, e non toccano il conto. Si sbloccano con l'Attestato della Whale corrispondente.
  */
 export async function missionDesk(who = 'Operatrice') {
-  if (S.badges < 1) return say(['Le missioni della Macchina del Tempo si sbloccano una alla volta, con gli Attestati dei Mentori.', 'Torna dopo il primo Attestato.'], who);
+  if (S.badges < 1) return say(['Le missioni della Macchina del Tempo si sbloccano una alla volta, con gli Attestati delle Whale.', 'Torna dopo il primo Attestato.'], who);
   for (;;) {
     const ms = Array.from({ length: S.badges }, (_, k) => ({ m: k + 1, mission: mentorMission(k + 1, S.track, S.profile) }));
     const label = (x: { m: number; mission: Mission }) => `${x.m}. ${x.mission.title}${S.flags[`m${x.m}_mission`] ? ' ✓' : ''}${x.mission.kind === 'sim' && S.flags[`${x.mission.id}_stars`] ? ' ' + '★'.repeat(Number(S.flags[`${x.mission.id}_stars`])) : ''}`;
-    const c = await choose([...ms.map(label), 'Indietro'], { cancel: true, prompt: 'Missioni facoltative su periodi veri del passato. Non valgono per Sigilli e Lega e non toccano il tuo conto: qui si sbaglia senza conseguenze.', who });
+    const c = await choose([...ms.map(label), 'Indietro'], { cancel: true, prompt: 'Missioni facoltative su periodi veri del passato. Non valgono per Sigilli e Wall Street e non toccano il tuo conto: qui si sbaglia senza conseguenze.', who });
     if (c < 0 || c >= ms.length) return;
     const { m, mission } = ms[c];
     if (mission.kind === 'sim' && !(await requireAccount('i dati reali della Macchina del Tempo', who))) continue;
@@ -246,7 +246,7 @@ async function runMission(m: Mission): Promise<{ ok: boolean; detail: string } |
   return { ok: r.ok, detail: r.detail };
 }
 
-/** Attestato del Mentore: apre il mondo (guardie, Tecnica, carte, abilità) e la Prova sul conto della tappa. */
+/** Attestato della Whale: apre il mondo (guardie, Tecnica, carte, abilità) e la Prova sul conto della tappa. */
 async function winBadge(m: number, w: WorldApi) {
   const md = mentor(m, S.track);
   S.badges = m;
@@ -270,7 +270,7 @@ async function winBadge(m: number, w: WorldApi) {
   if (m === ABILITY.cut.badge) extra.push(`Nuova abilità: ${ABILITY.cut.name}. Ora puoi frantumare i Massi delle Commissioni: prova la Galleria del Dark Pool sul Percorso 2.`);
   if (m === ABILITY.dark.badge) extra.push(`Nuova abilità: ${ABILITY.dark.name}. Le grotte buie non ti fermano più: la Miniera dei Lingotti sul Percorso 5 porta dritta a Valdividendo.`);
   if (m === TRANSFER_BADGE) extra.push(`Nuova abilità: ${ABILITY.transfer.name}. Apri il menu, scegli "Mappa della Regione" e trasferisciti in una città già visitata.`);
-  if (m === 8) extra.push('L\'Altopiano della Lega è oltre il Percorso 9. La Guardia ti fa passare solo se hai tutti e otto i Sigilli pratici. Con l\'ottavo Attestato, se hai superato l\'Esame della Leva, la leva si apre anche sul conto di gioco.');
+  if (m === 8) extra.push('L\'Wall Street è oltre il Percorso 9. La Guardia ti fa passare solo se hai tutti e otto i Sigilli pratici. Con l\'ottavo Attestato, se hai superato l\'Esame della Leva, la leva si apre anche sul conto di gioco.');
   if (extra.length) await say(extra, 'Prof. Saldi (messaggio)');
   w.refresh();
   save();
@@ -278,8 +278,8 @@ async function winBadge(m: number, w: WorldApi) {
 
 export async function guard(n: NpcDef, w: WorldApi) {
   const b = n.data?.badge as number;
-  if (n.data?.league) await say(['Alt! Entri nella Lega solo se hai completato tutte e otto le Medaglie: Attestato e Sigillo pratico.', `Hai ${S.seals} Sigilli su 8. ${nextSealLine()}`, 'Nella Lega i Superiori guardano il tuo conto com\'è, sul mercato di oggi: per questo serve aver fatto pratica con ordini veri.'], n.name);
-  else await say([`Alt! Per proseguire serve l'Attestato della ${mentor(b, S.track).badge}.`, `Te lo consegna il Mentore dell'Accademia di ${TOWNS[b].name}, se vinci il suo duello.`], n.name);
+  if (n.data?.league) await say(['Alt! Entri a Wall Street solo se hai completato tutte e otto le Medaglie: Attestato e Sigillo pratico.', `Hai ${S.seals} Sigilli su 8. ${nextSealLine()}`, 'A Wall Street i Superiori guardano il tuo conto com\'è, sul mercato di oggi: per questo serve aver fatto pratica con ordini veri.'], n.name);
+  else await say([`Alt! Per proseguire serve l'Attestato della ${mentor(b, S.track).badge}.`, `Te lo consegna la Whale dell'Exchange di ${TOWNS[b].name}, se vinci il suo duello.`], n.name);
   w.bumpBack();
 }
 
@@ -344,7 +344,7 @@ export async function linkDuel() {
  * Chi non la supera opera (ordini veri sul conto Paper) e chiede una nuova verifica, senza rifare il duello.
  */
 async function accountTrial(t: Trial, who: string): Promise<boolean> {
-  if (!(await requireAccount('la prova pratica della Lega', who))) return false;
+  if (!(await requireAccount('la prova pratica di Wall Street', who))) return false;
   await say([`${t.title}. ${t.brief}`, 'Guardo il tuo conto di gioco com\'è adesso, sul mercato di oggi. Non ti chiedo un rendimento: quello non lo controlla nessuno. Ti chiedo metodo.'], who);
   for (;;) {
     await Acc.sync(true).catch(() => []);
@@ -371,7 +371,7 @@ export async function league(i: number, w: WorldApi) {
   if (i > 0 && !S.defeated.includes(`league_${i - 1}`)) return say('Devi prima superare il Superiore precedente.', L.name);
   await say([L.intro, i === 4 ? 'Sono il Campione. La prova finale: tutto ciò che hai imparato.' : `Sono ${L.title.toLowerCase()}.`], L.name);
   const topics = i < 4 ? LEAGUE_TOPICS[i] : trackTopics(S.track, S.mixedClasses, 8);
-  // Lega: dal livello 3,25 del primo Superiore al livello 4 (esperto) dell'ultimo e del Campione
+  // Wall Street: dal livello 3,25 del primo Superiore al livello 4 (esperto) dell'ultimo e del Campione
   const P = i === 4 ? DUEL.champion : DUEL.league;
   if (!S.flags[`league_${i}_p1`]) {
     if (!retryUnlocked(`league_${i}`)) return say(['Prima di riprovare, ripassa.', 'Fai il Ripasso in Biblioteca o leggi una lezione: le domande che hai sbagliato torneranno.'], L.name);
@@ -389,7 +389,7 @@ export async function league(i: number, w: WorldApi) {
   } else if (!(await accountTrial(trial, L.name))) return;
   reward({ defeated: `league_${i}`, rep: REWARD.rep.league, save: false });
   beep('win');
-  await say(i === 4 ? ['Incredibile. Hai battuto il Campione!', `${S.name}, da oggi sei {il nuovo Campione|la nuova Campionessa} della Lega degli Investitori!`] : ['Hai superato la mia prova. Prosegui!'], L.name);
+  await say(i === 4 ? ['Incredibile. Hai battuto il Campione!', `${S.name}, da oggi sei {il nuovo Campione|la nuova Campionessa} di Wall Street!`] : ['Hai superato la mia prova. Prosegui!'], L.name);
   if (i === 4) {
     S.flags.champion = true;
     await say(['Congratulazioni, {Campione|Campionessa}!', 'Il titolo non ti rende infallibile: i mercati cambiano, e chi smette di imparare torna principiante.', 'Da oggi in Banca puoi anche aumentare il capitale del conto di gioco: è il privilegio dei Campioni.', 'Alla Torre delle Sfide ti aspettano le crisi leggendarie, i piani infiniti e i tre Boss dei Mercati, che si battono sui grafici veri.', 'E se vuoi, puoi iniziare una Nuova Partita+: riparte tutto da zero tranne i tuoi trofei, e sblocchi la difficoltà Leggenda.'], 'Prof. Saldi');
@@ -402,7 +402,7 @@ export async function league(i: number, w: WorldApi) {
 }
 
 export async function tower() {
-  const opts = ['Torre delle Sfide (piani infiniti)', ...LEGENDS.map((l) => `Crisi leggendaria: ${l.title}${S.legends.includes(l.id) ? ' ✓' : ''}`), `Boss dei Mercati${Acc.graduated() ? '' : ' (dopo la Lega)'}`, `Nuova Partita+${Acc.graduated() ? '' : ' (dopo la Lega)'}`, 'Esci'];
+  const opts = ['Torre delle Sfide (piani infiniti)', ...LEGENDS.map((l) => `Crisi leggendaria: ${l.title}${S.legends.includes(l.id) ? ' ✓' : ''}`), `Boss dei Mercati${Acc.graduated() ? '' : ' (dopo Wall Street)'}`, `Nuova Partita+${Acc.graduated() ? '' : ' (dopo Wall Street)'}`, 'Esci'];
   const c = await choose(opts, { cancel: true, prompt: `Record personale: piano ${S.tower.best}.`, who: 'Custode della Torre' });
   if (c < 0 || c === opts.length - 1) return;
   if (c === 0) {
@@ -433,16 +433,16 @@ export async function tower() {
     return;
   }
   if (opts[c].startsWith('Boss dei Mercati')) {
-    if (!Acc.graduated()) return say(['I Boss dei Mercati sfidano solo i Campioni della Lega.', 'Si battono con un quiz e poi con una sola decisione su un grafico vero, che può durare ore o settimane.'], 'Custode della Torre');
+    if (!Acc.graduated()) return say(['I Boss dei Mercati sfidano solo i Campioni di Wall Street.', 'Si battono con un quiz e poi con una sola decisione su un grafico vero, che può durare ore o settimane.'], 'Custode della Torre');
     return bossMenu();
   }
   if (opts[c].startsWith('Nuova Partita+')) {
-    if (!Acc.graduated()) return say(['Potrai iniziare la Nuova Partita+ quando avrai vinto la Lega.', 'Ricomincia tutto da zero tranne i trofei, e sblocca la difficoltà Leggenda.'], 'Custode della Torre');
+    if (!Acc.graduated()) return say(['Potrai iniziare la Nuova Partita+ quando avrai vinto Wall Street.', 'Ricomincia tutto da zero tranne i trofei, e sblocca la difficoltà Leggenda.'], 'Custode della Torre');
     // il percorso (anche il Sentiero Misto) si sceglie di nuovo dal Professore, come nella prima partita
     await say([
-      'La Nuova Partita+ riparte da zero: conto di gioco con capitale nuovo, Attestati, Sigilli, Prove sul conto, Esame della Leva. Anche la Torre e i Boss tornano chiusi fino alla prossima Lega.',
+      'La Nuova Partita+ riparte da zero: conto di gioco con capitale nuovo, Attestati, Sigilli, Prove sul conto, Esame della Leva. Anche la Torre e i Boss tornano chiusi fino alla prossima Wall Street.',
       'Restano con te solo i trofei: record della Torre, crisi leggendarie, Boss battuti, carte dorate, traguardi, titolo e arredi. E resta il tuo Diario.',
-      'In cambio sblocchi la difficoltà più alta, Leggenda, e i Mentori faranno domande più difficili.',
+      'In cambio sblocchi la difficoltà più alta, Leggenda, e le Whale faranno domande più difficili.',
       'Una cosa pratica: i titoli che hai adesso restano nel tuo conto Alpaca Paper, ma escono dal registro del gioco. Se vuoi ripartire pulito, vendili prima da una Banca.',
     ], 'Custode della Torre');
     const t = await choose(['Sì, ricomincio da zero', 'Annulla'], { cancel: true, prompt: 'Sicur{o|a}? Non potrai tornare indietro.', who: 'Custode della Torre' });
@@ -458,7 +458,7 @@ export async function tower() {
 const HERMIT_LINES: Record<string, { intro: string[]; win: string; again: string }> = {
   r3: { intro: ['Sei arrivat{o|a} fin qui sull\'acqua? Allora la liquidità la sai usare.', 'Io compro e tengo per decenni. Vediamo se reggi le mie domande.'], win: 'Hai la pazienza del cassettista. Tieni questo studio extra, ti servirà.', again: 'Chi investe per decenni non ha bisogno di guardare il prezzo ogni giorno. Funziona anche con le isole.' },
   r5: { intro: ['Un prezzo diverso per la stessa cosa in due posti? Mi sveglio per questo.', 'Ma le occasioni vere sono rare e veloci. Rispondi in fretta e bene!'], win: 'Preciso come un arbitraggio. Ti lascio i miei appunti.', again: 'Quando un guadagno sembra senza rischio, cerca il rischio che non vedi.' },
-  r7: { intro: ['Custodisco le riserve: la liquidità che non si tocca quando il mercato urla.', 'Solo chi ha mente fredda e liquidità arriva fin qui. Dimostralo.'], win: 'Riserve al sicuro, mente lucida. Sei pront{o|a} per la Lega.', again: 'Un fondo di emergenza vale più di qualsiasi previsione.' },
+  r7: { intro: ['Custodisco le riserve: la liquidità che non si tocca quando il mercato urla.', 'Solo chi ha mente fredda e liquidità arriva fin qui. Dimostralo.'], win: 'Riserve al sicuro, mente lucida. Sei pront{o|a} per Wall Street.', again: 'Un fondo di emergenza vale più di qualsiasi previsione.' },
   faro: { intro: ['Il faro non dice alle navi dove andare: mostra solo dove sono gli scogli.', 'Un buon piano d\'investimento fa lo stesso. Vediamo se sai leggere la luce.'], win: 'Rotta sicura. Ricorda: gli scogli sono i costi, la leva e le promesse troppo belle.', again: 'Di notte gli scogli non si spostano. Sono le onde a farti credere di sì.' },
   perle: { intro: ['Le perle migliori stanno dove nessuno ha voglia di cercare, al buio.', 'Ma chi si tuffa senza conoscere il fondale non torna su. Dimostrami che lo conosci.'], win: 'Hai occhio per il valore nascosto. Questa è la perla più rara: la pazienza.', again: 'Prima di comprare, scendi sul fondo: leggi i conti, non solo il prezzo.' },
 };

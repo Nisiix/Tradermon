@@ -4,7 +4,7 @@ export interface TownDef {
   id: string;
   name: string;
   sub: Record<Track, string>;
-  mentor: number; // 0 = nessuno, 9 = Lega
+  mentor: number; // 0 = nessuno, 9 = Wall Street
   special?: 'simzone' | 'casino' | 'archive' | 'tower' | 'lab';
 }
 
@@ -18,7 +18,7 @@ export const TOWNS: TownDef[] = [
   { id: 't6', name: 'Valdividendo', mentor: 6, sub: { stocks: 'città del raccolto', etf: 'città delle cedole', crypto: 'città dell\'ancora', mixed: 'città delle stagioni' } },
   { id: 't7', name: 'Mentelucida', mentor: 7, sub: { stocks: 'città degli specchi', etf: 'città della calma', crypto: 'città senza rumore', mixed: 'città della mente' } },
   { id: 't8', name: 'Rocca Rischio', mentor: 8, sub: { stocks: 'fortezza dello scudo', etf: 'fortezza della prudenza', crypto: 'fortezza delle mura', mixed: 'fortezza dell\'equilibrio' } },
-  { id: 't9', name: 'Altopiano della Lega', mentor: 9, special: 'tower', sub: { stocks: 'Lega degli Investitori', etf: 'Lega degli Investitori', crypto: 'Lega degli Investitori', mixed: 'Lega degli Investitori' } },
+  { id: 't9', name: 'Wall Street', mentor: 9, special: 'tower', sub: { stocks: 'la piazza degli investitori', etf: 'la piazza degli investitori', crypto: 'la piazza degli investitori', mixed: 'la piazza degli investitori' } },
 ];
 
 export interface MentorDef {
@@ -38,7 +38,7 @@ const COMMON: Record<number, Omit<MentorDef, 'name' | 'technique' | 'techDesc'> 
   3: { n: 3, name: 'Vera Varia', badge: 'Medaglia Mosaico', technique: 'Ribilanciamento', techDesc: 'La Banca calcola quanto il conto si è allontanato dalla tua allocazione obiettivo. Gli ordini li scegli tu.', intro: 'Un mosaico con un solo colore è solo un muro. Sei pront{o|a} a diversificare?', win: 'Che bel mosaico! Porta con te l\'arte del ribilanciamento.', palette: 4 },
   4: { n: 4, name: 'Cosimo Composto', badge: 'Medaglia Spirale', technique: 'Piano di Accumulo', techDesc: 'Acquisti mensili nella Macchina del Tempo e nella Zona Simulazione. Sul conto di gioco il tuo piano di accumulo sono le rate di tappa.', intro: 'Il tempo è il mio alleato e i costi il mio nemico. E i tuoi?', win: 'Hai capito la spirale del composto. Piano piano, si va lontano.', palette: 5 },
   7: { n: 7, name: 'Serena Bias', badge: 'Medaglia Specchio', technique: 'Mente Fredda', techDesc: 'Le notizie urlate non ti smuovono più: puoi attraversare il Muro del Rumore sul Percorso 7.', intro: 'Il nemico più pericoloso dell\'investitore lo vedi ogni mattina allo specchio.', win: 'Hai guardato le tue emozioni senza farti guidare. Mente fredda, cuore caldo.', palette: 6 },
-  8: { n: 8, name: 'Rocco Rischio', badge: 'Medaglia Scudo', technique: 'Stop Loss', techDesc: 'Puoi usare ordini stop veri in Banca e nella Macchina del Tempo.', intro: 'Nessuno vince sempre. Vince chi sa quanto può perdere. Lo sai tu?', win: 'Il tuo scudo è pronto. La Lega ti aspetta all\'Altopiano.', palette: 7 },
+  8: { n: 8, name: 'Rocco Rischio', badge: 'Medaglia Scudo', technique: 'Stop Loss', techDesc: 'Puoi usare ordini stop veri in Banca e nella Macchina del Tempo.', intro: 'Nessuno vince sempre. Vince chi sa quanto può perdere. Lo sai tu?', win: 'Il tuo scudo è pronto. Wall Street ti aspetta.', palette: 7 },
 };
 
 const M5: Record<AssetClass | 'mixed', Partial<MentorDef>> = {
@@ -65,7 +65,7 @@ export const LEAGUE = [
   { name: 'Tito Tecnico', title: 'Superiore dell\'Analisi', intro: 'Grafici e bilanci sono mappe. Sai leggerle senza perderti?', palette: 11 },
   { name: 'Giulia Garante', title: 'Superiore delle Regole', intro: 'Truffatori, abusivi, tasse: conosci le regole del gioco vero?', palette: 12 },
   { name: 'Fabio Freddo', title: 'Superiore della Psicologia', intro: 'Il mercato prova a farti perdere la testa. Io ti metto alla prova.', palette: 13 },
-  { name: 'Aurelio Capitale', title: 'Campione della Lega', intro: 'Sono arrivato qui con pazienza e disciplina. Mostrami le tue.', palette: 14 },
+  { name: 'Aurelio Capitale', title: 'Campione di Wall Street', intro: 'Sono arrivato qui con pazienza e disciplina. Mostrami le tue.', palette: 14 },
 ];
 
 export function antagonist(track: Track): { team: string; boss: string } {

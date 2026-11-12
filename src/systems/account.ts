@@ -58,7 +58,7 @@ function unreachable(e: unknown): string {
 
 const fee = () => DIFFICULTY[S.difficulty].fee;
 
-/** Ha vinto la Lega in questa partita: apre Torre, Boss e aumenti di capitale. La Nuova Partita+ riparte da zero. */
+/** Ha vinto Wall Street in questa partita: apre Torre, Boss e aumenti di capitale. La Nuova Partita+ riparte da zero. */
 export function graduated(): boolean {
   return !!S.flags.champion;
 }
@@ -307,7 +307,7 @@ export function grantSeals(): number[] {
     if (S.badges < m || S.exDone < m + 1 || S.flags.bankrupt) break;
     S.seals = m;
     got.push(m);
-    // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (missione dal Mentore o esercizio in Banca),
+    // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (missione dalla Whale o esercizio in Banca),
     // e si riceve una volta sola anche se il Sigillo viene sospeso e poi ripreso
     if (m > Number(S.flags.sealPaid ?? 0)) {
       S.flags.sealPaid = m;
@@ -322,7 +322,7 @@ export function grantSeals(): number[] {
  * L'accredito di un esercizio all'accettazione dell'ordine è provvisorio: se l'ordine finisce annullato, scaduto o
  * rifiutato senza esecuzione, la quota non è stata investita davvero. Gli esercizi che non sono più coperti dagli
  * acquisti tornano "da fare", e i Sigilli ottenuti grazie a loro restano sospesi finché la quota non viene investita davvero.
- * Dopo la Lega non si torna indietro.
+ * Dopo Wall Street non si torna indietro.
  */
 export function reopenExercises(boughtBefore: number): string[] {
   if (graduated()) return [];
@@ -826,12 +826,12 @@ export async function restartAfterBankruptcy(): Promise<string[]> {
 }
 
 /**
- * Dopo la Lega: aumento del capitale del conto di gioco (denaro finto del conto Paper). Il registro non può
+ * Dopo Wall Street: aumento del capitale del conto di gioco (denaro finto del conto Paper). Il registro non può
  * superare ciò che il conto Paper contiene davvero.
  */
 export async function deposit(amount: number): Promise<string> {
   const pf = S.portfolio;
-  if (!graduated()) return 'Il capitale si può aumentare solo dopo la Lega.';
+  if (!graduated()) return 'Il capitale si può aumentare solo dopo Wall Street.';
   try {
     const acc = await A.account(ENV);
     if (Number(acc.equity) < equity(pf) + amount) return `Il tuo conto Paper su Alpaca vale ${fmtMoney(Number(acc.equity))}: non basta per un conto di gioco più grande. Puoi azzerarlo o ricaricarlo dalla dashboard Paper di Alpaca.`;

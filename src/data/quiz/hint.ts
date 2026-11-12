@@ -7,7 +7,7 @@ import { TOWNS } from '../story';
 import { sourceLabel } from '../sources';
 import { S } from '../../systems/state';
 
-/** Città della Sezione del Mentore che tratta l'argomento (1..8), oppure undefined per gli argomenti della Lega. */
+/** Città della Sezione della Whale che tratta l'argomento (1..8), oppure undefined per gli argomenti di Wall Street. */
 export function townForTopic(topic: QuizTopic): string | undefined {
   for (let n = 1; n <= 8; n++) if (mentorTopics(n, S.track, S.mixedClasses).includes(topic)) return TOWNS[n]?.name;
   return undefined;

@@ -1,7 +1,7 @@
 // Segreti della seconda parte del gioco: dati puri (posizioni e testi), senza dipendenze dallo stato,
 // così le mappe e i test possono usarli. La logica sta in secrets.ts.
 
-/** Medaglie necessarie perché i segreti si risveglino: la seconda metà del viaggio (dopo il Mentore 4). */
+/** Medaglie necessarie perché i segreti si risveglino: la seconda metà del viaggio (dopo la Whale 4). */
 export const SECRET_BADGE = 4;
 
 /** Una pagina strappata del Libro Mastro di Mastro Ventura, invisibile: si trova premendo A davanti al punto giusto. */
