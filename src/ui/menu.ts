@@ -121,7 +121,7 @@ async function profile() {
         Disciplina ${S.stats.disciplina} · Pazienza ${S.stats.pazienza} · Reputazione ${S.stats.reputazione}<br>
         Slot di portafoglio ${slots()}<br>
         Serie della domanda del giorno: ${S.daily.streak} · Torre: piano ${S.tower.best}</div>
-        <div><b>Difficoltà:</b> ${DIFFICULTY[S.difficulty].name} · <b>Attestati</b> ${S.badges}/8 · <b>Sigilli</b> ${S.seals}/8${S.levExam ? ' · Esame della Leva superato' : ''}<br>
+        <div><b>Difficoltà:</b> ${DIFFICULTY[S.difficulty].name} · <b>Attestati</b> ${S.badges}/8${S.badges ? ` · <b>Sigilli</b> ${S.seals}/8` : ''}${S.levExam ? ' · Esame della Leva superato' : ''}<br>
         <span class="small muted">Conto di gioco: Alpaca Paper, denaro finto. Tradermon non usa mai soldi reali.</span><br>
         <b>Orologio di mercato:</b> ${clk.label}<br><b>Clima dei mercati:</b> ${CLIMATE_LABEL[S.market.climate]} <span class="small muted">(${asOfLabel()})</span><br>
         <b>Giorni di mercato dall'inizio:</b> ${S.market.day}<br>

@@ -27,17 +27,17 @@ const STEPS: Step[] = [
     desk: () => `Premi ${moveKeys()}. Tieni premuto per camminare.`,
     touch: 'Tocca la <b>croce direzionale</b> in basso a sinistra. Tieni premuto per camminare.' },
   { want: ['a'], hint: 'a', title: 'Parlare e confermare',
-    desk: () => `Premi ${kbd('a')}. Guarda una persona o un cartello e premi per parlare. Nei menu conferma la scelta.`,
-    touch: 'Tocca il pulsante <b>A</b> a destra. Guarda una persona o un cartello e tocca A per parlare. Nei menu conferma la scelta.' },
+    desk: () => `Premi ${kbd('a')} davanti a una persona o a un cartello per parlare; nei menu confermi.`,
+    touch: 'Tocca <b>A</b> davanti a una persona o a un cartello per parlare; nei menu confermi.' },
   { want: ['b'], hint: 'b', title: 'Tornare indietro',
     desk: () => `Premi ${kbd('b')} per chiudere una finestra o annullare.`,
     touch: 'Tocca il pulsante <b>B</b> per chiudere una finestra o annullare.' },
   { want: ['menu'], hint: 'menu', title: 'Aprire il menu',
-    desk: () => `Premi ${kbd('menu')} per il menu: Investidex, Portafoglio, Lezioni, Salva e Opzioni.`,
-    touch: 'Tocca <b>MENU</b> per Investidex, Portafoglio, Lezioni, Salva e Opzioni.' },
+    desk: () => `Premi ${kbd('menu')} per aprire il menu di gioco.`,
+    touch: 'Tocca <b>MENU</b> per aprire il menu di gioco.' },
   { want: ['settings'], hint: 'settings', title: 'Impostazioni',
-    desk: () => `Premi ${kbd('settings')} (oppure clicca ⚙ in alto a destra) per aprire le impostazioni, anche mentre esplori il mondo: comandi, touch, volume e ritorno alla home. Premilo di nuovo per chiuderle.`,
-    touch: 'Tocca l\'icona <b>⚙</b> in alto a destra per aprire le impostazioni: comandi, touch, volume e ritorno alla home. Chiudile con ✕.' },
+    desk: () => `Premi ${kbd('settings')} (oppure clicca ⚙ in alto a destra) per aprire le impostazioni. Premilo di nuovo per chiuderle.`,
+    touch: 'Tocca l\'icona <b>⚙</b> in alto a destra per aprire le impostazioni. Chiudile con ✕.' },
 ];
 
 /** Legenda: a cosa serve ciascun tasto (tastiera) o pulsante (touch). */
@@ -85,7 +85,7 @@ export function controlsTutorial(): Promise<void> {
       box.innerHTML = `
         <div class="tut-head"><span>COMANDI · ${touch ? 'TOUCH' : 'TASTIERA'}</span><span class="dots">${dots}</span></div>
         ${done
-          ? `<h3>${all ? 'Perfetto!' : 'Ecco tutti i comandi'}</h3><p>${all ? 'Hai provato tutti i comandi.' : 'Qui sotto trovi a cosa serve ogni comando, anche quelli che hai saltato.'} Puoi rivederli da <b>Menu → Opzioni</b> e cambiarli dall'icona <b>⚙</b> in alto a destra.</p>${legend(touch, null)}<p class="tut-try">${touch ? 'Tocca <b>A</b>' : `Premi ${kbd('a')}`} o <b>Prosegui</b> per iniziare l'avventura.</p>`
+          ? `<h3>${all ? 'Perfetto!' : 'Ecco tutti i comandi'}</h3><p>${all ? 'Hai provato tutti i comandi.' : 'Qui sotto trovi a cosa serve ogni comando, anche quelli che hai saltato.'} Questa guida si riapre da <b>⚙ → Comandi</b>.</p>${legend(touch, null)}<p class="tut-try">${touch ? 'Tocca <b>A</b>' : `Premi ${kbd('a')}`} o <b>Prosegui</b> per iniziare l'avventura.</p>`
           : `<h3>${i + 1}. ${s.title}</h3>${touch ? touchPad(s.hint) : keyboard(s.hint)}<p>${touch ? s.touch : s.desk()}</p><p class="tut-try">Prova adesso!</p>${legend(touch, s.hint)}`}
         <div class="tut-foot"><button class="btn custom" title="Cambia i tasti e i comandi touch">Personalizza</button><button class="btn primary next">Prosegui</button></div>`;
       box.querySelector('.tut-foot .next')!.addEventListener('click', next);

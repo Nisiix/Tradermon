@@ -765,7 +765,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.hud.innerHTML = `<span class="pill playtime" title="Tempo di gioco totale">Tempo <b>${formatPlayTime(S.playMs)}</b></span>
       <span class="pill">${clk.open ? '<i class="dot on"></i>' : '<i class="dot"></i>'}${clk.label} · ${CLIMATE_LABEL[S.market.climate]}</span>
-      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Attestati <b>${S.badges}</b> · Sigilli <b>${S.seals}</b></span>`;
+      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Attestati <b>${S.badges}</b>${S.badges ? ` · Sigilli <b>${S.seals}</b>` : ''}</span>`;
     if (force) this.applyTint();
   }
 
