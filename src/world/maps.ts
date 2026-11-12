@@ -1,4 +1,4 @@
-import { TILE, lookPal } from '../art/art';
+import { TILE, SOLID, lookPal } from '../art/art';
 import { poolFor, type LookPool } from '../art/looks';
 import { TOWNS, TRAINER_NAMES, TRAINER_LINES } from '../data/story';
 import { mulberry32 } from '../systems/rng';
@@ -189,25 +189,29 @@ function diversify(m: MapDef) {
 // ---------------- Borgo Semina ----------------
 
 function buildHomeTown() {
-  const w = 24, h = 18;
+  // h = 21: sotto la Clinica e la casa corre una via parallela, lontana dal bosco
+  const w = 24, h = 21;
   const t = grid(w, h, TILE.GRASS);
   rect(t, 0, 0, w, 2, TILE.TREE); rect(t, 0, h - 2, w, 2, TILE.TREE); rect(t, 0, 0, 1, h, TILE.TREE); rect(t, w - 1, 0, 1, h, TILE.TREE);
   rect(t, 1, 9, w - 1, 1, TILE.PATH);
   t[9][w - 1] = TILE.PATH;
   const home = building(t, 3, 3, 5, TILE.ROOF);
-  const lab = building(t, 13, 2, 7, TILE.ROOF_SPECIAL);
+  const lab = building(t, 13, 3, 7, TILE.ROOF_SPECIAL);
   const clinic = building(t, 4, 11, 5, TILE.ROOF_CLINIC);
   rect(t, home.dx, home.dy + 1, 1, 9 - home.dy - 1, TILE.PATH);
   rect(t, lab.dx, lab.dy + 1, 1, 9 - lab.dy - 1, TILE.PATH);
-  t[clinic.dy + 1][clinic.dx] = TILE.PATH;
   rect(t, 15, 12, 5, 3, TILE.WATER);
   [[2, 7], [10, 6], [20, 14], [2, 15], [21, 4]].forEach(([x, y]) => (t[y][x] = TILE.FLOWERS));
   const t0House = addHouse(t, HOUSEHOLDS[0][0], 9, 11, 4, 't0');
+  // via del borgo davanti alla Clinica e alla casa, collegata alla strada principale ai due lati
+  rect(t, 3, clinic.dy + 1, 11, 1, TILE.PATH);
+  rect(t, 3, 10, 1, clinic.dy + 1 - 10, TILE.PATH);
+  rect(t, 13, 10, 1, clinic.dy + 1 - 10, TILE.PATH);
   t[8][11] = TILE.SIGN;
   const m: MapDef = { id: 't0', name: 'Borgo Semina', w, h, tiles: t, interior: false, town: 0, encounterRate: 0, bg: '#6cc04a',
     npcs: [
       { id: 't0_aide', x: w - 2, y: 9, pal: 22, dir: 2, name: 'Assistente', kind: 'aide' },
-      { id: 't0_kid', x: 13, y: 10, pal: 21, dir: 0, name: 'Bambina', kind: 'talk', lines: ['Il mio papà dice che i soldi sotto il materasso perdono valore. Si chiama inflazione!'] },
+      { id: 't0_kid', x: 12, y: 10, pal: 21, dir: 0, name: 'Bambina', kind: 'talk', lines: ['Il mio papà dice che i soldi sotto il materasso perdono valore. Si chiama inflazione!'] },
       { id: 't0_old', x: 17, y: 10, pal: 19, dir: 1, name: 'Nonno Elio', kind: 'talk', lines: ['Ai miei tempi si diceva: "Non mettere tutte le uova nello stesso paniere".', 'Vale ancora oggi, sai?'] },
       { id: 't0_student', x: 21, y: 12, pal: 23, dir: 3, name: 'Studentessa', kind: 'talk', lines: ['Torno ora dalla Biblioteca di Ponte Cedola: ogni città dalla prossima ne ha una.', 'Gli scaffali in alto a sinistra sono la Sezione del Mentore: ci sono i libri sull\'argomento del suo duello.', 'Li ho letti tutti prima della sfida e ho risposto a quasi ogni domanda!'] },
     ],
@@ -258,12 +262,21 @@ function addClinic(n: number, dx: number, dy: number, back: string) {
   MAPS[c.id] = c;
 }
 
+/** Altezza delle città 1-8 e riga della via su cui si affacciano le case a sud della strada principale. */
+const TOWN_H = 22;
+const SOUTH_ST = 16;
+
 function buildTown(n: number) {
   const def = TOWNS[n];
-  const w = 30, h = 20;
+  // h = 22: le case a sud della strada principale hanno la porta su una seconda via (riga SOUTH_ST),
+  // con tre file di prato prima del bosco
+  const w = 30, h = TOWN_H;
   const t = grid(w, h, TILE.GRASS);
   rect(t, 0, 0, w, 2, TILE.TREE); rect(t, 0, h - 2, w, 2, TILE.TREE); rect(t, 0, 0, 1, h, TILE.TREE); rect(t, w - 1, 0, 1, h, TILE.TREE);
   rect(t, 1, 9, w - 2, 2, TILE.PATH);
+  rect(t, 2, SOUTH_ST, w - 4, 1, TILE.PATH);
+  // due vicoli collegano la via delle case alla strada principale
+  for (const lx of [7, 18]) rect(t, lx, 11, 1, SOUTH_ST - 11, TILE.PATH);
   t[9][0] = TILE.PATH; t[9][w - 1] = TILE.PATH;
   const rng = mulberry32(1000 + n);
   const clinic = building(t, 3, 4, 5, TILE.ROOF_CLINIC);
@@ -292,7 +305,7 @@ function buildTown(n: number) {
       { id: `${id}_guard2`, x: w - 2, y: 10, pal: 20, dir: 2, name: 'Guardia della Borsa', kind: 'guard', data: { badge: n } },
       { id: `${id}_station`, x: 26, y: 9, pal: 16, dir: 0, name: 'Capostazione', kind: 'station', hiddenSprite: true },
       { id: `${id}_npc1`, x: 8 + Math.floor(rng() * 4), y: 11, pal: 16 + (n % 4), dir: 0, name: 'Abitante', kind: 'talk', lines: [TOWN_TALK[(n * 2) % TOWN_TALK.length]] },
-      { id: `${id}_npc2`, x: 18, y: 16, pal: 17 + (n % 3), dir: 3, name: 'Abitante', kind: 'talk', lines: [TOWN_TALK[(n * 2 + 1) % TOWN_TALK.length]] },
+      { id: `${id}_npc2`, x: 11, y: SOUTH_ST + 1, pal: 17 + (n % 3), dir: 3, name: 'Abitante', kind: 'talk', lines: [TOWN_TALK[(n * 2 + 1) % TOWN_TALK.length]] },
     ],
     warps: [
       { x: 0, y: 9, to: `r${n}`, tx: 42, ty: 6, dir: 2 },
@@ -509,6 +522,29 @@ export function townOf(id: string): number | undefined {
   return undefined;
 }
 
+/**
+ * Casella sicura per una posizione salvata: se le mappe sono cambiate (edifici spostati, mappa più grande)
+ * una posizione vecchia può finire fuori mappa o dentro un muro. Allora si sceglie la casella calpestabile
+ * più vicina (non acqua, non un passaggio). Una posizione già libera resta com'è.
+ */
+export function safeSpot(m: MapDef, x: number, y: number): [number, number] {
+  const cx = Math.max(0, Math.min(m.w - 1, Math.round(x) || 0)), cy = Math.max(0, Math.min(m.h - 1, Math.round(y) || 0));
+  if (cx === x && cy === y && !SOLID.has(m.tiles[cy][cx]) && m.tiles[cy][cx] !== TILE.DOOR) return [cx, cy];
+  const free = (i: number, j: number) => !SOLID.has(m.tiles[j][i]) && m.tiles[j][i] !== TILE.WATER && !m.warps.some((w) => w.x === i && w.y === j);
+  const seen = new Set([`${cx},${cy}`]);
+  const q: [number, number][] = [[cx, cy]];
+  while (q.length) {
+    const [i, j] = q.shift()!;
+    if (free(i, j)) return [i, j];
+    for (const [dx, dy] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
+      const ni = i + dx, nj = j + dy;
+      if (ni < 0 || nj < 0 || ni >= m.w || nj >= m.h || seen.has(`${ni},${nj}`)) continue;
+      seen.add(`${ni},${nj}`); q.push([ni, nj]);
+    }
+  }
+  return [cx, cy];
+}
+
 export function allMapIds(): string[] {
   buildAll();
   return Object.keys(MAPS);
@@ -532,11 +568,12 @@ function cave(id: string, name: string, w: number, h: number, halls: [number, nu
 function buildSeaAndCaves() {
   // --- Molo di Porto Ordini → Mare della Liquidità (serve il Flusso di Liquidità) ---
   const port = MAPS.t2;
-  rect(port.tiles, 24, 18, 3, 2, TILE.WATER);
-  port.tiles[16][25] = TILE.PIER; port.tiles[17][25] = TILE.PIER;
-  port.tiles[16][24] = TILE.SIGN;
-  port.signs.push({ x: 24, y: 16, text: ['MOLO DI PORTO ORDINI', 'A sud: Mare della Liquidità. Solo con il Flusso di Liquidità (Attestato 3).'] });
-  port.warps.push({ x: 25, y: 19, to: 'sea', tx: 20, ty: 1, dir: 0, lock: 'swim' });
+  const ph = port.h;
+  rect(port.tiles, 24, ph - 2, 3, 2, TILE.WATER);
+  rect(port.tiles, 25, SOUTH_ST + 1, 1, ph - 3 - SOUTH_ST, TILE.PIER);
+  port.tiles[SOUTH_ST + 1][24] = TILE.SIGN;
+  port.signs.push({ x: 24, y: SOUTH_ST + 1, text: ['MOLO DI PORTO ORDINI', 'A sud: Mare della Liquidità. Solo con il Flusso di Liquidità (Attestato 3).'] });
+  port.warps.push({ x: 25, y: ph - 1, to: 'sea', tx: 20, ty: 1, dir: 0, lock: 'swim' });
 
   const w = 40, h = 26;
   const t = grid(w, h, TILE.WATER);
@@ -567,7 +604,7 @@ function buildSeaAndCaves() {
       ] },
       { id: 'sea_sailor', x: 17, y: 2, pal: 16, dir: 0, name: 'Marinaia', kind: 'talk', lines: ['Più lontano vai dalla riva, più le onde sono alte. Come il rischio, quando cerchi rendimenti lontani dalla media!', 'L\'isola a sud ha una grotta buia: senza una lanterna non si entra.'] },
     ],
-    warps: [{ x: 20, y: 0, to: 't2', tx: 25, ty: 17, dir: 1 }, { x: 20, y: 19, to: 'cave_pearl', tx: 6, ty: 7, dir: 1, lock: 'dark' }],
+    warps: [{ x: 20, y: 0, to: 't2', tx: 25, ty: port.h - 3, dir: 1 }, { x: 20, y: 19, to: 'cave_pearl', tx: 6, ty: 7, dir: 1, lock: 'dark' }],
     signs: [
       { x: 30, y: 8, text: ['RELITTO DELLA COMPAGNIA DEI MARI LONTANI', 'Una bolla speculativa finita in fondo al mare.'] },
       { x: 22, y: 21, text: ['GROTTA DELLE PERLE', 'Buia come un bilancio non letto. Serve la Lanterna della Due Diligence (Attestato 5).'] },
@@ -590,14 +627,15 @@ function buildSeaAndCaves() {
   r2.signs.push({ x: 29, y: 4, text: ['GALLERIA DEL DARK POOL', 'Scorciatoia per Diversia. Bloccata dai Massi delle Commissioni.'] });
   r2.tiles[4][29] = TILE.SIGN;
   const t3 = MAPS.t3;
-  caveMouth(t3.tiles, 27, 17);
-  t3.tiles[16][27] = TILE.PATH;
-  t3.warps.push({ x: 27, y: 17, to: 'cave_dp', tx: 22, ty: 11, dir: 1 });
+  const cy = TOWN_H - 3; // bocca della grotta al limite sud, collegata alla via delle case
+  caveMouth(t3.tiles, 27, cy);
+  rect(t3.tiles, 27, SOUTH_ST + 1, 1, cy - 1 - SOUTH_ST, TILE.PATH);
+  t3.warps.push({ x: 27, y: cy, to: 'cave_dp', tx: 22, ty: 11, dir: 1 });
   const dp = cave('cave_dp', 'Galleria del Dark Pool', 26, 14, [
     [2, 9, 3, 4], [2, 2, 3, 7], [5, 2, 8, 3], [12, 5, 3, 5], [15, 7, 6, 3], [20, 3, 3, 5], [20, 9, 4, 4], [8, 7, 4, 4],
   ]);
   dp.tiles[13][3] = TILE.CAVE; dp.tiles[13][22] = TILE.CAVE;
-  dp.warps.push({ x: 3, y: 13, to: 'r2', tx: 30, ty: 2, dir: 0 }, { x: 22, y: 13, to: 't3', tx: 27, ty: 18 - 2, dir: 0 });
+  dp.warps.push({ x: 3, y: 13, to: 'r2', tx: 30, ty: 2, dir: 0 }, { x: 22, y: 13, to: 't3', tx: 27, ty: cy - 1, dir: 0 });
   dp.npcs.push(
     { id: 'cave_dp_t0', x: 9, y: 3, pal: 20, dir: 0, name: 'Operatore Ombra', kind: 'trainer', sight: 3, lines: ['Qui gli ordini non si vedono finché non sono eseguiti. Tu invece ti vedo benissimo!'], data: { r: 3 } },
     { id: 'cave_dp_t1', x: 17, y: 8, pal: 15, dir: 2, name: 'Broker Notturna', kind: 'trainer', sight: 3, lines: ['Nel buio si fanno affari grossi. Ma servono regole chiare, sai?'], data: { r: 3 } },
@@ -612,14 +650,14 @@ function buildSeaAndCaves() {
   r5.signs.push({ x: 27, y: 4, text: ['MINIERA DEI LINGOTTI', 'Porta a Valdividendo. All\'interno è buio pesto.'] });
   r5.warps.push({ x: 28, y: 1, to: 'cave_gold', tx: 2, ty: 12, dir: 1, lock: 'dark' });
   const t6 = MAPS.t6;
-  caveMouth(t6.tiles, 27, 17);
-  t6.tiles[16][27] = TILE.PATH;
-  t6.warps.push({ x: 27, y: 17, to: 'cave_gold', tx: 25, ty: 12, dir: 1, lock: 'dark' });
+  caveMouth(t6.tiles, 27, cy);
+  rect(t6.tiles, 27, SOUTH_ST + 1, 1, cy - 1 - SOUTH_ST, TILE.PATH);
+  t6.warps.push({ x: 27, y: cy, to: 'cave_gold', tx: 25, ty: 12, dir: 1, lock: 'dark' });
   const gold = cave('cave_gold', 'Miniera dei Lingotti', 28, 15, [
     [1, 10, 4, 3], [2, 4, 3, 6], [2, 2, 10, 2], [10, 4, 3, 5], [10, 9, 9, 3], [17, 3, 3, 6], [19, 3, 7, 2], [24, 5, 3, 8],
   ]);
   gold.tiles[14][2] = TILE.CAVE; gold.tiles[13][2] = TILE.CAVE; gold.tiles[14][25] = TILE.CAVE; gold.tiles[13][25] = TILE.CAVE;
-  gold.warps.push({ x: 2, y: 14, to: 'r5', tx: 28, ty: 2, dir: 0 }, { x: 25, y: 14, to: 't6', tx: 27, ty: 16, dir: 0 });
+  gold.warps.push({ x: 2, y: 14, to: 'r5', tx: 28, ty: 2, dir: 0 }, { x: 25, y: 14, to: 't6', tx: 27, ty: cy - 1, dir: 0 });
   gold.npcs.push(
     { id: 'cave_gold_t0', x: 6, y: 2, pal: 21, dir: 3, name: 'Cercatrice d\'Oro', kind: 'trainer', sight: 4, lines: ['L\'oro non paga dividendi, ma nelle crisi molti lo cercano. Tu cosa cerchi?'], data: { r: 5 } },
     { id: 'cave_gold_t1', x: 15, y: 10, pal: 19, dir: 2, name: 'Minatore Prudente', kind: 'trainer', sight: 3, lines: ['Scavo piano e diversifico le gallerie. Vediamo se scavi bene anche tu!'], data: { r: 5 } },

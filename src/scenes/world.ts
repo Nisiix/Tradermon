@@ -4,7 +4,7 @@ import { decorateHome } from '../world/decor';
 import Phaser from 'phaser';
 import { drawPlaque } from '../art/plaque';
 import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal } from '../art/art';
-import { getMap, type MapDef, type NpcDef } from '../world/maps';
+import { getMap, safeSpot, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, librarySection, type WorldApi } from '../world/scripts';
 import { S, save, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
@@ -113,6 +113,9 @@ export class WorldScene extends Phaser.Scene {
     } catch { /* renderer Canvas: nessun filtro */ }
     this.applyGraphics();
     window.addEventListener('tradermon:options', () => this.applyGraphics());
+    // un salvataggio fatto prima di uno spostamento degli edifici può trovarsi in un muro: si riparte dalla casella libera più vicina
+    const startMap = getMap(S.map);
+    if (startMap) [S.x, S.y] = safeSpot(startMap, S.x, S.y);
     this.loadMap(S.map, S.x, S.y, (DIR_NAME.indexOf(S.facing) as 0 | 1 | 2 | 3));
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.updateHud() });
     this.time.addEvent({ delay: 550, loop: true, callback: () => this.animateTiles() });
@@ -282,7 +285,7 @@ export class WorldScene extends Phaser.Scene {
       const nx = n.x + dx, ny = n.y + dy;
       const free = !behindCounter && Math.random() < 0.45 && Math.abs(nx - n.hx) <= 1 && Math.abs(ny - n.hy) <= 1
         && !this.blocked(nx, ny) && !(nx === S.x && ny === S.y) && !this.map.warps.some((w) => w.x === nx && w.y === ny)
-        && this.map.tiles[ny]?.[nx] !== TILE.DOOR && !this.nearPlayer(nx, ny);
+        && this.map.tiles[ny]?.[nx] !== TILE.DOOR && this.map.tiles[ny - 1]?.[nx] !== TILE.DOOR && !this.nearPlayer(nx, ny);
       n.dir = d;
       if (free) void this.stepNpc(n, nx, ny, d);
       else n.spr.setFrame(this.palFor(n.def) * 12 + d * 3);
