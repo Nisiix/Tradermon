@@ -35,7 +35,7 @@ export function tradable() {
 }
 
 export async function openClinic(townIdx: number) {
-  await say(['Benvenuto alla Banca del Portafoglio!', 'Qui teniamo i conti delle tue scelte e, se inciampi, ti riapriamo il credito di Fiducia. Come posso aiutarti?'], NURSE);
+  await say(['Benvenut{o|a} alla Banca del Portafoglio!', 'Qui teniamo i conti delle tue scelte e, se inciampi, ti riapriamo il credito di Fiducia. Come posso aiutarti?'], NURSE);
   if (S.flags.migratedV3) {
     delete S.flags.migratedV3;
     await say(['Una novità importante: a Capitalia non si scambiano più titoli inventati. Da oggi si opera solo su titoli veri, con prezzi veri, attraverso un conto Alpaca Paper.', `Il tuo vecchio conto di prova è stato chiuso e ne ho aperto uno nuovo da ${fmtMoney(S.portfolio.initial)}. Attestati, Tecniche e tutto ciò che hai studiato restano tuoi; i Sigilli pratici si guadagnano ora sul conto Paper, con prezzi veri e denaro finto.`], NURSE);
