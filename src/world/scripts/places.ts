@@ -26,9 +26,9 @@ export async function librarian(n: NpcDef) {
   if (town && !S.flags[`lib_intro_${town}`]) {
     S.flags[`lib_intro_${town}`] = true;
     const md = mentor(town, S.track);
-    await say(['Benvenut{o|a} in Biblioteca! Qui si studia prima di sfidare il Mentore.', `Gli scaffali in alto a sinistra sono la Sezione del Mentore: i libri su ${mentorTopics(town, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}, l'argomento del duello con ${md.name}.`, 'A destra le lezioni generali; in basso l\'archivio delle domande sbagliate e l\'Investidex. Avvicinati a uno scaffale e premi il tasto di conferma.'], 'Bibliotecaria');
+    await say(['Benvenut{o|a} in Biblioteca! Qui si studia prima di sfidare la Whale.', `Gli scaffali in alto a sinistra sono la Sezione della Whale: i libri su ${mentorTopics(town, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}, l'argomento del duello con ${md.name}.`, 'A destra le lezioni generali; in basso l\'archivio delle domande sbagliate e l\'Investidex. Avvicinati a uno scaffale e premi il tasto di conferma.'], 'Bibliotecaria');
   }
-  const c = await choose(['Sezione del Mentore (libri)', 'Lezioni', 'Ripasso (domande in scadenza)', 'Minigiochi didattici', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenut{o|a} in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
+  const c = await choose(['Sezione della Whale (libri)', 'Lezioni', 'Ripasso (domande in scadenza)', 'Minigiochi didattici', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenut{o|a} in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
   if (c === 0) return mentorShelf(town);
   if (c === 1) return openLessons();
   if (c === 3) return playMinigame('Bibliotecaria');
@@ -36,15 +36,15 @@ export async function librarian(n: NpcDef) {
   if (c === 2) return reviewDuel();
 }
 
-/** Scaffale della Sezione del Mentore: guida alla sfida, libri di contesto e di materia, con le lezioni sugli stessi temi. */
+/** Scaffale della Sezione della Whale: guida alla sfida, libri di contesto e di materia, con le lezioni sugli stessi temi. */
 async function mentorShelf(n: number) {
-  if (!n) return say('Questa Biblioteca non ha un Mentore di riferimento.', 'Bibliotecaria');
+  if (!n) return say('Questa Biblioteca non ha una Whale di riferimento.', 'Bibliotecaria');
   const md = mentor(n, S.track);
   const topics = mentorTopics(n, S.track, S.mixedClasses);
   const books: Book[] = mentorBooks(n, S.track, S.mixedClasses);
   for (;;) {
     const read = (b: Book) => S.booksRead.includes(b.id);
-    const c = await choose([...books.map((b) => `${read(b) ? '✓ ' : '• '}${b.title}`), 'Lezioni su questi temi', 'Rimetto a posto'], { cancel: true, title: `SEZIONE DEL MENTORE · ${topics.map((t) => TOPIC_LABEL[t]).join(', ')}` });
+    const c = await choose([...books.map((b) => `${read(b) ? '✓ ' : '• '}${b.title}`), 'Lezioni su questi temi', 'Rimetto a posto'], { cancel: true, title: `SEZIONE DEL WHALE · ${topics.map((t) => TOPIC_LABEL[t]).join(', ')}` });
     if (c < 0 || c === books.length + 1) return;
     if (c === books.length) { await openLessons(topics); continue; }
     const b = books[c];
@@ -60,7 +60,7 @@ async function mentorShelf(n: number) {
 export async function librarySection(sec: Section, town: number) {
   switch (sec.kind) {
     case 'mentor': return mentorShelf(town);
-    case 'general': await say(`${sec.label}: i volumi di tutti i Mentori incontrati finora.`); return openLessons();
+    case 'general': await say(`${sec.label}: i volumi di tutti le Whale incontrati finora.`); return openLessons();
     case 'review': return reviewDuel();
     case 'index': await say(`${sec.label}: le schede delle Asset Card che hai raccolto.`); return openInvestidex();
   }
@@ -86,7 +86,7 @@ export function travelTo(id: string, w: WorldApi) {
 export async function simzone() {
   const legendsBeaten = LEGENDS.filter((l) => S.legends.includes(l.id));
   const opts = ['Missioni della Macchina del Tempo', ...SANDBOX.map((s) => s.name), ...legendsBeaten.map((l) => `Leggenda: ${l.title}`), 'Crisi storiche (cosa successe davvero)', 'Minigiochi didattici', 'Sfida della settimana', 'Dati reali Alpaca (un simbolo a scelta)', 'Duello con codice (cavo link)', 'Esci'];
-  const c = await choose(opts, { cancel: true, prompt: 'Zona Simulazione, la casa della Macchina del Tempo: qui si rivivono periodi veri di mercato. Sigilli e Lega si guadagnano invece sul conto, con il mercato di oggi. Che cosa vuoi fare?', who: 'Operatrice' });
+  const c = await choose(opts, { cancel: true, prompt: 'Zona Simulazione, la casa della Macchina del Tempo: qui si rivivono periodi veri di mercato. Sigilli e Wall Street si guadagnano invece sul conto, con il mercato di oggi. Che cosa vuoi fare?', who: 'Operatrice' });
   if (c < 0 || c === opts.length - 1) return;
   if (c === 0) return missionDesk();
   if (c - 1 < SANDBOX.length) { await runSim({ scenario: SANDBOX[c - 1], sandbox: true }); return; }
@@ -185,7 +185,7 @@ export async function archivist() {
   await openLessons();
 }
 
-// ---------------- Lega ----------------
+// ---------------- Wall Street ----------------
 
 export async function credits() {
   await modal('Tradermon · Titoli di coda', ({ body, button, close }) => {

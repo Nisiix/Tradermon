@@ -1,7 +1,7 @@
 // Segreti della seconda parte del gioco: dati puri (posizioni e testi), senza dipendenze dallo stato,
 // così le mappe e i test possono usarli. La logica sta in secrets.ts.
 
-/** Medaglie necessarie perché i segreti si risveglino: la seconda metà del viaggio (dopo il Mentore 4). */
+/** Medaglie necessarie perché i segreti si risveglino: la seconda metà del viaggio (dopo la Whale 4). */
 export const SECRET_BADGE = 4;
 
 /** Una pagina strappata del Libro Mastro di Mastro Ventura, invisibile: si trova premendo A davanti al punto giusto. */
@@ -35,7 +35,7 @@ export const HODL_STONE = { map: 'r6', x: 40, y: 2, standX: 40, standY: 3, facin
 /** Quanto restare immobili davanti alla pietra (millisecondi di gioco reali). */
 export const HODL_MS = 60_000;
 
-/** La Balena compare sull'Isola del Relitto solo nel fine settimana (giorni locali del giocatore). */
+/** Lo Squalo compare sull'Isola del Relitto solo nel fine settimana (giorni locali del giocatore). */
 export const WHALE = { map: 'sea', x: 36, y: 7 } as const;
 export function isWeekend(d = new Date()): boolean { const g = d.getDay(); return g === 0 || g === 6; }
 

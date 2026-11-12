@@ -816,8 +816,8 @@ export const PALETTES: CharPal[] = [
   { skin: '#e8b48a', hair: '#3a2a1a', shirt: '#8a56c2', pants: '#2a2a3a' }, // 5 rivale / Cosimo
   { skin: '#d9a77a', hair: '#c8463d', shirt: '#7af0ff', pants: '#3a5a7a' }, // 6 Serena
   { skin: '#b5835a', hair: '#1f1f2a', shirt: '#5a5a6a', pants: '#2a2a2a' }, // 7 Rocco
-  { skin: '#f5c9a0', hair: '#f2f2f2', shirt: '#e8c547', pants: '#4a3a2a' }, // 8 Mentore 5
-  { skin: '#c98e62', hair: '#5a3418', shirt: '#f2a541', pants: '#3a5a2a' }, // 9 Mentore 6
+  { skin: '#f5c9a0', hair: '#f2f2f2', shirt: '#e8c547', pants: '#4a3a2a' }, // 8 Whale 5
+  { skin: '#c98e62', hair: '#5a3418', shirt: '#f2a541', pants: '#3a5a2a' }, // 9 Whale 6
   { skin: '#f0c0a0', hair: '#3a2a1a', shirt: '#2a5ea8', pants: '#1f1f2a' }, // 10 Marta
   { skin: '#e8b48a', hair: '#8a8a8a', shirt: '#4fb06a', pants: '#2a2a3a' }, // 11 Tito
   { skin: '#d9a77a', hair: '#1f1f2a', shirt: '#c8463d', pants: '#1f1f2a' }, // 12 Giulia

@@ -1,7 +1,7 @@
 import { RS } from './art';
 
 /**
- * Insegne degli edifici (BANCA, PALESTRA, ...): un piccolo font bitmap in pixel art, disegnato
+ * Insegne degli edifici (BANCA, EXCHANGE, ...): un piccolo font bitmap in pixel art, disegnato
  * alla scala interna RS così resta nitido come il resto della grafica (non dipende dal caricamento dei web font).
  */
 const GLYPHS: Record<string, string[]> = {
@@ -24,6 +24,8 @@ const GLYPHS: Record<string, string[]> = {
   T: ['###', '.#.', '.#.', '.#.', '.#.'],
   U: ['#..#', '#..#', '#..#', '#..#', '.##.'],
   V: ['#...#', '#...#', '.#.#.', '.#.#.', '..#..'],
+  W: ['#...#', '#...#', '#.#.#', '##.##', '#...#'],
+  X: ['#...#', '.#.#.', '..#..', '.#.#.', '#...#'],
   Z: ['####', '...#', '.##.', '#...', '####'],
   ' ': ['..', '..', '..', '..', '..'],
 };

@@ -84,7 +84,7 @@ export async function openInvestidex() {
       body.appendChild(el('div', '', `<h4>Lezioni degli abitanti</h4>${items.join('')}`));
     }
     if (S.flags.casinoLesson) body.appendChild(el('p', 'small', '<b>Azzardo vs investimento</b>: nel gioco d\'azzardo il banco ha un vantaggio strutturale (2,7% alla roulette europea); la martingala porta prima o poi alla rovina.'));
-    body.appendChild(el('p', 'small muted', 'Livelli: 2 con la tecnica "Lettura del Ticker" (Mentore 1), 3-4 dall\'Attestato 5. Lo studio sale con quiz, missioni, possesso e Archivio.'));
+    body.appendChild(el('p', 'small muted', 'Livelli: 2 con la tecnica "Lettura del Ticker" (Whale 1), 3-4 dall\'Attestato 5. Lo studio sale con quiz, missioni, possesso e Archivio.'));
     button('Chiudi', () => close(), 'primary');
   }, { wide: true });
 }
@@ -156,10 +156,10 @@ async function badges() {
     h += '</div>';
     const ab = [{ a: ABILITY.swim, ok: canSwim() }, { a: ABILITY.cut, ok: S.badges >= ABILITY.cut.badge }, { a: ABILITY.transfer, ok: canTransfer() }, { a: ABILITY.dark, ok: S.badges >= ABILITY.dark.badge }, { a: ABILITY.cold, ok: S.badges >= 7 }];
     h += `<h4>Abilità di esplorazione</h4>${ab.map(({ a, ok }) => `<p class="small" style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b> (Attestato ${a.badge}): ${ok ? esc(gtext(a.desc)) : 'non ancora ottenuta.'}</p>`).join('')}`;
-    if (S.flags.champion) h += `<p class="good"><b>${g('Campione', 'Campionessa')} della Lega degli Investitori</b></p>`;
+    if (S.flags.champion) h += `<p class="good"><b>${g('Campione', 'Campionessa')} di Wall Street</b></p>`;
     if (S.legends.length) h += `<p>Crisi leggendarie superate: ${S.legends.length}/5</p>`;
     if (S.boss.beaten.length) h += `<p>Boss dei Mercati battuti: ${S.boss.beaten.length}/3</p>`;
-    h += '<p class="small muted">Ogni Medaglia ha due metà: l\'Attestato (il duello con il Mentore) apre la strada e la Tecnica; il Sigillo pratico (missione su dati reali ed esercizio sul conto) la completa. Per la Lega servono otto Medaglie complete.</p>';
+    h += '<p class="small muted">Ogni Medaglia ha due metà: l\'Attestato (il duello con la Whale) apre la strada e la Tecnica; il Sigillo pratico (missione su dati reali ed esercizio sul conto) la completa. Per Wall Street servono otto Medaglie complete.</p>';
     body.innerHTML = h;
     button('Chiudi', () => close(), 'primary');
   }, { wide: true });

@@ -1,6 +1,6 @@
 // Aspetti dei personaggi generici (abitanti, passanti, allenatori, allievi, guardie...).
 // Generati in modo deterministico: stesso seme → stesso aspetto, su ogni dispositivo e a ogni avvio.
-// I personaggi principali (Professore, Rivale, Mentori, Lega...) mantengono la loro palette in art.ts.
+// I personaggi principali (Professore, Rivale, Whale, Wall Street...) mantengono la loro palette in art.ts.
 
 import { mulberry32 } from '../systems/rng';
 

@@ -1,12 +1,12 @@
 # Guida per la landing page (sezione `#guida`)
 
-Testo della sezione Guida della landing (`index.html`, schede `g-...`). Sulla landing la Guida è volutamente breve: le regole complete (bancarotta, Prove sul conto, Lega, Boss) le spiegano i personaggi dentro il gioco e la Guida interna (`src/ui/broker.ts`, `GUIDE_LINES`). Se una regola cambia, controlla che queste righe restino vere.
+Testo della sezione Guida della landing (`index.html`, schede `g-...`). Sulla landing la Guida è volutamente breve: le regole complete (bancarotta, Prove sul conto, Wall Street, Boss) le spiegano i personaggi dentro il gioco e la Guida interna (`src/ui/broker.ts`, `GUIDE_LINES`). Se una regola cambia, controlla che queste righe restino vere.
 
 Regola dei testi: nelle pagine e nel gioco non si nominano gli strumenti dietro le quinte (servizio dei salvataggi, hosting, Node e simili). L'unico servizio esterno nominato è Alpaca, perché il giocatore deve crearsi il conto Paper. Fa eccezione l'informativa sulla privacy, che per legge deve dire chi tratta i dati.
 
 ### Un gioco per imparare (sezione `#imparare`, tre colonne)
 
-- **Dai primi passi al portafoglio.** Lezioni, quiz e Mentori ti portano nel mondo degli investimenti e del trading, un concetto alla volta.
+- **Dai primi passi al portafoglio.** Lezioni, quiz e Whale ti portano nel mondo degli investimenti e del trading, un concetto alla volta.
 - **Solo denaro finto.** La pratica passa da un conto Alpaca Paper, gratuito: prezzi e orari veri, soldi che non esistono. Non ti chiederemo mai di versare nulla.
 - **Sbagliare è permesso.** Un errore costa capitale di gioco, non i tuoi risparmi. È solo apprendimento: non è consulenza e non ti dice cosa comprare.
 
@@ -16,9 +16,9 @@ L'essenziale per partire. Le regole complete te le spiegano i personaggi, dentro
 
 ### #01 Attestati e Sigilli
 
-In ogni città un Mentore assegna una Medaglia in due metà. **L'Attestato** si vince a quiz e basta per proseguire. **Il Sigillo** si guadagna con la Prova sul conto: ordini veri, con denaro finto, usando la Tecnica appena imparata.
+In ogni città una Whale assegna una Medaglia in due metà. **L'Attestato** si vince a quiz e basta per proseguire. **Il Sigillo** si guadagna con la Prova sul conto: ordini veri, con denaro finto, usando la Tecnica appena imparata.
 
-> Puoi viaggiare con i soli Attestati, ma **nella Lega entra solo chi ha tutti e otto i Sigilli**.
+> Puoi viaggiare con i soli Attestati, ma **a Wall Street entra solo chi ha tutti e otto i Sigilli**.
 
 ### #02 Il conto di gioco
 
@@ -35,11 +35,11 @@ Serve un conto **Alpaca Paper**: gratuito, basta registrarsi sulla piattaforma d
 
 Scatta quando il conto arriva a **zero**, per colpa della leva o di vendite in perdita. Cosa succede dopo dipende dalla difficoltà.
 
-### #04 La Lega
+### #04 Wall Street
 
 Quattro Superiori e il Campione ti sfidano a quiz e poi guardano il tuo conto: **si giudica il metodo, non il rendimento**.
 
-### #05 Dopo la Lega
+### #05 Dopo Wall Street
 
 Torre delle Sfide, crisi leggendarie e tre Boss dei Mercati, che si battono con un piano di ordini sul conto di gioco. La **Nuova Partita+** riparte da zero e sblocca la difficoltà Leggenda.
 

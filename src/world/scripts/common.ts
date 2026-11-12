@@ -77,7 +77,7 @@ export async function defeatRespawn(w: WorldApi) {
   if (!atHome) await say(['Una sconfitta non chiude il conto: ti riapriamo la linea di credito e la tua Fiducia torna al massimo.', 'Il debito lo ripaghi studiando. Ripassa con calma e ritenta la sfida quando vuoi!'], 'Dott.ssa Ratio');
 }
 
-/** Dopo una sconfitta con un Mentore o un Superiore: si riprova solo dopo aver studiato. */
+/** Dopo una sconfitta con una Whale o un Superiore: si riprova solo dopo aver studiato. */
 export function lockRetry(key: string, wrong: string[]) {
   S.flags[`${key}_lock`] = `${S.counters.lesson ?? 0}|${S.counters.review ?? 0}`;
   S.flags[`${key}_wrong`] = wrong.join(',');

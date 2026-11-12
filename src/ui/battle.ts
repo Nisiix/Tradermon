@@ -28,7 +28,7 @@ export interface DuelOpts {
    */
   damage: number;
   intro?: string;
-  /** Sfida a numero fisso di domande (Mentori e Lega): si rispondono tutte, ma a Fiducia zero si va in tilt. */
+  /** Sfida a numero fisso di domande (Whale e Wall Street): si rispondono tutte, ma a Fiducia zero si va in tilt. */
   fixed?: boolean;
   /** Allenamento a punteggio (Ripasso, sfide con codice): si risponde a tutte le domande e la barra del giocatore non c'è. */
   practice?: boolean;
@@ -124,7 +124,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
 
     const ask = async () => {
       if (!o.fixed && foe <= 0.01) return finish(true);
-      // Barra del giocatore a zero (anche Mentori e Lega): troppi errori per vincere, oppure tilt se la Fiducia
+      // Barra del giocatore a zero (anche Whale e Wall Street): troppi errori per vincere, oppure tilt se la Fiducia
       // è finita prima degli errori concessi. Negli allenamenti a punteggio si risponde comunque a tutto.
       if (!o.practice && lifeShown(life) <= 0) { tilted = wrongs <= allowed; lastDuelTilted = tilted; return finish(false); }
       if (idx >= o.questions.length) return finish(correct >= o.need);

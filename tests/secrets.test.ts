@@ -33,7 +33,7 @@ describe('segreti della seconda parte', () => {
     expect(getMap(TAPE_ROOM).warps[0].to).toBe(TAPE_SHELF.map);
   });
 
-  it('la pietra delle Mani di Diamante e la Balena sono raggiungibili', () => {
+  it('la pietra delle Mani di Diamante e lo Squalo sono raggiungibili', () => {
     const seen = explore(8).seen;
     expect(getMap(HODL_STONE.map).tiles[HODL_STONE.y][HODL_STONE.x]).toBe(TILE.SIGN);
     expect(HODL_STONE.standY - HODL_STONE.y).toBe(1); // in piedi sotto la pietra, rivolti in su
@@ -42,7 +42,7 @@ describe('segreti della seconda parte', () => {
     expect(near(seen, WHALE.map, WHALE.x, WHALE.y)).toBe(true);
   });
 
-  it('la Balena è solo del fine settimana', () => {
+  it('lo Squalo è solo del fine settimana', () => {
     expect(isWeekend(new Date(2026, 10, 14))).toBe(true); // sabato
     expect(isWeekend(new Date(2026, 10, 15))).toBe(true); // domenica
     expect(isWeekend(new Date(2026, 10, 11))).toBe(false); // mercoledì

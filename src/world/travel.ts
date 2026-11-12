@@ -5,8 +5,8 @@ import { TOWNS } from '../data/story';
  * Abilità di esplorazione legate alle Medaglie (non sono oggetti né aiuti nei duelli).
  * - Flusso di Liquidità: attraversare l'acqua su una zattera (Medaglia 3, Ribilanciamento: sposti il capitale dove serve).
  * - Trasferimento di Capitale: viaggio rapido dalla Mappa della Regione verso le città già visitate
- *   (Medaglia 4, il Mentore di mezzo tra gli otto). Costa un giorno di mercato, come il regolamento T+1.
- * - Mente Fredda (tecnica del Mentore 7): attraversa il Muro del Rumore (già presente in world.ts).
+ *   (Medaglia 4, la Whale di mezzo tra gli otto). Costa un giorno di mercato, come il regolamento T+1.
+ * - Mente Fredda (tecnica della Whale 7): attraversa il Muro del Rumore (già presente in world.ts).
  */
 export const SWIM_BADGE = 3;
 export const TRANSFER_BADGE = 4;
@@ -49,7 +49,7 @@ export function transferTargets(here: string): string[] {
 /** Etichette sopra il riquadro (per non sovrapporsi alla strada). */
 export const LABEL_ABOVE = new Set(['t2', 't4', 't7', 't9']);
 
-/** Posizioni dei luoghi sulla Mappa della Regione (viewBox 100×62). La strada va da Borgo Semina all'Altopiano. */
+/** Posizioni dei luoghi sulla Mappa della Regione (viewBox 100×62). La strada va da Borgo Semina a Wall Street. */
 export const REGION_POS: Record<string, [number, number]> = {
   t0: [10, 47], t1: [28, 52], t2: [45, 44], t3: [62, 51], t4: [80, 45],
   t5: [88, 27], t6: [70, 21], t7: [51, 15], t8: [32, 21], t9: [13, 12],

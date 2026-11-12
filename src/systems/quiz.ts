@@ -7,9 +7,9 @@ import { hashString, mulberry32, shuffle } from './rng';
 
 /**
  * Difficoltà delle domande lungo la storia.
- * Livelli: 1 base, 2 intermedio, 3 avanzato, 4 esperto (Lega).
- * Tappe: 0 = nessuna medaglia, 1..8 = medaglie ottenute, 9..12 = i quattro Superiori della Lega.
- * Ogni tappa alza la difficoltà media di un quarto di livello: da 1 (primo Mentore) a 4 (fine Lega).
+ * Livelli: 1 base, 2 intermedio, 3 avanzato, 4 esperto (Wall Street).
+ * Tappe: 0 = nessuna medaglia, 1..8 = medaglie ottenute, 9..12 = i quattro Superiori di Wall Street.
+ * Ogni tappa alza la difficoltà media di un quarto di livello: da 1 (prima Whale) a 4 (fine Wall Street).
  */
 export const MAX_DIFF = 4;
 export const STAGE_LEAGUE = 9;
@@ -18,7 +18,7 @@ export function targetDiff(stage: number): number {
   return Math.max(1, Math.min(MAX_DIFF, 1 + stage * 0.25 + ngBoost()));
 }
 
-/** Nuova Partita+: ogni giro alza la difficoltà media di mezzo livello (le domande da esperto compaiono già dai Mentori). */
+/** Nuova Partita+: ogni giro alza la difficoltà media di mezzo livello (le domande da esperto compaiono già dalle Whale). */
 export function ngBoost(): number {
   return 0.5 * Math.min(2, S?.ngPlus ?? 0);
 }

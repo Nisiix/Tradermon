@@ -46,7 +46,7 @@ export function missionStars(): { id: string; title: string; stars: number; done
 
 export function nextStep(cards: TopicCard[]): string {
   const due = cards.reduce((s, c) => s + c.due, 0);
-  if (due >= 3) return `Hai ${due} domande in scadenza: un ripasso in Accademia o la domanda del giorno le rimettono in ordine.`;
+  if (due >= 3) return `Hai ${due} domande in scadenza: un ripasso nell'Exchange o la domanda del giorno le rimettono in ordine.`;
   const w = weakest(cards)[0];
   if (w && w.known / w.total < 0.5) {
     const book = booksFor([w.topic]).find((b) => !b.id.endsWith('_ctx'));
@@ -54,9 +54,9 @@ export function nextStep(cards: TopicCard[]): string {
     return book ? `L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: rileggi «${book.title}»${town ? ` nella Biblioteca di ${town}` : ''}, poi sfida gli allievi.` : `L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: le Lezioni dal menu lo coprono.`;
   }
   const ms = missionStars().find((m) => m.sim && m.done && m.stars < 3);
-  if (ms) return `La missione «${ms.title}» ha ${ms.stars}/3 stelle di processo: puoi ripeterla dal Mentore per migliorarle.`;
-  if (S.badges < 8) return `Prossimo Mentore: ${mentor(S.badges + 1, S.track).name}. Prima passa dalla Sezione del Mentore in Biblioteca.`;
-  return 'Percorso completo: la Lega e la Torre delle Sfide ti aspettano. Rileggi il Diario per allenare il senno di poi.';
+  if (ms) return `La missione «${ms.title}» ha ${ms.stars}/3 stelle di processo: puoi ripeterla dalla Whale per migliorarle.`;
+  if (S.badges < 8) return `Prossima Whale: ${mentor(S.badges + 1, S.track).name}. Prima passa dalla Sezione della Whale in Biblioteca.`;
+  return 'Percorso completo: Wall Street e la Torre delle Sfide ti aspettano. Rileggi il Diario per allenare il senno di poi.';
 }
 
 export async function openStudentFolder() {

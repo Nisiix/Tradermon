@@ -246,9 +246,9 @@ for (const t of TRACKS) {
   const card = document.createElement('button');
   card.type = 'button';
   card.className = `card ${t.color}`;
-  card.setAttribute('aria-label', `${t.name}: ${t.desc} Mentore della quinta città: ${m5.name}, Tecnica ${m5.technique}.`);
+  card.setAttribute('aria-label', `${t.name}: ${t.desc} Whale della quinta città: ${m5.name}, Tecnica ${m5.technique}.`);
   card.innerHTML = `<span class="inner"><span class="front"><span class="case"></span><b>${t.name}</b><span>${t.desc}</span></span>`
-    + `<span class="back"><img alt="" width="64" height="96" src="${portrait(m5.palette)}"><b>${m5.name}</b><span>Mentore di ${TOWNS[5].name}</span><span class="tech">${m5.technique}</span></span></span>`;
+    + `<span class="back"><img alt="" width="64" height="96" src="${portrait(m5.palette)}"><b>${m5.name}</b><span>Whale di ${TOWNS[5].name}</span><span class="tech">${m5.technique}</span></span></span>`;
   card.addEventListener('click', () => card.classList.toggle('flip'));
   cards.append(card);
 }
@@ -258,7 +258,7 @@ for (const t of TRACKS) {
 const badges = $('#badges');
 for (let n = 1; n <= 8; n++) {
   const m = mentor(n, 'stocks');
-  const name = n === 5 || n === 6 ? (n === 5 ? 'Il Mentore del percorso' : 'Il Mentore del Raccolto') : m.name;
+  const name = n === 5 || n === 6 ? (n === 5 ? 'La Whale del percorso' : 'La Whale del Raccolto') : m.name;
   const el = document.createElement('div');
   el.className = 'badge';
   el.innerHTML = `<span class="medal m${n}" aria-hidden="true"></span><b>${m.badge}</b><span>${TOWNS[n].name}</span><span class="small">${name}</span>`;
@@ -266,7 +266,7 @@ for (let n = 1; n <= 8; n++) {
 }
 const league = document.createElement('div');
 league.className = 'badge league';
-league.innerHTML = `<span class="medal ml" aria-hidden="true"></span><b>Lega degli Investitori</b><span>Altopiano</span><span class="small">4 Superiori e il Campione</span>`;
+league.innerHTML = `<span class="medal ml" aria-hidden="true"></span><b>Wall Street</b><span>la Borsa finale</span><span class="small">4 Superiori e il Campione</span>`;
 badges.append(league);
 
 // ---------------- Donazioni: PayPal e crypto ----------------

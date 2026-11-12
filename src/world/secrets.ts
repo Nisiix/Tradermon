@@ -1,4 +1,4 @@
-// Segreti della seconda parte: pagine invisibili, la Sala del Nastro, la Balena del fine settimana,
+// Segreti della seconda parte: pagine invisibili, la Sala del Nastro, lo Squalo del fine settimana,
 // il rituale delle Mani di Diamante e il Sussurratore del Casinò. Si risvegliano dalla Medaglia 4.
 // Ricompense: solo Conoscenza, titoli e oggetti per la casa (mai Crediti).
 import { S, save, card, clampStat } from '../systems/state';
@@ -17,7 +17,7 @@ export function secretsAwake(): boolean { return !!S && S.badges >= SECRET_BADGE
 
 export function pagesFound(): number { return LEDGER_PAGES.filter((p) => !!S.flags[pageFlag(p.id)]).length; }
 
-/** Segreti principali scoperti (Libro Mastro completo, Sala del Nastro, Balena, Mani di Diamante). */
+/** Segreti principali scoperti (Libro Mastro completo, Sala del Nastro, Squalo, Mani di Diamante). */
 export function secretsFound(): number {
   return [pagesFound() === LEDGER_PAGES.length, !!S.flags[SECRET_FLAGS.tape], !!S.flags[SECRET_FLAGS.whale], !!S.flags[SECRET_FLAGS.hodl]].filter(Boolean).length;
 }
@@ -121,7 +121,7 @@ async function whale(n: NpcDef) {
   const who = n.name;
   if (S.flags[SECRET_FLAGS.whale]) return say(['Lunedì la Borsa riapre e io torno sott\'acqua.', 'Ricorda: quando il mercato è sottile, chi è grande decide il prezzo. Non farti trovare dall\'altra parte.'], who);
   await say([
-    'Mi hai trovato. Mi chiamano la Balena: in settimana non mi vede nessuno.',
+    'Mi hai trovato. Mi chiamano lo Squalo: in settimana non mi vede nessuno.',
     'Il sabato e la domenica la Borsa dorme, ma le cripto si scambiano ventiquattro ore su ventiquattro.',
     'Con pochi scambi in giro, il mercato è "sottile": un ordine grande come il mio sposta il prezzo da solo. Si chiama slittamento, o slippage.',
     'Se vedi un balzo improvviso alle tre di notte di domenica, chiediti chi c\'è dietro. E usa ordini limite, non ordini al mercato.',
@@ -129,7 +129,7 @@ async function whale(n: NpcDef) {
   S.flags[SECRET_FLAGS.whale] = true;
   S.stats.xp += 120;
   jingle('secret');
-  await say('Hai avvistato la Balena! +120 punti Conoscenza e un nuovo titolo.', who);
+  await say('Hai avvistato lo Squalo! +120 punti Conoscenza e un nuovo titolo.', who);
   track('secret');
   save();
 }
@@ -139,7 +139,7 @@ const RUMORS: { lines: string[]; real?: 'pages' | 'tape' | 'whale' | 'hodl' }[] 
   { lines: ['Ho sentito che un\'azione raddoppierà domani. Chi l\'ha detto? Uno che lo ha sentito da un altro.', 'Ah, vuoi la lezione? Una voce senza fonte è rumore. E se la fonte fosse davvero un dirigente, usarla sarebbe insider trading: illegale.'] },
   { real: 'tape', lines: ['Nella Biblioteca di Bilancia c\'è un libro messo al contrario. Nessuno l\'ha mai tirato.', 'Dicono che dietro si senta ancora un ticchettio...'] },
   { lines: ['Un tizio giura che se premi A sulla roulette mille volte di fila, vinci.', 'L\'ho provato. Il banco vince sempre, anche contro la pazienza. Quella usala altrove.'] },
-  { real: 'whale', lines: ['I marinai di Porto Ordini raccontano di una Balena che affiora vicino al Relitto.', 'Però solo quando la Borsa è chiusa per il fine settimana. In settimana, niente.'] },
+  { real: 'whale', lines: ['I marinai di Porto Ordini raccontano di uno Squalo che si aggira vicino al Relitto.', 'Però solo quando la Borsa è chiusa per il fine settimana. In settimana, niente.'] },
   { lines: ['"Compra sulla voce, vendi sulla notizia", dicono qui.', 'Il problema è che quando la voce arriva a me, l\'hanno già comprata tutti. E quando arriva a te...'] },
   { real: 'hodl', lines: ['Sul Percorso 6, a nord-est, c\'è una pietra con due mani scolpite.', 'Chi le resta davanti un minuto intero senza muovere un dito... beh, prova. Io non ci riesco mai.'] },
   { lines: ['Una nuova moneta promette il 1000% entro il mese. Il sito è nato ieri e il fondatore non ha un nome.', 'Questa non è una voce: è un allarme. Rendimenti garantiti e fretta sono i segni classici di una truffa.'] },

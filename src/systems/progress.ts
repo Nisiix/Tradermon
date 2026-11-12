@@ -142,10 +142,10 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'duel10', name: 'Dieci su dieci', desc: 'Vinci 10 duelli', title: 'Studioso', check: () => c('duel_win') >= 10 },
   { id: 'duel50', name: 'Veterano dei quiz', desc: 'Vinci 50 duelli', title: 'Veterano', decor: 'trophy_silver', check: () => c('duel_win') >= 50 },
   { id: 'perfect10', name: 'Senza sbavature', desc: '10 duelli perfetti', title: 'Infallibile', decor: 'trophy_gold', check: () => c('duel_perfect') >= 10 },
-  { id: 'badge1', name: 'Prima Medaglia', desc: 'Batti il primo Mentore', title: 'Apprendista', decor: 'poster_badges', check: () => S.badges >= 1 },
+  { id: 'badge1', name: 'Prima Medaglia', desc: 'Batti la prima Whale', title: 'Apprendista', decor: 'poster_badges', check: () => S.badges >= 1 },
   { id: 'badge4', name: 'Metà strada', desc: 'Quattro Medaglie', title: 'Investitore in erba', check: () => S.badges >= 4 },
-  { id: 'badge8', name: 'Tutte le Medaglie', desc: 'Otto Medaglie', title: 'Maestro dei Mentori', decor: 'poster_badges', check: () => S.badges >= 8 },
-  { id: 'champion', name: 'Campione', desc: 'Vinci la Lega degli Investitori', title: 'Campione', decor: 'trophy_league', check: () => !!S.flags.champion },
+  { id: 'badge8', name: 'Tutte le Medaglie', desc: 'Otto Medaglie', title: 'Maestro delle Whale', decor: 'poster_badges', check: () => S.badges >= 8 },
+  { id: 'champion', name: 'Campione', desc: 'Vinci Wall Street', title: 'Campione', decor: 'trophy_league', check: () => !!S.flags.champion },
   { id: 'tips10', name: 'Buon vicino', desc: 'Ascolta 10 abitanti', check: () => S.tipsHeard.length >= 10 },
   { id: 'tips_all', name: 'Orecchio della regione', desc: 'Ascolta tutti gli abitanti', title: 'Amico di tutti', decor: 'plant_big', check: () => S.tipsHeard.length >= ALL_RESIDENTS.length },
   { id: 'lessons10', name: 'Topo di biblioteca', desc: 'Leggi 10 lezioni', title: 'Lettore', decor: 'bookshelf_full', check: () => S.lessonsRead.length >= 10 },
@@ -181,7 +181,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   // segreti della seconda parte (dalla Medaglia 4): restano "???" finché non li trovi
   { id: 'secret_ledger', name: 'Il Libro Mastro Perduto', desc: 'Ritrova le sei pagine nascoste di Mastro Ventura', title: 'Custode del Libro Mastro', decor: 'ledger', secret: true, check: () => ledgerDone() },
   { id: 'secret_tape', name: 'Lettore del Nastro', desc: 'Trova la Sala del Nastro e batti la Vecchia del Nastro', title: 'Lettore del Nastro', decor: 'tape', secret: true, check: () => !!S.flags[SECRET_FLAGS.tape] },
-  { id: 'secret_whale', name: 'Avvistamento', desc: 'Incontra la Balena nel fine settimana', title: 'Avvistatore di Balene', secret: true, check: () => !!S.flags[SECRET_FLAGS.whale] },
+  { id: 'secret_whale', name: 'Avvistamento', desc: 'Incontra lo Squalo nel fine settimana', title: 'Avvistatore di Squali', secret: true, check: () => !!S.flags[SECRET_FLAGS.whale] },
   { id: 'secret_hodl', name: 'Mani di Diamante', desc: 'Compi il rituale della pietra sul Percorso 6', title: 'Mani di Diamante', secret: true, check: () => !!S.flags[SECRET_FLAGS.hodl] },
   { id: 'secret_all', name: 'Cacciatore di Segreti', desc: 'Scopri tutti i segreti della regione', title: 'Cacciatore di Segreti', decor: 'lamp', secret: true, check: () => ledgerDone() && !!S.flags[SECRET_FLAGS.tape] && !!S.flags[SECRET_FLAGS.whale] && !!S.flags[SECRET_FLAGS.hodl] },
 ];
@@ -218,7 +218,7 @@ export function availableTitles(): string[] {
 export const DECOR_INFO: Record<string, { name: string; tile: string }> = {
   trophy_silver: { name: 'Trofeo d\'argento', tile: 'trophy_silver' },
   trophy_gold: { name: 'Trofeo d\'oro', tile: 'trophy_gold' },
-  trophy_league: { name: 'Coppa della Lega', tile: 'trophy_league' },
+  trophy_league: { name: 'Coppa di Wall Street', tile: 'trophy_league' },
   poster_badges: { name: 'Bacheca delle Medaglie', tile: 'poster' },
   plant_big: { name: 'Pianta rigogliosa', tile: 'plant' },
   bookshelf_full: { name: 'Libreria piena', tile: 'shelf' },

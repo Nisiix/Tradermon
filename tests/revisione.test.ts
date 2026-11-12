@@ -84,7 +84,7 @@ describe('Nuova Partita+, profilo e strumenti di studio', () => {
     expect(cards.map((c) => c.topic)).toContain('rischio');
     expect(cards.map((c) => c.topic)).toContain('macro');
     expect(cards.every((c) => c.total >= 12)).toBe(true);
-    expect(nextStep(cards)).toContain('Mentore');
+    expect(nextStep(cards)).toContain('Whale');
     expect(missionStars().length).toBe(8);
   });
 

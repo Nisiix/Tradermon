@@ -311,6 +311,6 @@ export function noServerLines(what: string): string[] {
 
 /** Perché serve un conto Alpaca: senza chiavi resta il percorso di studio (storia, quiz, biblioteche, Attestati). */
 export const ACCOUNT_LINES = [
-  'Senza un conto Alpaca collegato (basta il Paper, gratuito e con denaro finto) puoi seguire tutto il percorso di studio e ottenere gli Attestati dei Mentori, ma non i Sigilli pratici, la Lega e le sfide sui grafici e sui titoli reali.',
+  'Senza un conto Alpaca collegato (basta il Paper, gratuito e con denaro finto) puoi seguire tutto il percorso di studio e ottenere gli Attestati delle Whale, ma non i Sigilli pratici, Wall Street e le sfide sui grafici e sui titoli reali.',
 ];
 

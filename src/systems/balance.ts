@@ -14,7 +14,7 @@ export interface DuelPreset {
    * così la barra del giocatore arriva a zero con l'errore che rende la vittoria impossibile (systems/duelLife.ts).
    */
   damage: 0 | 1;
-  /** Sfida a numero fisso: si rispondono tutte le domande (Mentori, Lega), ma a Fiducia zero si va in tilt. */
+  /** Sfida a numero fisso: si rispondono tutte le domande (Whale, Wall Street), ma a Fiducia zero si va in tilt. */
   fixed?: boolean;
 }
 
@@ -97,7 +97,7 @@ export const DIFFICULTIES = Object.keys(DIFFICULTY) as Difficulty[];
 /** Difficoltà in cui il giocatore può chiedere, dalle opzioni, di proseguire anche quando una Prova sul conto va male. */
 export const PROVA_IGNORE: Difficulty[] = ['apprendista', 'investitore'];
 
-/** Tappe: la 0 è la Valigetta, la k si apre con l'Attestato del Mentore k. Nove quote minime, ognuna una parte del 10% del capitale. */
+/** Tappe: la 0 è la Valigetta, la k si apre con l'Attestato della Whale k. Nove quote minime, ognuna una parte del 10% del capitale. */
 export const STAGES = 9;
 export const RATE = 0.1;
 
@@ -125,6 +125,6 @@ export const LEVERAGE = { max: 2, fromBadge: 8, examBadge: 5, interest: 0.065, m
  * Lo zero operativo è 1 $: sotto quella cifra Alpaca non accetta più nemmeno l'ordine minimo, quindi non si può
  * più investire nulla. Le quote di tappa sono importi fissi, calcolati sul capitale di PARTENZA della difficoltà e
  * mai sul patrimonio del momento: chi perde troppo le finanzia sempre più a fatica, chi opera bene arriva alla
- * Lega con capitale in tasca. Quanti errori sono concessi lo decide la difficoltà, con il capitale e la quota minima.
+ * Wall Street con capitale in tasca. Quanti errori sono concessi lo decide la difficoltà, con il capitale e la quota minima.
  */
 export const ZERO = 1;

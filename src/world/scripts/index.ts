@@ -28,7 +28,7 @@ export function npcVisible(n: NpcDef): boolean {
   if (night && n.kind === 'resident' && KID_ROLES.has(RESIDENT_BY_ID[String(n.data?.rid)]?.role ?? '')) return false;
   if (night && n.kind === 'talk' && /^Bambin|^Ragazz/.test(n.name)) return false;
   switch (n.kind) {
-    // le guardie dei Percorsi si spostano con l'Attestato; quella della Lega solo con tutti e otto i Sigilli pratici
+    // le guardie dei Percorsi si spostano con l'Attestato; quella di Wall Street solo con tutti e otto i Sigilli pratici
     case 'guard': return n.data?.league ? S.seals < 8 : S.badges < (n.data?.badge as number);
     case 'aide': return !S.flags.starter;
     case 'rival': {

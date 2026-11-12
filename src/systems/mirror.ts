@@ -90,7 +90,7 @@ export function mirrorReport(declared: RiskProfile = S.profile, obs = mirrorObs(
   return { revealed, lines: [...verdict, ...facts] };
 }
 
-/** Riga per l'epilogo dopo la Lega. */
+/** Riga per l'epilogo dopo Wall Street. */
 export function mirrorEpilogue(): string | null {
   const r = revealedProfile();
   if (!r) return null;
