@@ -1,6 +1,6 @@
 import type { Difficulty } from '../types';
 
-// Tabella unica di bilanciamento: duelli (domande, risposte richieste, danno alla Fiducia) e ricompense.
+// Tabella unica di bilanciamento: duelli (domande, risposte richieste, rischio per la Fiducia) e ricompense.
 // Cambiare qui un numero cambia il gioco ovunque: niente valori sparsi negli script.
 
 export interface DuelPreset {
@@ -8,8 +8,12 @@ export interface DuelPreset {
   n: number;
   /** Risposte giuste richieste per vincere. */
   need: number;
-  /** Fiducia persa per ogni errore (0 = sfida senza rischio, la Fiducia resta com'era). */
-  damage: number;
+  /**
+   * 1 = sfida con rischio (gli errori consumano la Fiducia), 0 = senza rischio (la Fiducia resta com'era).
+   * Quanto toglie ogni errore non si sceglie qui: è 100 / (errori concessi + 1), con errori concessi = n − need,
+   * così la barra del giocatore arriva a zero con l'errore che rende la vittoria impossibile (systems/duelLife.ts).
+   */
+  damage: 0 | 1;
   /** Sfida a numero fisso: si rispondono tutte le domande (Mentori, Lega), ma a Fiducia zero si va in tilt. */
   fixed?: boolean;
 }
@@ -18,19 +22,19 @@ export interface DuelPreset {
 export const FIDUCIA_PER_CORRECT = 4;
 
 export const DUEL = {
-  trainer: { n: 3, need: 2, damage: 25 },
-  rematch: { n: 3, need: 2, damage: 25 },
-  student: { n: 4, need: 3, damage: 20 },
-  rivalFirst: { n: 5, need: 3, damage: 20 },
-  rival: { n: 5, need: 4, damage: 20 },
-  speculator: { n: 3, need: 2, damage: 20 },
-  boss: { n: 6, need: 5, damage: 18 },
-  mentor: { n: 8, need: 6, damage: 15, fixed: true },
-  mentorRematch: { n: 8, need: 7, damage: 15, fixed: true },
-  league: { n: 10, need: 8, damage: 12, fixed: true },
-  champion: { n: 12, need: 10, damage: 10, fixed: true },
-  tower: { n: 3, need: 3, damage: 34 },
-  quest: { n: 3, need: 2, damage: 5 },
+  trainer: { n: 3, need: 2, damage: 1 },
+  rematch: { n: 3, need: 2, damage: 1 },
+  student: { n: 4, need: 3, damage: 1 },
+  rivalFirst: { n: 5, need: 3, damage: 1 },
+  rival: { n: 5, need: 4, damage: 1 },
+  speculator: { n: 3, need: 2, damage: 1 },
+  boss: { n: 6, need: 5, damage: 1 },
+  mentor: { n: 8, need: 6, damage: 1, fixed: true },
+  mentorRematch: { n: 8, need: 7, damage: 1, fixed: true },
+  league: { n: 10, need: 8, damage: 1, fixed: true },
+  champion: { n: 12, need: 10, damage: 1, fixed: true },
+  tower: { n: 3, need: 3, damage: 1 },
+  quest: { n: 3, need: 2, damage: 1 },
   hermit: { n: 5, need: 4, damage: 0 },
   legend: { n: 5, need: 4, damage: 0 },
   review: { n: 5, need: 5, damage: 0 },
