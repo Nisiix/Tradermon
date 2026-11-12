@@ -4,9 +4,9 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 
 ## In numeri
 
-- Domande: **348** in 21 argomenti
+- Domande: **336** in 20 argomenti
 - Lezioni: **26**
-- Consigli degli abitanti: **62** in 30 case
+- Lezioni degli abitanti: **62** in 30 case
 - Asset didattici (di fantasia): **32**
 - Fonti: **70**
 
@@ -23,7 +23,6 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 | macro | 23 |
 | analisi | 21 |
 | regole | 21 |
-| esame | 12 |
 | stocks_base | 14 |
 | stocks_bilanci | 15 |
 | stocks_dividendi | 14 |
@@ -40,35 +39,35 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 
 | Editore | Titolo | Citazioni | Link |
 |---|---|---:|---|
-| SEC – Investor.gov | Introduction to Investing | 8 | https://www.investor.gov/introduction-investing |
-| SEC – Investor.gov | Market Order | 5 | https://www.investor.gov/introduction-investing/investing-basics/glossary/market-order |
-| SEC – Investor.gov | Stop Order | 4 | https://www.investor.gov/introduction-investing/investing-basics/glossary/stop-order |
+| SEC – Investor.gov | Introduction to Investing | 5 | https://www.investor.gov/introduction-investing |
+| SEC – Investor.gov | Market Order | 4 | https://www.investor.gov/introduction-investing/investing-basics/glossary/market-order |
+| SEC – Investor.gov | Stop Order | 5 | https://www.investor.gov/introduction-investing/investing-basics/glossary/stop-order |
 | SEC – Investor.gov | Types of Orders | 14 | https://www.investor.gov/introduction-investing/investing-basics/how-stock-markets-work/types-orders |
-| SEC – Investor.gov | Diversify Your Investments | 15 | https://www.investor.gov/introduction-investing/investing-basics/save-and-invest/diversify-your-investments |
-| SEC – Investor.gov | Asset Allocation | 17 | https://www.investor.gov/introduction-investing/investing-basics/glossary/asset-allocation |
-| SEC – Investor.gov | Compound Interest Calculator | 5 | https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator |
+| SEC – Investor.gov | Diversify Your Investments | 16 | https://www.investor.gov/introduction-investing/investing-basics/save-and-invest/diversify-your-investments |
+| SEC – Investor.gov | Asset Allocation | 16 | https://www.investor.gov/introduction-investing/investing-basics/glossary/asset-allocation |
+| SEC – Investor.gov | Compound Interest Calculator | 6 | https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator |
 | SEC – Investor.gov | Dividend | 10 | https://www.investor.gov/introduction-investing/investing-basics/glossary/dividend |
 | SEC – Investor.gov | Ponzi Scheme | 8 | https://www.investor.gov/protect-your-investments/fraud/types-fraud/ponzi-scheme |
 | SEC – Investor.gov | Pump-and-Dump Schemes | 5 | https://www.investor.gov/introduction-investing/investing-basics/glossary/pump-and-dump-schemes |
 | SEC – Investor.gov | Exchange-Traded Funds (ETFs) | 7 | https://www.investor.gov/introduction-investing/investing-basics/investment-products/mutual-funds-and-exchange-traded-2 |
 | SEC – Investor.gov | Mutual Funds | 0 | https://www.investor.gov/introduction-investing/investing-basics/investment-products/mutual-funds-and-exchange-traded-funds-etfs/mutual-funds |
-| Investopedia | Stock | 10 | https://www.investopedia.com/terms/s/stock.asp |
-| Investopedia | Exchange-Traded Fund (ETF) | 1 | https://www.investopedia.com/terms/e/etf.asp |
+| Investopedia | Stock | 9 | https://www.investopedia.com/terms/s/stock.asp |
+| Investopedia | Exchange-Traded Fund (ETF) | 3 | https://www.investopedia.com/terms/e/etf.asp |
 | Investopedia | Cryptocurrency | 4 | https://www.investopedia.com/terms/c/cryptocurrency.asp |
-| Investopedia | Blockchain | 7 | https://www.investopedia.com/terms/b/blockchain.asp |
-| Investopedia | Sharpe Ratio | 4 | https://www.investopedia.com/terms/s/sharperatio.asp |
-| Investopedia | Maximum Drawdown (MDD) | 6 | https://www.investopedia.com/terms/m/maximum-drawdown-mdd.asp |
+| Investopedia | Blockchain | 8 | https://www.investopedia.com/terms/b/blockchain.asp |
+| Investopedia | Sharpe Ratio | 3 | https://www.investopedia.com/terms/s/sharperatio.asp |
+| Investopedia | Maximum Drawdown (MDD) | 2 | https://www.investopedia.com/terms/m/maximum-drawdown-mdd.asp |
 | Investopedia | Beta | 2 | https://www.investopedia.com/terms/b/beta.asp |
 | Investopedia | Volatility | 4 | https://www.investopedia.com/terms/v/volatility.asp |
-| Investopedia | Bid-Ask Spread | 5 | https://www.investopedia.com/terms/b/bid-askspread.asp |
+| Investopedia | Bid-Ask Spread | 6 | https://www.investopedia.com/terms/b/bid-askspread.asp |
 | Investopedia | Dollar-Cost Averaging (DCA) | 5 | https://www.investopedia.com/terms/d/dollarcostaveraging.asp |
 | Investopedia | Rebalancing | 10 | https://www.investopedia.com/terms/r/rebalancing.asp |
-| Investopedia | Earnings Per Share (EPS) | 4 | https://www.investopedia.com/terms/e/eps.asp |
-| Investopedia | Price-to-Earnings (P/E) Ratio | 10 | https://www.investopedia.com/terms/p/price-earningsratio.asp |
+| Investopedia | Earnings Per Share (EPS) | 3 | https://www.investopedia.com/terms/e/eps.asp |
+| Investopedia | Price-to-Earnings (P/E) Ratio | 9 | https://www.investopedia.com/terms/p/price-earningsratio.asp |
 | Investopedia | Debt-to-Equity (D/E) Ratio | 6 | https://www.investopedia.com/terms/d/debtequityratio.asp |
 | Investopedia | Tracking Error | 4 | https://www.investopedia.com/terms/t/trackingerror.asp |
 | Investopedia | Synthetic ETF | 3 | https://www.investopedia.com/terms/s/synthetic-etf.asp |
-| Investopedia | Expense Ratio | 9 | https://www.investopedia.com/terms/e/expenseratio.asp |
+| Investopedia | Expense Ratio | 7 | https://www.investopedia.com/terms/e/expenseratio.asp |
 | Investopedia | Index Fund | 5 | https://www.investopedia.com/terms/i/indexfund.asp |
 | Investopedia | Stablecoin | 6 | https://www.investopedia.com/terms/s/stablecoin.asp |
 | Investopedia | Private Key | 4 | https://www.investopedia.com/terms/p/private-key.asp |
@@ -80,36 +79,36 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 | Investopedia | Herd Instinct | 2 | https://www.investopedia.com/terms/h/herdinstinct.asp |
 | Investopedia | Fear of Missing Out (FOMO) | 3 | https://www.investopedia.com/terms/f/fear-missing-out-fomo.asp |
 | Investopedia | Overconfidence Bias | 4 | https://www.investopedia.com/terms/o/overconfidence-bias.asp |
-| Investopedia | Rule of 72 | 2 | https://www.investopedia.com/terms/r/ruleof72.asp |
+| Investopedia | Rule of 72 | 1 | https://www.investopedia.com/terms/r/ruleof72.asp |
 | Investopedia | Inflation | 7 | https://www.investopedia.com/terms/i/inflation.asp |
-| Investopedia | Stop-Loss Order | 3 | https://www.investopedia.com/terms/s/stop-lossorder.asp |
-| Investopedia | Position Sizing | 7 | https://www.investopedia.com/terms/p/positionsizing.asp |
+| Investopedia | Stop-Loss Order | 5 | https://www.investopedia.com/terms/s/stop-lossorder.asp |
+| Investopedia | Position Sizing | 6 | https://www.investopedia.com/terms/p/positionsizing.asp |
 | Investopedia | Leverage | 9 | https://www.investopedia.com/terms/l/leverage.asp |
-| Investopedia | Bond | 10 | https://www.investopedia.com/terms/b/bond.asp |
-| Investopedia | Duration | 6 | https://www.investopedia.com/terms/d/duration.asp |
+| Investopedia | Bond | 11 | https://www.investopedia.com/terms/b/bond.asp |
+| Investopedia | Duration | 5 | https://www.investopedia.com/terms/d/duration.asp |
 | Investopedia | Yield Curve | 3 | https://www.investopedia.com/terms/y/yieldcurve.asp |
 | Investopedia | Central Bank | 6 | https://www.investopedia.com/terms/c/centralbank.asp |
 | Investopedia | Correlation | 6 | https://www.investopedia.com/terms/c/correlation.asp |
 | Investopedia | Compound Interest | 2 | https://www.investopedia.com/terms/c/compoundinterest.asp |
 | Investopedia | Dividend Reinvestment Plan (DRIP) | 3 | https://www.investopedia.com/terms/d/dividendreinvestmentplan.asp |
 | Investopedia | Payout Ratio | 4 | https://www.investopedia.com/terms/p/payoutratio.asp |
-| Investopedia | Market Capitalization | 4 | https://www.investopedia.com/terms/m/marketcapitalization.asp |
+| Investopedia | Market Capitalization | 5 | https://www.investopedia.com/terms/m/marketcapitalization.asp |
 | Investopedia | Moving Average (MA) | 2 | https://www.investopedia.com/terms/m/movingaverage.asp |
 | Investopedia | Relative Strength Index (RSI) | 1 | https://www.investopedia.com/terms/r/rsi.asp |
-| Investopedia | Fundamental Analysis | 12 | https://www.investopedia.com/terms/f/fundamentalanalysis.asp |
+| Investopedia | Fundamental Analysis | 14 | https://www.investopedia.com/terms/f/fundamentalanalysis.asp |
 | Investopedia | Technical Analysis | 6 | https://www.investopedia.com/terms/t/technicalanalysis.asp |
 | Investopedia | Liquidity | 4 | https://www.investopedia.com/terms/l/liquidity.asp |
 | Investopedia | Bear Market | 2 | https://www.investopedia.com/terms/b/bearmarket.asp |
-| Investopedia | Phishing | 6 | https://www.investopedia.com/terms/p/phishing.asp |
-| Investopedia | MiFID II | 5 | https://www.investopedia.com/terms/m/mifid-ii.asp |
+| Investopedia | Phishing | 5 | https://www.investopedia.com/terms/p/phishing.asp |
+| Investopedia | MiFID II | 4 | https://www.investopedia.com/terms/m/mifid-ii.asp |
 | Investopedia | Martingale System | 1 | https://www.investopedia.com/terms/m/martingalesystem.asp |
 | Investopedia | House Edge | 2 | https://www.investopedia.com/terms/h/houseedge.asp |
 | Investopedia | Paper Trade | 2 | https://www.investopedia.com/terms/p/paper-trade.asp |
-| Investopedia | Asset Allocation | 6 | https://www.investopedia.com/terms/a/assetallocation.asp |
+| Investopedia | Asset Allocation | 8 | https://www.investopedia.com/terms/a/assetallocation.asp |
 | Banca d'Italia | L'economia per tutti | 14 | https://economiapertutti.bancaditalia.it/ |
-| Consob | Educazione finanziaria | 19 | https://www.consob.it/web/investor-education |
-| CFA Institute | Investment Foundations | 30 | https://www.cfainstitute.org/ |
-| ESMA | Avvertenze per gli investitori | 14 | https://www.esma.europa.eu/ |
+| Consob | Educazione finanziaria | 16 | https://www.consob.it/web/investor-education |
+| CFA Institute | Investment Foundations | 28 | https://www.cfainstitute.org/ |
+| ESMA | Avvertenze per gli investitori | 12 | https://www.esma.europa.eu/ |
 
 ## Lezioni
 
@@ -140,7 +139,7 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 - **Le classi di attivo** (mixed_base) · fonte: SEC – Investor.gov
 - **Costruire un'allocazione** (mixed_allocazione) · fonte: Investopedia
 
-## Consigli degli abitanti
+## Lezioni degli abitanti
 
 Ogni abitante insegna un argomento diverso (controllato dai test).
 
