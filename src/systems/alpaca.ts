@@ -14,6 +14,7 @@ import * as C from './cloud';
 import * as K from './keystore';
 import { SUPABASE_URL, SUPABASE_KEY } from '../config/supabase';
 import { createCore, validKeys } from '../../supabase/functions/alpaca/core.js';
+import { T } from '../i18n';
 
 const API_BASE = String((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_API_BASE ?? '').replace(/\/$/, '');
 
@@ -28,7 +29,7 @@ export interface KeyStatus { configured: boolean; keyHint?: string }
 export interface ServerStatus { ok: boolean; paper: KeyStatus; cloud?: boolean; direct?: boolean }
 
 /** Il browser non raggiunge Alpaca e il giocatore non ha (ancora) scelto il passaggio dal servizio di Tradermon. */
-export const DIRECT_BLOCKED = 'Questo browser non riesce a raggiungere Alpaca direttamente: controlla la connessione ed eventuali blocchi di contenuti. In alternativa, dalla voce "Chiavi API" puoi far passare il conto Paper dal servizio di Tradermon.';
+export const DIRECT_BLOCKED = T('Questo browser non riesce a raggiungere Alpaca direttamente: controlla la connessione ed eventuali blocchi di contenuti. In alternativa, dalla voce "Chiavi API" puoi far passare il conto Paper dal servizio di Tradermon.');
 
 const ALPACA = { paper: 'https://paper-api.alpaca.markets/v2', data: 'https://data.alpaca.markets' } as const;
 
@@ -37,7 +38,7 @@ async function parse<T>(res: Response): Promise<T> {
   let data: unknown = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = { message: text }; }
   if (!res.ok) {
-    const msg = (data as { message?: string; error?: string })?.message ?? (data as { error?: string })?.error ?? `Errore ${res.status}`;
+    const msg = (data as { message?: string; error?: string })?.message ?? (data as { error?: string })?.error ?? T`Errore ${res.status}`;
     throw new Error(msg);
   }
   return data as T;
@@ -94,7 +95,7 @@ async function recall(env: Env, quiet = false): Promise<void> {
   if (mem[env]) return;
   try { const k = await K.loadKeys(env); if (k) mem[env] = k; } catch (e) {
     if (quiet) return;
-    if ((e as Error).message === 'LOCKED') throw new Error(`Le chiavi Paper sono salvate cifrate su questo dispositivo: per usarle serve la password del giocatore. Aprile dalla voce "Chiavi API".`);
+    if ((e as Error).message === 'LOCKED') throw new Error(T`Le chiavi Paper sono salvate cifrate su questo dispositivo: per usarle serve la password del giocatore. Aprile dalla voce "Chiavi API".`);
     throw e;
   }
 }
@@ -135,24 +136,24 @@ const core = createCore({
   fetch: alpacaFetch,
 });
 
-const UNREACHABLE = 'Il browser non riesce a raggiungere Alpaca: controlla la connessione e riprova. Se usi un blocco di contenuti o una rete aziendale, potrebbe impedire le chiamate verso alpaca.markets.';
+const UNREACHABLE = T('Il browser non riesce a raggiungere Alpaca: controlla la connessione e riprova. Se usi un blocco di contenuti o una rete aziendale, potrebbe impedire le chiamate verso alpaca.markets.');
 
 async function directCall<T>(path: string, init?: RequestInit): Promise<T> {
   const u = new URL(path, 'https://tradermon.invalid');
   const segs = u.pathname.split('/').filter(Boolean);
-  if (segs[0] !== 'api') throw new Error('Endpoint non disponibile');
+  if (segs[0] !== 'api') throw new Error(T('Endpoint non disponibile'));
   const parts = segs.slice(1);
-  if (parts[0] === 'alpaca' && parts[1] !== 'paper') throw new Error('Endpoint non disponibile');
+  if (parts[0] === 'alpaca' && parts[1] !== 'paper') throw new Error(T('Endpoint non disponibile'));
   await recall('paper');
   const h = new Headers(init?.headers);
   try {
     const out = await core.handle({
       method: (init?.method ?? 'GET').toUpperCase(), parts, query: u.searchParams,
       header: (n) => h.get(n),
-      body: async () => { try { return init?.body ? JSON.parse(String(init.body)) : {}; } catch { throw new Error('Richiesta non valida'); } },
+      body: async () => { try { return init?.body ? JSON.parse(String(init.body)) : {}; } catch { throw new Error(T('Richiesta non valida')); } },
     });
-    if (!out) throw new Error('Endpoint non disponibile');
-    if (out.status >= 400) throw new Error(out.body?.message ?? `Errore ${out.status}`);
+    if (!out) throw new Error(T('Endpoint non disponibile'));
+    if (out.status >= 400) throw new Error(out.body?.message ?? T`Errore ${out.status}`);
     return out.body as T;
   } catch (e) {
     if (!(e instanceof TypeError)) throw e;
@@ -169,12 +170,12 @@ async function directCall<T>(path: string, init?: RequestInit): Promise<T> {
 // ---- riserva: funzione Supabase ----
 
 async function cloudCall<T>(path: string, init?: RequestInit): Promise<T> {
-  if (path.startsWith('/api/alpaca/') && !path.startsWith('/api/alpaca/paper/')) throw new Error('Endpoint non disponibile');
+  if (path.startsWith('/api/alpaca/') && !path.startsWith('/api/alpaca/paper/')) throw new Error(T('Endpoint non disponibile'));
   const token = await C.accessToken();
-  if (!token) throw new Error('Per usare il conto Paper dal sito entra con il tuo giocatore Tradermon (ricarica la pagina).');
+  if (!token) throw new Error(T('Per usare il conto Paper dal sito entra con il tuo giocatore Tradermon (ricarica la pagina).'));
   await recall('paper');
   const k = mem.paper;
-  if (!k) throw new Error('Le chiavi del conto Alpaca Paper non sono collegate.');
+  if (!k) throw new Error(T('Le chiavi del conto Alpaca Paper non sono collegate.'));
   const res = await fetch(`${SUPABASE_URL}/functions/v1/alpaca${path}`, {
     ...init,
     headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, 'x-alpaca-key': k.keyId, 'x-alpaca-secret': k.secret, ...(init?.headers ?? {}) },
@@ -208,10 +209,10 @@ export async function serverStatus(): Promise<ServerStatus | null> {
 type KeysResult = { ok: boolean; account?: { status: string; currency: string }; stored?: boolean; storeError?: string };
 
 export async function setKeys(env: Env, keyId: string, secret: string): Promise<KeysResult> {
-  if (env !== 'paper') throw new Error('Il gioco collega solo il conto Alpaca Paper.');
+  if (env !== 'paper') throw new Error(T('Il gioco collega solo il conto Alpaca Paper.'));
   if ((await transport()) !== 'local') {
     // solo caratteri che possono stare in un'intestazione: una chiave incollata male non deve sembrare un blocco di rete
-    if (!validKeys(keyId, secret) || !/^[\x21-\x7e]+$/.test(secret)) throw new Error('Chiavi non valide');
+    if (!validKeys(keyId, secret) || !/^[\x21-\x7e]+$/.test(secret)) throw new Error(T('Chiavi non valide'));
     // la verifica è una lettura del conto fatta con le chiavi nuove; se Alpaca le rifiuta tornano quelle di prima
     const prev = mem[env];
     mem[env] = { keyId, secret };
@@ -221,7 +222,7 @@ export async function setKeys(env: Env, keyId: string, secret: string): Promise<
     } catch (e) {
       if (prev) mem[env] = prev; else delete mem[env];
       const msg = (e as Error).message;
-      throw new Error(msg === UNREACHABLE || msg === DIRECT_BLOCKED ? msg : `Alpaca ha rifiutato le chiavi Paper: ${msg}`);
+      throw new Error(msg === UNREACHABLE || msg === DIRECT_BLOCKED ? msg : T`Alpaca ha rifiutato le chiavi Paper: ${msg}`);
     }
   }
   return call<KeysResult>('/api/keys', { method: 'POST', body: JSON.stringify({ env, keyId, secret }) });
@@ -305,12 +306,12 @@ export function isLocalHost(): boolean {
 /** Spiegazione unica quando l'intermediario verso Alpaca non è raggiungibile. */
 export function noServerLines(what: string): string[] {
   return isLocalHost()
-    ? [`Per ${what} serve il server locale di Tradermon, che ora non risponde.`, 'Avvialo come spiegato nel file README del progetto.', ...ACCOUNT_LINES]
-    : [`Per ${what} serve un conto Alpaca collegato con le chiavi API. Dal sito le chiavi restano cifrate su questo dispositivo e si aprono con la password del tuo giocatore: ricarica la pagina ed entra con nome e password.`, 'La sezione Guida della pagina iniziale spiega passo per passo come creare il conto e collegare le chiavi.', ...ACCOUNT_LINES];
+    ? [T`Per ${what} serve il server locale di Tradermon, che ora non risponde.`, T('Avvialo come spiegato nel file README del progetto.'), ...ACCOUNT_LINES]
+    : [T`Per ${what} serve un conto Alpaca collegato con le chiavi API. Dal sito le chiavi restano cifrate su questo dispositivo e si aprono con la password del tuo giocatore: ricarica la pagina ed entra con nome e password.`, T('La sezione Guida della pagina iniziale spiega passo per passo come creare il conto e collegare le chiavi.'), ...ACCOUNT_LINES];
 }
 
 /** Perché serve un conto Alpaca: senza chiavi resta il percorso di studio (storia, quiz, biblioteche, Attestati). */
 export const ACCOUNT_LINES = [
-  'Senza un conto Alpaca collegato (basta il Paper, gratuito e con denaro finto) puoi seguire tutto il percorso di studio e ottenere gli Attestati delle Whale, ma non i Sigilli pratici, Wall Street e le sfide sui grafici e sui titoli reali.',
+  T('Senza un conto Alpaca collegato (basta il Paper, gratuito e con denaro finto) puoi seguire tutto il percorso di studio e ottenere gli Attestati delle Whale, ma non i Sigilli pratici, Wall Street e le sfide sui grafici e sui titoli reali.'),
 ];
 

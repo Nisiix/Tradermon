@@ -13,6 +13,7 @@ import { ASSET_BY_ID } from '../data/assets';
 import { DIFFICULTY } from './balance';
 import { fmtMoney, fmtPx } from './portfolio';
 import { planError, positionSize, mandateOn, sellOut, type BossDef } from './boss';
+import { T } from '../i18n';
 
 const isCrypto = (id: string) => id.includes('/');
 const STOP_TAG = 'boss-stop';
@@ -33,10 +34,10 @@ export function sizeFor(entry: number, stop: number, risk: number): { amount: nu
 /** Si può aprire adesso un mandato su questo titolo? Restituisce il motivo del no, o ''. */
 export function assetProblem(asset: string): string {
   const a = ASSET_BY_ID[asset];
-  if (!a) return 'Titolo non in vetrina.';
+  if (!a) return T('Titolo non in vetrina.');
   const pf = S.portfolio;
-  if (Object.values(S.boss.runs ?? {}).some((r) => r.plan?.asset === asset)) return `${a.ticker} è già il titolo di un altro piano in corso.`;
-  if (pf.positions.some((p) => p.id === asset) || pf.pending.some((p) => p.asset === asset)) return `Hai già ${a.ticker} in portafoglio o in un ordine: per il piano serve un titolo che non possiedi, così la posizione del mandato resta distinta dalle altre.`;
+  if (Object.values(S.boss.runs ?? {}).some((r) => r.plan?.asset === asset)) return T`${a.ticker} è già il titolo di un altro piano in corso.`;
+  if (pf.positions.some((p) => p.id === asset) || pf.pending.some((p) => p.asset === asset)) return T`Hai già ${a.ticker} in portafoglio o in un ordine: per il piano serve un titolo che non possiedi, così la posizione del mandato resta distinta dalle altre.`;
   return '';
 }
 
@@ -46,29 +47,29 @@ export function assetProblem(asset: string): string {
  */
 export async function openMandate(def: BossDef, want: { asset: string; stop: number; target: number; risk: number }, quality: number): Promise<OpenResult> {
   const run = S.boss.runs?.[def.id];
-  if (!run) return fail('Prima supera il quiz del Boss.');
-  if (run.plan) return fail('Hai già un piano in corso con questo Boss.');
+  if (!run) return fail(T('Prima supera il quiz del Boss.'));
+  if (run.plan) return fail(T('Hai già un piano in corso con questo Boss.'));
   const bad = assetProblem(want.asset);
   if (bad) return fail(bad);
   const a = ASSET_BY_ID[want.asset];
   const crypto = isCrypto(want.asset);
   let last = 0;
   try {
-    if (!crypto && !(await A.clock('paper')).is_open) return fail('La Borsa è chiusa: l\'ordine resterebbe in coda e il mandato partirebbe a un prezzo che non conosci. Torna a Borsa aperta, oppure scegli una cripto.');
+    if (!crypto && !(await A.clock('paper')).is_open) return fail(T('La Borsa è chiusa: l\'ordine resterebbe in coda e il mandato partirebbe a un prezzo che non conosci. Torna a Borsa aperta, oppure scegli una cripto.'));
     last = (await A.latest(want.asset, crypto ? 'crypto' : 'stocks')).price;
-  } catch (e) { return fail(`Non riesco a leggere il mercato: ${(e as Error).message}`); }
+  } catch (e) { return fail(T`Non riesco a leggere il mercato: ${(e as Error).message}`); }
   const err = planError({ entry: last, stop: want.stop, target: want.target, risk: want.risk });
-  if (err) return fail(`Il prezzo è ora ${fmtPx(last)} $ e il piano non regge: ${err}`);
+  if (err) return fail(T`Il prezzo è ora ${fmtPx(last)} $ e il piano non regge: ${err}`);
   const equity = Acc.equity();
   const size = sizeFor(last, want.stop, want.risk);
-  if (!(size.amount >= 1)) return fail('Non hai liquidità disponibile per questo piano: libera capitale dalla Banca e riprova.');
+  if (!(size.amount >= 1)) return fail(T('Non hai liquidità disponibile per questo piano: libera capitale dalla Banca e riprova.'));
 
   const b = await Acc.buy(want.asset, size.amount, { tag: 'boss' });
   if (!b.ok) return fail(b.msg);
   if (!b.filled) {
     const queued = S.portfolio.pending.find((p) => p.asset === want.asset && p.side === 'buy' && p.tag === 'boss');
     if (queued) await Acc.cancel(queued);
-    return fail('Alpaca non ha eseguito subito l\'acquisto, quindi l\'ho annullato: il mandato parte solo con un ingresso eseguito al momento. Riprova tra poco.');
+    return fail(T('Alpaca non ha eseguito subito l\'acquisto, quindi l\'ho annullato: il mandato parte solo con un ingresso eseguito al momento. Riprova tra poco.'));
   }
   const entry = b.price ?? last;
   const qty = S.portfolio.positions.find((p) => p.id === want.asset)?.qty ?? b.qty ?? 0;
@@ -77,13 +78,13 @@ export async function openMandate(def: BossDef, want: { asset: string; stop: num
   const plan: BossPlan = { asset: want.asset, side: 'long', entry, stop: want.stop, target: want.target, risk, placedAt: Date.now(), deadline: Date.now() + def.durationMs, quality, real: true, amount: size.amount, qty };
   if (!(want.stop < entry && entry < want.target)) {
     save();
-    return fail(`L'acquisto è stato eseguito a ${fmtPx(entry)} $, fuori dai prezzi del piano: il mandato non parte. La posizione su ${a.ticker} è tua: puoi tenerla o venderla dalla Banca. Il quiz resta valido.`);
+    return fail(T`L'acquisto è stato eseguito a ${fmtPx(entry)} $, fuori dai prezzi del piano: il mandato non parte. La posizione su ${a.ticker} è tua: puoi tenerla o venderla dalla Banca. Il quiz resta valido.`);
   }
   run.plan = plan;
-  const notes = [`Comprati ${fmtMoney(size.amount)} di ${a.ticker} a ${fmtPx(entry)} $ sul conto di gioco.`];
-  if (size.capped) notes.push(`La liquidità disponibile non bastava per il rischio che avevi chiesto: la posizione è più piccola e il rischio vero è ${(risk * 100).toFixed(1)}% del capitale.`);
+  const notes = [T`Comprati ${fmtMoney(size.amount)} di ${a.ticker} a ${fmtPx(entry)} $ sul conto di gioco.`];
+  if (size.capped) notes.push(T`La liquidità disponibile non bastava per il rischio che avevi chiesto: la posizione è più piccola e il rischio vero è ${(risk * 100).toFixed(1)}% del capitale.`);
   const s = await Acc.sell(want.asset, qty, { type: 'stop', price: want.stop, tag: STOP_TAG });
-  notes.push(s.ok ? s.msg : `Lo stop vero non è partito (${s.msg}). Puoi rimetterlo dalla Torre; il piano vale comunque e lo stop viene giudicato sulle candele.`);
+  notes.push(s.ok ? s.msg : T`Lo stop vero non è partito (${s.msg}). Puoi rimetterlo dalla Torre; il piano vale comunque e lo stop viene giudicato sulle candele.`);
   save();
   return { ok: true, msg: notes[0], plan, notes };
 }
@@ -104,7 +105,7 @@ export function stopMissing(id: string): boolean {
 
 export async function restoreStop(id: string): Promise<OrderResult> {
   const p = planOf(id);
-  if (!p || !(held(p.asset) > 0)) return { ok: false, msg: 'Non c\'è una posizione da proteggere.' };
+  if (!p || !(held(p.asset) > 0)) return { ok: false, msg: T('Non c\'è una posizione da proteggere.') };
   return Acc.sell(p.asset, held(p.asset), { type: 'stop', price: p.stop, tag: STOP_TAG });
 }
 
@@ -115,12 +116,12 @@ export async function restoreStop(id: string): Promise<OrderResult> {
  */
 export async function closeMandate(id: string, why: 'annulla' | 'obiettivo' | 'mandato', frac = 1): Promise<OrderResult> {
   const p = planOf(id);
-  if (!p) return { ok: false, msg: 'Nessun piano con ordini veri in corso.' };
+  if (!p) return { ok: false, msg: T('Nessun piano con ordini veri in corso.') };
   const q = held(p.asset);
   if (!(q > 0)) {
     // la posizione non c'è più (lo stop è già scattato): resta solo da annullare la sfida, se è questo che si chiede
     if (why === 'annulla') { sellOut(S.boss, id); save(); }
-    return { ok: why === 'annulla', msg: 'La posizione del mandato è già stata venduta.' };
+    return { ok: why === 'annulla', msg: T('La posizione del mandato è già stata venduta.') };
   }
   const r = await Acc.sell(p.asset, q * Math.min(1, Math.max(0, frac)), { tag: why === 'annulla' ? 'mercato' : why });
   // la decisione di vendere annulla la sfida anche se la vendita non è partita per un problema di rete

@@ -1,6 +1,7 @@
 // Preferenze del dispositivo (non del salvataggio): tasti personalizzati, modalità touch e volume generale.
 // Restano valide anche nella schermata iniziale, prima di caricare una partita.
 
+import { T } from '../i18n';
 export type Action = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'menu' | 'settings';
 export type TouchMode = 'auto' | 'on' | 'off';
 
@@ -8,14 +9,14 @@ export interface ActionInfo { id: Action; name: string; use: string }
 
 /** Ogni comando con il suo uso, nell'ordine in cui compare nella guida e nelle impostazioni. */
 export const ACTIONS: ActionInfo[] = [
-  { id: 'up', name: 'Su', use: 'Cammina verso l\'alto; nei menu sale di una voce.' },
-  { id: 'down', name: 'Giù', use: 'Cammina verso il basso; nei menu scende di una voce.' },
-  { id: 'left', name: 'Sinistra', use: 'Cammina a sinistra; nelle finestre passa al pulsante precedente.' },
-  { id: 'right', name: 'Destra', use: 'Cammina a destra; nelle finestre passa al pulsante successivo.' },
-  { id: 'a', name: 'Conferma (A)', use: 'Parla con chi hai davanti, legge i cartelli, conferma una scelta e fa scorrere i dialoghi.' },
-  { id: 'b', name: 'Indietro (B)', use: 'Chiude la finestra aperta, annulla una scelta e torna al passo precedente.' },
-  { id: 'menu', name: 'Menu', use: 'Apre il menu di gioco: Investidex, Portafoglio, Agenda, Diario, Lezioni, Salva e Opzioni.' },
-  { id: 'settings', name: 'Impostazioni', use: 'Apre e chiude il pannello ⚙ (anche nel mondo): comandi, touch, volume e ritorno alla home.' },
+  { id: 'up', name: 'Su', use: T('Cammina verso l\'alto; nei menu sale di una voce.') },
+  { id: 'down', name: T('Giù'), use: T('Cammina verso il basso; nei menu scende di una voce.') },
+  { id: 'left', name: T('Sinistra'), use: T('Cammina a sinistra; nelle finestre passa al pulsante precedente.') },
+  { id: 'right', name: T('Destra'), use: T('Cammina a destra; nelle finestre passa al pulsante successivo.') },
+  { id: 'a', name: T('Conferma (A)'), use: T('Parla con chi hai davanti, legge i cartelli, conferma una scelta e fa scorrere i dialoghi.') },
+  { id: 'b', name: T('Indietro (B)'), use: T('Chiude la finestra aperta, annulla una scelta e torna al passo precedente.') },
+  { id: 'menu', name: T('Menu'), use: T('Apre il menu di gioco: Investidex, Portafoglio, Agenda, Diario, Lezioni, Salva e Opzioni.') },
+  { id: 'settings', name: T('Impostazioni'), use: T('Apre e chiude il pannello ⚙ (anche nel mondo): comandi, touch, volume e ritorno alla home.') },
 ];
 
 export const MAX_KEYS = 3;
@@ -118,8 +119,8 @@ export function resetBindings() {
 
 const NAMES: Record<string, string> = {
   ArrowUp: '▲', ArrowDown: '▼', ArrowLeft: '◀', ArrowRight: '▶',
-  Enter: 'Invio', Space: 'Spazio', Escape: 'Esc', Backspace: '⌫', Tab: 'Tab',
-  ShiftLeft: 'Maiusc', ShiftRight: 'Maiusc D', ControlLeft: 'Ctrl', ControlRight: 'Ctrl D', AltLeft: 'Alt', AltRight: 'AltGr',
+  Enter: T('Invio'), Space: T('Spazio'), Escape: 'Esc', Backspace: '⌫', Tab: 'Tab',
+  ShiftLeft: T('Maiusc'), ShiftRight: T('Maiusc D'), ControlLeft: T('Ctrl'), ControlRight: T('Ctrl D'), AltLeft: 'Alt', AltRight: 'AltGr',
   Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: '\'', BracketLeft: '[', BracketRight: ']', Minus: '-', Equal: '=', Backquote: '\\',
 };
 

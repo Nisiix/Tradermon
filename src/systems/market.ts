@@ -1,4 +1,5 @@
 import type { MarketState } from '../types';
+import { T } from '../i18n';
 
 const TD = 252;
 
@@ -43,7 +44,7 @@ export function computeClimate(index: number[]): MarketState['climate'] {
 }
 
 export const CLIMATE_LABEL: Record<MarketState['climate'], string> = {
-  toro: 'Toro (rialzo)', orso: 'Orso (ribasso)', tempesta: 'Tempesta (alta volatilità)', laterale: 'Laterale',
+  toro: T('Toro (rialzo)'), orso: T('Orso (ribasso)'), tempesta: T('Tempesta (alta volatilità)'), laterale: T('Laterale'),
 };
 
 // ---------------- Metriche ----------------
@@ -85,6 +86,6 @@ export function marketClock(now = new Date()): { open: boolean; label: string; n
   const after = weekday && mins >= 960 && mins < 1200;
   const localH = now.getHours();
   const night = localH >= 21 || localH < 6;
-  const label = open ? 'Borsa USA aperta' : pre ? 'Pre-market' : after ? 'After-hours' : 'Borsa USA chiusa';
+  const label = open ? T('Borsa USA aperta') : pre ? T('Pre-market') : after ? T('After-hours') : T('Borsa USA chiusa');
   return { open, label, night };
 }

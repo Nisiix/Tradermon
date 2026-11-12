@@ -19,6 +19,7 @@ import { beep } from '../systems/audio';
 import { addPlayTime, formatPlayTime, startPlayTimeAutosave } from '../systems/playtime';
 import { View3D, type MirrorFrame, type MirrorItem, type Painter } from '../render3d/view';
 import { tick } from '../systems/account';
+import { T } from '../i18n';
 
 const DIRS: Record<string, [number, number, 0 | 1 | 2 | 3]> = { down: [0, 1, 0], up: [0, -1, 1], left: [-1, 0, 2], right: [1, 0, 3] };
 const DIR_NAME = ['down', 'up', 'left', 'right'] as const;
@@ -130,7 +131,7 @@ export class WorldScene extends Phaser.Scene {
       try {
         this.view3d = new View3D(document.getElementById('game')!, want as 'alti' | 'bassi');
         if (this.map) { this.syncMood(); this.view3d.loadMap(this.map, this.night, this.animFrame); }
-      } catch (e) { console.error(e); this.view3d = undefined; this.view3dFx = ''; S.options.gfx = '2d'; toast('Grafica 2.5D non disponibile su questo dispositivo: resta il 2D.'); }
+      } catch (e) { console.error(e); this.view3d = undefined; this.view3dFx = ''; S.options.gfx = '2d'; toast(T('Grafica 2.5D non disponibile su questo dispositivo: resta il 2D.')); }
     }
     this.game.canvas.style.display = this.view3d ? 'none' : '';
     if (!this.view3d) this.scale.refresh();
@@ -371,7 +372,7 @@ export class WorldScene extends Phaser.Scene {
     if (!atHodlStone()) { this.idleMs = 0; return; }
     const before = this.idleMs;
     this.idleMs += Math.min(delta, 100);
-    if (before < HODL_MS / 2 && this.idleMs >= HODL_MS / 2) toast('Le mani di pietra sembrano scaldarsi...');
+    if (before < HODL_MS / 2 && this.idleMs >= HODL_MS / 2) toast(T('Le mani di pietra sembrano scaldarsi...'));
     if (this.idleMs >= HODL_MS) { this.idleMs = 0; void this.runScript(() => hodlRitual()); }
   }
 
@@ -409,11 +410,11 @@ export class WorldScene extends Phaser.Scene {
     const nx = S.x + dx, ny = S.y + dy;
     const warp = this.map.warps.find((w) => w.x === nx && w.y === ny) ?? (this.map.tiles[ny]?.[nx] === TILE.DOOR ? undefined : undefined);
     if (warp && !this.blockedNpcOnly(nx, ny)) {
-      if (warp.lock === 'archive' && S.badges < 5) { void this.runScript(() => say(['La porta dell\'Archivio è chiusa.', 'Una targa dice: "Si apre solo a chi sa leggere oltre la superficie" (Whale 5).'], 'Archivio')); return; }
-      if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say(['La Torre delle Sfide apre solo al Campione di Wall Street.'], 'Torre')); return; }
+      if (warp.lock === 'archive' && S.badges < 5) { void this.runScript(() => say([T('La porta dell\'Archivio è chiusa.'), T('Una targa dice: "Si apre solo a chi sa leggere oltre la superficie" (Whale 5).')], T('Archivio'))); return; }
+      if (warp.lock === 'tower' && !S.flags.champion) { void this.runScript(() => say([T('La Torre delle Sfide apre solo al Campione di Wall Street.')], T('Torre'))); return; }
       if (warp.lock === 'secret' && !S.flags[SECRET_FLAGS.tapeOpen]) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'swim' && !canSwim()) { if (!turned || continuing) this.bump(di); return; }
-      if (warp.lock === 'dark' && !canSeeDark()) { void this.runScript(() => say(['È buio pesto: non si vede nemmeno dove mettere i piedi.', `Senza la ${ABILITY.dark.name} (Attestato ${ABILITY.dark.badge}) è meglio non entrare.`])); return; }
+      if (warp.lock === 'dark' && !canSeeDark()) { void this.runScript(() => say([T('È buio pesto: non si vede nemmeno dove mettere i piedi.'), T`Senza la ${ABILITY.dark.name} (Attestato ${ABILITY.dark.badge}) è meglio non entrare.`])); return; }
       this.walkTo(nx, ny, di, () => {
         beep('door');
         this.moving = true;
@@ -494,7 +495,7 @@ export class WorldScene extends Phaser.Scene {
   afterStep() {
     if (this.onWater(S.x, S.y) && !S.flags.raftTip) {
       S.flags.raftTip = true;
-      toast('Flusso di Liquidità: la zattera ti porta sull\'acqua. Cerca le Isole della Liquidità sui Percorsi 3, 5 e 7!');
+      toast(T('Flusso di Liquidità: la zattera ti porta sull\'acqua. Cerca le Isole della Liquidità sui Percorsi 3, 5 e 7!'));
     }
     // allievi dell'Exchange: chi prova a superarli alle spalle viene fermato
     for (const n of this.npcs) {
@@ -540,30 +541,30 @@ export class WorldScene extends Phaser.Scene {
     if (page) return void this.runScript(() => findPage(page));
     if (t === TILE.SHELF && isTapeShelf(S.map, fx, fy) && !S.flags[SECRET_FLAGS.tapeOpen]) {
       return void this.runScript(async () => {
-        const opened = await tapeShelf(async (prompt) => (await choose(['Sì', 'No'], { prompt, cancel: true })) === 0);
+        const opened = await tapeShelf(async (prompt) => (await choose([T('Sì'), 'No'], { prompt, cancel: true })) === 0);
         if (opened) { this.cameras.main.shake(160, 0.004); this.loadMap(S.map, S.x, S.y, DIRS[S.facing][2] as 0 | 1 | 2 | 3); }
       });
     }
     const sec = this.map.sections?.find((sc) => fy === sc.y && fx >= sc.x && fx < sc.x + sc.w);
     if (t === TILE.SHELF && sec) return void this.runScript(() => librarySection(sec, Number(/^library_(\d+)$/.exec(this.map.id)?.[1] ?? 0)));
-    if (t === TILE.SHELF) return void this.runScript(() => say('Scaffali pieni di libri di economia. Le lezioni si leggono parlando con la Bibliotecaria o dal menu.'));
-    if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? 'Il rumore delle notizie non ti tocca più: puoi attraversare.' : ['Un muro di notizie urlate, grafici impazziti e "consigli" dai social.', 'Serve una mente fredda per attraversarlo (Whale 7).']));
+    if (t === TILE.SHELF) return void this.runScript(() => say(T('Scaffali pieni di libri di economia. Le lezioni si leggono parlando con la Bibliotecaria o dal menu.')));
+    if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? T('Il rumore delle notizie non ti tocca più: puoi attraversare.') : [T('Un muro di notizie urlate, grafici impazziti e "consigli" dai social.'), T('Serve una mente fredda per attraversarlo (Whale 7).')]));
     if (t === TILE.STATION) { const st = this.npcs.find((x) => x.def.kind === 'station'); if (st) void this.runScript(() => interact(st.def, this.api())); }
     if (t === TILE.BOULDER) return void this.runScript(() => this.breakBoulder(fx, fy));
-    if (t === TILE.CAVE_MOUTH) return void this.runScript(() => say('L\'ingresso di una grotta. Cammina verso di lui per entrare.'));
-    if (t === TILE.WATER) return void this.runScript(() => say(canSwim() ? ['L\'acqua scorre tranquilla. Con il Flusso di Liquidità puoi attraversarla: cammina verso di lei.'] : ['L\'acqua scorre tranquilla. Come la liquidità: utile, ma col tempo l\'inflazione la erode.', 'Con il Flusso di Liquidità (Medaglia 3) potresti attraversarla.']));
+    if (t === TILE.CAVE_MOUTH) return void this.runScript(() => say(T('L\'ingresso di una grotta. Cammina verso di lui per entrare.')));
+    if (t === TILE.WATER) return void this.runScript(() => say(canSwim() ? [T('L\'acqua scorre tranquilla. Con il Flusso di Liquidità puoi attraversarla: cammina verso di lei.')] : [T('L\'acqua scorre tranquilla. Come la liquidità: utile, ma col tempo l\'inflazione la erode.'), T('Con il Flusso di Liquidità (Medaglia 3) potresti attraversarla.')]));
   }
 
   /** Taglio dei Costi: frantuma un Masso delle Commissioni (resta rotto nel salvataggio). */
   async breakBoulder(x: number, y: number) {
-    if (!canCut()) return say(['Un masso enorme, pieno di crepe a forma di "%". Le chiamano Massi delle Commissioni.', `Con il ${ABILITY.cut.name} (Attestato ${ABILITY.cut.badge}) potresti toglierlo di mezzo.`]);
-    if ((await choose(['Sì', 'No'], { prompt: `Un Masso delle Commissioni blocca il passaggio. Vuoi usare ${ABILITY.cut.name}?`, cancel: true })) !== 0) return;
+    if (!canCut()) return say([T('Un masso enorme, pieno di crepe a forma di "%". Le chiamano Massi delle Commissioni.'), T`Con il ${ABILITY.cut.name} (Attestato ${ABILITY.cut.badge}) potresti toglierlo di mezzo.`]);
+    if ((await choose([T('Sì'), 'No'], { prompt: T`Un Masso delle Commissioni blocca il passaggio. Vuoi usare ${ABILITY.cut.name}?`, cancel: true })) !== 0) return;
     beep('bump');
     S.flags[boulderFlag(S.map, x, y)] = true;
     this.cameras.main.shake(180, 0.006);
     const dir = DIRS[S.facing][2];
     this.loadMap(S.map, S.x, S.y, dir);
-    toast('Costi tagliati: il masso si sbriciola e il passaggio è libero!');
+    toast(T('Costi tagliati: il masso si sbriciola e il passaggio è libero!'));
     save();
   }
 
@@ -571,7 +572,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.busy) return;
     this.busy = true;
     clearWorld();
-    try { await fn(); } catch (e) { console.error(e); toast('Errore: ' + (e as Error).message); }
+    try { await fn(); } catch (e) { console.error(e); toast(T('Errore: ') + (e as Error).message); }
     // dopo ogni sfida a quiz con un personaggio (vinta o persa) la partita si salva da sola
     if (takeDuelDone()) save();
     clearWorld();
@@ -762,9 +763,9 @@ export class WorldScene extends Phaser.Scene {
       getStage().appendChild(sign);
       setTimeout(() => sign.remove(), 3200);
     }
-    this.hud.innerHTML = `<span class="pill playtime" title="Tempo di gioco totale">Tempo <b>${formatPlayTime(S.playMs)}</b></span>
+    this.hud.innerHTML = T`<span class="pill playtime" title="Tempo di gioco totale">Tempo <b>${formatPlayTime(S.playMs)}</b></span>
       <span class="pill">${clk.open ? '<i class="dot on"></i>' : '<i class="dot"></i>'}${clk.label} · ${CLIMATE_LABEL[S.market.climate]}</span>
-      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Attestati <b>${S.badges}</b>${S.badges ? ` · Sigilli <b>${S.seals}</b>` : ''}</span>`;
+      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Attestati <b>${S.badges}</b>${S.badges ? T` · Sigilli <b>${S.seals}</b>` : ''}</span>`;
     if (force) this.applyTint();
   }
 

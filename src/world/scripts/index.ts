@@ -18,6 +18,7 @@ import type { WorldApi } from './common';
 import { prof, chooseCase, rival, mom } from './story';
 import { trainer, speculator, student, mentorBattle, guard, league, tower, hermit, legend, daily } from './duels';
 import { librarian, station, simzone, casino, archivist } from './places';
+import { T } from '../../i18n';
 
 /** NPC visibile? (es. guardie sparite dopo la Medaglia, avversari già battuti) */
 const KID_ROLES = new Set(['bambino', 'bambina', 'ragazzo', 'ragazza', 'studente']);
@@ -50,7 +51,7 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
     case 'talk': return say([...(n.lines ?? ['...']), ...secretHint(n.id)], n.name);
     case 'mom': return mom();
     case 'resident': return resident(n);
-    case 'aide': return say(['Aspetta! Non puoi partire senza una Valigetta.', 'Il Professore ti aspetta al Laboratorio, l\'edificio viola.'], 'Assistente');
+    case 'aide': return say([T('Aspetta! Non puoi partire senza una Valigetta.'), T('Il Professore ti aspetta al Laboratorio, l\'edificio viola.')], T('Assistente'));
     case 'prof': return prof(w);
     case 'case': return chooseCase(n, w);
     case 'rival': return rival(n, w);
@@ -72,7 +73,7 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
     case 'legend': return legend();
     case 'hermit': return hermit(n);
     case 'secret': return secretTalk(n);
-    case 'sage': return say([pick(TRAINER_TIPS), `Il tuo livello di Conoscenza è ${level()}. Continua così!`], n.name);
+    case 'sage': return say([pick(TRAINER_TIPS), T`Il tuo livello di Conoscenza è ${level()}. Continua così!`], n.name);
   }
 }
 
@@ -89,26 +90,26 @@ async function resident(n: NpcDef) {
     await say(r.lines, who);
     S.tipsHeard.push(r.id);
     S.stats.xp += 5;
-    toast(`Lezione annotata nell'Investidex (${S.tipsHeard.length}/${ALL_RESIDENTS.length})`);
+    toast(T`Lezione annotata nell'Investidex (${S.tipsHeard.length}/${ALL_RESIDENTS.length})`);
     track('tip');
     return;
   }
   // dialoghi che ricordano: la seconda volta ripete, dalla terza commenta i tuoi progressi
   const extra = memoryLine(r.id, visits);
-  await say(extra ? [extra, 'Comunque, te lo ripeto volentieri:', ...r.lines] : ['Ti ripeto volentieri quello che ti ho detto:', ...r.lines], who);
+  await say(extra ? [extra, T('Comunque, te lo ripeto volentieri:'), ...r.lines] : [T('Ti ripeto volentieri quello che ti ho detto:'), ...r.lines], who);
 }
 
 /** Una frase che dipende da quante volte ci siamo parlati e da cosa è successo nel frattempo. */
 function memoryLine(id: string, visits: number): string {
   const seen = S.npcMemory[`${id}_b`] ?? 0;
-  if (S.badges > seen) { S.npcMemory[`${id}_b`] = S.badges; if (visits > 0) return S.badges === 1 ? 'Ho saputo della tua prima Medaglia. Complimenti!' : `Ho saputo che hai già ${S.badges} Medaglie. Che strada hai fatto!`; }
+  if (S.badges > seen) { S.npcMemory[`${id}_b`] = S.badges; if (visits > 0) return S.badges === 1 ? T('Ho saputo della tua prima Medaglia. Complimenti!') : T`Ho saputo che hai già ${S.badges} Medaglie. Che strada hai fatto!`; }
   // il grado di Reputazione cambia il saluto: la prima volta che ti vedono con un grado nuovo, lo notano
   const tier = repTier().index;
   if (tier > (S.npcMemory[`${id}_t`] ?? 0)) { S.npcMemory[`${id}_t`] = tier; if (visits > 0) return repGreeting(); }
-  if (visits === 1) return 'Di nuovo tu! Sei tornat{o|a} a trovarmi.';
-  if (S.title && visits % 3 === 2) return `Dicono che ora ti chiamano «${S.title}».`;
-  if (S.daily.streak >= 3 && visits % 3 === 0) return `Ho sentito che rispondi alla domanda del giorno da ${S.daily.streak} giorni di fila. Brav{o|a}!`;
-  if (visits >= 4) return `Ci siamo già parlati ${visits} volte, non te lo dimenticare!`;
+  if (visits === 1) return T('Di nuovo tu! Sei tornat{o|a} a trovarmi.');
+  if (S.title && visits % 3 === 2) return T`Dicono che ora ti chiamano «${T(S.title)}».`;
+  if (S.daily.streak >= 3 && visits % 3 === 0) return T`Ho sentito che rispondi alla domanda del giorno da ${S.daily.streak} giorni di fila. Brav{o|a}!`;
+  if (visits >= 4) return T`Ci siamo già parlati ${visits} volte, non te lo dimenticare!`;
   return '';
 }
 

@@ -3,6 +3,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_KEY } from '../config/supabase';
 import { createDataKey, unwrapDataKey, rememberKey, recallKey, forgetKeys, seal, open, type Wrapped } from './vault';
+import { T } from '../i18n';
 
 export type KeyEnv = 'paper';
 export interface Player { id: string; name: string }
@@ -25,13 +26,13 @@ export function normName(s: string): string { return s.normalize('NFC').trim().r
 /** Stessa regola della funzione Edge e del vincolo nel database. */
 export function nameProblem(raw: string): string | null {
   const n = normName(raw);
-  if (n.length < NAME_MIN || n.length > NAME_MAX) return `Il nome deve avere da ${NAME_MIN} a ${NAME_MAX} caratteri.`;
-  if (!NAME_RE.test(n)) return 'Usa solo lettere, numeri, spazio, punto, trattino e trattino basso (e inizia con una lettera o un numero).';
+  if (n.length < NAME_MIN || n.length > NAME_MAX) return T`Il nome deve avere da ${NAME_MIN} a ${NAME_MAX} caratteri.`;
+  if (!NAME_RE.test(n)) return T('Usa solo lettere, numeri, spazio, punto, trattino e trattino basso (e inizia con una lettera o un numero).');
   return null;
 }
 export function passwordProblem(p: string): string | null {
-  if (p.length < PASSWORD_MIN) return `La password deve avere almeno ${PASSWORD_MIN} caratteri.`;
-  if (p.length > PASSWORD_MAX) return `La password può avere al massimo ${PASSWORD_MAX} caratteri.`;
+  if (p.length < PASSWORD_MIN) return T`La password deve avere almeno ${PASSWORD_MIN} caratteri.`;
+  if (p.length > PASSWORD_MAX) return T`La password può avere al massimo ${PASSWORD_MAX} caratteri.`;
   return null;
 }
 /** Nome → indirizzo interno: esadecimale del nome in minuscolo (lo stesso calcolo è nel trigger SQL). */
@@ -40,7 +41,7 @@ export function nameEmail(name: string): string {
   return `g${hex}@${MAIL_DOMAIN}`;
 }
 
-const netMsg = (e: unknown) => (e instanceof TypeError || /fetch|network/i.test(String((e as Error)?.message)) ? 'Il servizio dei salvataggi non è raggiungibile: controlla la connessione e riprova.' : null);
+const netMsg = (e: unknown) => (e instanceof TypeError || /fetch|network/i.test(String((e as Error)?.message)) ? T('Il servizio dei salvataggi non è raggiungibile: controlla la connessione e riprova.') : null);
 
 /** Giocatore della sessione salvata su questo dispositivo (nessuna richiesta di rete). */
 export async function currentPlayer(): Promise<Player | null> {
@@ -60,7 +61,7 @@ export async function accessToken(): Promise<string | null> {
 
 export async function isNameFree(name: string): Promise<boolean> {
   const { data, error } = await client().rpc('nome_disponibile', { n: normName(name) });
-  if (error) throw new Error(netMsg(error) ?? 'Non riesco a controllare il nome, riprova tra poco.');
+  if (error) throw new Error(netMsg(error) ?? T('Non riesco a controllare il nome, riprova tra poco.'));
   return !!data;
 }
 
@@ -70,9 +71,9 @@ export async function register(name: string, password: string): Promise<Player> 
   let res: Response;
   try {
     res = await fetch(`${SUPABASE_URL}/functions/v1/registra-giocatore`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ name: n, password }) });
-  } catch (e) { throw new Error(netMsg(e) ?? 'Registrazione non riuscita.'); }
+  } catch (e) { throw new Error(netMsg(e) ?? T('Registrazione non riuscita.')); }
   const body = await res.json().catch(() => ({})) as { error?: string };
-  if (!res.ok) throw new Error(body.error ?? `Registrazione non riuscita (${res.status}).`);
+  if (!res.ok) throw new Error(body.error ?? T`Registrazione non riuscita (${res.status}).`);
   return login(n, password);
 }
 
@@ -81,7 +82,7 @@ export async function login(name: string, password: string): Promise<Player> {
   const { data, error } = await client().auth.signInWithPassword({ email: nameEmail(name), password });
   if (error || !data.user) {
     if (error && netMsg(error)) throw new Error(netMsg(error)!);
-    throw new Error('Nome o password non corretti.');
+    throw new Error(T('Nome o password non corretti.'));
   }
   const p = { id: data.user.id, name: String(data.user.user_metadata?.name ?? normName(name)) };
   await openVault(p.id, password);
@@ -99,16 +100,16 @@ export async function logout(): Promise<void> {
  */
 export async function deletePlayer(password: string): Promise<void> {
   const p = await currentPlayer();
-  if (!p) throw new Error('Nessun giocatore collegato.');
+  if (!p) throw new Error(T('Nessun giocatore collegato.'));
   await login(p.name, password);
   const token = await accessToken();
-  if (!token) throw new Error('Sessione non valida: rientra e riprova.');
+  if (!token) throw new Error(T('Sessione non valida: rientra e riprova.'));
   let res: Response;
   try {
     res = await fetch(`${SUPABASE_URL}/functions/v1/elimina-giocatore`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_KEY } });
-  } catch (e) { throw new Error(netMsg(e) ?? 'Cancellazione non riuscita.'); }
+  } catch (e) { throw new Error(netMsg(e) ?? T('Cancellazione non riuscita.')); }
   const body = await res.json().catch(() => ({})) as { error?: string };
-  if (!res.ok) throw new Error(body.error ?? `Cancellazione non riuscita (${res.status}).`);
+  if (!res.ok) throw new Error(body.error ?? T`Cancellazione non riuscita (${res.status}).`);
   await logout();
 }
 
@@ -116,7 +117,7 @@ export async function deletePlayer(password: string): Promise<void> {
 
 async function readWrapped(user: string): Promise<Wrapped | null> {
   const { data, error } = await client().from('profiles').select('crypto').eq('id', user).maybeSingle();
-  if (error) throw new Error(netMsg(error) ?? 'Profilo non leggibile.');
+  if (error) throw new Error(netMsg(error) ?? T('Profilo non leggibile.'));
   return (data?.crypto as Wrapped | null) ?? null;
 }
 
@@ -129,7 +130,7 @@ async function openVault(user: string, password: string): Promise<CryptoKey> {
   }
   const { wrapped, key } = await createDataKey(password);
   const { error } = await client().from('profiles').update({ crypto: wrapped }).eq('id', user);
-  if (error) throw new Error('Non riesco a preparare la cassaforte delle chiavi.');
+  if (error) throw new Error(T('Non riesco a preparare la cassaforte delle chiavi.'));
   await rememberKey(user, key);
   return key;
 }
@@ -143,9 +144,9 @@ export async function vaultUnlocked(): Promise<boolean> {
 /** Sblocca la cassaforte con la password (per esempio dopo che il browser ha cancellato i dati del sito). */
 export async function unlockVault(password: string): Promise<void> {
   const p = await currentPlayer();
-  if (!p) throw new Error('Nessun giocatore collegato.');
+  if (!p) throw new Error(T('Nessun giocatore collegato.'));
   try { await openVault(p.id, password); } catch (e) {
-    if (e instanceof DOMException || (e as Error).name === 'OperationError') throw new Error('Password non corretta.');
+    if (e instanceof DOMException || (e as Error).name === 'OperationError') throw new Error(T('Password non corretta.'));
     throw e;
   }
 }
@@ -155,7 +156,7 @@ export function vaultKey(): Promise<{ user: string; key: CryptoKey }> { return d
 
 async function dataKey(): Promise<{ user: string; key: CryptoKey }> {
   const p = await currentPlayer();
-  if (!p) throw new Error('Nessun giocatore collegato.');
+  if (!p) throw new Error(T('Nessun giocatore collegato.'));
   const key = await recallKey(p.id);
   if (!key) throw new Error('LOCKED');
   return { user: p.id, key };

@@ -2,6 +2,7 @@ import type { PickMission } from '../data/missions';
 import { el, esc, modal } from './core';
 import { beep } from '../systems/audio';
 import { shuffle } from '../systems/rng';
+import { T } from '../i18n';
 
 export function runPick(m: PickMission): Promise<{ ok: boolean; detail: string } | null> {
   let round = 0;
@@ -12,8 +13,8 @@ export function runPick(m: PickMission): Promise<{ ok: boolean; detail: string }
       if (round >= m.rounds.length) {
         const ok = score >= m.need;
         beep(ok ? 'win' : 'lose');
-        body.innerHTML = `<h3 class="${ok ? 'good' : 'bad'}">${ok ? 'Missione superata!' : 'Missione non superata'}</h3><p>Risposte corrette: ${score}/${m.rounds.length} (servono ${m.need}).</p>`;
-        button('Continua', () => close({ ok, detail: `${score}/${m.rounds.length} corrette` }), 'primary');
+        body.innerHTML = T`<h3 class="${ok ? 'good' : 'bad'}">${ok ? T('Missione superata!') : T('Missione non superata')}</h3><p>Risposte corrette: ${score}/${m.rounds.length} (servono ${m.need}).</p>`;
+        button(T('Continua'), () => close({ ok, detail: `${score}/${m.rounds.length} corrette` }), 'primary');
         return;
       }
       const r = m.rounds[round];
@@ -25,13 +26,13 @@ export function runPick(m: PickMission): Promise<{ ok: boolean; detail: string }
         c.tabIndex = 0;
         const pick = () => {
           if (op.correct) { score++; beep('ok'); } else beep('bad');
-          body.innerHTML += `<p class="${op.correct ? 'good' : 'bad'}"><b>${op.correct ? 'Giusto!' : 'Non è la scelta migliore.'}</b> ${esc(op.why)}</p>`;
+          body.innerHTML += `<p class="${op.correct ? 'good' : 'bad'}"><b>${op.correct ? T('Giusto!') : T('Non è la scelta migliore.')}</b> ${esc(op.why)}</p>`;
           const right = r.options.find((x) => x.correct)!;
-          if (!op.correct) body.innerHTML += `<p class="small">La scelta migliore era <b>${esc(right.title)}</b>: ${esc(right.why)}</p>`;
+          if (!op.correct) body.innerHTML += T`<p class="small">La scelta migliore era <b>${esc(right.title)}</b>: ${esc(right.why)}</p>`;
           cards.remove();
           foot.innerHTML = '';
           round++;
-          button('Avanti ▶', show, 'primary');
+          button(T('Avanti ▶'), show, 'primary');
         };
         c.addEventListener('click', pick);
         c.addEventListener('keydown', (e) => { if (e.key === 'Enter') pick(); });

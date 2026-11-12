@@ -315,6 +315,8 @@ export interface JournalEntry {
   amount: number;
   price: number;
   reason: string;
+  /** id del motivo in REASONS (le righe vecchie hanno solo il testo) */
+  why?: string;
   note: string;
   account: 'prova' | 'paper';
   reviewed: boolean;

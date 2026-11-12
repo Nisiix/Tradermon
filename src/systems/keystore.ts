@@ -8,6 +8,7 @@
 // inserite di nuovo, e cancellando i dati del sito si perdono (si rigenerano dal sito di Alpaca).
 import * as C from './cloud';
 import { seal, open, type Sealed } from './vault';
+import { T } from '../i18n';
 
 export type KeyEnv = 'paper';
 export interface KeyPair { keyId: string; secret: string }
@@ -35,7 +36,7 @@ export async function storeKeys(env: KeyEnv, k: KeyPair): Promise<void> {
   const { user, key } = await C.vaultKey();
   const s = await seal(key, { keyId: k.keyId, secret: k.secret }, aad(user, env));
   try { localStorage.setItem(slot(user, env), JSON.stringify(s)); }
-  catch { throw new Error('Il browser non permette di salvare dati per questo sito: le chiavi valgono solo finché la pagina resta aperta.'); }
+  catch { throw new Error(T('Il browser non permette di salvare dati per questo sito: le chiavi valgono solo finché la pagina resta aperta.')); }
 }
 
 /** Apre le chiavi salvate su questo dispositivo (null se non ce ne sono). Lancia 'LOCKED' se la cassaforte è chiusa. */

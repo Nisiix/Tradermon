@@ -1,5 +1,6 @@
 import type { Portfolio, OpenOrder, OrderLog, AssetDef } from '../types';
 import { ASSET_BY_ID, SECTOR_LABEL, isDefensive } from '../data/assets';
+import { T, LANG, LOCALE } from '../i18n';
 
 export interface Book {
   cash: number;
@@ -53,26 +54,26 @@ const defOf = (id: string, defs?: AssetDefs): AssetDef | undefined => defs?.[id]
  */
 export function marketBuy(b: Book, id: string, amount: number, prices: Record<string, number>, day: number, maxSlots: number, type = 'mercato', defs?: AssetDefs, feeRate = 0, credit = 0): TradeResult {
   const a = defOf(id, defs);
-  if (!a) return { ok: false, msg: 'Asset sconosciuto.' };
+  if (!a) return { ok: false, msg: T('Asset sconosciuto.') };
   const FEE = amount * feeRate;
-  if (!(amount >= 1)) return { ok: false, msg: 'Importo troppo basso: almeno 1 $.' };
-  if (amount > b.cash + credit + 1e-9) return { ok: false, msg: credit > 0 ? 'Supera la liquidità più il prestito disponibile.' : 'Liquidità insufficiente.' };
+  if (!(amount >= 1)) return { ok: false, msg: T('Importo troppo basso: almeno 1 $.') };
+  if (amount > b.cash + credit + 1e-9) return { ok: false, msg: credit > 0 ? T('Supera la liquidità più il prestito disponibile.') : T('Liquidità insufficiente.') };
   const has = b.positions.find((p) => p.id === id);
-  if (!has && b.positions.length >= maxSlots) return { ok: false, msg: `Hai già ${maxSlots} posizioni: è il massimo per il tuo livello (slot di portafoglio).` };
+  if (!has && b.positions.length >= maxSlots) return { ok: false, msg: T`Hai già ${maxSlots} posizioni: è il massimo per il tuo livello (slot di portafoglio).` };
   const px = prices[id] * (1 + spreadOf(a) / 2);
   const qty = (amount - FEE) / px;
   b.cash -= amount;
   if (has) { has.qty += qty; has.cost += amount - FEE; } else b.positions.push({ id, qty, cost: amount - FEE });
   b.log.push({ day, asset: id, side: 'buy', qty, price: px, fee: FEE + (amount - FEE) * spreadOf(a) / 2, type });
-  return { ok: true, msg: `Comprate ${fmtQty(qty)} ${a.ticker} a ${fmtPx(px)}.`, qty, price: px, fee: FEE };
+  return { ok: true, msg: T`Comprate ${fmtQty(qty)} ${a.ticker} a ${fmtPx(px)}.`, qty, price: px, fee: FEE };
 }
 
 export function marketSell(b: Book, id: string, qty: number, prices: Record<string, number>, day: number, type = 'mercato', defs?: AssetDefs, feeRate = 0): TradeResult {
   const a = defOf(id, defs);
   const pos = b.positions.find((p) => p.id === id);
-  if (!a || !pos) return { ok: false, msg: 'Non possiedi questo asset: le vendite allo scoperto non sono consentite.' };
+  if (!a || !pos) return { ok: false, msg: T('Non possiedi questo asset: le vendite allo scoperto non sono consentite.') };
   qty = Math.min(qty, pos.qty);
-  if (qty <= 0) return { ok: false, msg: 'Quantità non valida.' };
+  if (qty <= 0) return { ok: false, msg: T('Quantità non valida.') };
   const px = prices[id] * (1 - spreadOf(a) / 2);
   const FEE = qty * px * feeRate;
   const proceeds = qty * px - FEE;
@@ -82,7 +83,7 @@ export function marketSell(b: Book, id: string, qty: number, prices: Record<stri
   if (pos.qty < 1e-9) b.positions = b.positions.filter((p) => p !== pos);
   b.cash += Math.max(0, proceeds);
   b.log.push({ day, asset: id, side: 'sell', qty, price: px, fee: FEE + qty * px * spreadOf(a) / 2, type });
-  return { ok: true, msg: `Vendute ${fmtQty(qty)} ${a.ticker} a ${fmtPx(px)}.`, qty, price: px, fee: FEE, atLoss };
+  return { ok: true, msg: T`Vendute ${fmtQty(qty)} ${a.ticker} a ${fmtPx(px)}.`, qty, price: px, fee: FEE, atLoss };
 }
 
 export function placeOrder(b: Book, o: Omit<OpenOrder, 'id'>): OpenOrder {
@@ -93,7 +94,12 @@ export function placeOrder(b: Book, o: Omit<OpenOrder, 'id'>): OpenOrder {
 
 /** Esegue gli ordini limite/stop compatibili con i prezzi del giorno. */
 export function processOrders(b: Book, prices: Record<string, number>, day: number, maxSlots: number, defs?: AssetDefs, feeRate = 0): string[] {
-  const msgs: string[] = [];
+  return processOrdersEx(b, prices, day, maxSlots, defs, feeRate).map((x) => x.msg);
+}
+
+/** Come processOrders, ma dice anche che ordine si è eseguito (i messaggi cambiano con la lingua). */
+export function processOrdersEx(b: Book, prices: Record<string, number>, day: number, maxSlots: number, defs?: AssetDefs, feeRate = 0): { msg: string; type: 'limit' | 'stop'; side: 'buy' | 'sell'; ok: boolean }[] {
+  const msgs: { msg: string; type: 'limit' | 'stop'; side: 'buy' | 'sell'; ok: boolean }[] = [];
   for (const o of b.orders.slice()) {
     const px = prices[o.asset];
     let fire = false;
@@ -108,14 +114,14 @@ export function processOrders(b: Book, prices: Record<string, number>, day: numb
     const r = o.side === 'buy'
       ? marketBuy(b, o.asset, Math.min(b.cash, o.qty * execPrices[o.asset] * (1 + feeRate)), execPrices, day, maxSlots, tag, defs, feeRate)
       : marketSell(b, o.asset, o.qty, execPrices, day, tag, defs, feeRate);
-    msgs.push(r.ok ? `Ordine ${tag} eseguito. ${r.msg}` : `Ordine ${tag} annullato: ${r.msg}`);
+    msgs.push({ msg: r.ok ? (o.type === 'limit' ? T`Ordine limite eseguito. ${r.msg}` : T`Ordine stop eseguito. ${r.msg}`) : (o.type === 'limit' ? T`Ordine limite annullato: ${r.msg}` : T`Ordine stop annullato: ${r.msg}`), type: o.type, side: o.side, ok: r.ok });
   }
   return msgs;
 }
 
 // ---------------- Salute e diagnosi ----------------
 
-export interface Health { score: number; state: 'Ottima' | 'Buona' | 'Ha la febbre' | 'Affaticata'; maxW: number; dd: number; cashW: number; dev: number; sectors: number }
+export interface Health { score: number; state: string; maxW: number; dd: number; cashW: number; dev: number; sectors: number }
 
 /**
  * Allocazione in percentuale. `locked` è il capitale non ancora investibile (solo prima di aprire il conto: poi è
@@ -149,7 +155,7 @@ export function health(pf: Portfolio, prices: Record<string, number>, locked = 0
   score -= dev * 0.5;
   score = Math.max(0, Math.round(score));
   const sectors = new Set(pf.positions.map((p) => ASSET_BY_ID[p.id].sector)).size;
-  const state = score >= 80 ? 'Ottima' : score >= 60 ? 'Buona' : score >= 40 ? 'Ha la febbre' : 'Affaticata';
+  const state = score >= 80 ? T('Ottima') : score >= 60 ? T('Buona') : score >= 40 ? T('Ha la febbre') : T('Affaticata');
   return { score, state, maxW, dd, cashW: al.cash, dev, sectors };
 }
 
@@ -158,28 +164,28 @@ export function diagnosis(pf: Portfolio, prices: Record<string, number>, day: nu
   const h = health(pf, prices, locked);
   const free = Math.max(1, value(pf, prices) - locked);
   const ws = pf.positions.length > 1 ? weights(pf, prices).map((x) => ({ ...x, w: x.v / free })).sort((a, b) => b.w - a.w) : [];
-  if (ws[0] && ws[0].w > 0.4) out.push({ text: `Il ${Math.round(ws[0].w * 100)}% del portafoglio è in ${ASSET_BY_ID[ws[0].id].name}: se va male, va male quasi tutto.`, lesson: 'l_div_1' });
-  if (pf.positions.length >= 2 && h.sectors === 1) out.push({ text: `Tutte le posizioni sono nel settore ${SECTOR_LABEL[ASSET_BY_ID[pf.positions[0].id].sector]}: un evento di settore le colpirebbe insieme.`, lesson: 'l_div_2' });
-  if (h.dd > 15) out.push({ text: `Sei il ${h.dd.toFixed(0)}% sotto il massimo: ricordi il tuo piano?`, lesson: 'l_gestione_1' });
-  if (pf.log.length > 0 && h.cashW > 60) out.push({ text: 'Gran parte è ferma in liquidità: l\'inflazione la erode nel tempo.', lesson: 'l_costi_1' });
+  if (ws[0] && ws[0].w > 0.4) out.push({ text: T`Il ${Math.round(ws[0].w * 100)}% del portafoglio è in ${ASSET_BY_ID[ws[0].id].name}: se va male, va male quasi tutto.`, lesson: 'l_div_1' });
+  if (pf.positions.length >= 2 && h.sectors === 1) out.push({ text: T`Tutte le posizioni sono nel settore ${SECTOR_LABEL[ASSET_BY_ID[pf.positions[0].id].sector]}: un evento di settore le colpirebbe insieme.`, lesson: 'l_div_2' });
+  if (h.dd > 15) out.push({ text: T`Sei il ${h.dd.toFixed(0)}% sotto il massimo: ricordi il tuo piano?`, lesson: 'l_gestione_1' });
+  if (pf.log.length > 0 && h.cashW > 60) out.push({ text: T('Gran parte è ferma in liquidità: l\'inflazione la erode nel tempo.'), lesson: 'l_costi_1' });
   const recent = pf.log.filter((l) => l.day > day - 21).length;
-  if (recent > 10) out.push({ text: `${recent} ordini nell'ultimo mese di mercato: più ordini significano più costi e spesso più emozioni.`, lesson: 'l_costi_2' });
+  if (recent > 10) out.push({ text: T`${recent} ordini nell'ultimo mese di mercato: più ordini significano più costi e spesso più emozioni.`, lesson: 'l_costi_2' });
   if (h.dev > 15) {
     const al = allocation(pf, prices, locked);
     const WHAT = {
-      risky: 'in titoli rischiosi (quelli che salgono e scendono di più)',
-      defensive: 'in titoli difensivi (quelli che oscillano poco)',
-      cash: 'in liquidità (dollari non investiti)',
+      risky: T('in titoli rischiosi (quelli che salgono e scendono di più)'),
+      defensive: T('in titoli difensivi (quelli che oscillano poco)'),
+      cash: T('in liquidità (dollari non investiti)'),
     } as const;
     const g = (['risky', 'defensive', 'cash'] as const).reduce((a, k) => (Math.abs(pf.target[k] - al[k]) > Math.abs(pf.target[a] - al[a]) ? k : a), 'risky' as 'risky' | 'defensive' | 'cash');
     const now = pctArt(al[g]), plan = pctArt(pf.target[g]);
-    out.push({ text: `Oggi ${now} del tuo conto è ${WHAT[g]}, ma il tuo piano ne prevede ${plan}. Il ribilanciamento serve a riportarlo vicino al piano.`, lesson: 'l_div_2' });
+    out.push({ text: T`Oggi ${now} del tuo conto è ${WHAT[g]}, ma il tuo piano ne prevede ${plan}. Il ribilanciamento serve a riportarlo vicino al piano.`, lesson: 'l_div_2' });
   }
   for (const p of pf.positions) {
     const v = p.qty * prices[p.id];
-    if (p.cost > 0 && v / p.cost - 1 < -0.2) out.push({ text: `${ASSET_BY_ID[p.id].name} è affaticata (${((v / p.cost - 1) * 100).toFixed(0)}%). La domanda giusta: la compreresti oggi?`, lesson: 'l_bias_1' });
+    if (p.cost > 0 && v / p.cost - 1 < -0.2) out.push({ text: T`${ASSET_BY_ID[p.id].name} è affaticata (${((v / p.cost - 1) * 100).toFixed(0)}%). La domanda giusta: la compreresti oggi?`, lesson: 'l_bias_1' });
   }
-  if (out.length === 0) out.push({ text: 'Nessun sintomo: il portafoglio rispetta il tuo piano. Continua così!', lesson: '' });
+  if (out.length === 0) out.push({ text: T('Nessun sintomo: il portafoglio rispetta il tuo piano. Continua così!'), lesson: '' });
   return out;
 }
 
@@ -201,14 +207,20 @@ export function maxGap(gaps: { now: number; target: number }[]): number {
 /** Percentuale con preposizione articolata corretta: "al 60%", "all'80%", "il 45%", "l'11%". */
 export function pctArt(x: number, art: 'il' | 'al' = 'il'): string {
   const n = Math.round(x);
+  if (LANG === 'en') return art === 'al' ? `at ${n}%` : `${n}%`;
   const vowel = /^(8|11$|1$)/.test(String(n));
   return `${vowel ? (art === 'al' ? "all'" : "l'") : `${art} `}${n}%`;
 }
 
 export function fmtPx(p: number): string {
-  if (p >= 1000) return p.toLocaleString('it-IT', { maximumFractionDigits: 0 });
-  if (p >= 1) return p.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return p.toLocaleString('it-IT', { maximumFractionDigits: 4 });
+  if (p >= 1000) return p.toLocaleString(LOCALE, { maximumFractionDigits: 0 });
+  if (p >= 1) return p.toLocaleString(LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return p.toLocaleString(LOCALE, { maximumFractionDigits: 4 });
+}
+/** Un importo già formattato con il simbolo del dollaro al posto giusto per la lingua ("$12" o "12 $"). */
+export function withUsd(s: string): string {
+  if (LANG !== 'en') return s + ' $';
+  return s.startsWith('-') ? '-$' + s.slice(1) : '$' + s;
 }
 export function fmtQty(q: number): string {
   return q >= 100 ? q.toFixed(0) : q >= 1 ? q.toFixed(2) : q.toFixed(4);
@@ -216,7 +228,7 @@ export function fmtQty(q: number): string {
 /** Importi sempre in dollari, anche sul conto Paper: è la valuta dei prezzi reali. */
 export function fmtMoney(v: number): string {
   const small = Math.abs(v) < 100 && Math.round(v) !== v;
-  return v.toLocaleString('it-IT', { minimumFractionDigits: small ? 2 : 0, maximumFractionDigits: small ? 2 : 0 }) + ' $';
+  return withUsd(v.toLocaleString(LOCALE, { minimumFractionDigits: small ? 2 : 0, maximumFractionDigits: small ? 2 : 0 }));
 }
 export function fmtPct(v: number, digits = 1): string {
   return (v >= 0 ? '+' : '') + (v * 100).toFixed(digits) + '%';

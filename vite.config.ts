@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { hashKey } from './src/i18n/hash';
 import { defineConfig, type Plugin } from 'vite';
 
 // Porta del server locale (API Alpaca): la stessa letta da server/index.mjs.
@@ -43,9 +44,38 @@ function pagePolicy(): Plugin {
   };
 }
 
+/**
+ * Dizionario inglese (modulo virtuale 'virtual:i18n-en', importato come '#i18n-en'): unisce src/i18n/en/*.json, scritti come
+ * { "testo italiano": "English text" }, e li compila con la chiave corta hashKey(testo italiano).
+ */
+export function englishDictionary(): Record<string, string> {
+  const dir = new URL('./src/i18n/en/', import.meta.url);
+  const out: Record<string, string> = {};
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.json')).sort((a, b) => Number(a === 'extra.json') - Number(b === 'extra.json') || a.localeCompare(b))) {
+    const part = JSON.parse(readFileSync(new URL(f, dir), 'utf8')) as Record<string, string>;
+    for (const [it, en] of Object.entries(part)) out[hashKey(it)] = en;
+  }
+  return out;
+}
+
+function i18nPlugin(): Plugin {
+  const id = 'virtual:i18n-en';
+  // '#i18n-en' (package.json "imports") porta qui dentro Vite e Vitest; fuori (esbuild, tsx) porta a src/i18n/en-node.ts
+  return {
+    name: 'tradermon-i18n',
+    resolveId: (s) => (s === id || s === '#i18n-en' ? '\0' + id : null),
+    load(s) {
+      if (s !== '\0' + id) return null;
+      const dir = new URL('./src/i18n/en/', import.meta.url);
+      for (const f of readdirSync(dir)) this.addWatchFile(new URL(f, dir).pathname);
+      return `export default ${JSON.stringify(englishDictionary())};`;
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [pagePolicy()],
+  plugins: [i18nPlugin(), pagePolicy()],
   server: {
     port: 5173,
     proxy: { '/api': `http://127.0.0.1:${API_PORT}` },

@@ -2,6 +2,7 @@
 // Si usa prima di comprare o vendere: le candele sono sempre barre reali di Alpaca.
 import { modal, el, esc } from './core';
 import { TIMEFRAMES, TF_LABEL, sma, reading, type Candle, type Timeframe } from '../systems/candles';
+import { T } from '../i18n';
 
 export interface ChartOpts {
   title: string;
@@ -18,7 +19,7 @@ function draw(cv: HTMLCanvasElement, bars: Candle[], marker?: ChartOpts['marker'
   const c = cv.getContext('2d')!;
   const W = cv.width, H = cv.height, padR = 56, padB = 18, padT = 8;
   c.fillStyle = '#f7f3e8'; c.fillRect(0, 0, W, H);
-  if (!bars.length) { c.fillStyle = '#555'; c.font = '13px sans-serif'; c.fillText('Nessun dato per questo orizzonte.', 12, 24); return; }
+  if (!bars.length) { c.fillStyle = '#555'; c.font = '13px sans-serif'; c.fillText(T('Nessun dato per questo orizzonte.'), 12, 24); return; }
   const hi = Math.max(...bars.map((b) => b.h), marker?.price ?? -Infinity), lo = Math.min(...bars.map((b) => b.l), marker?.price ?? Infinity);
   const span = Math.max(1e-9, hi - lo);
   const y = (p: number) => padT + ((hi - p) / span) * (H - padT - padB);
@@ -53,7 +54,7 @@ function draw(cv: HTMLCanvasElement, bars: Candle[], marker?: ChartOpts['marker'
   // ultimo prezzo
   const last = bars[n - 1].c;
   c.fillStyle = '#1d1d2b'; c.font = 'bold 11px sans-serif'; c.fillText(last >= 1000 ? last.toFixed(0) : last >= 10 ? last.toFixed(2) : last.toFixed(4), W - padR + 4, y(last) + 4);
-  c.fillStyle = '#3a63c4'; c.font = '11px sans-serif'; c.fillText('— media 20 barre', 6, H - 5);
+  c.fillStyle = '#3a63c4'; c.font = '11px sans-serif'; c.fillText(T('— media 20 barre'), 6, H - 5);
 }
 
 export function openChart(o: ChartOpts): Promise<void> {
@@ -63,24 +64,24 @@ export function openChart(o: ChartOpts): Promise<void> {
     cv.width = 640; cv.height = 280; cv.style.width = '100%'; cv.style.maxWidth = '640px'; cv.style.imageRendering = 'auto';
     const head = el('p', 'small', '');
     const read = el('div', 'small', '');
-    body.append(head, cv, o.note ? el('p', 'small muted', esc(o.note)) : el('span'), read, el('p', 'small muted', 'Lettura didattica, non un consiglio: la decisione resta tua. Il grafico racconta il passato; i fondamentali e il tuo piano decidono il futuro.'));
+    body.append(head, cv, o.note ? el('p', 'small muted', esc(o.note)) : el('span'), read, el('p', 'small muted', T('Lettura didattica, non un consiglio: la decisione resta tua. Il grafico racconta il passato; i fondamentali e il tuo piano decidono il futuro.')));
     const tfBtns: HTMLButtonElement[] = [];
     const show = async () => {
-      head.innerHTML = `Orizzonte: <b>${TF_LABEL[tf]}</b> <span class="muted">(frecce ← → per cambiare, A per confermare)</span>`;
-      read.innerHTML = '<span class="muted">Carico…</span>';
+      head.innerHTML = T`Orizzonte: <b>${TF_LABEL[tf]}</b> <span class="muted">(frecce ← → per cambiare, A per confermare)</span>`;
+      read.innerHTML = T('<span class="muted">Carico…</span>');
       tfBtns.forEach((b) => b.classList.toggle('primary', b.dataset.tf === tf));
       let bars: Candle[] = [];
       try { bars = await o.load(tf); } catch (e) { read.innerHTML = `<span class="bad">${esc((e as Error).message)}</span>`; draw(cv, []); return; }
       draw(cv, bars, o.marker);
       const r = reading(bars, tf);
-      read.innerHTML = `<p style="margin:6px 0 0"><b>Lettura ${r.trend === 'su' ? '📈' : r.trend === 'giu' ? '📉' : '↔️'}</b></p>` + r.lines.map((l) => `<p style="margin:4px 0 0">${esc(l)}</p>`).join('');
+      read.innerHTML = T`<p style="margin:6px 0 0"><b>Lettura ${r.trend === 'su' ? '📈' : r.trend === 'giu' ? '📉' : '↔️'}</b></p>` + r.lines.map((l) => `<p style="margin:4px 0 0">${esc(l)}</p>`).join('');
     };
     for (const t of TIMEFRAMES) {
       const b = button(TF_LABEL[t], () => { tf = t; void show(); });
       b.dataset.tf = t;
       tfBtns.push(b);
     }
-    button('Chiudi', () => close(), '');
+    button(T('Chiudi'), () => close(), '');
     void show();
   }, { wide: true }).then(() => undefined);
 }

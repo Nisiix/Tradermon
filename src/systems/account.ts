@@ -25,13 +25,14 @@ import { tradingDaysBetween } from './market';
 import { hashString } from './rng';
 import { toast } from '../ui/core';
 import { clampStat } from './state';
+import { T } from '../i18n';
 
 const ENV: A.Env = 'paper';
 
 // ---------------- Collegamento ----------------
 
 export interface Link { server: boolean; paper: boolean; reason: string }
-let link: Link = { server: false, paper: false, reason: 'Collegamento non ancora verificato.' };
+let link: Link = { server: false, paper: false, reason: T('Collegamento non ancora verificato.') };
 let linkAt = 0;
 
 /** Verifica server e chiavi. Il risultato resta valido per 20 secondi, salvo `force`. */
@@ -39,8 +40,8 @@ export async function checkLink(force = false): Promise<Link> {
   if (!force && Date.now() - linkAt < 20_000) return link;
   const st = await A.serverStatus();
   linkAt = Date.now();
-  if (!st) link = { server: false, paper: false, reason: A.isLocalHost() ? 'Il server locale di Tradermon non risponde: avvialo come spiegato nel file README.' : 'Dal sito colleghi il conto Alpaca quando entri con il tuo giocatore: ricarica la pagina ed entra con nome e password.' };
-  else link = { server: true, paper: st.paper.configured, reason: st.paper.configured ? '' : 'Le chiavi del conto Alpaca Paper non sono collegate.' };
+  if (!st) link = { server: false, paper: false, reason: A.isLocalHost() ? T('Il server locale di Tradermon non risponde: avvialo come spiegato nel file README.') : T('Dal sito colleghi il conto Alpaca quando entri con il tuo giocatore: ricarica la pagina ed entra con nome e password.') };
+  else link = { server: true, paper: st.paper.configured, reason: st.paper.configured ? '' : T('Le chiavi del conto Alpaca Paper non sono collegate.') };
   return link;
 }
 
@@ -49,8 +50,8 @@ export function linked(): boolean { return link.server && link.paper; }
 export function linkInfo(): Link { return link; }
 /** Segna il conto come non raggiungibile dopo un errore di rete su una chiamata vera. */
 function unreachable(e: unknown): string {
-  const msg = (e as Error)?.message || 'Alpaca non risponde.';
-  if (/fetch|network|Failed|ECONN|timeout/i.test(msg)) { link = { ...link, server: false, reason: 'Il server o Alpaca non rispondono in questo momento.' }; linkAt = 0; }
+  const msg = (e as Error)?.message || T('Alpaca non risponde.');
+  if (/fetch|network|Failed|ECONN|timeout/i.test(msg)) { link = { ...link, server: false, reason: T('Il server o Alpaca non rispondono in questo momento.') }; linkAt = 0; }
   return msg;
 }
 
@@ -157,7 +158,7 @@ export function exBarred(): string[] {
   return [...(S.portfolio.exBarred ?? [])];
 }
 
-const stageName = (k: number) => (k === 0 ? 'della Valigetta' : `della tappa ${k}`);
+const stageName = (k: number) => (k === 0 ? T('della Valigetta') : T`della tappa ${k}`);
 
 /**
  * Vendere questo titolo adesso, anche solo in parte, annullerebbe la Prova sul conto in corso? Sì se la Prova è
@@ -212,7 +213,7 @@ export function ignored(): number[] {
   return [...(S.portfolio.exIgnored ?? [])];
 }
 
-export const IGNORE_WARNING = 'Scelta sconsigliata se vuoi imparare a investire o a fare trading in modo efficiente e corretto: la Prova serve proprio a mettere in pratica il metodo.';
+export const IGNORE_WARNING = T('Scelta sconsigliata se vuoi imparare a investire o a fare trading in modo efficiente e corretto: la Prova serve proprio a mettere in pratica il metodo.');
 
 /**
  * Accende o spegne l'opzione. Non salta nessuna Prova: se quella in corso è già andata male il suo esito viene
@@ -239,7 +240,7 @@ function passIgnored(k: number): string {
   S.exTools = { limit: false, stop: false };
   finishStage();
   const seals = grantSeals();
-  return `Hai attivato "Prosegui anche se la Prova va male": l'esito negativo viene ignorato, la Prova ${stageName(k)} conta come superata e puoi proseguire.${seals.length ? ` Sigillo pratico ${seals.join(' e ')} ottenuto.` : ''} ${IGNORE_WARNING}`;
+  return T`Hai attivato "Prosegui anche se la Prova va male": l'esito negativo viene ignorato, la Prova ${stageName(k)} conta come superata e puoi proseguire.${seals.length ? T` Sigillo pratico ${seals.join(T(' e '))} ottenuto.` : ''} ${IGNORE_WARNING}`;
 }
 
 /**
@@ -255,23 +256,23 @@ function voidExercise(asset: string, forced = false): string {
   const k = hit.stage;
   resetStage(k);
   const tick = ASSET_BY_ID[asset]?.ticker ?? asset;
-  if (ignoreOn()) return `${forced ? `La vendita forzata della leva ha venduto ${tick}` : `Hai venduto ${tick}`}: la Prova sul conto ${stageName(k)} sarebbe annullata. ${passIgnored(k)}`;
+  if (ignoreOn()) return T`${forced ? T`La vendita forzata della leva ha venduto ${tick}` : T`Hai venduto ${tick}`}: la Prova sul conto ${stageName(k)} sarebbe annullata. ${passIgnored(k)}`;
   // la vendita forzata non è una scelta del giocatore: annulla la Prova, ma non esclude nessun titolo
-  if (forced) return `La vendita forzata della leva ha venduto ${tick}: la Prova sul conto ${stageName(k)} è annullata e riparte da zero.${ignoreHint()}`;
+  if (forced) return T`La vendita forzata della leva ha venduto ${tick}: la Prova sul conto ${stageName(k)} è annullata e riparte da zero.${ignoreHint()}`;
   const barred = new Set([...(pf.exBarred ?? []), asset]);
   const others = unlockedAssets(S.track, S.mixedClasses, S.badges, Object.keys(S.cards)).some((a) => !barred.has(a.id));
   pf.exBarred = others ? [...barred] : [];
-  const head = `Hai venduto ${tick}: la Prova sul conto ${stageName(k)} è annullata e riparte da zero. Vendere il titolo di una Prova, anche solo una parte, vuol dire rinunciare a quel titolo.`;
+  const head = T`Hai venduto ${tick}: la Prova sul conto ${stageName(k)} è annullata e riparte da zero. Vendere il titolo di una Prova, anche solo una parte, vuol dire rinunciare a quel titolo.`;
   return (others
-    ? `${head} Rifai la Prova con un altro titolo: gli acquisti di ${tick} non contano finché non la completi.`
-    : `${head} In vetrina non ci sono altri titoli, quindi puoi rifarla anche con ${tick}.`) + ignoreHint();
+    ? T`${head} Rifai la Prova con un altro titolo: gli acquisti di ${tick} non contano finché non la completi.`
+    : T`${head} In vetrina non ci sono altri titoli, quindi puoi rifarla anche con ${tick}.`) + ignoreHint();
 }
 
 /** L'opzione "prosegui anche se la Prova va male" si presenta la prima volta che una Prova si annulla, dove serve. */
 function ignoreHint(): string {
   if (!ignoreAllowed() || ignoreOn() || S.flags.ignoreHint) return '';
   S.flags.ignoreHint = true;
-  return ' In questa difficoltà puoi attivare, dalle Impostazioni (⚙) o da Menu → Opzioni, "Prove sul conto: prosegui anche se vanno male": l\'esito negativo viene ignorato e prosegui lo stesso. ' + IGNORE_WARNING;
+  return T(' In questa difficoltà puoi attivare, dalle Impostazioni (⚙) o da Menu → Opzioni, "Prove sul conto: prosegui anche se vanno male": l\'esito negativo viene ignorato e prosegui lo stesso. ') + IGNORE_WARNING;
 }
 
 /** Dopo un ordine accettato: chiude gli esercizi completati (in ordine) e dice quali. */
@@ -282,11 +283,11 @@ function closeExercises(): string {
     if (ex.allDone || !ex.open || ex.got + 0.005 < ex.need || !ex.toolOk) break;
     S.exDone = ex.stage + 1;
     S.exTools = { limit: false, stop: false };
-    msg = `Esercizio ${ex.stage === 0 ? 'della Valigetta' : 'della tappa ' + ex.stage} completato: l'ordine è stato accettato da Alpaca.`;
+    msg = T`Esercizio ${ex.stage === 0 ? T('della Valigetta') : T('della tappa ') + ex.stage} completato: l'ordine è stato accettato da Alpaca.`;
   }
   if (msg) finishStage();
   const seals = grantSeals();
-  if (seals.length) msg += ` Sigillo pratico ${seals.join(' e ')} ottenuto: la Medaglia è completa!`;
+  if (seals.length) msg += T` Sigillo pratico ${seals.join(T(' e '))} ottenuto: la Medaglia è completa!`;
   return msg;
 }
 
@@ -334,10 +335,10 @@ export function reopenExercises(boughtBefore: number): string[] {
   if (S.exDone === before) return notes;
   // l'attrezzo era già stato usato: resta valido, manca solo la quota
   S.exTools = { limit: true, stop: true };
-  notes.push(`${S.exDone === 0 ? 'L\'esercizio della Valigetta' : `L'esercizio della tappa ${S.exDone}`} torna da fare: l'ordine non è stato eseguito, quindi la quota della tappa non è stata investita davvero.`);
+  notes.push(T`${S.exDone === 0 ? T('L\'esercizio della Valigetta') : T`L'esercizio della tappa ${S.exDone}`} torna da fare: l'ordine non è stato eseguito, quindi la quota della tappa non è stata investita davvero.`);
   const keep = Math.max(0, S.exDone - 1);
   if (S.seals > keep) {
-    notes.push(`${S.seals - keep === 1 ? `Il Sigillo ${S.seals} resta sospeso` : `I Sigilli da ${keep + 1} a ${S.seals} restano sospesi`} finché non investi la quota con un acquisto eseguito.`);
+    notes.push(T`${S.seals - keep === 1 ? T`Il Sigillo ${S.seals} resta sospeso` : T`I Sigilli da ${keep + 1} a ${S.seals} restano sospesi`} finché non investi la quota con un acquisto eseguito.`);
     S.seals = keep;
   }
   return notes;
@@ -393,7 +394,7 @@ export function applyOrder(pf: Portfolio, p: PendingOrder, o: A.AlpacaOrder): { 
       const floor = pf.initial * (1 - releasedFrac());
       const short = Math.min(pf.cash, floor) < floor ? floor - pf.cash : pf.cash < 0 ? -pf.cash : 0;
       if (short > 0 && p.lev) { pf.loan += short; pf.cash += short; if (!pf.interestDay) pf.interestDay = today(); }
-      notes.push(`Comprate ${fmtQty(dq)} ${tick} a ${fmtPx(avg)} $ (${p.tag}).`);
+      notes.push(T`Comprate ${fmtQty(dq)} ${tick} a ${fmtPx(avg)} $ (${p.tag}).`);
     } else {
       const pos = pf.positions.find((x) => x.id === p.asset);
       if (pos) {
@@ -408,7 +409,7 @@ export function applyOrder(pf: Portfolio, p: PendingOrder, o: A.AlpacaOrder): { 
       let proceeds = dCost - cost;
       if (pf.loan > 0) { const repay = Math.min(pf.loan, Math.max(0, proceeds)); pf.loan -= repay; proceeds -= repay; }
       pf.cash += proceeds;
-      notes.push(`Vendute ${fmtQty(dq)} ${tick} a ${fmtPx(avg)} $ (${p.tag}).`);
+      notes.push(T`Vendute ${fmtQty(dq)} ${tick} a ${fmtPx(avg)} $ (${p.tag}).`);
       // uno stop che scatta è una vendita decisa in anticipo: per la Prova in corso vale come ogni altra vendita
       if (p.type === 'stop' && pf === S.portfolio) { const c = voidExercise(p.asset); if (c) notes.push(c); }
       if (pf === S.portfolio) {
@@ -434,8 +435,8 @@ export function applyOrder(pf: Portfolio, p: PendingOrder, o: A.AlpacaOrder): { 
         pf.bought = Math.max(0, pf.bought - back);
         if (pf.exBuys?.[p.asset]) pf.exBuys[p.asset] = Math.max(0, pf.exBuys[p.asset] - back);
       }
-      const why = o.status === 'expired' ? 'è scaduto a fine giornata senza essere eseguito' : o.status === 'canceled' ? 'è stato annullato' : 'è stato rifiutato da Alpaca';
-      notes.push(p.type === 'stop' ? `Lo stop su ${tick} ${why}: la protezione non è più attiva. Rimettilo dalla Banca se la vuoi ancora.` : `L'ordine ${p.type === 'limit' ? 'limite' : 'a mercato'} su ${tick} ${why}.`);
+      const why = o.status === 'expired' ? T('è scaduto a fine giornata senza essere eseguito') : o.status === 'canceled' ? T('è stato annullato') : T('è stato rifiutato da Alpaca');
+      notes.push(p.type === 'stop' ? T`Lo stop su ${tick} ${why}: la protezione non è più attiva. Rimettilo dalla Banca se la vuoi ancora.` : T`L'ordine ${p.type === 'limit' ? T('limite') : T('a mercato')} su ${tick} ${why}.`);
       if (counted && pf === S.portfolio) notes.push(...reopenExercises(boughtBefore));
     }
   }
@@ -455,10 +456,10 @@ async function settle(pf: Portfolio, p: PendingOrder, first: A.AlpacaOrder) {
 }
 
 function pre(asset: string): { a?: AssetDef; err?: string } {
-  if (!S.flags.starter) return { err: 'Prima scegli la tua Valigetta dal Professore.' };
-  if (!linked()) return { err: link.reason || 'Il conto Alpaca Paper non è collegato.' };
+  if (!S.flags.starter) return { err: T('Prima scegli la tua Valigetta dal Professore.') };
+  if (!linked()) return { err: link.reason || T('Il conto Alpaca Paper non è collegato.') };
   const a = ASSET_BY_ID[asset];
-  if (!a) return { err: 'Titolo non in vetrina.' };
+  if (!a) return { err: T('Titolo non in vetrina.') };
   return { a };
 }
 
@@ -472,15 +473,15 @@ export async function buy(asset: string, amount: number, o: { type?: 'market' | 
   const pf = S.portfolio;
   const type = o.type ?? 'market';
   amount = Math.floor(amount * 100) / 100;
-  if (!(amount >= 1)) return { ok: false, msg: 'Importo troppo basso: almeno 1 $.' };
-  if (type === 'limit' && !(o.price! > 0)) return { ok: false, msg: 'Indica il prezzo limite.' };
+  if (!(amount >= 1)) return { ok: false, msg: T('Importo troppo basso: almeno 1 $.') };
+  if (type === 'limit' && !(o.price! > 0)) return { ok: false, msg: T('Indica il prezzo limite.') };
   const ids = heldIds(pf);
-  if (!ids.includes(asset) && ids.length >= slots()) return { ok: false, msg: `Hai già ${slots()} titoli tra posizioni e ordini: è il massimo per il tuo livello.` };
+  if (!ids.includes(asset) && ids.length >= slots()) return { ok: false, msg: T`Hai già ${slots()} titoli tra posizioni e ordini: è il massimo per il tuo livello.` };
   const lev = !!o.lev && !isCrypto(asset) && leverageOpen();
   const total = amount * (1 + fee());
   const avail = usableCash(pf) + (lev ? credit(pf) : 0);
   if (total > avail + 0.005) {
-    return { ok: false, msg: `Puoi investire ancora ${fmtMoney(avail)}: il resto del capitale è già nei titoli o riservato agli ordini in coda.` };
+    return { ok: false, msg: T`Puoi investire ancora ${fmtMoney(avail)}: il resto del capitale è già nei titoli o riservato agli ordini in coda.` };
   }
   const crypto = isCrypto(asset);
   const req: A.OrderReq = { symbol: asset, side: 'buy', type, time_in_force: crypto ? 'gtc' : 'day', client_order_id: `tm-${S.saveId}-${pf.orderSeq + 1}` };
@@ -490,7 +491,7 @@ export async function buy(asset: string, amount: number, o: { type?: 'market' | 
     const inc = await increments(asset);
     const px = floorTo(o.price!, inc.price);
     qty = floorTo(amount / px, inc.qty);
-    if (!(qty > 0) || qty < inc.min) return { ok: false, msg: 'Importo troppo basso per questo ordine limite.' };
+    if (!(qty > 0) || qty < inc.min) return { ok: false, msg: T('Importo troppo basso per questo ordine limite.') };
     req.qty = qty.toFixed(dec(inc.qty));
     req.limit_price = px.toFixed(dec(inc.price));
     o.price = px;
@@ -509,9 +510,9 @@ export async function buy(asset: string, amount: number, o: { type?: 'market' | 
   }
   const r = await settle(pf, p, out);
   let ex = closeExercises();
-  if (noCredit) ex = `${ex ? ex + ' ' : ''}${a.ticker} non conta per la Prova sul conto in corso: l'hai venduto, quindi la Prova si rifà con un altro titolo.`;
+  if (noCredit) ex = T`${ex ? ex + ' ' : ''}${a.ticker} non conta per la Prova sul conto in corso: l'hai venduto, quindi la Prova si rifà con un altro titolo.`;
   save();
-  const head = r.done && r.qty > 0 ? r.notes[0] : type === 'limit' ? `Ordine limite accettato da Alpaca: compra ${a.ticker} se il prezzo scende a ${fmtPx(o.price!)} $.${crypto ? '' : ' Vale fino alla chiusura di oggi (o della prossima seduta, se il mercato è chiuso).'}` : `Ordine accettato da Alpaca: ${fmtMoney(amount)} di ${a.ticker} saranno comprati all'apertura del mercato. Il denaro è riservato.`;
+  const head = r.done && r.qty > 0 ? r.notes[0] : type === 'limit' ? T`Ordine limite accettato da Alpaca: compra ${a.ticker} se il prezzo scende a ${fmtPx(o.price!)} $.${crypto ? '' : T(' Vale fino alla chiusura di oggi (o della prossima seduta, se il mercato è chiuso).')}` : T`Ordine accettato da Alpaca: ${fmtMoney(amount)} di ${a.ticker} saranno comprati all'apertura del mercato. Il denaro è riservato.`;
   return { ok: true, msg: head, filled: r.done && r.qty > 0, price: r.price || o.price || S.market.prices[asset], qty: r.qty, exercise: ex };
 }
 
@@ -530,7 +531,7 @@ function voidMandate(asset: string): string {
   const id = mandateOn(S.boss, asset);
   if (!id || !sellOut(S.boss, id)) return '';
   const tick = ASSET_BY_ID[asset]?.ticker ?? asset;
-  return `Hai venduto ${tick}, il titolo del tuo piano con ${BOSS_BY_ID[id]?.name ?? 'il Boss'}: il mandato è annullato. Non conta come sconfitta: ripeti la sfida da capo, quiz compreso, con un titolo diverso da ${tick}.`;
+  return T`Hai venduto ${tick}, il titolo del tuo piano con ${BOSS_BY_ID[id]?.name ?? T('il Boss')}: il mandato è annullato. Non conta come sconfitta: ripeti la sfida da capo, quiz compreso, con un titolo diverso da ${tick}.`;
 }
 
 /** Registra nel piano del Boss le vendite che ne fanno parte: servono a dire quanto capitale del conto di gioco ha mosso il mandato. */
@@ -556,7 +557,7 @@ export async function sell(asset: string, qty: number, o: { type?: 'market' | 's
   if (!a) return { ok: false, msg: err! };
   const pf = S.portfolio;
   const pos = pf.positions.find((p) => p.id === asset);
-  if (!pos) return { ok: false, msg: 'Non possiedi questo titolo: le vendite allo scoperto non sono consentite.' };
+  if (!pos) return { ok: false, msg: T('Non possiedi questo titolo: le vendite allo scoperto non sono consentite.') };
   const type = o.type ?? 'market';
   const crypto = isCrypto(asset);
   // lo stop di un mandato tiene impegnata la posizione: prima di una vendita a mercato va tolto
@@ -570,10 +571,10 @@ export async function sell(asset: string, qty: number, o: { type?: 'market' | 's
   const inc = await increments(asset);
   const free = Math.min(pos.qty, real) - (type === 'stop' ? 0 : committed(pf, asset));
   qty = floorTo(Math.min(qty, free), inc.qty);
-  if (!(qty > 0)) return { ok: false, msg: real <= 0 ? 'Su Alpaca questa posizione non c\'è più: aggiorno il registro.' : 'Quantità non disponibile: è già impegnata in un altro ordine.' };
+  if (!(qty > 0)) return { ok: false, msg: real <= 0 ? T('Su Alpaca questa posizione non c\'è più: aggiorno il registro.') : T('Quantità non disponibile: è già impegnata in un altro ordine.') };
   const req: A.OrderReq = { symbol: asset, side: 'sell', type, time_in_force: crypto ? 'gtc' : Number.isInteger(qty) && type === 'stop' ? 'gtc' : 'day', qty: qty.toFixed(dec(inc.qty)), client_order_id: `tm-${S.saveId}-${pf.orderSeq + 1}` };
   if (type === 'stop') {
-    if (!(o.price! > 0) || o.price! >= S.market.prices[asset]) return { ok: false, msg: 'Lo stop di vendita va messo sotto il prezzo attuale.' };
+    if (!(o.price! > 0) || o.price! >= S.market.prices[asset]) return { ok: false, msg: T('Lo stop di vendita va messo sotto il prezzo attuale.') };
     const px = floorTo(o.price!, inc.price);
     req.stop_price = px.toFixed(dec(inc.price));
     // Alpaca non accetta lo stop semplice sulle cripto: stop con limite, 3% sotto
@@ -588,13 +589,13 @@ export async function sell(asset: string, qty: number, o: { type?: 'market' | 's
   // la decisione di vendere vale da subito, anche se l'ordine si esegue all'apertura; lo stop conta solo se scatta.
   // Anche la vendita forzata della leva annulla la Prova, ma senza escludere titoli: non è una scelta del giocatore.
   const cancelled = type === 'market' ? [voidExercise(asset, FORCED.has(p.tag)), MANDATE_SELLS.has(p.tag) ? '' : voidMandate(asset)].filter(Boolean).join(' ') : '';
-  const stopWarn = type === 'stop' && sellCancels(asset) ? ' Se scatta è una vendita: annulla la Prova sul conto in corso, che rifarai con un altro titolo.' : '';
+  const stopWarn = type === 'stop' && sellCancels(asset) ? T(' Se scatta è una vendita: annulla la Prova sul conto in corso, che rifarai con un altro titolo.') : '';
   if (type === 'stop' && !(pf.exBarred ?? []).includes(asset)) S.exTools.stop = true;
   const r = await settle(pf, p, out);
   const ex = closeExercises();
   save();
   const dayOnly = req.time_in_force === 'day';
-  const head = r.done && r.qty > 0 ? r.notes[0] : type === 'stop' ? `Stop accettato da Alpaca: vende ${fmtQty(qty)} ${a.ticker} se il prezzo scende a ${fmtPx(o.price!)} $.${dayOnly ? ' Sulle quote frazionarie Alpaca lo tiene valido solo fino alla chiusura della seduta: domani va rimesso.' : ''}${stopWarn}` : `Ordine di vendita accettato da Alpaca: sarà eseguito all'apertura del mercato.`;
+  const head = r.done && r.qty > 0 ? r.notes[0] : type === 'stop' ? T`Stop accettato da Alpaca: vende ${fmtQty(qty)} ${a.ticker} se il prezzo scende a ${fmtPx(o.price!)} $.${dayOnly ? T(' Sulle quote frazionarie Alpaca lo tiene valido solo fino alla chiusura della seduta: domani va rimesso.') : ''}${stopWarn}` : T`Ordine di vendita accettato da Alpaca: sarà eseguito all'apertura del mercato.`;
   return { ok: true, msg: head, filled: r.done && r.qty > 0, price: r.price || S.market.prices[asset], qty: r.qty || qty, atLoss: r.atLoss, exercise: ex, cancelled: cancelled || undefined };
 }
 
@@ -605,7 +606,7 @@ export async function cancel(p: PendingOrder): Promise<string> {
     await wait(300);
     const r = applyOrder(S.portfolio, p, await A.order(ENV, p.id));
     save();
-    return r.notes.join(' ') || 'Annullamento inviato ad Alpaca.';
+    return r.notes.join(' ') || T('Annullamento inviato ad Alpaca.');
   } catch (e) { return unreachable(e); }
 }
 
@@ -630,7 +631,7 @@ export function sync(force = false): Promise<string[]> {
       for (const p of pf.pending.slice()) {
         try { notes.push(...applyOrder(pf, p, await A.order(ENV, p.id)).notes); }
         catch (e) {
-          if (/404|not found/i.test((e as Error).message)) { pf.pending = pf.pending.filter((x) => x !== p); notes.push(`Un ordine su ${ASSET_BY_ID[p.asset]?.ticker ?? p.asset} non esiste più su Alpaca: l'ho tolto dal registro.`); }
+          if (/404|not found/i.test((e as Error).message)) { pf.pending = pf.pending.filter((x) => x !== p); notes.push(T`Un ordine su ${ASSET_BY_ID[p.asset]?.ticker ?? p.asset} non esiste più su Alpaca: l'ho tolto dal registro.`); }
         }
       }
       // gli ordini chiusi servono solo a dare il prezzo vero alle vendite fatte fuori dal gioco: se mancano si prosegue
@@ -701,8 +702,8 @@ export function reconcile(pf: Portfolio, acc: A.AlpacaAccount, real: A.AlpacaPos
       // gli acquisti già fatti restano contati per le Prove; quelli ancora in coda non sono mai avvenuti
       pf.bought = Math.max(0, pf.bought - unfilledBuys(pf));
       pf.positions = []; pf.pending = []; pf.loan = 0; pf.cash = pf.initial; pf.marginCallAt = 0;
-      pf.external.push({ t: Date.now(), asset: '', qty: 0, note: 'conto Paper azzerato o sostituito' });
-      notes.push('Il conto Paper su Alpaca è stato azzerato o sostituito: il registro di gioco riparte dal capitale iniziale. Tappe, Attestati e Sigilli restano tuoi.');
+      pf.external.push({ t: Date.now(), asset: '', qty: 0, note: T('conto Paper azzerato o sostituito') });
+      notes.push(T('Il conto Paper su Alpaca è stato azzerato o sostituito: il registro di gioco riparte dal capitale iniziale. Tappe, Attestati e Sigilli restano tuoi.'));
     }
   }
   pf.accountTag = tag;
@@ -726,12 +727,12 @@ export function reconcile(pf: Portfolio, acc: A.AlpacaAccount, real: A.AlpacaPos
       pf.realized = (pf.realized ?? 0) + result;
       if (pf.loan > 0) { const repay = Math.min(pf.loan, proceeds); pf.loan -= repay; proceeds -= repay; }
       pf.cash += proceeds;
-      pf.external.push({ t: Date.now(), asset: pos.id, qty: diff, note: `venduto fuori dal gioco a ${fmtPx(px)} $` });
+      pf.external.push({ t: Date.now(), asset: pos.id, qty: diff, note: T`venduto fuori dal gioco a ${fmtPx(px)} $` });
       if (pf.external.length > 50) pf.external.shift();
       const tick = ASSET_BY_ID[pos.id]?.ticker ?? pos.id;
       // una vendita fatta sul sito di Alpaca vale come una fatta nel gioco: annulla la Prova di quel titolo
       const voided = pf === S.portfolio ? [voidExercise(pos.id), voidMandate(pos.id)].filter(Boolean).join(' ') : '';
-      notes.push(`Su Alpaca mancano ${fmtQty(diff)} ${tick} rispetto al registro: li registro come venduti fuori dal gioco a ${fmtPx(px)} $ (${fillPx ? 'prezzo di esecuzione letto da Alpaca' : 'prezzo attuale: l\'ordine non è tra quelli chiusi'}), con ${result < 0 ? `una perdita realizzata di ${fmtMoney(-result)}` : `un guadagno realizzato di ${fmtMoney(result)}`}.`);
+      notes.push(T`Su Alpaca mancano ${fmtQty(diff)} ${tick} rispetto al registro: li registro come venduti fuori dal gioco a ${fmtPx(px)} $ (${fillPx ? T('prezzo di esecuzione letto da Alpaca') : T('prezzo attuale: l\'ordine non è tra quelli chiusi')}), con ${result < 0 ? T`una perdita realizzata di ${fmtMoney(-result)}` : T`un guadagno realizzato di ${fmtMoney(result)}`}.`);
       if (voided) notes.push(voided);
     }
     if (pos.qty < 1e-9) pf.positions = pf.positions.filter((x) => x !== pos);
@@ -808,8 +809,8 @@ export async function restartAfterBankruptcy(): Promise<string[]> {
   if (!ex.allDone && ex.open && !graduated() && credited(pf) > (ex.stage === 0 ? 0 : exNeed(ex.stage - 1)) + 0.005) {
     resetStage(ex.stage);
     notes.push(ignoreOn()
-      ? `Con la bancarotta la Prova sul conto ${stageName(ex.stage)} sarebbe annullata. ${passIgnored(ex.stage)}`
-      : `Con la bancarotta anche la Prova sul conto ${stageName(ex.stage)} è annullata: la quota della tappa riparte da zero.`);
+      ? T`Con la bancarotta la Prova sul conto ${stageName(ex.stage)} sarebbe annullata. ${passIgnored(ex.stage)}`
+      : T`Con la bancarotta anche la Prova sul conto ${stageName(ex.stage)} è annullata: la quota della tappa riparte da zero.`);
   }
   for (const pos of pf.positions.slice()) notes.push((await sell(pos.id, pos.qty, { tag: 'chiusura' })).msg);
   const half = Math.round(startCapital() * LEVERAGE.restart);
@@ -831,15 +832,15 @@ export async function restartAfterBankruptcy(): Promise<string[]> {
  */
 export async function deposit(amount: number): Promise<string> {
   const pf = S.portfolio;
-  if (!graduated()) return 'Il capitale si può aumentare solo dopo Wall Street.';
+  if (!graduated()) return T('Il capitale si può aumentare solo dopo Wall Street.');
   try {
     const acc = await A.account(ENV);
-    if (Number(acc.equity) < equity(pf) + amount) return `Il tuo conto Paper su Alpaca vale ${fmtMoney(Number(acc.equity))}: non basta per un conto di gioco più grande. Puoi azzerarlo o ricaricarlo dalla dashboard Paper di Alpaca.`;
+    if (Number(acc.equity) < equity(pf) + amount) return T`Il tuo conto Paper su Alpaca vale ${fmtMoney(Number(acc.equity))}: non basta per un conto di gioco più grande. Puoi azzerarlo o ricaricarlo dalla dashboard Paper di Alpaca.`;
   } catch (e) { return unreachable(e); }
   pf.cash += amount; pf.contributed += amount; pf.peak += amount;
   pf.valueHistory = pf.valueHistory.map((v) => v + amount);
   save();
-  return `Capitale aumentato di ${fmtMoney(amount)}. Il rendimento resta calcolato su quanto hai versato in tutto.`;
+  return T`Capitale aumentato di ${fmtMoney(amount)}. Il rendimento resta calcolato su quanto hai versato in tutto.`;
 }
 
 // ---------------- Tempo reale ----------------

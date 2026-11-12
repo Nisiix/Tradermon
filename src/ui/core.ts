@@ -2,6 +2,7 @@ import { pushHandler, popHandler, type Key } from './input';
 import { beep } from '../systems/audio';
 import { S } from '../systems/state';
 import { gtext } from '../systems/gender';
+import { T } from '../i18n';
 
 let stage: HTMLElement;
 
@@ -117,7 +118,7 @@ export async function choose(options: string[], opts: ChooseOpts = {}): Promise<
 }
 
 export async function confirm(prompt: string, who?: string): Promise<boolean> {
-  return (await choose(['Sì', 'No'], { prompt, who, cancel: true })) === 0;
+  return (await choose([T('Sì'), 'No'], { prompt, who, cancel: true })) === 0;
 }
 
 // ---------------- Finestre modali ----------------
@@ -177,7 +178,7 @@ export function modal<T = unknown>(title: string, build: (ctl: ModalCtl<T>) => v
     };
     if (opts.closable !== false) {
       const x = el('button', 'btn', '✕');
-      x.title = 'Chiudi (X)';
+      x.title = T('Chiudi (X)');
       x.addEventListener('click', () => close(undefined));
       head.appendChild(x);
     }
@@ -194,7 +195,7 @@ export function ask(prompt: string, def = '', maxLen = 10): Promise<string | nul
     i.value = def;
     i.maxLength = maxLen;
     body.appendChild(i);
-    body.appendChild(el('p', 'small muted', 'Scrivi e premi Invio (o tocca OK).'));
+    body.appendChild(el('p', 'small muted', T('Scrivi e premi Invio (o tocca OK).')));
     const ok = () => close(i.value.trim() || def);
     i.addEventListener('keydown', (e) => { if (e.key === 'Enter') ok(); });
     button('OK', ok, 'primary');

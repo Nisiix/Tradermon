@@ -3,6 +3,7 @@ import { emptyMarket } from './market';
 import { newPortfolio } from './portfolio';
 import { ANSWER_SECONDS, DIFFICULTY } from './balance';
 import { ASSETS, ASSET_BY_ID } from '../data/assets';
+import { T } from '../i18n';
 
 export const SAVE_KEY = 'tradermon.save.v1';
 const KEY = SAVE_KEY;
@@ -142,17 +143,17 @@ function newGameShape(): SaveData {
 
 /** Controlla la struttura minima di un salvataggio importato: evita che un file alterato blocchi il gioco. */
 export function validSave(d: unknown): string | null {
-  if (!isObj(d)) return 'il file non contiene un salvataggio';
-  if (typeof d.version !== 'number' || d.version < 1 || d.version > SAVE_VERSION) return 'versione del salvataggio non riconosciuta';
-  if (typeof d.name !== 'string' || typeof d.map !== 'string') return 'nome o posizione mancanti';
-  if (typeof d.x !== 'number' || typeof d.y !== 'number') return 'coordinate non valide';
+  if (!isObj(d)) return T('il file non contiene un salvataggio');
+  if (typeof d.version !== 'number' || d.version < 1 || d.version > SAVE_VERSION) return T('versione del salvataggio non riconosciuta');
+  if (typeof d.name !== 'string' || typeof d.map !== 'string') return T('nome o posizione mancanti');
+  if (typeof d.x !== 'number' || typeof d.y !== 'number') return T('coordinate non valide');
   const pf = d.portfolio;
-  if (!isObj(pf) || typeof pf.cash !== 'number' || !Array.isArray(pf.positions)) return 'portafoglio non valido';
-  if (pf.positions.some((p) => !isObj(p) || typeof p.id !== 'string' || typeof p.qty !== 'number')) return 'posizioni non valide';
+  if (!isObj(pf) || typeof pf.cash !== 'number' || !Array.isArray(pf.positions)) return T('portafoglio non valido');
+  if (pf.positions.some((p) => !isObj(p) || typeof p.id !== 'string' || typeof p.qty !== 'number')) return T('posizioni non valide');
   const mk = d.market;
-  if (!isObj(mk) || !isObj(mk.prices) || !isObj(mk.history) || typeof mk.day !== 'number') return 'mercato non valido';
-  if (d.flags !== undefined && !isObj(d.flags)) return 'flag non validi';
-  for (const k of ['defeated', 'visited', 'techniques'] as const) if (d[k] !== undefined && !Array.isArray(d[k])) return `${k} non valido`;
+  if (!isObj(mk) || !isObj(mk.prices) || !isObj(mk.history) || typeof mk.day !== 'number') return T('mercato non valido');
+  if (d.flags !== undefined && !isObj(d.flags)) return T('flag non validi');
+  for (const k of ['defeated', 'visited', 'techniques'] as const) if (d[k] !== undefined && !Array.isArray(d[k])) return T`${k} non valido`;
   return null;
 }
 
@@ -189,7 +190,7 @@ export function capital(): number { return DIFFICULTY[S.difficulty].capital; }
 
 export function slots(): number { return SLOTS_BY_BADGE[Math.min(8, S.badges)]; }
 export function hasTech(t: string): boolean { return S.techniques.includes(t); }
-export const TECH = { LIMIT: 'Ordine Limite', REBAL: 'Ribilanciamento', PAC: 'Piano di Accumulo', STOP: 'Stop Loss', COLD: 'Mente Fredda', TICKER: 'Lettura del Ticker', DRIP: 'Reinvestimento' };
+export const TECH = { LIMIT: T('Ordine Limite'), REBAL: T('Ribilanciamento'), PAC: T('Piano di Accumulo'), STOP: T('Stop Loss'), COLD: T('Mente Fredda'), TICKER: T('Lettura del Ticker'), DRIP: T('Reinvestimento') };
 export function hasArchiveTech(): boolean { return S.badges >= 5; }
 
 export function classes(): AssetClass[] { return S.track === 'mixed' ? S.mixedClasses : [S.track as AssetClass]; }

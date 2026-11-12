@@ -1,4 +1,5 @@
 import type { Difficulty } from '../types';
+import { T } from '../i18n';
 
 // Tabella unica di bilanciamento: duelli (domande, risposte richieste, rischio per la Fiducia) e ricompense.
 // Cambiare qui un numero cambia il gioco ovunque: niente valori sparsi negli script.
@@ -49,11 +50,11 @@ export const REWARD = {
 
 /** Gradi della Reputazione: ogni grado apre qualcosa (vedi systems/character.ts). */
 export const REP_TIERS = [
-  { min: 0, name: 'Sconosciuto' },
-  { min: 300, name: 'Conosciuto' },
-  { min: 900, name: 'Stimato' },
-  { min: 2000, name: 'Rinomato' },
-  { min: 4000, name: 'Leggenda' },
+  { min: 0, name: T('Sconosciuto') },
+  { min: 300, name: T('Conosciuto') },
+  { min: 900, name: T('Stimato') },
+  { min: 2000, name: T('Rinomato') },
+  { min: 4000, name: T('Leggenda') },
 ] as const;
 
 /** Soglia di Disciplina e Pazienza oltre la quale si aprono nuove risposte nei dialoghi. */
@@ -88,10 +89,10 @@ export interface DifficultyDef {
 }
 
 export const DIFFICULTY: Record<Difficulty, DifficultyDef> = {
-  apprendista: { name: 'Apprendista', capital: 10000, fee: 0, tolerance: 0.5, replayLeverage: 2, bankrupt: 'riparti', fiduciaWin: 40, desc: 'Capitale ampio, nessun costo didattico. A ogni tappa devi investire almeno il 5% del capitale: molta liquidità di scorta, tanti errori concessi. Per chi parte da zero. Ogni duello vinto ridà 40 punti di Fiducia.' },
-  investitore: { name: 'Investitore', capital: 5000, fee: 0.001, tolerance: 0.3, replayLeverage: 2, bankrupt: 'riparti', fiduciaWin: 30, desc: 'Capitale medio, costo dello 0,10% per ordine. A ogni tappa devi investire almeno il 7% del capitale. Ogni duello vinto ridà 30 punti di Fiducia.' },
-  stratega: { name: 'Stratega', capital: 2500, fee: 0.0025, tolerance: 0.15, replayLeverage: 3, bankrupt: 'una-volta', fiduciaWin: 20, desc: 'Capitale ridotto, costo dello 0,25% per ordine. A ogni tappa devi investire almeno l\'8,5% del capitale: poca liquidità di scorta. Una sola ripartenza dopo una bancarotta. Ogni duello vinto ridà 20 punti di Fiducia.' },
-  leggenda: { name: 'Leggenda', capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', fiduciaWin: 10, desc: 'Capitale minimo, costo dello 0,50% per ordine. A ogni tappa devi investire almeno il 9,5% del capitale: quasi tutto resta esposto al mercato. Alla bancarotta la parte pratica finisce. Si sblocca con la Nuova Partita+. Ogni duello vinto ridà 10 punti di Fiducia.' },
+  apprendista: { name: T('Apprendista'), capital: 10000, fee: 0, tolerance: 0.5, replayLeverage: 2, bankrupt: 'riparti', fiduciaWin: 40, desc: T('Capitale ampio, nessun costo didattico. A ogni tappa devi investire almeno il 5% del capitale: molta liquidità di scorta, tanti errori concessi. Per chi parte da zero. Ogni duello vinto ridà 40 punti di Fiducia.') },
+  investitore: { name: T('Investitore'), capital: 5000, fee: 0.001, tolerance: 0.3, replayLeverage: 2, bankrupt: 'riparti', fiduciaWin: 30, desc: T('Capitale medio, costo dello 0,10% per ordine. A ogni tappa devi investire almeno il 7% del capitale. Ogni duello vinto ridà 30 punti di Fiducia.') },
+  stratega: { name: T('Stratega'), capital: 2500, fee: 0.0025, tolerance: 0.15, replayLeverage: 3, bankrupt: 'una-volta', fiduciaWin: 20, desc: T('Capitale ridotto, costo dello 0,25% per ordine. A ogni tappa devi investire almeno l\'8,5% del capitale: poca liquidità di scorta. Una sola ripartenza dopo una bancarotta. Ogni duello vinto ridà 20 punti di Fiducia.') },
+  leggenda: { name: T('Leggenda'), capital: 1000, fee: 0.005, tolerance: 0.05, replayLeverage: 4, bankrupt: 'game-over', fiduciaWin: 10, desc: T('Capitale minimo, costo dello 0,50% per ordine. A ogni tappa devi investire almeno il 9,5% del capitale: quasi tutto resta esposto al mercato. Alla bancarotta la parte pratica finisce. Si sblocca con la Nuova Partita+. Ogni duello vinto ridà 10 punti di Fiducia.') },
 };
 export const DIFFICULTIES = Object.keys(DIFFICULTY) as Difficulty[];
 /** Difficoltà in cui il giocatore può chiedere, dalle opzioni, di proseguire anche quando una Prova sul conto va male. */
@@ -103,15 +104,15 @@ export const RATE = 0.1;
 
 /** Attrezzo richiesto dall'esercizio di ogni tappa: è la Tecnica appena imparata, usata sul conto Paper. */
 export const STAGE_TOOL: { key: 'any' | 'second' | 'limit' | 'sectors' | 'stop'; text: string }[] = [
-  { key: 'any', text: 'Compra il titolo della tua Valigetta.' },
-  { key: 'second', text: 'Aggiungi almeno un secondo titolo: le nuove Asset Card sono in vetrina.' },
-  { key: 'limit', text: 'Usa almeno un ordine limite (Tecnica di Orazio Limite).' },
-  { key: 'sectors', text: 'Arriva ad almeno tre settori diversi, o tre titoli se il tuo percorso ha meno settori.' },
-  { key: 'any', text: 'Investi la quota della tappa: un versamento alla volta, è un piano di accumulo.' },
-  { key: 'any', text: 'Investi la quota della tappa dopo aver letto la scheda completa del titolo che scegli.' },
-  { key: 'any', text: 'Investi la quota della tappa. I dividendi restano teoria: il conto Paper non li paga.' },
-  { key: 'any', text: 'Investi la quota della tappa a mente fredda: scrivi il motivo nel Diario.' },
-  { key: 'stop', text: 'Proteggi almeno una posizione con un ordine stop (Tecnica di Rocco Rischio).' },
+  { key: 'any', text: T('Compra il titolo della tua Valigetta.') },
+  { key: 'second', text: T('Aggiungi almeno un secondo titolo: le nuove Asset Card sono in vetrina.') },
+  { key: 'limit', text: T('Usa almeno un ordine limite (Tecnica di Orazio Limite).') },
+  { key: 'sectors', text: T('Arriva ad almeno tre settori diversi, o tre titoli se il tuo percorso ha meno settori.') },
+  { key: 'any', text: T('Investi la quota della tappa: un versamento alla volta, è un piano di accumulo.') },
+  { key: 'any', text: T('Investi la quota della tappa dopo aver letto la scheda completa del titolo che scegli.') },
+  { key: 'any', text: T('Investi la quota della tappa. I dividendi restano teoria: il conto Paper non li paga.') },
+  { key: 'any', text: T('Investi la quota della tappa a mente fredda: scrivi il motivo nel Diario.') },
+  { key: 'stop', text: T('Proteggi almeno una posizione con un ordine stop (Tecnica di Rocco Rischio).') },
 ];
 
 /**

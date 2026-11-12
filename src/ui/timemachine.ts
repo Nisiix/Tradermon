@@ -4,12 +4,13 @@ import { metrics } from '../systems/market';
 import { loadWindow } from '../systems/realdata';
 import { ASSETS, ASSET_BY_ID, SECTOR_LABEL, SECTOR_COLOR, anonymous } from '../data/assets';
 import { shuffle } from '../systems/rng';
-import { type Book, marketBuy, marketSell, placeOrder, processOrders, value, weights, fmtPx, fmtMoney, fmtPct, fmtQty, spreadOf } from '../systems/portfolio';
+import { type Book, marketBuy, marketSell, placeOrder, processOrdersEx, value, weights, fmtPx, fmtMoney, fmtPct, fmtQty, spreadOf } from '../systems/portfolio';
 import { S, hasTech, TECH, classes } from '../systems/state';
 import { DIFFICULTY, LEVERAGE } from '../systems/balance';
 import { checkLink } from '../systems/account';
 import { el, esc, modal, toast, say } from './core';
 import { beep } from '../systems/audio';
+import { T } from '../i18n';
 
 export interface SimOpts {
   mission?: SimMission;
@@ -40,7 +41,7 @@ async function loadSim(o: SimOpts): Promise<SimData | string> {
   const sc = o.mission?.scenario ?? o.scenario!;
   const link = await checkLink();
   if (!link.server) return link.reason;
-  if (!link.paper) return 'La Macchina del Tempo usa solo dati reali di mercato: collega il conto Alpaca Paper dal menu, voce "Chiavi API".';
+  if (!link.paper) return T('La Macchina del Tempo usa solo dati reali di mercato: collega il conto Alpaca Paper dal menu, voce "Chiavi API".');
   const cls = o.classes ?? classes();
   try {
     const w = await loadWindow(sc.window, ASSETS.filter((a) => cls.includes(a.cls)));
@@ -52,13 +53,13 @@ async function loadSim(o: SimOpts): Promise<SimData | string> {
     const real = shuffle(w.assets);
     return { assets: anonymous(real), real, prices, dates: w.dates, anon: true };
   } catch (e) {
-    return `Non riesco a scaricare i dati reali di questo periodo: ${(e as Error).message}`;
+    return T`Non riesco a scaricare i dati reali di questo periodo: ${(e as Error).message}`;
   }
 }
 
 export async function runSim(o: SimOpts): Promise<SimOutcome> {
   const data = await loadSim(o);
-  if (typeof data === 'string') { await say([data, 'Nessun prezzo viene inventato: riprova quando il conto è raggiungibile.'], 'Macchina del Tempo'); return null; }
+  if (typeof data === 'string') { await say([data, T('Nessun prezzo viene inventato: riprova quando il conto è raggiungibile.')], T('Macchina del Tempo')); return null; }
   return simModal(o, data);
 }
 
@@ -102,9 +103,9 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
   const slotsMax = 10;
   const credit = () => (useLev && levMax > 1 && defs[selected].cls !== 'crypto' ? Math.max(0, value(book, prices()) * (levMax - 1) + Math.min(0, book.cash)) : 0);
 
-  return modal<SimOutcome>(o.mission ? `Macchina del Tempo · ${o.mission.title}` : `Zona Simulazione · ${sc.name || assets[0].ticker}`, ({ body, foot, close, button }) => {
-    body.innerHTML = `
-      <div class="small" style="margin-bottom:6px">${esc(o.mission?.brief ?? sc.desc)}${sc.historical ? ` <span class="muted">(Riferimento: ${esc(sc.historical)})</span>` : ''}${data.anon ? ' <span class="muted">Prezzi reali del periodo, a base 100; i nomi dei titoli sono nascosti fino alla fine.</span>' : ''}</div>
+  return modal<SimOutcome>(o.mission ? T`Macchina del Tempo · ${o.mission.title}` : T`Zona Simulazione · ${sc.name || assets[0].ticker}`, ({ body, foot, close, button }) => {
+    body.innerHTML = T`
+      <div class="small" style="margin-bottom:6px">${esc(o.mission?.brief ?? sc.desc)}${sc.historical ? ` <span class="muted">(Riferimento: ${esc(sc.historical)})</span>` : ''}${data.anon ? T(' <span class="muted">Prezzi reali del periodo, a base 100; i nomi dei titoli sono nascosti fino alla fine.</span>') : ''}</div>
       <div class="tm">
         <div>
           <canvas width="640" height="220"></canvas>
@@ -133,7 +134,7 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
           </div>
         </div>
       </div>
-      <div class="small muted" style="margin-top:6px">Costi: ${feeRate ? `${(feeRate * 100).toFixed(2).replace('.', ',')}% per ordine (difficoltà ${DIFFICULTY[S.difficulty].name}) + ` : ''}spread stimato (0,1%, cripto 0,5%). ${monthly ? `Versamento mensile: ${monthly} $ ogni 21 giorni di mercato.` : ''} ${dividends ? 'Dividendi stimati dal rendimento medio del titolo, pagati ogni mese e reinvestiti.' : ''}</div>`;
+      <div class="small muted" style="margin-top:6px">Costi: ${feeRate ? T`${(feeRate * 100).toFixed(2).replace('.', ',')}% per ordine (difficoltà ${DIFFICULTY[S.difficulty].name}) + ` : ''}spread stimato (0,1%, cripto 0,5%). ${monthly ? T`Versamento mensile: ${monthly} $ ogni 21 giorni di mercato.` : ''} ${dividends ? T('Dividendi stimati dal rendimento medio del titolo, pagati ogni mese e reinvestiti.') : ''}</div>`;
     const $ = (s: string) => body.querySelector(s) as HTMLElement;
     const cv = body.querySelector('canvas') as HTMLCanvasElement;
     const amt = $('.amt') as HTMLInputElement;
@@ -145,51 +146,51 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
     if (levMax > 1) { ($('.levrow') as HTMLElement).style.display = ''; ($('.lev') as HTMLInputElement).addEventListener('change', (e) => { useLev = (e.target as HTMLInputElement).checked; draw(); }); }
     const priceOr = (def: number) => { const v = Number(lpx.value); return v > 0 ? v : def; };
     if (canLimit) {
-      const lb = el('button', 'btn', 'Limite acquisto');
+      const lb = el('button', 'btn', T('Limite acquisto'));
       lb.addEventListener('click', () => {
         const p = prices()[selected];
         const lp = priceOr(p * 0.97);
         const a = Number(amt.value);
         if (!lp || !a) return;
-        if (a > book.cash) return toast('Liquidità insufficiente.');
+        if (a > book.cash) return toast(T('Liquidità insufficiente.'));
         placeOrder(book, { asset: selected, side: 'buy', type: 'limit', qty: (a * (1 - feeRate)) / lp, price: lp, createdDay: day });
-        toast(`Ordine limite di acquisto a ${fmtPx(lp)} inserito.`);
+        toast(T`Ordine limite di acquisto a ${fmtPx(lp)} inserito.`);
         draw();
       });
-      const ls = el('button', 'btn', 'Limite vendita');
+      const ls = el('button', 'btn', T('Limite vendita'));
       ls.addEventListener('click', () => {
         const pos = book.positions.find((x) => x.id === selected);
-        if (!pos) return toast('Non possiedi questo asset.');
+        if (!pos) return toast(T('Non possiedi questo asset.'));
         const p = prices()[selected];
         const lp = priceOr(p * 1.05);
         if (!lp) return;
         placeOrder(book, { asset: selected, side: 'sell', type: 'limit', qty: pos.qty, price: lp, createdDay: day });
-        toast(`Ordine limite di vendita a ${fmtPx(lp)} inserito.`);
+        toast(T`Ordine limite di vendita a ${fmtPx(lp)} inserito.`);
         draw();
       });
       adv.append(lb, ls);
     }
     if (canStop) {
-      const sb = el('button', 'btn', 'Stop loss');
+      const sb = el('button', 'btn', T('Stop loss'));
       sb.addEventListener('click', () => {
         const pos = book.positions.find((x) => x.id === selected);
-        if (!pos) return toast('Non possiedi questo asset.');
+        if (!pos) return toast(T('Non possiedi questo asset.'));
         const p = prices()[selected];
         const sp = priceOr(p * 0.9);
-        if (sp >= p) return toast('Lo stop di vendita va messo sotto il prezzo attuale.');
+        if (sp >= p) return toast(T('Lo stop di vendita va messo sotto il prezzo attuale.'));
         if (!sp) return;
         placeOrder(book, { asset: selected, side: 'sell', type: 'stop', qty: pos.qty, price: sp, createdDay: day });
-        toast(`Stop loss a ${fmtPx(sp)} inserito.`);
+        toast(T`Stop loss a ${fmtPx(sp)} inserito.`);
         draw();
       });
       adv.append(sb);
     }
     if (canPac && monthly > 0) {
-      const pb = el('button', 'btn', 'Acquisto mensile');
-      pb.title = 'Investe il versamento mensile disponibile nell\'asset selezionato';
+      const pb = el('button', 'btn', T('Acquisto mensile'));
+      pb.title = T('Investe il versamento mensile disponibile nell\'asset selezionato');
       pb.addEventListener('click', () => {
         const a = Math.min(book.cash, Math.max(pacCash, monthly));
-        if (a < 1) return toast('Nessun versamento da investire.');
+        if (a < 1) return toast(T('Nessun versamento da investire.'));
         doBuy(a, 'pac');
         pacCash = 0;
       });
@@ -207,7 +208,7 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
     $('.buy').addEventListener('click', () => doBuy(Number(amt.value)));
     const sell = (f: number) => {
       const pos = book.positions.find((x) => x.id === selected);
-      if (!pos) return toast('Non possiedi questo asset.');
+      if (!pos) return toast(T('Non possiedi questo asset.'));
       const r = marketSell(book, selected, pos.qty * f, prices(), day, 'mercato', defs, feeRate);
       if (r.ok && r.atLoss) lossSales++;
       toast(r.msg);
@@ -229,7 +230,7 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
       if (day >= days) { setSpeed(0); finish(); return; }
       day++;
       const px = prices();
-      for (const m of processOrders(book, px, day, slotsMax, defs, feeRate)) { toast(m); if (m.includes('limite eseguito') && m.includes('Comprate')) limitFills++; if (m.includes('Comprate')) monthsBought.add(Math.floor(day / 21)); }
+      for (const m of processOrdersEx(book, px, day, slotsMax, defs, feeRate)) { toast(m.msg); if (m.ok && m.side === 'buy' && m.type === 'limit') limitFills++; if (m.ok && m.side === 'buy') monthsBought.add(Math.floor(day / 21)); }
       if (day % 21 === 0) {
         if (monthly) { book.cash += monthly; contributed += monthly; pacCash += monthly; }
         if (dividends) {
@@ -246,7 +247,7 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
         if (pv > 0 && (pv + book.cash) / pv < LEVERAGE.maintenance) {
           for (const p of book.positions.slice()) marketSell(book, p.id, p.qty, px, day, 'liquidazione', defs, feeRate);
           liquidations++;
-          $('.news').textContent = `⚠ Giorno ${day}: margine sotto il ${Math.round(LEVERAGE.maintenance * 100)}%. Il broker ha venduto tutto senza chiedere: è la liquidazione forzata.`;
+          $('.news').textContent = T`⚠ Giorno ${day}: margine sotto il ${Math.round(LEVERAGE.maintenance * 100)}%. Il broker ha venduto tutto senza chiedere: è la liquidazione forzata.`;
           beep('alert'); if (speed > 1) setSpeed(1);
         }
       }
@@ -278,8 +279,8 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
       const sa = assets.find((a) => a.id === selected)!;
       const pos = book.positions.find((x) => x.id === selected);
       const w = weights(book, px).find((x) => x.id === selected);
-      $('.sel-info').innerHTML = `<b>${esc(sa.name)}</b> · ${SECTOR_LABEL[sa.sector]} · rischio ${'★'.repeat(sa.risk)}${sa.dividend ? ` · div. ${(sa.dividend * 100).toFixed(1)}%` : ''}<br>${pos ? `Possiedi ${fmtQty(pos.qty)} (${((w?.w ?? 0) * 100).toFixed(0)}% del portafoglio)` : 'Non in portafoglio'} · spread ${(spreadOf(sa) * 100).toFixed(1)}%`;
-      $('.orders').innerHTML = book.orders.length ? 'Ordini aperti: ' + book.orders.map((o) => `${o.side === 'buy' ? 'Acq.' : 'Vend.'} ${o.type} ${tick(o.asset)} @ ${fmtPx(o.price)}`).join(' · ') : '';
+      $('.sel-info').innerHTML = T`<b>${esc(sa.name)}</b> · ${SECTOR_LABEL[sa.sector]} · rischio ${'★'.repeat(sa.risk)}${sa.dividend ? ` · div. ${(sa.dividend * 100).toFixed(1)}%` : ''}<br>${pos ? T`Possiedi ${fmtQty(pos.qty)} (${((w?.w ?? 0) * 100).toFixed(0)}% del portafoglio)` : T('Non in portafoglio')} · spread ${(spreadOf(sa) * 100).toFixed(1)}%`;
+      $('.orders').innerHTML = book.orders.length ? T('Ordini aperti: ') + book.orders.map((o) => `${o.side === 'buy' ? T('Acq.') : T('Vend.')} ${o.type} ${tick(o.asset)} @ ${fmtPx(o.price)}`).join(' · ') : '';
       // grafico
       const c = cv.getContext('2d')!;
       c.clearRect(0, 0, cv.width, cv.height);
@@ -298,7 +299,7 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
       const line = (arr: number[], col: string, wdt: number) => { c.strokeStyle = col; c.lineWidth = wdt; c.beginPath(); arr.forEach((y, i) => (i ? c.lineTo(X(i), Y(y)) : c.moveTo(X(i), Y(y)))); c.stroke(); };
       line(sv, SECTOR_COLOR[sa.sector], 1.5);
       line(pv, '#1d1d2b', 2.5);
-      c.fillStyle = '#1d1d2b'; c.fillText('— Il tuo portafoglio', 40, cv.height - 4);
+      c.fillStyle = '#1d1d2b'; c.fillText(T('— Il tuo portafoglio'), 40, cv.height - 4);
       c.fillStyle = SECTOR_COLOR[sa.sector]; c.fillText(`— ${sa.ticker}`, 220, cv.height - 4);
     };
 
@@ -316,8 +317,8 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
       };
       const chk = o.mission ? o.mission.check(res) : { ok: true, detail: '' };
       beep(chk.ok ? 'win' : 'lose');
-      body.innerHTML = `
-        <h3 style="margin:0 0 6px">${o.mission ? (chk.ok ? '<span class="good">Missione superata!</span>' : '<span class="bad">Missione non superata</span>') : 'Simulazione conclusa'}</h3>
+      body.innerHTML = T`
+        <h3 style="margin:0 0 6px">${o.mission ? (chk.ok ? T('<span class="good">Missione superata!</span>') : T('<span class="bad">Missione non superata</span>')) : T('Simulazione conclusa')}</h3>
         ${o.mission ? `<p>${esc(chk.detail)}</p>` : ''}
         <table class="t">
           <tr><th>Metrica</th><th class="n">Valore</th></tr>
@@ -330,16 +331,16 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
           <tr><td>Valore finale / versato</td><td class="n">${fmtMoney(res.finalValue)} / ${fmtMoney(res.contributed)}</td></tr>
         </table>
         ${o.mission ? (() => { const pr = processReview(res); return `<p><b>Processo: ${'★'.repeat(pr.stars)}${'☆'.repeat(3 - pr.stars)}</b></p><ul class="small" style="margin:0 0 6px;padding-left:18px">${pr.notes.map((n) => `<li class="${n.ok ? 'good' : 'bad'}">${esc(n.text)}</li>`).join('')}</ul>`; })() : ''}
-        ${liquidations ? `<p class="bad small">Liquidazioni forzate subite: ${liquidations}. Con la leva un ribasso normale diventa una perdita definitiva.</p>` : ''}
-        ${data.anon && o.mission && !chk.ok ? '<div class="box small" style="padding:8px;margin:6px 0"><b>Periodo e nomi restano coperti.</b> Li scoprirai quando superi la prova: così, se riprovi, giudichi di nuovo senza sapere come va a finire. Le righe cambiano ordine e lettera a ogni tentativo.</div>' : ''}
-        ${data.anon && (!o.mission || chk.ok) ? `<div class="box small" style="padding:8px;margin:6px 0"><b>Ora si può dire.</b> Era il periodo reale dal ${fmtDate(data.dates[0])} al ${fmtDate(data.dates[data.dates.length - 1])}.<br>${assets.map((a, i) => `${esc(a.name)} = <b>${esc(data.real[i].name)}</b> (${esc(data.real[i].ticker)}) ${fmtPct(series.prices[a.id][days] / series.prices[a.id][0] - 1, 0)}`).join(' · ')}<br><span class="muted">Dati di mercato Alpaca. I rendimenti passati non dicono nulla di quelli futuri.</span></div>` : ''}
+        ${liquidations ? T`<p class="bad small">Liquidazioni forzate subite: ${liquidations}. Con la leva un ribasso normale diventa una perdita definitiva.</p>` : ''}
+        ${data.anon && o.mission && !chk.ok ? T('<div class="box small" style="padding:8px;margin:6px 0"><b>Periodo e nomi restano coperti.</b> Li scoprirai quando superi la prova: così, se riprovi, giudichi di nuovo senza sapere come va a finire. Le righe cambiano ordine e lettera a ogni tentativo.</div>') : ''}
+        ${data.anon && (!o.mission || chk.ok) ? T`<div class="box small" style="padding:8px;margin:6px 0"><b>Ora si può dire.</b> Era il periodo reale dal ${fmtDate(data.dates[0])} al ${fmtDate(data.dates[data.dates.length - 1])}.<br>${assets.map((a, i) => `${esc(a.name)} = <b>${esc(data.real[i].name)}</b> (${esc(data.real[i].ticker)}) ${fmtPct(series.prices[a.id][days] / series.prices[a.id][0] - 1, 0)}`).join(' · ')}<br><span class="muted">Dati di mercato Alpaca. I rendimenti passati non dicono nulla di quelli futuri.</span></div>` : ''}
         <p class="small muted">Il rendimento conta, ma in Tradermon si vince con il rendimento corretto per il rischio: lo Sharpe e il drawdown dicono quanto è stato "faticoso" ottenerlo.</p>`;
       foot.innerHTML = '';
-      button('Continua', () => close({ ...res, ...chk }), 'primary');
+      button(T('Continua'), () => close({ ...res, ...chk }), 'primary');
     };
 
-    if (o.mission) button('Abbandona', () => { setSpeed(0); close(null); }, 'danger');
-    else button('Termina ora', () => { setSpeed(0); finish(); });
+    if (o.mission) button(T('Abbandona'), () => { setSpeed(0); close(null); }, 'danger');
+    else button(T('Termina ora'), () => { setSpeed(0); finish(); });
     draw();
   }, { closable: false, wide: true }).then((r) => { clearInterval(timer); return r ?? null; });
 }

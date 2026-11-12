@@ -1,0 +1,15 @@
+{
+ "Salvataggio trovato": "Save found",
+ "<p>Dal vecchio indirizzo del gioco è arrivata la partita di <b>{0}</b> ({1} min, {2} medaglie).</p>\n        <p>In questo browser c'è già la partita di <b>{3}</b> ({4} min). Se la sostituisci, resta una copia di riserva.</p>": "<p>A game by <b>{0}</b> ({1} min, {2} medals) arrived from the game's old address.</p>\n        <p>This browser already has a game by <b>{3}</b> ({4} min). If you replace it, a backup copy is kept.</p>",
+ "Usa quella arrivata": "Use the one that arrived",
+ "Tieni questa": "Keep this one",
+ "Salvataggio trasferito dal vecchio indirizzo.": "Save transferred from the old address.",
+ "Controllo l'accesso": "Checking your login",
+ "Carico la partita": "Loading the game",
+ "Il servizio dei salvataggi non è raggiungibile: giochi con la copia di questo dispositivo e la invio appena torna la rete.": "The save service can't be reached: you are playing with this device's copy and I'll send it as soon as the network is back.",
+ "Salvato su questo dispositivo: lo invio online appena torna la connessione.": "Saved on this device: I'll send it online as soon as the connection is back.",
+ "Salvataggio non leggibile.": "Save not readable.",
+ "Salvataggio importato.": "Save imported.",
+ "File di salvataggio non valido.": "Invalid save file.",
+ "Iniziare una nuova partita? Al primo salvataggio sostituirà quella che hai adesso.": "Start a new game? At the first save it will replace the one you have now."
+}

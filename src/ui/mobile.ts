@@ -5,6 +5,7 @@
 // - Quando cambiano i comandi touch o l'orientamento, il canvas di Phaser viene riadattato.
 import { el } from './core';
 import { isTouchDevice, onPrefsChange } from '../systems/controls';
+import { T } from '../i18n';
 
 type OrientationLock = ScreenOrientation & { lock?: (o: string) => Promise<void> };
 type FsDoc = Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => Promise<void> };
@@ -50,13 +51,13 @@ function refit() {
 }
 
 export function initMobile() {
-  const ov = el('div', 'rotate-ov', `
+  const ov = el('div', 'rotate-ov', T`
     <div class="rot-phone" aria-hidden="true"><i></i></div>
     <p><b>Ruota il telefono</b></p>
     <p class="small">Tradermon si gioca in orizzontale.</p>`);
   ov.setAttribute('role', 'alert');
   if (fullscreenSupported()) {
-    const b = el('button', 'btn primary', 'Schermo intero');
+    const b = el('button', 'btn primary', T('Schermo intero'));
     b.addEventListener('click', () => { void enterFullscreen(); });
     ov.appendChild(b);
   }

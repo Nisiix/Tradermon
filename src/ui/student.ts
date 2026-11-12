@@ -10,6 +10,7 @@ import { repTier } from '../systems/character';
 import { mentorMission } from '../data/missions';
 import { mentor } from '../data/story';
 import type { QuizTopic } from '../types';
+import { T } from '../i18n';
 
 export interface TopicCard { topic: QuizTopic; known: number; total: number; due: number; wrong: number }
 
@@ -46,17 +47,17 @@ export function missionStars(): { id: string; title: string; stars: number; done
 
 export function nextStep(cards: TopicCard[]): string {
   const due = cards.reduce((s, c) => s + c.due, 0);
-  if (due >= 3) return `Hai ${due} domande in scadenza: un ripasso nell'Exchange o la domanda del giorno le rimettono in ordine.`;
+  if (due >= 3) return T`Hai ${due} domande in scadenza: un ripasso nell'Exchange o la domanda del giorno le rimettono in ordine.`;
   const w = weakest(cards)[0];
   if (w && w.known / w.total < 0.5) {
     const book = booksFor([w.topic]).find((b) => !b.id.endsWith('_ctx'));
     const town = townForTopic(w.topic);
-    return book ? `L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: rileggi «${book.title}»${town ? ` nella Biblioteca di ${town}` : ''}, poi sfida gli allievi.` : `L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: le Lezioni dal menu lo coprono.`;
+    return book ? T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: rileggi «${book.title}»${town ? T` nella Biblioteca di ${town}` : ''}, poi sfida gli allievi.` : T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: le Lezioni dal menu lo coprono.`;
   }
   const ms = missionStars().find((m) => m.sim && m.done && m.stars < 3);
-  if (ms) return `La missione «${ms.title}» ha ${ms.stars}/3 stelle di processo: puoi ripeterla dalla Whale per migliorarle.`;
-  if (S.badges < 8) return `Prossima Whale: ${mentor(S.badges + 1, S.track).name}. Prima passa dalla Sezione della Whale in Biblioteca.`;
-  return 'Percorso completo: Wall Street e la Torre delle Sfide ti aspettano. Rileggi il Diario per allenare il senno di poi.';
+  if (ms) return T`La missione «${ms.title}» ha ${ms.stars}/3 stelle di processo: puoi ripeterla dalla Whale per migliorarle.`;
+  if (S.badges < 8) return T`Prossima Whale: ${mentor(S.badges + 1, S.track).name}. Prima passa dalla Sezione della Whale in Biblioteca.`;
+  return T('Percorso completo: Wall Street e la Torre delle Sfide ti aspettano. Rileggi il Diario per allenare il senno di poi.');
 }
 
 export async function openStudentFolder() {
@@ -68,27 +69,27 @@ export async function openStudentFolder() {
   const coherent = reviewed.filter((e) => e.note.includes('Rilettura: coerente')).length;
   const emotional = reviewed.filter((e) => e.note.includes('Rilettura: emotiva')).length;
   const tier = repTier();
-  await modal('Cartella dello studente', ({ body, button, close }) => {
-    body.innerHTML = `
+  await modal(T('Cartella dello studente'), ({ body, button, close }) => {
+    body.innerHTML = T`
       <p><b>Prossimo passo:</b> ${esc(nextStep(cards))}</p>
       <div class="grid2">
         <div>
           <h4 style="margin:4px 0">Argomenti</h4>
-          ${cards.map((k) => `<div class="small">${esc(TOPIC_LABEL[k.topic])} <span class="muted">${k.known}/${k.total}</span>${k.due ? ` <span class="bad">· ${k.due} da ripassare</span>` : ''}${bar((k.known / k.total) * 100)}</div>`).join('')}
+          ${cards.map((k) => `<div class="small">${esc(TOPIC_LABEL[k.topic])} <span class="muted">${k.known}/${k.total}</span>${k.due ? T` <span class="bad">· ${k.due} da ripassare</span>` : ''}${bar((k.known / k.total) * 100)}</div>`).join('')}
         </div>
         <div>
           <h4 style="margin:4px 0">Da rafforzare</h4>
-          ${weak.length ? weak.map((k) => { const b = booksFor([k.topic]).find((x) => !x.id.endsWith('_ctx')); const t = townForTopic(k.topic); return `<div class="small"><b>${esc(TOPIC_LABEL[k.topic])}</b>${k.wrong ? ` · ${k.wrong} sbagliate` : ''}${b ? `<br><span class="muted">📖 «${esc(b.title)}»${t ? `, Biblioteca di ${esc(t)}` : ''}</span>` : ''}</div>`; }).join('') : '<p class="small muted">Ancora nessun duello: tutto da scoprire.</p>'}
+          ${weak.length ? weak.map((k) => { const b = booksFor([k.topic]).find((x) => !x.id.endsWith('_ctx')); const t = townForTopic(k.topic); return `<div class="small"><b>${esc(TOPIC_LABEL[k.topic])}</b>${k.wrong ? ` · ${k.wrong} sbagliate` : ''}${b ? `<br><span class="muted">📖 «${esc(b.title)}»${t ? T`, Biblioteca di ${esc(t)}` : ''}</span>` : ''}</div>`; }).join('') : T('<p class="small muted">Ancora nessun duello: tutto da scoprire.</p>')}
           <h4 style="margin:8px 0 4px">Missioni (stelle di processo)</h4>
-          ${ms.map((m) => `<div class="small">${m.done ? '🏅' : '○'} ${esc(m.title)} <span class="${m.stars === 3 ? 'good' : 'muted'}">${m.sim ? '★'.repeat(m.stars) + '☆'.repeat(3 - m.stars) : '(a scelta, senza stelle)'}</span></div>`).join('')}
+          ${ms.map((m) => `<div class="small">${m.done ? '🏅' : '○'} ${esc(m.title)} <span class="${m.stars === 3 ? 'good' : 'muted'}">${m.sim ? '★'.repeat(m.stars) + '☆'.repeat(3 - m.stars) : T('(a scelta, senza stelle)')}</span></div>`).join('')}
           <h4 style="margin:8px 0 4px">Duelli e Diario</h4>
           <div class="small">Duelli vinti ${c('duel_win')} · persi ${c('duel_loss')} · perfetti ${c('duel_perfect')}</div>
           <div class="small">Operazioni annotate ${S.journal.length} · rilette ${reviewed.length} (coerenti ${coherent}, emotive ${emotional})</div>
           <h4 style="margin:8px 0 4px">Carattere</h4>
-          <div class="small">Disciplina ${S.stats.disciplina} · Pazienza ${S.stats.pazienza} · Reputazione ${S.stats.reputazione} (${esc(tier.name)}${tier.next ? `, prossimo grado a ${tier.next}` : ''})</div>
+          <div class="small">Disciplina ${S.stats.disciplina} · Pazienza ${S.stats.pazienza} · Reputazione ${S.stats.reputazione} (${esc(tier.name)}${tier.next ? T`, prossimo grado a ${tier.next}` : ''})</div>
         </div>
       </div>
       <p class="small muted">Le stelle di processo premiano come hai investito (diversificazione, niente vendite nel panico, poche operazioni), non quanto hai guadagnato.</p>`;
-    button('Chiudi', () => close(), 'primary');
+    button(T('Chiudi'), () => close(), 'primary');
   }, { wide: true });
 }
