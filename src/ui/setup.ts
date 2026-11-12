@@ -14,7 +14,7 @@ export async function disclaimer(): Promise<void> {
     body.innerHTML = `
       <p><b>Tradermon è un gioco educativo.</b> Non fornisce consulenza finanziaria né raccomandazioni personalizzate.</p>
       <p>Il mondo e i personaggi di Capitalia sono di fantasia. <b>Titoli, prezzi e grafici sono reali</b>: arrivano da Alpaca, un broker, attraverso un conto Paper gratuito (denaro finto) che colleghi tu. I titoli in vetrina sono scelti per insegnare, non per consigliarti. I quiz citano fonti pubbliche di educazione finanziaria (SEC Investor.gov, Investopedia, Consob, Banca d'Italia, CFA Institute, ESMA).</p>
-      <p><b>È un gioco per imparare, con denaro finto.</b> Tradermon è pensato per aiutarti a entrare nel mondo degli investimenti e del trading, e serve solo all'apprendimento: usa esclusivamente il conto Paper di Alpaca e non usa mai soldi reali. Senza conto collegato resta il percorso di studio. Fuori dal gioco, investire denaro vero comporta il rischio di perderlo.</p>
+      <p><b>È un gioco per imparare:</b> usa esclusivamente il conto Paper di Alpaca e non usa mai soldi reali. Senza conto collegato resta il percorso di studio. Fuori dal gioco, investire denaro vero comporta il rischio di perderlo.</p>
       <label><input type="checkbox" class="ck"> <span>Ho capito: è un gioco educativo, con denaro finto, e non è consulenza.</span></label>`;
     const b = button('Inizia', () => close(), 'primary');
     b.disabled = true;
@@ -72,12 +72,12 @@ export async function onboarding(playerName?: string): Promise<void> {
   S.profileScore = score;
   S.profile = profileFromScore(score);
   const desc = { prudente: 'PRUDENTE: preferisci la stabilità e oscillazioni contenute.', equilibrato: 'EQUILIBRATO: cerchi un compromesso tra crescita e tranquillità.', audace: 'AUDACE: tolleri bene le oscillazioni. Attent{o|a} però: audace non vuol dire avventato!' }[S.profile];
-  await say([`Il tuo profilo è ${desc}`, 'Ricorda: non è una raccomandazione. Serve a conoscerti: l\'allocazione del conto la scriverai tu, quando lo aprirai.', 'Vedremo nelle missioni se le tue scelte gli somigliano.'], 'Prof. Saldi');
+  await say([`Il tuo profilo è ${desc}`, 'Non è una raccomandazione: l\'allocazione del conto la scriverai tu, quando lo aprirai.'], 'Prof. Saldi');
   await say('Questo è mio nipote. Siete cresciuti insieme, ma investe in modo molto diverso da te...', 'Prof. Saldi');
   S.rival = (await ask('Come si chiama il tuo rivale?', 'Leo', 10)) || 'Leo';
   await say([`Giusto, ${S.rival}! Ora vai a casa a riposare.`, 'Domani vieni al mio Laboratorio: ti aspetta una scelta importante.'], 'Prof. Saldi');
   intro.remove();
-  await say(['Un\'ultima scelta, e questa non si cambia più: la difficoltà.', 'Decide quanto capitale avrà il tuo conto di gioco e quanto margine di errore ti lascio lungo il viaggio. I punteggi sono in percentuale: un capitale più grande non dà vantaggi.'], 'Prof. Saldi');
+  await say(['Un\'ultima scelta: la difficoltà.', 'Decide quanto capitale avrà il tuo conto di gioco e quanto margine di errore ti lascio lungo il viaggio. I punteggi sono in percentuale: un capitale più grande non dà vantaggi.'], 'Prof. Saldi');
   applyDifficulty(await chooseDifficulty());
   S.map = 'home'; S.x = 2; S.y = 4; S.facing = 'down';
   save();

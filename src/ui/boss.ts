@@ -29,22 +29,30 @@ function runs(): Record<string, BossRun> {
   return b.runs;
 }
 
+/** Come funzionano i Boss: si spiega da sola alla prima visita, poi resta alla voce "Come funziona". */
+function bossRules(): Promise<void> {
+  S.flags.bossRules = true;
+  save();
+  return say([
+    'Ogni Boss si affronta in due tempi: un quiz di livello esperto, poi UNA sola decisione su un grafico vero. Ingresso al prezzo del momento, uno stop, un obiettivo, quanto rischi.',
+    'Il piano muove ordini veri sul conto di gioco: quando lo invii compri davvero il titolo e parte uno stop vero al prezzo che hai indicato. Quanto compri lo decide il rischio che scegli: capitale × rischio ÷ distanza dello stop. L\'acquisto deve essere eseguito subito, quindi le azioni si usano a Borsa aperta e le cripto sempre.',
+    'Stop e obiettivo non si toccano più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata. I tre Boss si possono sfidare insieme: ognuno ha il suo mandato.',
+    'Se vedi che l\'obiettivo non arriva puoi decidere di vendere prima della scadenza e puntare su un altro titolo. La vendita può essere anche parziale, ma va dichiarata: scegli "vendo una parte per annullare la sfida". Decidere di vendere annulla la sfida in ogni caso: la ripeti da capo, quiz compreso, scegliendo un titolo diverso. Non conta come sconfitta.',
+    `Il Boss ha ${BOSS_RULES.energy} punti di energia: fino a ${BOSS_RULES.quizMax} li toglie il quiz, fino a ${BOSS_RULES.planMax} la qualità del piano, fino a ${BOSS_RULES.outcomeMax} l'esito reale. Ne servono ${BOSS_RULES.win}.`,
+    'Quiz e piano perfetti bastano da soli: l\'esito non lo controlla nessuno, quindi non può essere l\'unica strada. Se perdi, si rifà tutto il Boss, quiz compreso, e la perdita fatta su quella posizione resta sul conto.',
+    'Il punteggio dell\'esito si legge sulle candele reali del periodo; il denaro segue gli ordini veri. A mandato finito decidi tu se chiudere la posizione o tenerla.',
+  ], KEEPER);
+}
+
 export async function bossMenu(): Promise<void> {
+  if (!S.flags.bossRules) await bossRules();
   for (;;) {
     const all = runs();
     const opts = [...BOSSES.map((b) => `${b.name} · ${b.durationLabel}${S.boss.beaten.includes(b.id) ? ' ✓' : ''}${all[b.id] ? (all[b.id].plan ? ' · piano in corso' : ' · quiz superato') : ''}`), 'Come funziona', 'Esci'];
     const c = await choose(opts, { cancel: true, title: 'BOSS DEI MERCATI', who: KEEPER });
     if (c < 0 || c === opts.length - 1) return;
     if (c === BOSSES.length) {
-      await say([
-        'Ogni Boss si affronta in due tempi: un quiz di livello esperto, poi UNA sola decisione su un grafico vero. Ingresso al prezzo del momento, uno stop, un obiettivo, quanto rischi.',
-        'Il piano muove ordini veri sul conto di gioco: quando lo invii compri davvero il titolo e parte uno stop vero al prezzo che hai indicato. Quanto compri lo decide il rischio che scegli: capitale × rischio ÷ distanza dello stop. L\'acquisto deve essere eseguito subito, quindi le azioni si usano a Borsa aperta e le cripto sempre.',
-        'Stop e obiettivo non si toccano più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata. I tre Boss si possono sfidare insieme: ognuno ha il suo mandato.',
-        'Se vedi che l\'obiettivo non arriva puoi decidere di vendere prima della scadenza e puntare su un altro titolo. La vendita può essere anche parziale, ma va dichiarata: scegli "vendo una parte per annullare la sfida". Decidere di vendere annulla la sfida in ogni caso: la ripeti da capo, quiz compreso, scegliendo un titolo diverso. Non conta come sconfitta.',
-        `Il Boss ha ${BOSS_RULES.energy} punti di energia: fino a ${BOSS_RULES.quizMax} li toglie il quiz, fino a ${BOSS_RULES.planMax} la qualità del piano, fino a ${BOSS_RULES.outcomeMax} l'esito reale. Ne servono ${BOSS_RULES.win}.`,
-        'Quiz e piano perfetti bastano da soli: l\'esito non lo controlla nessuno, quindi non può essere l\'unica strada. Se perdi, si rifà tutto il Boss, quiz compreso, e la perdita fatta su quella posizione resta sul conto.',
-        'Il punteggio dell\'esito si legge sulle candele reali del periodo; il denaro segue gli ordini veri. A mandato finito decidi tu se chiudere la posizione o tenerla.',
-      ], KEEPER);
+      await bossRules();
       continue;
     }
     await bossFight(BOSSES[c]);

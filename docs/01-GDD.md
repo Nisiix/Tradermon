@@ -152,7 +152,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 - **Clinica del Portafoglio**: bancone della Dott.ssa Ratio, salvataggio, lezione sui bias, tutte le operazioni di portafoglio (sezione 7).
 - **Biblioteca** (ogni città dalla seconda): quattro sezioni su scaffali interattivi. In alto a sinistra la **Sezione del Mentore** (sotto un manifesto): una guida alla sfida generata dal Mentore locale più due libri per ogni argomento del suo duello, uno di contesto (perché quella città ci tiene) e uno di materia (ciò che chiede); le lezioni sugli stessi temi sono raggiungibili dalla stessa sezione. Leggere un libro dà 5 XP (contatore delle lezioni), completare la sezione +10 Reputazione. A destra la sezione generale (tutte le lezioni sbloccate), in basso l'archivio delle domande sbagliate (ripasso) e l'Investidex. La Bibliotecaria spiega le sezioni alla prima visita e il Mentore, prima del duello, ricorda la sua sezione se restano libri non letti. Il Prof. Saldi e una studentessa a Borgo Semina presentano il meccanismo nel prologo. "Domanda del giorno" (streak) con la Professoressa del giorno. Testi in `src/data/books.ts`.
 - **Insegne**: gli edifici pubblici hanno un'insegna sul muro sopra la porta (CLINICA, PALESTRA per l'Accademia, BIBLIOTECA, LABORATORIO, SIMULAZIONE, CASINÒ, ARCHIVIO, LEGA, TORRE). Le case non ne hanno.
-- **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Gli allievi non si saltano: se provi a superarne uno senza averlo battuto (anche alle sue spalle), si gira, compare il "!", ti raggiunge e ti sfida a quiz; se perdi rinasci nella Clinica dello stesso villaggio (Fiducia ricaricata). Il duello col Mentore (e quelli della Lega) ha sempre lo stesso numero di domande, anche nei tentativi successivi a una sconfitta: si risponde a tutte, anche a Fiducia esaurita, e si vince con il numero minimo di risposte giuste. Il Mentore accetta la sfida solo dopo che hai battuto tutti i suoi allievi.
+- **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Gli allievi non si saltano: se provi a superarne uno senza averlo battuto (anche alle sue spalle), si gira, compare il "!", ti raggiunge e ti sfida a quiz; se perdi rinasci nella Clinica dello stesso villaggio (Fiducia ricaricata). Il duello col Mentore (e quelli della Lega) ha sempre lo stesso numero di domande, anche nei tentativi successivi a una sconfitta: si risponde a tutte finché la barra della Fiducia non va a zero (troppi errori o tilt), e si vince con il numero minimo di risposte giuste. Il Mentore accetta la sfida solo dopo che hai battuto tutti i suoi allievi.
 - **Case abitate**: ogni città ha 3-4 case visitabili (Borgo Semina una), 30 in tutto. Ogni casa ospita un nucleo: una persona sola, una coppia o una famiglia di tre persone. Gli interni sono arredati in modo diverso secondo il nucleo. Ogni abitante insegna un concetto diverso, per un totale di 62 argomenti, mai ripetuti tra un abitante e l'altro. Ogni consiglio ha una fonte (registrata nei dati, non mostrata in gioco). I temi seguono la città: basi a Borgo Semina e Ponte Cedola, ordini a Porto Ordini, diversificazione a Diversia, costi e interesse composto a Interessa, analisi a Bilancia, dividendi, obbligazioni e tassi a Valdividendo, bias a Mentelucida, gestione del rischio a Rocca Rischio. Si aggiungono temi di macroeconomia, fiscalità italiana e sicurezza. La prima volta che parli con un abitante ottieni +5 XP e il consiglio viene annotato nell'Investidex, dove puoi rileggerlo. Le fonti non compaiono durante il gioco: sono tutte elencate in Opzioni → Crediti e fonti.
 
 ### 3.3 Mercato, orologio e clima
@@ -190,7 +190,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 | Statistica | Come sale | Come scende | Effetto |
 |---|---|---|---|
 | **Conoscenza** (XP e livello) | Risposte giuste (5/10/15/20 XP per difficoltà 1/2/3/4), lezioni lette (+5), sfide vinte | — | Livello = soglia 50·n^1,5 XP. Ogni 5 livelli +5 s al timer e una spiegazione extra |
-| **Fiducia** (i "PV") | Clinica, vittorie | Risposte sbagliate (−10/−20 nei duelli col Mentore), eventi sbagliati | A 0 si "va in tilt" e si perde il 5% della Reputazione. Dopo ogni sconfitta in un duello (tilt o risposte giuste insufficienti) si rinasce nella Clinica della città in cui ci si trova (sui Percorsi nell'ultima Clinica visitata) con la Fiducia al massimo |
+| **Fiducia** (i "PV") | Clinica, vittorie | Risposte sbagliate (100 / (errori concessi + 1) a errore, vedi 5.2), eventi sbagliati | A 0 si "va in tilt" e si perde il 5% della Reputazione. Dopo ogni sconfitta in un duello (tilt o risposte giuste insufficienti) si rinasce nella Clinica della città in cui ci si trova (sui Percorsi nell'ultima Clinica visitata) con la Fiducia al massimo |
 | **Disciplina** (0-100) | Rifiutare truffe, rispettare limiti nelle missioni, curarsi alla Clinica | Cedere agli Speculatori, superare il drawdown limite | Moltiplicatore del punteggio missioni (0,8-1,2) |
 | **Diversificazione** (0-100) | Calcolata dal portafoglio simulato: 100 − indice di concentrazione | — | Statistica visibile e input della salute |
 | **Pazienza** (0-100) | Tenere posizioni nei cali senza vendere, pochi ordini nelle missioni | Troppi ordini (overtrading), vendite nel panico | Bonus nelle missioni lunghe |
@@ -200,19 +200,21 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 
 Schermata a due lati, avversario in alto a destra, giocatore in basso a sinistra, ognuno con la sua barra.
 
-- Barra del giocatore: **Fiducia** (0-100).
-- Barra dell'avversario: **Convinzione** (100). Ogni risposta giusta la riduce di 100 / numero di risposte giuste necessarie.
+- Barra dell'avversario: **Convinzione** (100). Ogni risposta giusta la riduce di 100 / numero di risposte giuste necessarie: arriva a zero con l'ultima risposta che serve.
+- Barra del giocatore: **Fiducia** (0-100), speculare. Errori concessi = domande − giuste necessarie; ogni errore toglie 100 / (errori concessi + 1), così la barra arriva a zero con l'errore che rende la vittoria impossibile. Sotto la barra si legge quanti errori restano. Ogni risposta giusta ridà 4 punti di Fiducia, ma a errori concessi finiti la barra va comunque a zero. La Fiducia resta tra un duello e l'altro: chi parte con meno di 100 ha meno errori a disposizione e, se la barra si svuota prima degli errori concessi, va in tilt (−5% Reputazione). Perdere per troppi errori non è un tilt. Nelle sfide senza rischio la barra si chiama Tenuta, parte piena e la Fiducia salvata non cambia; negli allenamenti a punteggio (Ripasso, sfida settimanale, duello con codice) non c'è e si risponde a tutto.
 - Domande a scelta multipla con 4 opzioni, a tempo (timer uguale per tutti, 25 s). Dopo ogni risposta compare la spiegazione (la fonte è nei dati e in Opzioni → Crediti e fonti, non a schermo).
-- Si vince portando a 0 la Convinzione prima di finire le domande o prima che la Fiducia arrivi a 0.
+- Si vince portando a 0 la Convinzione prima che la propria barra arrivi a 0. La tabella dei duelli è in `src/systems/balance.ts`.
 
-| Avversario | Domande | Giuste necessarie | Danno per errore |
-|---|---|---|---|
-| Investitore sul percorso | 3 | 2 | 10 |
-| Allievo dell'Accademia | 4 | 3 | 10 |
-| Rivale | 5 | 3-4 | 15 |
-| Mentore (fase 1) | 8 | 6 | 15 |
-| Superiore (fase 1) | 10 | 8 | 15 |
-| Campione (fase 1) | 12 | 10 | 15 |
+| Avversario | Domande | Giuste necessarie | Errori concessi | Fiducia per errore |
+|---|---|---|---|---|
+| Investitore sul percorso | 3 | 2 | 1 | 50 |
+| Allievo dell'Accademia | 4 | 3 | 1 | 50 |
+| Rivale (primo / poi) | 5 | 3 / 4 | 2 / 1 | 33 / 50 |
+| Capo degli Speculatori | 6 | 5 | 1 | 50 |
+| Mentore (fase 1) | 8 | 6 | 2 | 33 |
+| Superiore (fase 1) | 10 | 8 | 2 | 33 |
+| Campione (fase 1) | 12 | 10 | 2 | 33 |
+| Torre delle Sfide (piano) | 3 | 3 | 0 | 100 |
 
 **Sfida del Mentore.** Fase 1 duello di quiz; fase 2 **missione pratica** nella Macchina del Tempo (sezione 6). Se si perde la fase 2 si ripete solo la fase 2. Vincere dà: Medaglia, Tecnica, Asset Card del Mentore, slot di portafoglio, sblocchi della Clinica, +200 Reputazione.
 
@@ -486,7 +488,7 @@ Tradermon è un gioco volto solo all'apprendimento: la parte pratica usa esclusi
 
 ### 8.2 Chiavi Alpaca
 
-- Il giocatore le crea su alpaca.markets (account Paper gratuito, basta un'email).
+- Il giocatore le crea su alpaca.markets (account Paper gratuito, basta registrarsi sulla piattaforma).
 - Le inserisce dal menu o dalla Clinica (voce "Chiavi API"). Dal sito restano solo sul dispositivo, cifrate con la password del giocatore; sul proprio computer il browser le invia una sola volta al **server locale** di Tradermon, che le salva in `server/.secrets/keys.json` (escluso da Git, permessi 600) e non le restituisce mai al browser.
 - Indirizzi: conto Paper (`paper-api.alpaca.markets`) e dati di mercato (`data.alpaca.markets`). Il gioco, il server locale e la funzione Supabase non accettano altri conti.
 - "Scollega" cancella le chiavi dal dispositivo o dal server.

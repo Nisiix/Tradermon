@@ -158,7 +158,7 @@ export async function questTalk(rid: string, who: string): Promise<boolean> {
     if (!ok) return true;
     const qs = pickQuestions(st.topics ?? ['regole'], 3, { target: Math.min(2.5, targetDiff(storyStage())) });
     const prevFid = S.stats.fiducia;
-    const r = await runDuel({ foeName: RESIDENT_BY_ID[rid]?.name ?? who, foeTitle: q.title, foePal: RESIDENT_BY_ID[rid]?.pal ?? 0, questions: qs, need: 2, damage: 5 });
+    const r = await runDuel({ foeName: RESIDENT_BY_ID[rid]?.name ?? who, foeTitle: q.title, foePal: RESIDENT_BY_ID[rid]?.pal ?? 0, questions: qs, need: 2, damage: 1 });
     S.stats.fiducia = prevFid;
     done = r.win;
     if (!done) { await say('Quasi! Ripassa un po\' e torna da me.', who); return true; }

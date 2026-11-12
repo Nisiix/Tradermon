@@ -12,6 +12,7 @@ import { beep } from '../systems/audio';
 import { markDuelDone } from './savebtn';
 import { FIDUCIA_PER_CORRECT } from '../systems/balance';
 import { studyHint } from '../data/quiz/hint';
+import { errorsAllowed, errorsLeft, lifeAfterWrong, lifeShown } from '../systems/duelLife';
 
 export interface DuelOpts {
   foeName: string;
@@ -19,13 +20,26 @@ export interface DuelOpts {
   foePal: number;
   questions: Question[];
   need: number;
+  /**
+   * > 0: sfida con rischio, la barra del giocatore è la sua Fiducia e gli errori la consumano davvero.
+   * 0: sfida senza rischio, la barra parte piena e la Fiducia resta com'era.
+   * In entrambi i casi ogni errore toglie 100 / (errori concessi + 1): vedi systems/duelLife.ts.
+   */
   damage: number;
   intro?: string;
   /** Sfida a numero fisso di domande (Mentori e Lega): si rispondono tutte, ma a Fiducia zero si va in tilt. */
   fixed?: boolean;
+  /** Allenamento a punteggio (Ripasso, sfide con codice): si risponde a tutte le domande e la barra del giocatore non c'è. */
+  practice?: boolean;
 }
 
 export interface DuelResult { win: boolean; correct: number; total: number; perfect: boolean; tilted: boolean; ids: string[]; wrong: string[] }
+
+/**
+ * Esito dell'ultimo duello: in tilt solo se la Fiducia è finita PRIMA di esaurire gli errori concessi
+ * (si era partiti con poca Fiducia). Perdere per troppi errori porta la barra a zero ma non è un tilt.
+ */
+export let lastDuelTilted = false;
 
 /** Transizione d'ingresso al duello: due lampi, poi bande nere che si chiudono da lati alterni. */
 export async function battleTransition(): Promise<void> {
@@ -42,6 +56,13 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
   const prevTrack = currentTrack();
   play('battle');
   await battleTransition();
+  lastDuelTilted = false;
+  const total = o.questions.length;
+  const allowed = errorsAllowed(total, o.need);
+  const risky = o.damage > 0;
+  // con rischio la barra è la Fiducia di adesso; senza rischio parte piena e non tocca la Fiducia salvata
+  let life = risky ? S.stats.fiducia : 100;
+  let wrongs = 0;
   return new Promise((resolve) => {
     const stage = getStage();
     const root = el('div', 'battle');
@@ -50,7 +71,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         <div class="box plate foe-p"><div class="nm">${esc(o.foeName)}${o.foeTitle ? ` <span class="muted">· ${esc(o.foeTitle)}</span>` : ''}</div><div class="small">Convinzione</div><div class="foebar">${bar(100)}</div></div>
         <div class="foe"><img class="sprite" src="${portrait(o.foePal)}" alt=""></div>
         <div class="me"><img class="sprite" src="${portraitBack(playerPal(S.avatar, S.gender))}" alt=""></div>
-        <div class="box plate me-p"><div class="nm">${esc(S.name)}${S.title ? ` <span class="muted">· ${esc(S.title)}</span>` : ''}</div><div class="small">Fiducia <span class="fv">${S.stats.fiducia}</span>/100</div><div class="mebar">${bar(S.stats.fiducia)}</div></div>
+        <div class="box plate me-p"><div class="nm">${esc(S.name)}${S.title ? ` <span class="muted">· ${esc(S.title)}</span>` : ''}</div>${o.practice ? '<div class="small">Allenamento · nessun rischio</div>' : `<div class="small">${risky ? 'Fiducia' : 'Tenuta'} <span class="fv">${lifeShown(life)}</span>/100 · <span class="el"></span></div><div class="mebar">${bar(lifeShown(life))}</div>`}</div>
       </div>
       <div class="box q"><div class="qhead row" style="justify-content:space-between"><span class="small muted qn"></span><span class="timer"></span></div><div class="qt"></div><div class="opts"></div><div class="exp"></div></div>`;
     stage.appendChild(root);
@@ -62,6 +83,18 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
     let tilted = false;
     const wrongIds: string[] = [];
     const per = 100 / o.need;
+    const errLeft = () => {
+      if (lifeShown(life) <= 0) return wrongs > allowed ? 'troppi errori' : 'Fiducia esaurita';
+      const left = errorsLeft(life, wrongs, total, o.need);
+      return left === 0 ? 'nessun errore concesso' : left === 1 ? '1 errore concesso' : `${left} errori concessi`;
+    };
+    const drawMe = () => {
+      if (o.practice) return;
+      $('.mebar').innerHTML = bar(lifeShown(life));
+      $('.fv').textContent = String(lifeShown(life));
+      $('.el').textContent = errLeft();
+    };
+    drawMe();
     let handler: ((k: Key) => void) | null = null;
     const setHandler = (h: ((k: Key) => void) | null) => {
       if (handler) popHandler(handler);
@@ -82,8 +115,9 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
 
     const ask = async () => {
       if (!o.fixed && foe <= 0.01) return finish(true);
-      // Fiducia esaurita: tilt, in ogni sfida con danno (anche Mentori e Lega)
-      if (o.damage > 0 && S.stats.fiducia <= 0) { tilted = true; return finish(false); }
+      // Barra del giocatore a zero (anche Mentori e Lega): troppi errori per vincere, oppure tilt se la Fiducia
+      // è finita prima degli errori concessi. Negli allenamenti a punteggio si risponde comunque a tutto.
+      if (!o.practice && lifeShown(life) <= 0) { tilted = wrongs <= allowed; lastDuelTilted = tilted; return finish(false); }
       if (idx >= o.questions.length) return finish(correct >= o.need);
       const q = o.questions[idx];
       idx++;
@@ -125,19 +159,20 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         if (ok) {
           correct++;
           foe = Math.max(0, foe - per);
-          if (o.damage > 0) S.stats.fiducia = Math.min(100, S.stats.fiducia + FIDUCIA_PER_CORRECT);
+          if (risky) life = Math.min(100, life + FIDUCIA_PER_CORRECT);
           beep('ok');
           ($('.foe') as HTMLElement).classList.add('shake');
         } else {
           perfect = false;
           wrongIds.push(q.id);
-          S.stats.fiducia = Math.max(0, S.stats.fiducia - o.damage);
+          wrongs++;
+          life = lifeAfterWrong(life, wrongs, total, o.need);
           beep('bad');
           ($('.me') as HTMLElement).classList.add('shake');
         }
         $('.foebar').innerHTML = bar(foe);
-        $('.mebar').innerHTML = bar(S.stats.fiducia);
-        $('.fv').textContent = String(S.stats.fiducia);
+        if (risky) S.stats.fiducia = lifeShown(life);
+        drawMe();
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
         const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(gtext(q.options[q.answer]))}`;
         const hint = ok ? '' : studyHint(q);

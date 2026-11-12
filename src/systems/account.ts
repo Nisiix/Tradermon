@@ -257,14 +257,21 @@ function voidExercise(asset: string, forced = false): string {
   const tick = ASSET_BY_ID[asset]?.ticker ?? asset;
   if (ignoreOn()) return `${forced ? `La vendita forzata della leva ha venduto ${tick}` : `Hai venduto ${tick}`}: la Prova sul conto ${stageName(k)} sarebbe annullata. ${passIgnored(k)}`;
   // la vendita forzata non è una scelta del giocatore: annulla la Prova, ma non esclude nessun titolo
-  if (forced) return `La vendita forzata della leva ha venduto ${tick}: la Prova sul conto ${stageName(k)} è annullata e riparte da zero.`;
+  if (forced) return `La vendita forzata della leva ha venduto ${tick}: la Prova sul conto ${stageName(k)} è annullata e riparte da zero.${ignoreHint()}`;
   const barred = new Set([...(pf.exBarred ?? []), asset]);
   const others = unlockedAssets(S.track, S.mixedClasses, S.badges, Object.keys(S.cards)).some((a) => !barred.has(a.id));
   pf.exBarred = others ? [...barred] : [];
   const head = `Hai venduto ${tick}: la Prova sul conto ${stageName(k)} è annullata e riparte da zero. Vendere il titolo di una Prova, anche solo una parte, vuol dire rinunciare a quel titolo.`;
-  return others
+  return (others
     ? `${head} Rifai la Prova con un altro titolo: gli acquisti di ${tick} non contano finché non la completi.`
-    : `${head} In vetrina non ci sono altri titoli, quindi puoi rifarla anche con ${tick}.`;
+    : `${head} In vetrina non ci sono altri titoli, quindi puoi rifarla anche con ${tick}.`) + ignoreHint();
+}
+
+/** L'opzione "prosegui anche se la Prova va male" si presenta la prima volta che una Prova si annulla, dove serve. */
+function ignoreHint(): string {
+  if (!ignoreAllowed() || ignoreOn() || S.flags.ignoreHint) return '';
+  S.flags.ignoreHint = true;
+  return ' In questa difficoltà puoi attivare, dalle Impostazioni (⚙) o da Menu → Opzioni, "Prove sul conto: prosegui anche se vanno male": l\'esito negativo viene ignorato e prosegui lo stesso. ' + IGNORE_WARNING;
 }
 
 /** Dopo un ordine accettato: chiude gli esercizi completati (in ordine) e dice quali. */

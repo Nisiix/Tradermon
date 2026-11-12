@@ -8,6 +8,7 @@ import { storyStage } from '../../systems/quiz';
 import { BY_ID } from '../../data/quiz/build';
 import { TRAINER_TIPS } from '../../data/story';
 import { beep } from '../../systems/audio';
+import { lastDuelTilted } from '../../ui/battle';
 import { pick, shuffle } from '../../systems/rng';
 import { tick } from '../../systems/account';
 
@@ -59,7 +60,8 @@ export async function afterDuel(win: boolean, id: string, rep: number, w: WorldA
  */
 export async function defeatRespawn(w: WorldApi) {
   beep('lose');
-  const tilt = S.stats.fiducia <= 0;
+  // la barra arriva a zero a ogni sconfitta: è tilt solo se la Fiducia è finita prima degli errori concessi
+  const tilt = lastDuelTilted;
   const town = townOf(S.map);
   const dest = town !== undefined ? { map: `clinic_${town}`, x: 5, y: 4 } : S.lastClinic;
   const atHome = !dest.map.startsWith('clinic_');

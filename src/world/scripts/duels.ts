@@ -11,6 +11,7 @@ import { mentorTopics, trackTopics, LEAGUE_TOPICS } from '../../data/quiz/build'
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../../data/story';
 import { mentorBooks, TOPIC_LABEL } from '../../data/books';
 import { DUEL, REWARD, TRAIT_HIGH } from '../../systems/balance';
+import { errorsAllowed, errorsLeft } from '../../systems/duelLife';
 import { repTier, mentorCharacterLine, epilogue, TIER_MENTOR_REMATCH } from '../../systems/character';
 import { mentorMission, processReview, leagueMission, LEGENDS, SANDBOX, type Mission } from '../../data/missions';
 import { unlockedAssets } from '../../data/assets';
@@ -133,12 +134,17 @@ export async function mentorBattle(m: number, w: WorldApi) {
   }
   if (S.badges < m - 1) return say(['Sei arrivat{o|a} qui troppo presto!', `Prima ti serve l'Attestato del Mentore ${S.badges + 1}.`], md.name);
   if (!allStudentsBeaten(m)) return say(['Benvenut{o|a} nella mia Accademia.', 'Prima di sfidarmi devi battere tutti i miei allievi.'], md.name);
-  await say([md.intro, 'La Medaglia ha due metà. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada. Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco.'], md.name);
+  // la regola della Medaglia la spiega il primo Mentore, quando serve; gli altri non la ripetono
+  await say([md.intro, ...(m > 1 || S.flags.medalRule ? [] : ['La mia Medaglia ha due metà. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada verso la città successiva.', 'Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che ti ho appena insegnato. Puoi viaggiare con i soli Attestati, ma entri nella Lega degli Investitori solo se hai tutti e otto i Sigilli.'])], md.name);
+  S.flags.medalRule = true;
   const unread = mentorBooks(m, S.track, S.mixedClasses).filter((b) => !S.booksRead.includes(b.id)).length;
   if (unread) await say([`Un consiglio da Mentore: nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, 'Le domande del duello vengono da lì.'], md.name);
   // dopo una sconfitta si torna solo dopo aver studiato: un libro della sezione o un ripasso in Biblioteca
   if (!retryUnlocked(`m${m}`)) return say(['Sei tornat{o|a} presto. Prima di riprovare, studia.', `Leggi un libro della mia sezione nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'}, oppure fai il Ripasso: le domande che hai sbagliato sono lì ad aspettarti.`], md.name);
-  if (S.stats.fiducia < 50) await say([`La tua Fiducia è a ${S.stats.fiducia}. Se arriva a zero durante il duello vai in tilt.`, 'Puoi riposare in Clinica prima di iniziare.'], md.name);
+  {
+    const conc = errorsAllowed(DUEL.mentor.n, DUEL.mentor.need), left = errorsLeft(S.stats.fiducia, 0, DUEL.mentor.n, DUEL.mentor.need);
+    if (left < conc) await say([`La tua Fiducia è a ${S.stats.fiducia}: ti basta per ${left === 1 ? 'un solo errore' : left === 0 ? 'nessun errore' : `${left} errori`} invece dei ${conc} concessi. Se arriva a zero durante il duello vai in tilt.`, 'Puoi riposare in Clinica prima di iniziare.'], md.name);
+  }
   const ok = (await choose(['Sono pront{o|a}!', 'Non ancora'], { prompt: 'Iniziamo?' })) === 0;
   if (!ok) return;
   // il Mentore m si affronta con m − 1 Attestati: dal livello 1 (Mentore 1) a quasi 3 (Mentore 8)
@@ -181,9 +187,10 @@ async function sealChallenge(m: number, w: WorldApi) {
       : [
         `Prova sul conto, tappa ${m}: ${STAGE_TOOL[m].text}`,
         `In tutto servono ${Acc.exNeed(m).toFixed(0)} $ di acquisti sul tuo conto (finora ${ex.got.toFixed(0)} $). È il minimo: se vuoi investire di più, sei liber{o|a} di farlo.`,
-        'Sono ordini veri sul mercato di oggi: nessuno ti chiede un rendimento, si guarda il metodo. A mercato chiuso l\'ordine vale quando Alpaca lo accetta e si esegue all\'apertura.',
-        SWITCH_LINE,
+        // la spiegazione completa alla prima Prova; dopo basta il promemoria breve
+        ...(S.flags.provaRules ? ['Se vendi il titolo della Prova, anche solo una parte, la Prova si annulla e la rifai con un altro titolo.'] : ['Sono ordini veri sul mercato di oggi: nessuno ti chiede un rendimento, si guarda il metodo. A mercato chiuso l\'ordine vale quando Alpaca lo accetta e si esegue all\'apertura.', SWITCH_LINE]),
       ];
+    if (!(S.seals < m - 1 || ex.stage < m)) S.flags.provaRules = true;
     const c = await choose(['Opero adesso', 'Più tardi'], { cancel: true, prompt: lines.join(' '), who: md.name });
     if (c !== 0) return say('Si fa anche da qualsiasi Clinica: il Sigillo arriva da solo, non serve tornare qui.', md.name);
     if (!(await trade())) return;
@@ -255,7 +262,7 @@ async function winBadge(m: number, w: WorldApi) {
   jingle('badge');
   track('badge');
   await say([md.win, mentorCharacterLine(), `Hai ottenuto l'Attestato della ${md.badge}!`, `Nuova Tecnica: ${md.technique}. ${md.techDesc}`, `Slot di portafoglio: ${slots()}.`, newCards.length ? `Nuove Asset Card: ${newCards.map((a) => a.name).join(', ')}.` : '',
-    S.flags.bankrupt ? '' : `Si apre la Prova sul conto della tappa ${m}, quella che vale il Sigillo. ${STAGE_TOOL[m].text} Il minimo in tutto è ${Acc.exNeed(m).toFixed(0)} $ di acquisti: sopra il minimo decidi tu.`].filter(Boolean), md.name);
+    S.flags.bankrupt ? '' : `Si apre la Prova sul conto della tappa ${m}, quella che vale il Sigillo.`].filter(Boolean), md.name);
   const extra: string[] = [];
   if (m === 2) extra.push('Con l\'abbonamento al treno puoi viaggiare tra le città visitate dalle stazioni.');
   if (m === 5) extra.push('L\'Archivio di Bilancia ora è aperto. E in Clinica puoi sostenere l\'Esame della Leva: per ora vale solo nei replay.');
@@ -289,7 +296,7 @@ export async function reviewDuel() {
   if (!q.length) return say(['Oggi non hai domande in scadenza. Ottimo lavoro!', nextReviewLine()], 'Bibliotecaria');
   const qs = shuffle(q.slice(0, 12)).slice(0, DUEL.review.n);
   const prevFid = S.stats.fiducia;
-  await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0 });
+  await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0, practice: true });
   S.stats.fiducia = prevFid;
   track('review');
   return say(['Ogni domanda giusta torna più avanti: dopo 1, 3, 7 e poi 21 giorni. Quelle sbagliate tornano subito.', 'Rivedere al momento giusto è il modo migliore per ricordare.'], 'Bibliotecaria');
@@ -324,7 +331,7 @@ export async function linkDuel() {
   const rng = mulberry32(seed);
   const qs = pickQuestions(SHARED_TOPICS, 5, { rng, shared: true });
   const prevFid = S.stats.fiducia;
-  const q = await runDuel({ foeName: 'Duello con codice', foePal: 16, questions: qs, need: 5, damage: 0 });
+  const q = await runDuel({ foeName: 'Duello con codice', foePal: 16, questions: qs, need: 5, damage: 0, practice: true });
   S.stats.fiducia = prevFid;
   // stesso periodo reale per tutti: i dati sono gli stessi qualunque conto li scarichi
   const r = await runSim({ scenario: SANDBOX[0], sandbox: true, classes: ['stocks', 'etf'] });
