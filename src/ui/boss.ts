@@ -115,7 +115,7 @@ async function planForm(def: BossDef): Promise<void> {
     body.innerHTML = `
       <p class="small">Una sola decisione, su un grafico vero, con <b>ordini veri sul conto di gioco</b>: all'invio compri il titolo al prezzo del momento e parte uno stop vero al prezzo che indichi. Quanto compri lo decide il rischio: capitale × rischio ÷ distanza dello stop. Durata del mandato: <b>${def.durationLabel}</b>. Dopo l'invio stop e obiettivo non si cambiano.</p>
       <p class="small">Se il piano va male, la perdita resta sul conto e la sfida si rifà da capo.</p>
-      <p class="small">Se l'obiettivo non arriva puoi vendere prima della scadenza e puntare su un altro titolo: anche una vendita parziale annulla la sfida, che si ripete da capo con un titolo diverso.${sold ? ` Hai venduto <b>${esc(ASSET_BY_ID[sold]?.ticker ?? sold)}</b> nell'ultimo mandato: questa volta scegli un altro titolo.` : ''}</p>
+      <p class="small">Se l'obiettivo non arriva puoi vendere prima della scadenza e puntare su un altro titolo: anche una vendita parziale annulla la sfida, e la ripeti da capo con un titolo diverso.${sold ? ` Hai venduto <b>${esc(ASSET_BY_ID[sold]?.ticker ?? sold)}</b> nell'ultimo mandato: questa volta scegli un altro titolo.` : ''}</p>
       <label>Titolo <select class="tx as">${pool.map((a) => `<option value="${esc(a.id)}">${esc(a.ticker)} · ${esc(a.name)}</option>`).join('')}</select></label>
       <p class="px small muted">Prezzo: …</p>
       <div class="grid2">
@@ -204,20 +204,20 @@ async function sellMandate(def: BossDef): Promise<void> {
     // la vendita è vera: parte un ordine sul conto di gioco, e la sfida è annullata
     const r = await M.closeMandate(def.id, 'annulla', c === 1 ? 0.5 : 1);
     beep('bad');
-    await say([r.msg, r.cancelled ?? `Il mandato su ${tick} è annullato: non conta come sconfitta.`, `Quando vuoi riprovare si ricomincia dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.${c === 1 ? ` La parte di ${tick} che hai tenuto resta una posizione normale, senza lo stop del piano.` : ''}`], def.name);
+    await say([r.msg, r.cancelled ?? `Il mandato su ${tick} è annullato: non conta come sconfitta.`, `Quando vuoi riprovare ricominci dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.${c === 1 ? ` La parte di ${tick} che hai tenuto resta una posizione normale, senza lo stop del piano.` : ''}`], def.name);
     return;
   }
   if (!sellOut(S.boss, def.id)) return;
   save();
   beep('bad');
-  await say([`Hai deciso di vendere ${c === 1 ? 'una parte di ' : ''}${tick} per annullare la sfida: il mandato è chiuso${c === 1 ? ', anche se la vendita è parziale' : ''}. Non conta come sconfitta.`, `Quando vuoi riprovare si ricomincia dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.`], def.name);
+  await say([`Hai deciso di vendere ${c === 1 ? 'una parte di ' : ''}${tick} per annullare la sfida: il mandato è chiuso${c === 1 ? ', anche se la vendita è parziale' : ''}. Non conta come sconfitta.`, `Quando vuoi riprovare ricominci dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.`], def.name);
 }
 
 async function resolve(def: BossDef): Promise<void> {
   // con gli ordini veri prima si legge che cosa è successo sul conto (stop scattato, vendite fatte altrove)
   if (runs()[def.id]?.plan?.real) {
     (await Acc.sync(true)).forEach((n) => toast(n));
-    if (!runs()[def.id]?.plan) { await say('Il titolo del piano è stato venduto fuori dal piano: il mandato è annullato. Non conta come sconfitta: quando vuoi si ricomincia dal quiz, con un altro titolo.', def.name); return; }
+    if (!runs()[def.id]?.plan) { await say('Il titolo del piano è stato venduto fuori dal piano: il mandato è annullato. Non conta come sconfitta: quando vuoi ricominci dal quiz, con un altro titolo.', def.name); return; }
   }
   const run = runs()[def.id];
   const p = run.plan!;

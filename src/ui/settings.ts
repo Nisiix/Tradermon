@@ -92,7 +92,7 @@ export async function openSettings() {
         ign.addEventListener('click', () => {
           const msg = Acc.setIgnore(!Acc.ignoreOn());
           showIgn();
-          if (msg) { close(); void say(msg); } else toast(Acc.ignoreOn() ? 'Opzione attiva: una Prova andata male non ti ferma più. Resta una scelta sconsigliata per chi vuole imparare.' : 'Opzione spenta: una Prova annullata va rifatta.');
+          if (msg) { close(); void say(msg); } else toast(Acc.ignoreOn() ? 'Opzione attiva: una Prova andata male non ti ferma più. Resta una scelta sconsigliata se vuoi imparare.' : 'Opzione spenta: una Prova annullata va rifatta.');
         });
         showIgn();
       }

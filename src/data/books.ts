@@ -207,7 +207,7 @@ export function guideBook(n: number, track: Track, mixed: AssetClass[]): Book {
     pages: [
       `${m.name}, Mentore n. ${n} di ${town}, assegna la ${m.badge}. Il suo motto: "${m.intro}"`,
       `Nel duello fa domande su ${topics.map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}. Servono risposte giuste alla maggior parte delle domande: studia questa sezione prima di sfidarlo.`,
-      `Chi vince impara la tecnica "${m.technique}": ${m.techDesc}`,
+      `Se lo batti, impari la tecnica "${m.technique}": ${m.techDesc}`,
       'Gli allievi dell\'Accademia fanno domande più facili sugli stessi temi: sono il ripasso ideale prima del Mentore.',
     ],
   };

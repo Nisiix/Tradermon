@@ -64,7 +64,7 @@ export async function defeatRespawn(w: WorldApi) {
   const dest = town !== undefined ? { map: `clinic_${town}`, x: 5, y: 4 } : S.lastClinic;
   const atHome = !dest.map.startsWith('clinic_');
   await say([
-    tilt ? `${S.name} ha perso tutta la Fiducia ed è andato in tilt!` : `${S.name} non è riuscito a rispondere alle domande e ha perso la sfida.`,
+    tilt ? 'Hai perso tutta la Fiducia e sei andato in tilt!' : 'Non sei riuscito a rispondere alle domande e hai perso la sfida.',
     atHome ? 'Torni di corsa a casa per riprenderti.' : town !== undefined ? 'Torni di corsa alla Clinica della città per riprenderti.' : 'Torni di corsa all\'ultima Clinica visitata per riprenderti.',
   ], 'Sistema');
   if (tilt) S.stats.reputazione = Math.round(S.stats.reputazione * 0.95);

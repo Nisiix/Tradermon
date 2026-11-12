@@ -565,7 +565,7 @@ function buildSeaAndCaves() {
         'Le sue azioni salirono di dieci volte in pochi mesi. Tutti compravano perché tutti compravano.',
         'Poi si scoprì che i commerci erano quasi nulli. Il prezzo crollò e molti persero tutto. Succede ancora oggi, con nomi nuovi.',
       ] },
-      { id: 'sea_sailor', x: 17, y: 2, pal: 16, dir: 0, name: 'Marinaia', kind: 'talk', lines: ['Più lontano vai dalla riva, più le onde sono alte. Come il rischio, quando cerchi rendimenti lontani dalla media!', 'L\'isola a sud ha una grotta buia: senza una lanterna non si entra.'] },
+      { id: 'sea_sailor', x: 17, y: 2, pal: 16, dir: 0, name: 'Marinaia', kind: 'talk', lines: ['Più lontano vai dalla riva, più le onde sono alte. Come il rischio, quando cerchi rendimenti lontani dalla media!', 'L\'isola a sud ha una grotta buia: senza una lanterna non entri.'] },
     ],
     warps: [{ x: 20, y: 0, to: 't2', tx: 25, ty: 17, dir: 1 }, { x: 20, y: 19, to: 'cave_pearl', tx: 6, ty: 7, dir: 1, lock: 'dark' }],
     signs: [

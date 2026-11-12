@@ -67,7 +67,7 @@ export async function librarySection(sec: Section, town: number) {
 }
 
 export async function station(w: WorldApi) {
-  if (S.badges < 2) return say(['Stazione di Capitalia.', 'L\'abbonamento al treno si ottiene con il secondo Attestato.'], 'Capostazione');
+  if (S.badges < 2) return say(['Stazione di Capitalia.', 'L\'abbonamento al treno lo avrai con il secondo Attestato.'], 'Capostazione');
   const dests = TOWNS.filter((t) => S.visited.includes(t.id) && t.id !== `t${w.town()}`);
   if (!dests.length) return say('Non ci sono altre città visitate.', 'Capostazione');
   const c = await choose([...dests.map((t) => t.name), 'Annulla'], { cancel: true, prompt: 'Dove vuoi andare?', who: 'Capostazione' });

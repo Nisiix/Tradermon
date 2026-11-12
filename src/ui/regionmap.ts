@@ -102,7 +102,7 @@ export async function openRegionMap(): Promise<string | undefined> {
         }
         body.appendChild(grid);
       }
-    } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale si sblocca battendo il Mentore di mezzo (Attestato ${TRANSFER_BADGE}). Intanto, dal secondo Attestato, le stazioni collegano le città visitate.`));
+    } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale lo sblocchi battendo il Mentore di mezzo (Attestato ${TRANSFER_BADGE}). Intanto, dal secondo Attestato, le stazioni collegano le città visitate.`));
     const ab = [
       { a: ABILITY.swim, ok: canSwim() },
       { a: ABILITY.cut, ok: canCut() },

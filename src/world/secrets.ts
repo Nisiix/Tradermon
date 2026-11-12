@@ -135,7 +135,7 @@ async function whale(n: NpcDef) {
 }
 
 const RUMORS: { lines: string[]; real?: 'pages' | 'tape' | 'whale' | 'hodl' }[] = [
-  { real: 'pages', lines: ['Dicono che il vecchio Mastro Ventura abbia strappato il suo Libro Mastro e nascosto le pagine dove nessuno guarda.', 'Angoli vuoti, rive, fiori, fondi di grotta... Basta stare davanti al punto giusto e premere A.'] },
+  { real: 'pages', lines: ['Dicono che il vecchio Mastro Ventura abbia strappato il suo Libro Mastro e nascosto le pagine dove nessuno guarda.', 'Angoli vuoti, rive, fiori, fondi di grotta... Ti basta stare davanti al punto giusto e premere A.'] },
   { lines: ['Ho sentito che un\'azione raddoppierà domani. Chi l\'ha detto? Uno che lo ha sentito da un altro.', 'Ah, vuoi la lezione? Una voce senza fonte è rumore. E se la fonte fosse davvero un dirigente, usarla sarebbe insider trading: illegale.'] },
   { real: 'tape', lines: ['Nella Biblioteca di Bilancia c\'è un libro messo al contrario. Nessuno l\'ha mai tirato.', 'Dicono che dietro si senta ancora un ticchettio...'] },
   { lines: ['Un tizio giura che se premi A sulla roulette mille volte di fila, vinci.', 'L\'ho provato. Il banco vince sempre, anche contro la pazienza. Quella usala altrove.'] },

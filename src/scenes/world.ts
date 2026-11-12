@@ -558,7 +558,7 @@ export class WorldScene extends Phaser.Scene {
   /** Taglio dei Costi: frantuma un Masso delle Commissioni (resta rotto nel salvataggio). */
   async breakBoulder(x: number, y: number) {
     if (!canCut()) return say(['Un masso enorme, pieno di crepe a forma di "%". Le chiamano Massi delle Commissioni.', `Con il ${ABILITY.cut.name} (Attestato ${ABILITY.cut.badge}) potresti toglierlo di mezzo.`]);
-    if ((await choose(['Sì', 'No'], { prompt: `Un Masso delle Commissioni blocca il passaggio. Usare ${ABILITY.cut.name}?`, cancel: true })) !== 0) return;
+    if ((await choose(['Sì', 'No'], { prompt: `Un Masso delle Commissioni blocca il passaggio. Vuoi usare ${ABILITY.cut.name}?`, cancel: true })) !== 0) return;
     beep('bump');
     S.flags[boulderFlag(S.map, x, y)] = true;
     this.cameras.main.shake(180, 0.006);
