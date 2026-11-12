@@ -5,7 +5,6 @@ import '@fontsource/dotgothic16/latin-ext-400.css';
 import './landing.css';
 import qrcode from 'qrcode-generator';
 import { portrait, drawCharacters, drawTileRaw, CHAR_PER_ROW, CW, CH, RS, PAL } from '../src/art/art';
-import { marketClock } from '../src/systems/market';
 import { mentor, TOWNS } from '../src/data/story';
 import type { Track } from '../src/types';
 import donazioni from './config/donazioni.json';
@@ -15,15 +14,6 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
 // ---------------- Barra in alto ----------------
-
-function market() {
-  const el = $('#market');
-  const m = marketClock();
-  el.textContent = m.label;
-  el.classList.toggle('open', m.open);
-}
-market();
-setInterval(market, 60_000);
 
 const burger = $('.burger');
 burger.addEventListener('click', () => {

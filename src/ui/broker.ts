@@ -5,7 +5,7 @@ import * as Acc from '../systems/account';
 import { S, save } from '../systems/state';
 import type { Difficulty } from '../types';
 import { DIFFICULTY, DIFFICULTIES, LEVERAGE, RATE, STAGES, STAGE_TOOL } from '../systems/balance';
-import { fmtMoney, fmtPct, newPortfolio, value } from '../systems/portfolio';
+import { fmtMoney, fmtPct, newPortfolio, presetTarget, value } from '../systems/portfolio';
 import { asOfLabel, hasPrices } from '../systems/realdata';
 import { marketClock } from '../systems/market';
 import { guideUrl } from '../systems/home';
@@ -99,51 +99,6 @@ export function applyDifficulty(d: Difficulty): void {
   if (target && S.flags.starter) S.portfolio.target = target;
 }
 
-/**
- * Schemi da manuale (rischiosi/difensivi/liquidità). Sono esempi di scuola, uguali per tutti: NON dipendono dal profilo
- * del questionario, che serve solo a conoscersi. L'allocazione obiettivo la scrive sempre il giocatore.
- */
-export const TEXTBOOK_MIXES: { name: string; risky: number; defensive: number; cash: number }[] = [
-  { name: 'più difensivo', risky: 40, defensive: 50, cash: 10 },
-  { name: 'intermedio', risky: 60, defensive: 30, cash: 10 },
-  { name: 'più rischioso', risky: 80, defensive: 10, cash: 10 },
-];
-
-/**
- * Modulo dell'allocazione obiettivo: tre campi che il giocatore compila. `current` precompila la sua scelta precedente
- * (mai un valore deciso dal gioco). Gli esempi da manuale riempiono i campi solo se il giocatore li clicca.
- */
-export async function allocationForm(title: string, introHtml: string, current: { risky: number; defensive: number; cash: number } | null, closable = true): Promise<{ risky: number; defensive: number; cash: number } | undefined> {
-  return modal<{ risky: number; defensive: number; cash: number }>(title, ({ body, button, close }) => {
-    const v = (n: number | undefined) => (n === undefined ? '' : String(n));
-    body.innerHTML = `
-      ${introHtml}
-      <p><b>Allocazione obiettivo</b> <span class="small muted">(la scrivi tu; la somma deve fare 100)</span></p>
-      <div class="grid2">
-        <label>Asset rischiosi %<input class="tx r" type="number" min="0" max="100" value="${v(current?.risky)}"></label>
-        <label>Asset difensivi % <span class="small muted">${S.track === 'crypto' ? '(stablecoin)' : '(obbligazioni, settori difensivi, oro)'}</span><input class="tx d" type="number" min="0" max="100" value="${v(current?.defensive)}"></label>
-        <label>Liquidità %<input class="tx c" type="number" min="0" max="100" value="${v(current?.cash)}"></label>
-      </div>
-      <p class="small muted">Esempi da manuale, uguali per tutti e non legati al tuo profilo: ${TEXTBOOK_MIXES.map((m) => `${m.name} ${m.risky}/${m.defensive}/${m.cash}`).join(' · ')}. Più quota rischiosa vuol dire oscillazioni e cali più ampi. Puoi copiarne uno o scrivere il tuo.</p>
-      <p class="small muted">È il tuo piano, non un consiglio: la Diagnosi e il Calcolo del ribilanciamento lo confrontano con il conto.</p>
-      <p class="msg small bad"></p>`;
-    const set = (m: { risky: number; defensive: number; cash: number }) => {
-      (body.querySelector('.r') as HTMLInputElement).value = String(m.risky);
-      (body.querySelector('.d') as HTMLInputElement).value = String(m.defensive);
-      (body.querySelector('.c') as HTMLInputElement).value = String(m.cash);
-    };
-    for (const m of TEXTBOOK_MIXES) button(`Esempio ${m.risky}/${m.defensive}/${m.cash}`, () => set(m), '');
-    button('Conferma il mio piano', () => {
-      const raw = ['.r', '.d', '.c'].map((sel) => (body.querySelector(sel) as HTMLInputElement).value.trim());
-      const [r, d, c] = raw.map(Number);
-      const msg = body.querySelector('.msg') as HTMLElement;
-      if (raw.some((x) => x === '')) { msg.textContent = 'Compila le tre percentuali: il piano lo decidi tu.'; return; }
-      if (r + d + c !== 100 || [r, d, c].some((x) => !Number.isFinite(x) || x < 0)) { msg.textContent = 'Le tre percentuali devono sommare a 100.'; return; }
-      close({ risky: r, defensive: d, cash: c });
-    }, 'primary');
-  }, { closable });
-}
-
 /** La Dott.ssa Ratio apre il conto di gioco: spiega le regole, fa scegliere l'allocazione obiettivo e collega il Paper. */
 export async function openGameAccount(): Promise<boolean> {
   const D = DIFFICULTY[S.difficulty];
@@ -154,8 +109,12 @@ export async function openGameAccount(): Promise<boolean> {
     `Il capitale è tutto tuo da subito. Ogni tappa ti chiede solo un minimo da investire: ${fmtMoney(D.capital * RATE * (1 - D.tolerance))} adesso, con la Valigetta, e altrettanto a ogni Attestato. Sopra il minimo decidi tu, anche tutto il capitale.`,
     `Le quote si calcolano sempre sul capitale di partenza, non su quello che ti resta: se perdi, pesano di più. Se il conto arriva a zero è bancarotta: finché tieni un titolo la perdita è sulla carta, quando lo vendi diventa vera.`,
   ], NURSE);
-  const res = await allocationForm('Il tuo conto di gioco', `<p class="small">Importi in <b>dollari ($)</b>, la valuta dei mercati dove comprerai. Capitale <b>${fmtMoney(D.capital)}</b> (${D.name})${D.fee ? `, costo didattico ${pctTxt(D.fee)} per ordine` : ', nessun costo didattico'}. Nessun deposito e nessuna ricarica: il conto cambia solo con le tue operazioni e con il mercato.</p>`, null, false);
-  if (res) S.portfolio.target = res;
+  // Il piano del conto (rischiosi/difensivi/liquidità) lo assegna il questionario: è un conto Paper, denaro finto.
+  S.portfolio.target = presetTarget(S.profile);
+  await say([
+    `Gli importi sono in dollari ($), la valuta dei mercati dove comprerai.${D.fee ? ` Ogni ordine ha un costo didattico del ${pctTxt(D.fee)}.` : ''} Nessun deposito e nessuna ricarica: il conto cambia solo con le tue operazioni e con il mercato.`,
+    'In base alle tue risposte al questionario ho preparato il piano del conto: quanto tenere in titoli più rischiosi, in titoli difensivi e in liquidità. La Clinica lo userà per la Diagnosi e il Calcolo del ribilanciamento.',
+  ], NURSE);
   save();
   const link = await Acc.checkLink(true);
   if (link.paper) { await Acc.sync(true); await say(['Il tuo conto Alpaca Paper è già collegato: la Valigetta si può aprire subito.'], NURSE); return true; }

@@ -16,7 +16,7 @@ export function spreadOf(a: AssetDef): number {
   return a.cls === 'crypto' ? 0.005 : 0.001;
 }
 
-/** Valore iniziale interno dell'allocazione, sostituito subito da quella che il giocatore scrive all'apertura del conto. */
+/** Piano del conto (rischiosi, difensivi, liquidità) assegnato dal questionario di rischio. Solo conto Paper, denaro finto. */
 export function presetTarget(profile: string): { risky: number; defensive: number; cash: number } {
   return profile === 'prudente' ? { risky: 40, defensive: 50, cash: 10 } : profile === 'audace' ? { risky: 80, defensive: 10, cash: 10 } : { risky: 60, defensive: 30, cash: 10 };
 }
@@ -164,7 +164,17 @@ export function diagnosis(pf: Portfolio, prices: Record<string, number>, day: nu
   if (pf.log.length > 0 && h.cashW > 60) out.push({ text: 'Gran parte è ferma in liquidità: l\'inflazione la erode nel tempo.', lesson: 'l_costi_1' });
   const recent = pf.log.filter((l) => l.day > day - 21).length;
   if (recent > 10) out.push({ text: `${recent} ordini nell'ultimo mese di mercato: più ordini significano più costi e spesso più emozioni.`, lesson: 'l_costi_2' });
-  if (h.dev > 15) out.push({ text: `L'allocazione si è allontanata di ${h.dev.toFixed(0)} punti dal tuo obiettivo: valuta un ribilanciamento.`, lesson: 'l_div_2' });
+  if (h.dev > 15) {
+    const al = allocation(pf, prices, locked);
+    const WHAT = {
+      risky: 'in titoli rischiosi (quelli che salgono e scendono di più)',
+      defensive: 'in titoli difensivi (quelli che oscillano poco)',
+      cash: 'in liquidità (dollari non investiti)',
+    } as const;
+    const g = (['risky', 'defensive', 'cash'] as const).reduce((a, k) => (Math.abs(pf.target[k] - al[k]) > Math.abs(pf.target[a] - al[a]) ? k : a), 'risky' as 'risky' | 'defensive' | 'cash');
+    const now = pctArt(al[g]), plan = pctArt(pf.target[g]);
+    out.push({ text: `Oggi ${now} del tuo conto è ${WHAT[g]}, ma il tuo piano ne prevede ${plan}. Il ribilanciamento serve a riportarlo vicino al piano.`, lesson: 'l_div_2' });
+  }
   for (const p of pf.positions) {
     const v = p.qty * prices[p.id];
     if (p.cost > 0 && v / p.cost - 1 < -0.2) out.push({ text: `${ASSET_BY_ID[p.id].name} è affaticata (${((v / p.cost - 1) * 100).toFixed(0)}%). La domanda giusta: la compreresti oggi?`, lesson: 'l_bias_1' });
@@ -186,6 +196,13 @@ export function rebalanceGap(pf: Portfolio, prices: Record<string, number>, lock
 /** Scostamento massimo, in punti, tra un gruppo del conto e il piano. Sotto i 2 punti il conto è considerato in linea. */
 export function maxGap(gaps: { now: number; target: number }[]): number {
   return Math.max(0, ...gaps.map((g) => Math.abs(g.target - g.now)));
+}
+
+/** Percentuale con preposizione articolata corretta: "al 60%", "all'80%", "il 45%", "l'11%". */
+export function pctArt(x: number, art: 'il' | 'al' = 'il'): string {
+  const n = Math.round(x);
+  const vowel = /^(8|11$|1$)/.test(String(n));
+  return `${vowel ? (art === 'al' ? "all'" : "l'") : `${art} `}${n}%`;
 }
 
 export function fmtPx(p: number): string {

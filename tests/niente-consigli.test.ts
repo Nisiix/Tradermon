@@ -35,3 +35,14 @@ describe('niente consigli operativi', () => {
     for (const g of gaps) expect(Object.keys(g)).not.toContain('id');
   });
 });
+
+import { pctArt } from '../src/systems/portfolio';
+describe('percentuali con articolo', () => {
+  it('elide davanti a 1, 8, 11 e 80-89', () => {
+    expect(pctArt(60, 'al')).toBe('al 60%');
+    expect(pctArt(82, 'al')).toBe("all'82%");
+    expect(pctArt(8)).toBe("l'8%");
+    expect(pctArt(11)).toBe("l'11%");
+    expect(pctArt(18)).toBe('il 18%');
+  });
+});

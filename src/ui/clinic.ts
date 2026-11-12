@@ -2,7 +2,7 @@ import { track } from '../systems/progress';
 import { S, save, slots, hasTech, TECH, classes, card, learnBias, profileFromScore } from '../systems/state';
 import type { BiasId } from '../types';
 import { unlockedAssets, ASSET_BY_ID, SECTOR_LABEL, SECTOR_COLOR, isDefensive } from '../data/assets';
-import { value, weights, health, diagnosis, rebalanceGap, maxGap, allocation, fmtMoney, fmtPx, fmtPct, fmtQty } from '../systems/portfolio';
+import { value, weights, health, diagnosis, rebalanceGap, maxGap, allocation, fmtMoney, fmtPx, fmtPct, fmtQty, presetTarget } from '../systems/portfolio';
 import { metrics, CLIMATE_LABEL } from '../systems/market';
 import { say, choose, modal, el, esc, toast, bar, confirm } from './core';
 import { LESSONS } from '../data/lessons';
@@ -15,7 +15,7 @@ import { BOSS_BY_ID } from '../systems/boss';
 import { asOfLabel, hasPrices } from '../systems/realdata';
 import { marketClock } from '../systems/market';
 import { DIFFICULTY } from '../systems/balance';
-import { requireAccount, allocationForm, apiKeysMenu, stageScreen, leverageDesk, accountAlerts, nextSealLine } from './broker';
+import { requireAccount, apiKeysMenu, stageScreen, leverageDesk, accountAlerts, nextSealLine } from './broker';
 import { journalPrompt } from './journal';
 import { questionnaire } from './setup';
 import { mirrorReport } from '../systems/mirror';
@@ -76,20 +76,15 @@ export async function openClinic(townIdx: number) {
       case 'Specchio dell\'investitore': {
         const before = S.profile;
         await say(mirrorReport().lines, NURSE);
-        const t0 = S.portfolio.target;
-        const redo = await choose(['No, va bene così', 'Rifaccio il questionario'], { prompt: `Profilo dichiarato ${S.profile.toUpperCase()} (orizzonte: ${S.horizon || '—'}), obiettivo del conto ${t0.risky}/${t0.defensive}/${t0.cash}. Vuoi rifare il questionario? Le tue scelte nelle missioni restano nello Specchio.`, who: NURSE });
+        const redo = await choose(['No, va bene così', 'Rifaccio il questionario'], { prompt: `Profilo dichiarato ${S.profile.toUpperCase()} (orizzonte: ${S.horizon || '—'}). Vuoi rifare il questionario? Le tue scelte nelle missioni restano nello Specchio.`, who: NURSE });
         if (redo !== 1) break;
         const sc = await questionnaire();
         S.profileScore = sc;
         S.profile = profileFromScore(sc);
         await say(`Il tuo profilo ora è: ${S.profile.toUpperCase()}. Ricorda: è uno strumento per conoscerti, non una raccomandazione.`, NURSE);
         if (S.profile !== before) {
-          const t = S.portfolio.target;
-          const upd = await choose(['Sì, la riscrivo', `No, tengo ${t.risky}/${t.defensive}/${t.cash}`], { prompt: 'Il profilo è cambiato. Vuoi riscrivere la tua allocazione obiettivo (rischiosi/difensivi/liquidità)? La decidi tu: il profilo non la cambia da solo.', who: NURSE });
-          if (upd === 0) {
-            const res = await allocationForm('La tua allocazione obiettivo', '<p class="small">Scrivi il piano che vuoi seguire da qui in avanti. La Diagnosi e il Calcolo del ribilanciamento lo confronteranno con il conto.</p>', t);
-            if (res) { S.portfolio.target = res; toast(`Obiettivo aggiornato: ${res.risky}/${res.defensive}/${res.cash}.`); }
-          }
+          S.portfolio.target = presetTarget(S.profile);
+          toast('Piano del conto aggiornato in base al nuovo profilo.');
         }
         save();
         break;
@@ -341,7 +336,7 @@ async function rebalance() {
   if (maxGap(after) + 1 < maxGap(before)) {
     track('rebalance');
     S.stats.disciplina = Math.min(100, S.stats.disciplina + 3);
-    toast(`Scostamento dal piano: da ${maxGap(before).toFixed(0)} a ${maxGap(after).toFixed(0)} punti.`);
+    toast('Il conto ora è più vicino al tuo piano.');
     save();
   }
 }

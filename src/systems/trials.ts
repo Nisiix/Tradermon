@@ -6,6 +6,7 @@ import type { Portfolio } from '../types';
 import { S } from './state';
 import { ASSET_BY_ID, isDefensive, unlockedAssets } from '../data/assets';
 import { margin } from './account';
+import { pctArt } from './portfolio';
 
 export const TRIAL = {
   /** Quota minima del patrimonio investita (prove 1 e del Campione). */
@@ -98,7 +99,9 @@ function cStops(b: Book): Check {
 }
 function cPlan(b: Book): Check {
   const gap = Math.abs(b.risky - b.riskyPlan);
-  return { label: `Quota rischiosa entro ${TRIAL.planGap} punti dal tuo piano (${Math.round(b.riskyPlan)}%)`, ok: b.invested > 0 && gap <= TRIAL.planGap + 0.05, now: b.invested > 0 ? `${Math.round(b.risky)}%` : 'niente investito' };
+  const plan = Math.round(b.riskyPlan);
+  const lo = Math.max(0, plan - TRIAL.planGap), hi = Math.min(100, plan + TRIAL.planGap);
+  return { label: `Titoli rischiosi tra ${pctArt(lo)} e ${pctArt(hi)} di quanto hai investito (il tuo piano dice ${plan}%)`, ok: b.invested > 0 && gap <= TRIAL.planGap + 0.05, now: b.invested > 0 ? `${Math.round(b.risky)}%` : 'niente investito' };
 }
 function cJournal(): Check {
   const n = S.journal.filter((j) => (j.reason ?? '').trim().length > 0).length;
