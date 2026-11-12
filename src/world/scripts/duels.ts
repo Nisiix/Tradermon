@@ -11,6 +11,7 @@ import { mentorTopics, trackTopics, LEAGUE_TOPICS } from '../../data/quiz/build'
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../../data/story';
 import { mentorBooks, TOPIC_LABEL } from '../../data/books';
 import { DUEL, REWARD, TRAIT_HIGH } from '../../systems/balance';
+import { errorsAllowed, errorsLeft } from '../../systems/duelLife';
 import { repTier, mentorCharacterLine, epilogue, TIER_MENTOR_REMATCH } from '../../systems/character';
 import { mentorMission, processReview, leagueMission, LEGENDS, SANDBOX, type Mission } from '../../data/missions';
 import { unlockedAssets } from '../../data/assets';
@@ -138,7 +139,10 @@ export async function mentorBattle(m: number, w: WorldApi) {
   if (unread) await say([`Un consiglio da Mentore: nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, 'Le domande del duello vengono da lì.'], md.name);
   // dopo una sconfitta si torna solo dopo aver studiato: un libro della sezione o un ripasso in Biblioteca
   if (!retryUnlocked(`m${m}`)) return say(['Sei tornato presto. Prima di riprovare, studia.', `Leggi un libro della mia sezione nella Biblioteca di ${TOWNS[m]?.name ?? 'questa città'}, oppure fai il Ripasso: le domande che hai sbagliato sono lì ad aspettarti.`], md.name);
-  if (S.stats.fiducia < 50) await say([`La tua Fiducia è a ${S.stats.fiducia}. Se arriva a zero durante il duello vai in tilt.`, 'Puoi riposare in Clinica prima di iniziare.'], md.name);
+  {
+    const conc = errorsAllowed(DUEL.mentor.n, DUEL.mentor.need), left = errorsLeft(S.stats.fiducia, 0, DUEL.mentor.n, DUEL.mentor.need);
+    if (left < conc) await say([`La tua Fiducia è a ${S.stats.fiducia}: ti basta per ${left === 1 ? 'un solo errore' : left === 0 ? 'nessun errore' : `${left} errori`} invece dei ${conc} concessi. Se arriva a zero durante il duello vai in tilt.`, 'Puoi riposare in Clinica prima di iniziare.'], md.name);
+  }
   const ok = (await choose(['Sono pronto!', 'Non ancora'], { prompt: 'Iniziamo?' })) === 0;
   if (!ok) return;
   // il Mentore m si affronta con m − 1 Attestati: dal livello 1 (Mentore 1) a quasi 3 (Mentore 8)
@@ -289,7 +293,7 @@ export async function reviewDuel() {
   if (!q.length) return say(['Oggi non hai domande in scadenza. Ottimo lavoro!', nextReviewLine()], 'Bibliotecaria');
   const qs = shuffle(q.slice(0, 12)).slice(0, DUEL.review.n);
   const prevFid = S.stats.fiducia;
-  await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0 });
+  await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0, practice: true });
   S.stats.fiducia = prevFid;
   track('review');
   return say(['Ogni domanda giusta torna più avanti: dopo 1, 3, 7 e poi 21 giorni. Quelle sbagliate tornano subito.', 'Rivedere al momento giusto è il modo migliore per ricordare.'], 'Bibliotecaria');
@@ -324,7 +328,7 @@ export async function linkDuel() {
   const rng = mulberry32(seed);
   const qs = pickQuestions(SHARED_TOPICS, 5, { rng, shared: true });
   const prevFid = S.stats.fiducia;
-  const q = await runDuel({ foeName: 'Duello con codice', foePal: 16, questions: qs, need: 5, damage: 0 });
+  const q = await runDuel({ foeName: 'Duello con codice', foePal: 16, questions: qs, need: 5, damage: 0, practice: true });
   S.stats.fiducia = prevFid;
   // stesso periodo reale per tutti: i dati sono gli stessi qualunque conto li scarichi
   const r = await runSim({ scenario: SANDBOX[0], sandbox: true, classes: ['stocks', 'etf'] });

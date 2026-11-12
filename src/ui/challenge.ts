@@ -51,7 +51,7 @@ async function play(week: string) {
   const qs = pickQuestions(SHARED_TOPICS, N, { rng, minDiff: 1, maxDiff: 3, shared: true });
   const prevFid = S.stats.fiducia;
   const t0 = Date.now();
-  const r = await runDuel({ foeName: `Sfida ${week}`, foeTitle: 'Tutti gli sfidanti', foePal: 11, questions: qs, need: N, damage: 0 });
+  const r = await runDuel({ foeName: `Sfida ${week}`, foeTitle: 'Tutti gli sfidanti', foePal: 11, questions: qs, need: N, damage: 0, practice: true });
   S.stats.fiducia = prevFid;
   const secs = (Date.now() - t0) / 1000;
   const score = Math.min(100, Math.round((r.correct / N) * 80 + (r.correct === N ? 20 : Math.max(0, 20 - secs / 15))));
