@@ -148,7 +148,7 @@ export async function allocationForm(title: string, introHtml: string, current: 
 export async function openGameAccount(): Promise<boolean> {
   const D = DIFFICULTY[S.difficulty];
   await say([
-    'Ciao, sono la Dott.ssa Ratio! Lavoro nelle Cliniche del Portafoglio di tutta la regione.',
+    'Ciao, sono la Dott.ssa Ratio! Lavoro nelle Banche del Portafoglio di tutta la regione.',
     'Il Professore mi ha chiesto di aprirti il conto di gioco, presso un broker dei Mercati di Fuori che si chiama Alpaca.',
     `Il tuo conto parte da ${fmtMoney(D.capital)}, come vuole la difficoltà ${D.name}. È denaro finto su un conto Paper, ma prezzi, orari e ordini sono quelli veri.`,
     `Il capitale è tutto tuo da subito. Ogni tappa ti chiede solo un minimo da investire: ${fmtMoney(D.capital * RATE * (1 - D.tolerance))} adesso, con la Valigetta, e altrettanto a ogni Attestato. Sopra il minimo decidi tu, anche tutto il capitale.`,
@@ -163,7 +163,7 @@ export async function openGameAccount(): Promise<boolean> {
   if (link.server) await apiKeysMenu();
   const ok = (await Acc.checkLink(true)).paper;
   if (ok) await Acc.sync(true);
-  else await say(['Nessun problema: la Valigetta resta sigillata e il tuo viaggio di studio comincia lo stesso.', 'Quando vorrai aprirla, collega il conto dal menu (voce "Chiavi API") e passa in una Clinica.'], NURSE);
+  else await say(['Nessun problema: la Valigetta resta sigillata e il tuo viaggio di studio comincia lo stesso.', 'Quando vorrai aprirla, collega il conto dal menu (voce "Chiavi API") e passa in una Banca.'], NURSE);
   return ok;
 }
 
@@ -208,7 +208,7 @@ async function leverageExam(): Promise<boolean> {
   await say(['L\'Esame della Leva ha 8 domande: ne servono 7 giuste. Nessun timer.', 'La leva non è una Tecnica come le altre: prima di usarla devi sapere come ti può rovinare.'], NURSE);
   const prev = S.options.studyMode, fid = S.stats.fiducia;
   S.options.studyMode = true; S.stats.fiducia = 100;
-  const r = await runDuel({ foeName: 'Commissione d\'Esame', foeTitle: 'Esame della Leva', foePal: PAL.PROF, questions: shuffle(LEVERAGE_EXAM), need: 7, damage: 0 });
+  const r = await runDuel({ foeName: 'Commissione d\'Esame', foeTitle: 'Esame della Leva', foePal: PAL.PROF, questions: shuffle(LEVERAGE_EXAM), need: 7, damage: 0, arena: 'aula' });
   S.options.studyMode = prev; S.stats.fiducia = fid;
   return r.correct >= 7;
 }
@@ -267,7 +267,7 @@ async function bankruptcy(): Promise<void> {
   const pf = S.portfolio;
   const D = DIFFICULTY[S.difficulty];
   const eq = Acc.equity();
-  await say([`BANCAROTTA: il conto di gioco è arrivato a zero (${fmtMoney(Math.max(0, eq))}).`, 'Non resta abbastanza nemmeno per l\'ordine più piccolo. È il punto in cui un investitore vero ha perso tutto. Fermiamoci a capire come ci siamo arrivati: guarda la Cartella clinica.'], NURSE);
+  await say([`BANCAROTTA: il conto di gioco è arrivato a zero (${fmtMoney(Math.max(0, eq))}).`, 'Non resta abbastanza nemmeno per l\'ordine più piccolo. È il punto in cui un investitore vero ha perso tutto. Fermiamoci a capire come ci siamo arrivati: guarda la Estratto conto.'], NURSE);
   const canRestart = D.bankrupt === 'riparti' || (D.bankrupt === 'una-volta' && pf.bankruptcies < 1);
   if (!canRestart) {
     S.flags.bankrupt = true; save();

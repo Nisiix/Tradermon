@@ -52,17 +52,17 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 | 1 | Schermata titolo | Nuova partita / Continua / Importa salvataggio | — |
 | 2 | Avviso iniziale (schermata seria) | Presa visione: "gioco educativo, non consulenza finanziaria" | Obbligatorio per proseguire |
 | 3 | Il Prof. Bruno Saldi si presenta | Nome del giocatore (scelto alla creazione dell'account, 3-15 caratteri) | Dialoghi, salvataggio |
-| 4 | "Qual è il tuo colore preferito?" (8 colori, anteprima dal vivo sulla pedana) | Vestiti e cappellino del protagonista di quel colore, ovunque: mappa e sfide (nessuna implicazione di gameplay; i vecchi salvataggi 0-2 restano rosso, blu, verde) | Sprite del protagonista |
+| 4 | "Qual è il tuo colore preferito?" (8 colori, anteprima dal vivo dietro il banco del Prof) | Vestiti e cappellino del protagonista di quel colore, ovunque: mappa e sfide (nessuna implicazione di gameplay; i vecchi salvataggi 0-2 restano rosso, blu, verde) | Sprite del protagonista |
 | 5 | Questionario del Professore (5 domande) | Profilo di rischio: Prudente / Equilibrato / Audace | Tono dei consigli, durata timer, difficoltà missioni |
 | 6 | "Quale obiettivo hai?" | Obiettivo: Imparare le basi / Costruire un piano di lungo periodo / Capire il trading | Testi del diario e messaggi motivazionali |
 | 7 | "Qual è il tuo orizzonte?" | Orizzonte: < 3 anni / 3-10 anni / > 10 anni | Spiegazioni personalizzate su rischio e orizzonte |
-| 8 | Nome del rivale | Default "Leo" (modificabile) | Dialoghi del rivale |
+| 8 | Presentazione del rivale: Leo, un bambino rimasto senza famiglia che il Prof ha adottato e cresciuto (il nome è fisso; i vecchi salvataggi tengono quello scelto) | — | Dialoghi del rivale |
 | 9 | Risveglio in camera, si scende, si va al Laboratorio | — | Tutorial di movimento |
 | 10 | **La scelta delle Valigette** | Percorso: Titoli / ETF / Cripto (oppure Misto parlando col Professore) | Tutta la storia |
-| 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, allocazione obiettivo | Simulatore e Clinica |
+| 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, allocazione obiettivo | Simulatore e Banca |
 | 12 | Si usano soldi veri? | Il Professore spiega che il gioco usa solo denaro finto, sul conto Paper | Tessera da Apprendista nel menu |
 | 13 | Primo duello col rivale (3 domande facili) | — | Tutorial del quiz |
-| 14 | Primo acquisto guidato alla Clinica di Borgo Semina | La Valigetta diventa una posizione in portafoglio | Tutorial della Clinica |
+| 14 | Primo acquisto guidato alla Banca di Borgo Semina | La Valigetta diventa una posizione in portafoglio | Tutorial della Banca |
 
 Obiettivo di design dal piano: entro 3 minuti di gioco effettivo il giocatore ha già fatto la scelta e vinto un mini-quiz; entro 10 minuti ha fatto il primo acquisto simulato.
 
@@ -82,7 +82,7 @@ Scopo: insegnare il divario tra la tolleranza al rischio che dichiariamo a mente
 
 **Specchio dell'investitore** (`systems/mirror.ts`). A fine di ogni missione della Macchina del Tempo (Mentori, Lega, Leggende) con almeno un ordine il gioco registra, senza dirlo, quota investita, peso massimo, vendite in perdita, massimo drawdown e ordini (l'ultima prova per missione, in `flags.mirror`). Ogni missione vale 0-2 sulla stessa scala del questionario: investito ≥ 75% → 1 (≥ 40% → 0,5), una posizione oltre il 40% → +0,5, drawdown oltre il 12% → +0,5, due o più vendite in perdita → −0,5. La media dà il profilo **rivelato** (< 0,7 Prudente, < 1,3 Equilibrato, altrimenti Audace), disponibile dopo 2 missioni.
 
-Dove si vede: alla Clinica la voce "Specchio dell'investitore" confronta dichiarato e rivelato con i fatti osservati e una breve lezione, poi permette di rifare il questionario (se il profilo cambia, propone di aggiornare l'allocazione obiettivo); la scheda Profilo mostra entrambi; l'epilogo dopo la Lega aggiunge una frase dello Specchio. Il profilo dichiarato propone anche l'allocazione obiettivo del Conto di Prova (Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10, sempre modificabile) e fa scegliere al rivale lo stile opposto. Il Professore spiega che il profilo **non è una raccomandazione**.
+Dove si vede: alla Banca la voce "Specchio dell'investitore" confronta dichiarato e rivelato con i fatti osservati e una breve lezione, poi permette di rifare il questionario (se il profilo cambia, propone di aggiornare l'allocazione obiettivo); la scheda Profilo mostra entrambi; l'epilogo dopo la Lega aggiunge una frase dello Specchio. Il profilo dichiarato propone anche l'allocazione obiettivo del Conto di Prova (Prudente 40/50/10, Equilibrato 60/30/10, Audace 80/10/10, sempre modificabile) e fa scegliere al rivale lo stile opposto. Il Professore spiega che il profilo **non è una raccomandazione**.
 
 ### 2.3 La scelta delle Valigette
 
@@ -134,25 +134,25 @@ Altopiano della Lega ─ P9 ─ Rocca Rischio ─ P8 ─ Mentelucida ─ P7 ─ 
 
 | Città | Edifici | Mentore e Medaglia | Particolarità |
 |---|---|---|---|
-| Borgo Semina | Casa, Laboratorio, Clinica | — | Scelta delle Valigette |
-| Ponte Cedola | Clinica, Biblioteca, Accademia | 1. Gaia Primo – Medaglia Seme | Prima Prova sul conto |
-| Porto Ordini | Clinica, Biblioteca, Accademia | 2. Orazio Limite – Medaglia Ordine | Abbonamento al treno |
-| Diversia | Clinica, Biblioteca, Accademia, **Zona Simulazione** | 3. Vera Varia – Medaglia Mosaico | Sandbox Macchina del Tempo · abilità Flusso di Liquidità |
-| Interessa | Clinica, Biblioteca, Accademia, **Casinò dello Speculatore** | 4. Cosimo Composto – Medaglia Spirale | Mini-gioco sull'azzardo · abilità Trasferimento di Capitale |
-| Bilancia | Clinica, Biblioteca, Accademia, **Archivio** (chiuso) | 5. Mentore specifico A – Medaglia Lente | L'Archivio si apre con "Lettura del Bilancio" |
-| Valdividendo | Clinica, Biblioteca, Accademia | 6. Mentore specifico B – Medaglia Raccolto | — |
-| Mentelucida | Clinica, Biblioteca, Accademia | 7. Serena Bias – Medaglia Specchio | Muro del Rumore sul percorso 7 |
-| Rocca Rischio | Clinica, Biblioteca, Accademia | 8. Rocco Rischio – Medaglia Scudo | Ultimo scontro con gli antagonisti |
-| Altopiano della Lega | Clinica, Lega, **Torre delle Sfide** (post-game) | 4 Superiori + Campione | Crisi leggendarie dopo la Lega |
+| Borgo Semina | Casa, Laboratorio, Banca | — | Scelta delle Valigette |
+| Ponte Cedola | Banca, Biblioteca, Accademia | 1. Gaia Primo – Medaglia Seme | Prima Prova sul conto |
+| Porto Ordini | Banca, Biblioteca, Accademia | 2. Orazio Limite – Medaglia Ordine | Abbonamento al treno |
+| Diversia | Banca, Biblioteca, Accademia, **Zona Simulazione** | 3. Vera Varia – Medaglia Mosaico | Sandbox Macchina del Tempo · abilità Flusso di Liquidità |
+| Interessa | Banca, Biblioteca, Accademia, **Casinò dello Speculatore** | 4. Cosimo Composto – Medaglia Spirale | Mini-gioco sull'azzardo · abilità Trasferimento di Capitale |
+| Bilancia | Banca, Biblioteca, Accademia, **Archivio** (chiuso) | 5. Mentore specifico A – Medaglia Lente | L'Archivio si apre con "Lettura del Bilancio" |
+| Valdividendo | Banca, Biblioteca, Accademia | 6. Mentore specifico B – Medaglia Raccolto | — |
+| Mentelucida | Banca, Biblioteca, Accademia | 7. Serena Bias – Medaglia Specchio | Muro del Rumore sul percorso 7 |
+| Rocca Rischio | Banca, Biblioteca, Accademia | 8. Rocco Rischio – Medaglia Scudo | Ultimo scontro con gli antagonisti |
+| Altopiano della Lega | Banca, Lega, **Torre delle Sfide** (post-game) | 4 Superiori + Campione | Crisi leggendarie dopo la Lega |
 
 Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta solo decorativa (nessun incontro casuale), cartelli didattici, e all'uscita di ogni città una **Guardia della Borsa** che lascia passare solo con la Medaglia della città.
 
 ### 3.2 Edifici ricorrenti
 
-- **Clinica del Portafoglio**: bancone della Dott.ssa Ratio, salvataggio, lezione sui bias, tutte le operazioni di portafoglio (sezione 7).
+- **Banca del Portafoglio**: bancone della Dott.ssa Ratio, salvataggio, lezione sui bias, tutte le operazioni di portafoglio (sezione 7).
 - **Biblioteca** (ogni città dalla seconda): quattro sezioni su scaffali interattivi. In alto a sinistra la **Sezione del Mentore** (sotto un manifesto): una guida alla sfida generata dal Mentore locale più due libri per ogni argomento del suo duello, uno di contesto (perché quella città ci tiene) e uno di materia (ciò che chiede); le lezioni sugli stessi temi sono raggiungibili dalla stessa sezione. Leggere un libro dà 5 XP (contatore delle lezioni), completare la sezione +10 Reputazione. A destra la sezione generale (tutte le lezioni sbloccate), in basso l'archivio delle domande sbagliate (ripasso) e l'Investidex. La Bibliotecaria spiega le sezioni alla prima visita e il Mentore, prima del duello, ricorda la sua sezione se restano libri non letti. Il Prof. Saldi e una studentessa a Borgo Semina presentano il meccanismo nel prologo. "Domanda del giorno" (streak) con la Professoressa del giorno. Testi in `src/data/books.ts`.
 - **Insegne**: gli edifici pubblici hanno un'insegna sul muro sopra la porta (CLINICA, PALESTRA per l'Accademia, BIBLIOTECA, LABORATORIO, SIMULAZIONE, CASINÒ, ARCHIVIO, LEGA, TORRE). Le case non ne hanno.
-- **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Gli allievi non si saltano: se provi a superarne uno senza averlo battuto (anche alle sue spalle), si gira, compare il "!", ti raggiunge e ti sfida a quiz; se perdi rinasci nella Clinica dello stesso villaggio (Fiducia ricaricata). Il duello col Mentore (e quelli della Lega) ha sempre lo stesso numero di domande, anche nei tentativi successivi a una sconfitta: si risponde a tutte finché la barra della Fiducia non va a zero (troppi errori o tilt), e si vince con il numero minimo di risposte giuste. Il Mentore accetta la sfida solo dopo che hai battuto tutti i suoi allievi.
+- **Accademia**: 2 allievi (duelli da 4 domande) e il Mentore. Gli allievi non si saltano: se provi a superarne uno senza averlo battuto (anche alle sue spalle), si gira, compare il fumetto con il "$", ti raggiunge e ti sfida a quiz; se perdi rinasci nella Banca dello stesso villaggio (Fiducia ricaricata). Il duello col Mentore (e quelli della Lega) ha sempre lo stesso numero di domande, anche nei tentativi successivi a una sconfitta: si risponde a tutte finché la barra della Fiducia non va a zero (troppi errori o tilt), e si vince con il numero minimo di risposte giuste. Il Mentore accetta la sfida solo dopo che hai battuto tutti i suoi allievi.
 - **Case abitate**: ogni città ha 3-4 case visitabili (Borgo Semina una), 30 in tutto. Ogni casa ospita un nucleo: una persona sola, una coppia o una famiglia di tre persone. Gli interni sono arredati in modo diverso secondo il nucleo. Ogni abitante insegna un concetto diverso, per un totale di 62 argomenti, mai ripetuti tra un abitante e l'altro. Ogni consiglio ha una fonte (registrata nei dati, non mostrata in gioco). I temi seguono la città: basi a Borgo Semina e Ponte Cedola, ordini a Porto Ordini, diversificazione a Diversia, costi e interesse composto a Interessa, analisi a Bilancia, dividendi, obbligazioni e tassi a Valdividendo, bias a Mentelucida, gestione del rischio a Rocca Rischio. Si aggiungono temi di macroeconomia, fiscalità italiana e sicurezza. La prima volta che parli con un abitante ottieni +5 XP e il consiglio viene annotato nell'Investidex, dove puoi rileggerlo. Le fonti non compaiono durante il gioco: sono tutte elencate in Opzioni → Crediti e fonti.
 
 ### 3.3 Mercato, orologio e clima
@@ -167,7 +167,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 | Ruolo | Nome | Descrizione |
 |---|---|---|
 | Professore | Prof. Bruno Saldi | Ex gestore di fondi, ironico, insegna che "la prima regola è non perdere la testa" |
-| Infermiera della Clinica | Dott.ssa Ratio | Sempre uguale in ogni città (come da tradizione del genere, è "una delle sorelle Ratio") |
+| Infermiera della Banca | Dott.ssa Ratio | Sempre uguale in ogni città (come da tradizione del genere, è "una delle sorelle Ratio") |
 | Rivale | Leo (nome scelto) | Stile opposto al profilo del giocatore; 4 incontri: Laboratorio, Percorso 2, Diversia, Via della Lega |
 | Antagonisti | Gli Speculatori (capo: Max Leva) | Variante per percorso: Speculatori (Titoli), Venditori di Commissioni guidati da Carlo Provvigione (ETF), Banda del Rug Pull guidata dal Re Tappeto (Cripto), Alleanza (Misto) |
 | Mentore 1 | Gaia Primo | Fondamenta: cos'è l'asset del percorso, rischio e rendimento |
@@ -190,8 +190,8 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 | Statistica | Come sale | Come scende | Effetto |
 |---|---|---|---|
 | **Conoscenza** (XP e livello) | Risposte giuste (5/10/15/20 XP per difficoltà 1/2/3/4), lezioni lette (+5), sfide vinte | — | Livello = soglia 50·n^1,5 XP. Ogni 5 livelli +5 s al timer e una spiegazione extra |
-| **Fiducia** (i "PV") | Clinica, vittorie | Risposte sbagliate (100 / (errori concessi + 1) a errore, vedi 5.2), eventi sbagliati | A 0 si "va in tilt" e si perde il 5% della Reputazione. Dopo ogni sconfitta in un duello (tilt o risposte giuste insufficienti) si rinasce nella Clinica della città in cui ci si trova (sui Percorsi nell'ultima Clinica visitata) con la Fiducia al massimo |
-| **Disciplina** (0-100) | Rifiutare truffe, rispettare limiti nelle missioni, curarsi alla Clinica | Cedere agli Speculatori, superare il drawdown limite | Moltiplicatore del punteggio missioni (0,8-1,2) |
+| **Fiducia** (i "PV") | Banca, vittorie | Risposte sbagliate (100 / (errori concessi + 1) a errore, vedi 5.2), eventi sbagliati | A 0 si "va in tilt" e si perde il 5% della Reputazione. Dopo ogni sconfitta in un duello (tilt o risposte giuste insufficienti) si rinasce nella Banca della città in cui ci si trova (sui Percorsi nell'ultima Banca visitata) con la Fiducia al massimo |
+| **Disciplina** (0-100) | Rifiutare truffe, rispettare limiti nelle missioni, ricaricare la Fiducia in Banca | Cedere agli Speculatori, superare il drawdown limite | Moltiplicatore del punteggio missioni (0,8-1,2) |
 | **Diversificazione** (0-100) | Calcolata dal portafoglio simulato: 100 − indice di concentrazione | — | Statistica visibile e input della salute |
 | **Pazienza** (0-100) | Tenere posizioni nei cali senza vendere, pochi ordini nelle missioni | Troppi ordini (overtrading), vendite nel panico | Bonus nelle missioni lunghe |
 | **Reputazione** | Vittorie contro investitori (+20), Mentori (+200), missioni | Tilt | Il "denaro" del genere: solo punteggio e classifica, non compra nulla |
@@ -216,9 +216,9 @@ Schermata a due lati, avversario in alto a destra, giocatore in basso a sinistra
 | Campione (fase 1) | 12 | 10 | 2 | 33 |
 | Torre delle Sfide (piano) | 3 | 3 | 0 | 100 |
 
-**Sfida del Mentore.** Fase 1 duello di quiz; fase 2 **missione pratica** nella Macchina del Tempo (sezione 6). Se si perde la fase 2 si ripete solo la fase 2. Vincere dà: Medaglia, Tecnica, Asset Card del Mentore, slot di portafoglio, sblocchi della Clinica, +200 Reputazione.
+**Sfida del Mentore.** Fase 1 duello di quiz; fase 2 **missione pratica** nella Macchina del Tempo (sezione 6). Se si perde la fase 2 si ripete solo la fase 2. Vincere dà: Medaglia, Tecnica, Asset Card del Mentore, slot di portafoglio, sblocchi della Banca, +200 Reputazione.
 
-**Investitori sul percorso.** Linea di vista di 4 tessere: quando il giocatore entra nella linea, il personaggio mostra "!", si avvicina e sfida. Una volta battuto non sfida più (ma si può riparlarci per un consiglio).
+**Investitori sul percorso.** Linea di vista di 4 tessere: quando il giocatore entra nella linea, il personaggio mostra il fumetto con il "$", si avvicina e sfida. Una volta battuto non sfida più (ma si può riparlarci per un consiglio).
 
 ### 5.3 Asset Card e Investidex
 
@@ -256,20 +256,20 @@ La lezione: un portafoglio con tipi diversi soffre meno di uno con un solo tipo.
 
 ### 5.5 Slot di portafoglio (la "squadra")
 
-Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 4 / 5 / 6 / 6 / 8 / 8 / 10 / 10 dopo le Medaglie 1-8. Le carte sbloccate ma non possedute stanno nella **Watchlist** (il "box"), consultabile dalla Clinica e dal menu.
+Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 4 / 5 / 6 / 6 / 8 / 8 / 10 / 10 dopo le Medaglie 1-8. Le carte sbloccate ma non possedute stanno nella **Watchlist** (il "box"), consultabile dalla Banca e dal menu.
 
 ### 5.6 Tecniche (al posto degli strumenti)
 
 | Tecnica | Mentore | Effetto in gioco | Effetto sulla mappa |
 |---|---|---|---|
 | Lettura del Ticker | 1 | Investidex mostra il livello 2 delle carte | — |
-| Ordine Limite | 2 | Ordini limite nella Clinica e nella Macchina del Tempo | — |
-| Ribilanciamento | 3 | La Clinica calcola lo scostamento dall'allocazione obiettivo; gli ordini li sceglie il giocatore | — |
+| Ordine Limite | 2 | Ordini limite nella Banca e nella Macchina del Tempo | — |
+| Ribilanciamento | 3 | La Banca calcola lo scostamento dall'allocazione obiettivo; gli ordini li sceglie il giocatore | — |
 | Piano di Accumulo | 4 | Acquisti ricorrenti automatici nel simulatore | — |
 | Lettura del Bilancio (Titoli) / Analisi del Prospetto (ETF) / Custodia Sicura (Cripto) / Visione d'Insieme (Misto) | 5 | Livello 3 delle carte, domande con dati | Apre l'Archivio di Bilancia |
 | Reinvestimento | 6 | Uova dei dividendi più rapide | — |
 | Mente Fredda | 7 | 50% di probabilità di resistere ai bias | Attraversa il Muro del Rumore sul P7 |
-| Stop Loss | 8 | Ordini stop nella Clinica e nella Macchina del Tempo | — |
+| Stop Loss | 8 | Ordini stop nella Banca e nella Macchina del Tempo | — |
 
 Prima di "Ordine Limite" esistono solo ordini a mercato; prima di "Stop Loss" non esistono ordini stop.
 
@@ -279,12 +279,12 @@ I bias si imparano, non si "subiscono". Non esistono stati alterati che cambiano
 
 | Bias | Dove si incontra | Cosa insegna |
 |---|---|---|
-| **FOMO** | Proposte degli Speculatori, Lezione sui bias in Clinica | La paura di restare fuori spinge a comprare tardi e caro |
-| **Panico** | Lezione sui bias in Clinica | Vendere durante un crollo trasforma una perdita temporanea in definitiva |
-| **Eccesso di fiducia** | Lezione sui bias in Clinica | Qualche successo non è una prova di abilità |
-| **Effetto gregge** | Proposte degli Speculatori, Lezione sui bias in Clinica | Seguire la folla non è un'analisi |
+| **FOMO** | Proposte degli Speculatori, Lezione sui bias in Banca | La paura di restare fuori spinge a comprare tardi e caro |
+| **Panico** | Lezione sui bias in Banca | Vendere durante un crollo trasforma una perdita temporanea in definitiva |
+| **Eccesso di fiducia** | Lezione sui bias in Banca | Qualche successo non è una prova di abilità |
+| **Effetto gregge** | Proposte degli Speculatori, Lezione sui bias in Banca | Seguire la folla non è un'analisi |
 
-Un bias riconosciuto (rispondendo bene alla domanda in Clinica, o rifiutando/accettando una proposta) viene annotato nella sezione Bias dell'Investidex.
+Un bias riconosciuto (rispondendo bene alla domanda in Banca, o rifiutando/accettando una proposta) viene annotato nella sezione Bias dell'Investidex.
 
 ### 5.8 Erba alta
 
@@ -327,7 +327,7 @@ Dal menu Profilo si genera un **codice sfida** (seed). Un amico che inserisce lo
 
 ### 5.15 Uova dei dividendi
 
-Ogni mese simulato gli asset con dividendo pagano (rendimento annuo / 12). Con il reinvestimento attivo i dividendi diventano un "uovo" nella Clinica che si schiude dopo 3 giorni di mercato simulato in nuove quote dello stesso asset, con un'animazione e un contatore dell'effetto composto.
+Ogni mese simulato gli asset con dividendo pagano (rendimento annuo / 12). Con il reinvestimento attivo i dividendi diventano un "uovo" nella Banca che si schiude dopo 3 giorni di mercato simulato in nuove quote dello stesso asset, con un'animazione e un contatore dell'effetto composto.
 
 ### 5.16 Domanda del giorno e ripetizione
 
@@ -349,7 +349,7 @@ La Biblioteca propone ogni giorno reale una domanda; rispondere ogni giorno aume
 - **Diario dell'investitore**: dopo ogni operazione (conto di prova, Paper o reale) chiede il motivo da una lista e una nota; la Dott.ssa Ratio commenta (i motivi emotivi, come FOMO o "taglio la perdita perché fa male", vengono segnalati). Dopo 30 giorni di mercato (o 30 giorni reali per Alpaca) la riga torna da rileggere con il prezzo attuale e la domanda "rifaresti la stessa scelta?". Il Diario non tocca mai il conto.
 - **Minigiochi** (Biblioteca e Zona Simulazione): Indovina il grafico (volatilità, trend, drawdown), Corsa dell'interesse composto, Carrello diversificato, Bilancio in ordine (P/E, D/E, margine). Punteggio 0-100 e record, nessun effetto sul conto.
 - **Scenari storici**: per ognuna delle cinque crisi leggendarie una scheda con quando, cosa successe e la lezione, poi la possibilità di riviverla in sandbox.
-- **Osservatorio Alpaca** (Clinica): conto, posizioni, ordini aperti e prezzo di un simbolo in sola lettura, con accanto l'ultimo motivo scritto nel Diario per ogni posizione. Nessun pulsante d'ordine.
+- **Osservatorio Alpaca** (Banca): conto, posizioni, ordini aperti e prezzo di un simbolo in sola lettura, con accanto l'ultimo motivo scritto nel Diario per ogni posizione. Nessun pulsante d'ordine.
 - **Sfida della settimana**: otto domande uguali per tutti (seme dalla settimana ISO), un tentativo, punteggio da risposte e tempo. Il risultato è un codice `TS-2026W46-NOME-85-XXX` con controllo, da scambiare con gli amici: chi lo inserisce vede nome e punti nella propria classifica locale. Nessun server né dati del conto nel codice.
 
 ### 5.17 Riepilogo delle 17 meccaniche adattate
@@ -433,9 +433,9 @@ Ricostruzioni semplificate, con ampiezze vicine a quelle storiche, dichiarate co
 
 ---
 
-## 7. La Clinica del Portafoglio
+## 7. La Banca del Portafoglio
 
-La Dott.ssa Ratio accoglie con: "Benvenuto alla Clinica del Portafoglio! Curiamo le scelte, non i soldi persi." Menu:
+La Dott.ssa Ratio accoglie con: "Benvenuto alla Banca del Portafoglio! Curiamo le scelte, non i soldi persi." Menu:
 
 | Voce | Paper (simulato) | Alpaca Paper | Sblocco |
 |---|---|---|---|
@@ -443,12 +443,12 @@ La Dott.ssa Ratio accoglie con: "Benvenuto alla Clinica del Portafoglio! Curiamo
 | Compra / Vendi | Ordini guidati con riepilogo costo e rischio | Sì | Subito (limite e stop con le tecniche) |
 | Ordini aperti | Vedi e annulla | Sì | Ordine Limite |
 | Capitale del conto di gioco | Solo informazioni: il gioco non aggiunge denaro, è tutto denaro finto | Saldo | Subito |
-| Salva e riposa | Salva, Fiducia al massimo | — | Subito |
+| Salva e ricarica la Fiducia | Salva, Fiducia al massimo (credito ricaricato) | — | Subito |
 | Diagnosi | Spiegazione in parole semplici e lezione collegata | Sì | Subito |
 | Cura (ribilanciamento) | Propone gli ordini, il giocatore conferma ognuno | Sì | Ribilanciamento |
 | Lezione sui bias | Una domanda sul bias scelto | — | Subito |
 | Uova dei dividendi | Stato dei dividendi in incubazione | — | Subito |
-| Cartella clinica | Storico ordini, rendimento nel tempo, export CSV | Sì | Subito |
+| Estratto conto | Storico ordini, rendimento nel tempo, export CSV | Sì | Subito |
 | Collega Alpaca | Inserimento chiavi Paper | — | Subito |
 | Specchio dell'investitore | Confronta profilo dichiarato e rivelato dalle missioni, permette di rifare il questionario e di aggiornare l'allocazione obiettivo | — | Subito |
 
@@ -490,7 +490,7 @@ Tradermon è un gioco volto solo all'apprendimento: la parte pratica usa esclusi
 ### 8.2 Chiavi Alpaca
 
 - Il giocatore le crea su alpaca.markets (account Paper gratuito, basta registrarsi sulla piattaforma).
-- Le inserisce dal menu o dalla Clinica (voce "Chiavi API"). Dal sito restano solo sul dispositivo, cifrate con la password del giocatore; sul proprio computer il browser le invia una sola volta al **server locale** di Tradermon, che le salva in `server/.secrets/keys.json` (escluso da Git, permessi 600) e non le restituisce mai al browser.
+- Le inserisce dal menu o dalla Banca (voce "Chiavi API"). Dal sito restano solo sul dispositivo, cifrate con la password del giocatore; sul proprio computer il browser le invia una sola volta al **server locale** di Tradermon, che le salva in `server/.secrets/keys.json` (escluso da Git, permessi 600) e non le restituisce mai al browser.
 - Indirizzi: conto Paper (`paper-api.alpaca.markets`) e dati di mercato (`data.alpaca.markets`). Il gioco, il server locale e la funzione Supabase non accettano altri conti.
 - "Scollega" cancella le chiavi dal dispositivo o dal server.
 
@@ -506,8 +506,10 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 
 - Risoluzione logica 240×160 (quella delle console portatili dei primi anni 2000), tessere 16×16, personaggi 16×24, ingrandimento a pixel netti.
 - Stile grafico: pixel art originale disegnata in codice, ispirata alle portatili di metà anni 2000 (stile DS): rampe di 5 tonalità, contorni colorati invece che neri, ombre portate da alberi e facciate, ombre morbide sotto i personaggi, leggera vignettatura. Gli sprite delle sfide sono ingranditi con Scale2x per bordi più morbidi. Bordi automatici per sentieri, acqua e tetti; acqua, fiori e Muro del Rumore animati; erba alta (Zone di Mercato) con riflessi dorati.
-- Finestre nello stile classico: riquadro bianco a doppio bordo, freccia rossa lampeggiante, cursore a triangolo nei menu, cartello del luogo che scende all'ingresso di ogni zona.
-- Schermata di sfida: avversario in alto a destra su una pedana d'erba, giocatore di spalle in basso a sinistra, riquadri delle barre (Convinzione e Fiducia) verde/giallo/rosso, lampo d'ingresso e scorrimento dei personaggi.
+- Finestre nello stile classico: riquadro bianco a doppio bordo, freccia rossa lampeggiante, cursore a triangolo nei menu, tabellone a led del luogo che scorre da sinistra all'ingresso di ogni zona.
+- Schermata di sfida (src/ui/arena.ts): un confronto in sala. Giocatore e sfidante stanno affiancati alla stessa altezza, entrambi rivolti verso lo schermo, ciascuno dietro una postazione con un piccolo monitor; sopra di loro una targhetta da terminale con nome, titolo e barra a segmenti (Fiducia, Convinzione). In alto scorre un nastro di concetti del gioco (mai prezzi o titoli reali). Lo sfondo è dipinto in codice e dipende dal luogo: piazza delle quotazioni (sfide comuni), aula dell'Accademia (allievi, Esame della Leva), sala dei monitor (Mentori), tetto della città al tramonto (rivale), fossa degli speculatori (Speculatori e loro capi), sala grande della Borsa di notte (Boss del dopo-Lega), salone della Lega (Lega, Investitrice Leggendaria), Torre delle Sfide, Biblioteca.
+- Transizione d'ingresso "campanella d'apertura": una linea di prezzo attraversa lo schermo, dietro di lei crescono le candele fino a coprirlo, poi il grafico si apre in due lungo la linea e compare il luogo della sfida. Con "riduci movimento" dura un attimo.
+- Introduzione: il Prof parla dietro il suo banco, davanti alla lavagna dell'aula.
 - Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.
 - Touch: croce direzionale e pulsanti A, B, Menu sullo schermo.
 - Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo (con scelta del titolo), Medaglie, Tecniche, Mappa della Regione (con Trasferimento di Capitale), Salva, Opzioni (effetti, musica, velocità del testo, scala dei caratteri, contrasto alto, Comandi).

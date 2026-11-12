@@ -1,5 +1,6 @@
 import { S, profileFromScore, save } from '../systems/state';
 import { say, choose, ask, modal, el, esc } from './core';
+import { mountArena } from './arena';
 import { pickQuestions } from '../systems/quiz';
 import { runDuel } from './battle';
 import { PAL, titleBackdrop, portrait, playerPal, PLAYER_COLOR_LIST } from '../art/art';
@@ -31,7 +32,7 @@ const QUESTIONS: [string, string[]][] = [
 ];
 
 export async function questionnaire(): Promise<number> {
-  await say(['Rispondi con sincerità: non ci sono risposte giuste o sbagliate.', 'Il profilo non ti darà vantaggi né svantaggi. Nelle missioni però osserverò come ti comporti davvero quando il mercato scende: alla Clinica lo Specchio dell\'investitore ti mostrerà se dire e fare coincidono.'], 'Prof. Saldi');
+  await say(['Rispondi con sincerità: non ci sono risposte giuste o sbagliate.', 'Il profilo non ti darà vantaggi né svantaggi. Nelle missioni però osserverò come ti comporti davvero quando il mercato scende: alla Banca lo Specchio dell\'investitore ti mostrerà se dire e fare coincidono.'], 'Prof. Saldi');
   let score = 0;
   for (const [q, opts] of QUESTIONS) {
     const c = await choose(opts, { prompt: q, who: 'Prof. Saldi' });
@@ -44,9 +45,10 @@ export async function questionnaire(): Promise<number> {
 export async function onboarding(playerName?: string): Promise<void> {
   await disclaimer();
   await controlsTutorial();
-  // scena d'introduzione: il Professore su una pedana, come nei classici
-  const intro = el('div', 'intro-stage', `<img class="sprite" src="${portrait(PAL.PROF)}" alt="Prof. Saldi">`);
+  // scena d'introduzione: il Prof dietro il suo banco, davanti alla lavagna dell'aula
+  const intro = el('div', 'intro-stage', `<div class="fig"><img class="sprite" src="${portrait(PAL.PROF)}" alt="Prof. Saldi"></div><div class="desk"></div>`);
   getStage().prepend(intro);
+  const unmountIntro = mountArena(intro, 'aula', 'prof');
   await say(['Ciao! Ti do il benvenuto nella Regione di Capitalia!', 'Mi chiamo Bruno Saldi, ma tutti mi chiamano "il Prof".', 'Ho passato trent\'anni a gestire i risparmi degli altri. Ho visto bolle, crolli e riprese.', 'Oggi insegno ai giovani investitori a non ripetere i miei errori.'], 'Prof. Saldi');
   if (playerName) {
     S.name = playerName;
@@ -56,12 +58,12 @@ export async function onboarding(playerName?: string): Promise<void> {
     await say(`${S.name}! Che bel nome.`, 'Prof. Saldi');
   }
   const img = intro.querySelector('img')!;
-  // il genere accorda i testi ({maschile|femminile}) e sceglie lo sprite; anteprima dal vivo sulla pedana
+  // il genere accorda i testi ({maschile|femminile}) e sceglie lo sprite; anteprima dal vivo dietro il banco
   const genders = ['m', 'f'] as const;
   const bodies = genders.map((gd) => portrait(playerPal(0, gd)));
   const gi = await choose(['Ragazzo', 'Ragazza'], { prompt: 'Dimmi, sei un ragazzo o una ragazza?', who: 'Prof. Saldi', onMove: (i) => { img.src = bodies[i]; img.alt = S.name; } });
   S.gender = genders[gi];
-  // il colore scelto tinge vestiti e cappellino del protagonista ovunque (mappa, sfide); anteprima dal vivo sulla pedana
+  // il colore scelto tinge vestiti e cappellino del protagonista ovunque (mappa, sfide); anteprima dal vivo dietro il banco
   const looks = PLAYER_COLOR_LIST.map((_, i) => portrait(playerPal(i, S.gender)));
   const av = await choose(PLAYER_COLOR_LIST.map((c) => c.name), { prompt: 'Qual è il tuo colore preferito? Vestiti e cappellino saranno di quel colore (non cambia nulla nel gioco).', who: 'Prof. Saldi', onMove: (i) => { img.src = looks[i]; img.alt = S.name; } });
   S.avatar = av;
@@ -73,9 +75,13 @@ export async function onboarding(playerName?: string): Promise<void> {
   S.profile = profileFromScore(score);
   const desc = { prudente: 'PRUDENTE: preferisci la stabilità e oscillazioni contenute.', equilibrato: 'EQUILIBRATO: cerchi un compromesso tra crescita e tranquillità.', audace: 'AUDACE: tolleri bene le oscillazioni. Attent{o|a} però: audace non vuol dire avventato!' }[S.profile];
   await say([`Il tuo profilo è ${desc}`, 'Non è una raccomandazione: l\'allocazione del conto la scriverai tu, quando lo aprirai.'], 'Prof. Saldi');
-  await say('Questo è mio nipote. Siete cresciuti insieme, ma investe in modo molto diverso da te...', 'Prof. Saldi');
-  S.rival = (await ask('Come si chiama il tuo rivale?', 'Leo', 10)) || 'Leo';
-  await say([`Giusto, ${S.rival}! Ora vai a casa a riposare.`, 'Domani vieni al mio Laboratorio: ti aspetta una scelta importante.'], 'Prof. Saldi');
+  // il rivale: un bambino rimasto senza famiglia che il Prof ha adottato; ha un nome suo, non lo sceglie il giocatore
+  S.rival = 'Leo';
+  img.src = portrait(PAL.RIVAL); img.alt = 'Leo';
+  await say(['E lui è Leo. Quando era piccolo è rimasto senza famiglia: l\'ho adottato e da allora vive con me.', 'Siete cresciuti insieme in questo borgo, ma investe in modo molto diverso da te...', 'Mi ha chiesto lui di fare il tuo stesso viaggio. Credo voglia dimostrare qualcosa, a me e a sé stesso.'], 'Prof. Saldi');
+  img.src = portrait(PAL.PROF); img.alt = 'Prof. Saldi';
+  await say([`Ora vai a casa a riposare, ${S.name}.`, 'Domani vieni al mio Laboratorio: ti aspetta una scelta importante.'], 'Prof. Saldi');
+  unmountIntro();
   intro.remove();
   await say(['Un\'ultima scelta: la difficoltà.', 'Decide quanto capitale avrà il tuo conto di gioco e quanto margine di errore ti lascio lungo il viaggio. I punteggi sono in percentuale: un capitale più grande non dà vantaggi.'], 'Prof. Saldi');
   applyDifficulty(await chooseDifficulty());

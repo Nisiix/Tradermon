@@ -812,7 +812,7 @@ export const PALETTES: CharPal[] = [
   { skin: '#e8b48a', hair: '#1f1f2a', shirt: '#3d8ee8', pants: '#3a3a3a' }, // 1 avatar B
   { skin: '#c98e62', hair: '#e8c547', shirt: '#3a9a5b', pants: '#4a3a2a' }, // 2 avatar C / Gaia
   { skin: '#f5c9a0', hair: '#8a8a8a', shirt: '#f2f2f2', pants: '#5a5a6a', extra: '#3d7fd9' }, // 3 Prof / Orazio
-  { skin: '#f0c0a0', hair: '#ff8ab0', shirt: '#ffffff', pants: '#ff8ab0' }, // 4 Dott.ssa Ratio / Vera
+  { skin: '#f0c0a0', hair: '#7a3a28', shirt: '#2c4a7a', pants: '#22345a' }, // 4 Dott.ssa Ratio (funzionaria della Banca) / Vera
   { skin: '#e8b48a', hair: '#3a2a1a', shirt: '#8a56c2', pants: '#2a2a3a' }, // 5 rivale / Cosimo
   { skin: '#d9a77a', hair: '#c8463d', shirt: '#7af0ff', pants: '#3a5a7a' }, // 6 Serena
   { skin: '#b5835a', hair: '#1f1f2a', shirt: '#5a5a6a', pants: '#2a2a2a' }, // 7 Rocco
@@ -999,8 +999,25 @@ function bigSprite(pal: number, dir: number, scale: number): string {
 
 /** Sprite grande frontale per le schermate di sfida. */
 export function portrait(pal: number): string { return bigSprite(pal, 0, 4); }
-/** Il giocatore visto di spalle, come nelle sfide classiche. */
-export function portraitBack(pal: number): string { return bigSprite(pal, 1, 5); }
+
+/**
+ * Fumetto che compare sopra un allenatore quando ti nota: un simbolo del dollaro verde (12×14 pixel).
+ * Usato dalla scena 2D e dal diorama 2.5D.
+ */
+export function drawSpotBubble(): HTMLCanvasElement {
+  const bb = document.createElement('canvas'); bb.width = 12; bb.height = 14;
+  const b = bb.getContext('2d')!;
+  b.fillStyle = '#202020'; b.fillRect(1, 0, 10, 11); b.fillRect(0, 1, 12, 9); b.fillRect(4, 11, 4, 1); b.fillRect(5, 12, 2, 1);
+  b.fillStyle = '#ffffff'; b.fillRect(2, 1, 8, 9); b.fillRect(1, 2, 10, 7); b.fillRect(5, 10, 2, 1);
+  // "$": asta in alto e in basso, S a tre tratti
+  b.fillStyle = '#1e9a4a';
+  b.fillRect(5, 1, 2, 1);
+  b.fillRect(4, 2, 4, 1); b.fillRect(3, 3, 2, 1);
+  b.fillRect(4, 4, 3, 1); b.fillRect(5, 5, 3, 1);
+  b.fillRect(7, 6, 2, 1); b.fillRect(4, 7, 4, 1);
+  b.fillRect(5, 8, 2, 1);
+  return bb;
+}
 
 /** Icona dell'app (PNG data URL) */
 export function appIcon(size: number): string {

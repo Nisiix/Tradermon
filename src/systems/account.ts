@@ -307,7 +307,7 @@ export function grantSeals(): number[] {
     if (S.badges < m || S.exDone < m + 1 || S.flags.bankrupt) break;
     S.seals = m;
     got.push(m);
-    // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (missione dal Mentore o esercizio in Clinica),
+    // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (missione dal Mentore o esercizio in Banca),
     // e si riceve una volta sola anche se il Sigillo viene sospeso e poi ripreso
     if (m > Number(S.flags.sealPaid ?? 0)) {
       S.flags.sealPaid = m;
@@ -435,7 +435,7 @@ export function applyOrder(pf: Portfolio, p: PendingOrder, o: A.AlpacaOrder): { 
         if (pf.exBuys?.[p.asset]) pf.exBuys[p.asset] = Math.max(0, pf.exBuys[p.asset] - back);
       }
       const why = o.status === 'expired' ? 'è scaduto a fine giornata senza essere eseguito' : o.status === 'canceled' ? 'è stato annullato' : 'è stato rifiutato da Alpaca';
-      notes.push(p.type === 'stop' ? `Lo stop su ${tick} ${why}: la protezione non è più attiva. Rimettilo dalla Clinica se la vuoi ancora.` : `L'ordine ${p.type === 'limit' ? 'limite' : 'a mercato'} su ${tick} ${why}.`);
+      notes.push(p.type === 'stop' ? `Lo stop su ${tick} ${why}: la protezione non è più attiva. Rimettilo dalla Banca se la vuoi ancora.` : `L'ordine ${p.type === 'limit' ? 'limite' : 'a mercato'} su ${tick} ${why}.`);
       if (counted && pf === S.portfolio) notes.push(...reopenExercises(boughtBefore));
     }
   }
@@ -523,7 +523,7 @@ const FORCED = new Set(['liquidazione', 'chiusura']);
 const MANDATE_SELLS = new Set(['boss-stop', 'obiettivo', 'mandato']);
 
 /**
- * Una vendita del titolo di un mandato che non fa parte del piano (dalla Clinica, dal sito di Alpaca, uno stop
+ * Una vendita del titolo di un mandato che non fa parte del piano (dalla Banca, dal sito di Alpaca, uno stop
  * diverso, la vendita forzata della leva) annulla la sfida con quel Boss: si ripete da capo con un altro titolo.
  */
 function voidMandate(asset: string): string {

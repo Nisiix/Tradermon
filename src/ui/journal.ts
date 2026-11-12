@@ -84,7 +84,7 @@ export async function openJournal() {
     const r = await modal<string>('Diario dell\'investitore', ({ body, button, close }) => {
       const warnShare = S.journal.length ? S.journal.filter((e) => REASONS.find((x) => x.text === e.reason)?.warn).length / S.journal.length : 0;
       body.innerHTML = `<p class="small">Righe: <b>${S.journal.length}</b> · da rileggere: <b>${due.length}</b> · motivi "emotivi": <b>${Math.round(warnShare * 100)}%</b>${S.journal.length >= 5 ? (warnShare > 0.5 ? ' <span class="bad">(più della metà: fermati a riflettere prima di operare)</span>' : ' <span class="good">(bene: la maggior parte delle scelte segue un piano)</span>') : ''}</p>`;
-      if (!S.journal.length) body.appendChild(el('p', 'muted', 'Dopo ogni acquisto o vendita, in Clinica o con Alpaca, ti chiederò il perché. Le righe compaiono qui.'));
+      if (!S.journal.length) body.appendChild(el('p', 'muted', 'Dopo ogni acquisto o vendita, in Banca o con Alpaca, ti chiederò il perché. Le righe compaiono qui.'));
       const tbl = el('table', 't');
       tbl.innerHTML = '<tr><th>Giorno</th><th>Operazione</th><th>Motivo</th><th></th></tr>';
       for (const e of [...S.journal].reverse().slice(0, 40)) {

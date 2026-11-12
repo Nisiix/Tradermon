@@ -8,7 +8,7 @@
 // livello 2D sopra la scena, con le stesse chiamate che usa la grafica 2D.
 import * as THREE from 'three';
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, TiltShiftEffect, VignetteEffect, SMAAEffect, SSAOEffect, NormalPass, DepthDownsamplingPass, BlendFunction, KernelSize } from 'postprocessing';
-import { drawTiles, drawCharacters, visualTiles, TILE, TILE_ATLAS_COLS, tileIndex, tileName, drawTileRaw, P, RS, CH, CHAR_PER_ROW, T } from '../art/art';
+import { drawTiles, drawCharacters, visualTiles, TILE, TILE_ATLAS_COLS, tileIndex, tileName, drawTileRaw, P, RS, CH, CHAR_PER_ROW, T, drawSpotBubble } from '../art/art';
 import { drawPlaque } from '../art/plaque';
 import type { MapDef } from '../world/maps';
 import { reprOf, HOUSE_ROOFS, HOUSE_WALLS, WALL_LIKE } from './props';
@@ -217,11 +217,7 @@ export class View3D {
   // ---------------- texture di servizio ----------------
 
   private bubbleTexture(): THREE.CanvasTexture {
-    const bb = document.createElement('canvas'); bb.width = 12; bb.height = 14;
-    const b = bb.getContext('2d')!;
-    b.fillStyle = '#202020'; b.fillRect(1, 0, 10, 11); b.fillRect(0, 1, 12, 9); b.fillRect(4, 11, 4, 1); b.fillRect(5, 12, 2, 1);
-    b.fillStyle = '#ffffff'; b.fillRect(2, 1, 8, 9); b.fillRect(1, 2, 10, 7); b.fillRect(5, 10, 2, 1);
-    b.fillStyle = '#d83020'; b.fillRect(5, 2, 2, 5); b.fillRect(5, 8, 2, 1);
+    const bb = drawSpotBubble();
     const t = new THREE.CanvasTexture(bb); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace;
     return t;
   }

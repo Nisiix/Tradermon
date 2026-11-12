@@ -78,7 +78,7 @@ async function bossFight(def: BossDef): Promise<void> {
     const qs = pickQuestions(def.topics, BOSS_RULES.quizN, { minDiff: 3, maxDiff: 4 });
     const fid = S.stats.fiducia;
     S.stats.fiducia = 100;
-    const r = await runDuel({ foeName: def.name, foeTitle: def.title, foePal: def.pal, questions: qs, need: BOSS_RULES.quizMin, damage: 0, fixed: true });
+    const r = await runDuel({ foeName: def.name, foeTitle: def.title, foePal: def.pal, questions: qs, need: BOSS_RULES.quizMin, damage: 0, fixed: true, arena: 'borsa' });
     S.stats.fiducia = fid;
     if (r.correct < BOSS_RULES.quizMin) return lose(def, [`${r.correct} risposte giuste su ${r.total}: ne servivano almeno ${BOSS_RULES.quizMin} per presentare un piano.`]);
     runs()[def.id] = { id: def.id, quiz: r.correct, quizMax: r.total, plan: null, startedAt: Date.now() };
@@ -182,7 +182,7 @@ async function planForm(def: BossDef): Promise<void> {
     // gli ordini partono solo dopo una conferma esplicita, con importo e perdita possibile in chiaro
     const tick = ASSET_BY_ID[res.asset].ticker;
     const size = M.sizeFor(last.price, res.stop, res.risk);
-    if (!(size.amount >= 1)) { await say('Non hai liquidità disponibile per questo piano: libera capitale dalla Clinica e riprova. Il quiz resta valido.', KEEPER); return; }
+    if (!(size.amount >= 1)) { await say('Non hai liquidità disponibile per questo piano: libera capitale dalla Banca e riprova. Il quiz resta valido.', KEEPER); return; }
     const go = await choose([`Compro ${fmtMoney(size.amount)} di ${tick} e metto lo stop`, 'Rifaccio il piano', 'Ci penso'], { cancel: true, who: def.name, prompt: `Qualità del piano: ${sc.points}/${BOSS_RULES.planMax}. Sto per inviare ordini veri sul conto di gioco: un acquisto a mercato di ${fmtMoney(size.amount)} di ${tick} (ora a ${fmtPx(last.price)} $) e uno stop di vendita a ${fmtPx(res.stop)} $. Se lo stop scatta perdi circa ${fmtMoney(size.amount * (last.price - res.stop) / last.price)}, e quella perdita resta sul conto. Confermi?` });
     if (go === 1) return planForm(def);
     if (go !== 0) { await say('Nessun ordine inviato. Il quiz resta valido: torna quando hai deciso.', def.name); return; }
@@ -195,7 +195,7 @@ async function planForm(def: BossDef): Promise<void> {
         <p><b>Qualità del piano: ${sc.points}/${BOSS_RULES.planMax}</b> <span class="small muted">(giudicata adesso, prima di sapere come va)</span></p>
         <ul class="small">${sc.notes.map((n) => `<li class="${n.ok ? 'good' : 'bad'}">${esc(n.text)}</li>`).join('')}</ul>
         <p class="small">Scadenza: <b>${when(plan.deadline)}</b>. Torna alla Torre dopo quell'ora (i dati arrivano con un quarto d'ora di ritardo). Nel frattempo puoi chiudere il gioco: lo stop è su Alpaca.</p>
-        <p class="small">Se l'obiettivo non arriva, torna da me prima della scadenza: puoi vendere e ripetere la sfida con un altro titolo. Anche vendere ${esc(tick)} dalla Clinica o dal sito di Alpaca annulla la sfida.</p>`;
+        <p class="small">Se l'obiettivo non arriva, torna da me prima della scadenza: puoi vendere e ripetere la sfida con un altro titolo. Anche vendere ${esc(tick)} dalla Banca o dal sito di Alpaca annulla la sfida.</p>`;
       button('Ok', () => close(), 'primary');
     });
   } catch (e) { await say(`Non riesco a registrare il piano: ${(e as Error).message}`, KEEPER); }
@@ -280,7 +280,7 @@ async function resolve(def: BossDef): Promise<void> {
   if (holding) {
     const c = await choose(['Chiudo la posizione adesso', 'La tengo'], { cancel: true, who: KEEPER, prompt: `Il mandato è finito e sul conto hai ancora ${fmtQty(money!.held)} ${tick}. Vuoi venderli adesso o tenerli come una posizione normale?` });
     if (c === 0) { const r = await M.closeMandate(def.id, 'mandato'); await say(r.msg, KEEPER); }
-    else await say(`Tieni ${tick}: da ora è una posizione come le altre, la gestisci dalla Clinica${M.stopMissing(def.id) ? '' : ' (lo stop del piano resta attivo finché non lo togli o scade)'}.`, KEEPER);
+    else await say(`Tieni ${tick}: da ora è una posizione come le altre, la gestisci dalla Banca${M.stopMissing(def.id) ? '' : ' (lo stop del piano resta attivo finché non lo togli o scade)'}.`, KEEPER);
   }
   const after = M.mandateMoney(def.id);
   if (!won) return lose(def, ['Non è bastato.', ...(after && after.result < 0 ? [`La perdita di ${fmtMoney(-after.result)} su ${tick} resta sul conto: fa parte della sfida.`] : [])]);

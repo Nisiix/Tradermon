@@ -35,7 +35,7 @@ export function tradable() {
 }
 
 export async function openClinic(townIdx: number) {
-  await say(['Benvenuto alla Clinica del Portafoglio!', 'Qui curiamo le scelte, non i soldi persi. Come posso aiutarti?'], NURSE);
+  await say(['Benvenuto alla Banca del Portafoglio!', 'Qui teniamo i conti delle tue scelte e, se inciampi, ti riapriamo il credito di Fiducia. Come posso aiutarti?'], NURSE);
   if (S.flags.migratedV3) {
     delete S.flags.migratedV3;
     await say(['Una novità importante: a Capitalia non si scambiano più titoli inventati. Da oggi si opera solo su titoli veri, con prezzi veri, attraverso un conto Alpaca Paper.', `Il tuo vecchio conto di prova è stato chiuso e ne ho aperto uno nuovo da ${fmtMoney(S.portfolio.initial)}. Attestati, Tecniche e tutto ciò che hai studiato restano tuoi; i Sigilli pratici si guadagnano ora sul conto Paper, con prezzi veri e denaro finto.`], NURSE);
@@ -45,19 +45,19 @@ export async function openClinic(townIdx: number) {
   if (S.flags.starter && (await Acc.checkLink()).paper) { (await Acc.sync()).forEach((n) => toast(n)); await accountAlerts(); }
   for (;;) {
     const opts = [
-      'Salva e riposa', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Calcolo del ribilanciamento', 'Lezione sui bias',
-      'Tappe, Prove e Sigilli', 'Leva e margine', 'Dividendi', 'Capitale del conto di gioco', 'Cartella clinica', 'Chiavi API (conto Paper)', 'Osservatorio Alpaca (sola lettura)', 'Specchio dell\'investitore', 'Arrivederci',
+      'Salva e ricarica la Fiducia', 'Check-up', 'Compra / Vendi', 'Ordini aperti', 'Diagnosi', 'Calcolo del ribilanciamento', 'Lezione sui bias',
+      'Tappe, Prove e Sigilli', 'Leva e margine', 'Dividendi', 'Capitale del conto di gioco', 'Estratto conto', 'Chiavi API (conto Paper)', 'Osservatorio Alpaca (sola lettura)', 'Specchio dell\'investitore', 'Arrivederci',
     ];
     const dis = opts.map((o) => (o.startsWith('Ordini aperti') && !hasTech(TECH.LIMIT) && !hasTech(TECH.STOP)) || (o.startsWith('Calcolo del ribil') && !hasTech(TECH.REBAL)));
-    const c = await choose(opts, { cancel: true, title: 'CLINICA DEL PORTAFOGLIO', disabled: dis });
+    const c = await choose(opts, { cancel: true, title: 'BANCA DEL PORTAFOGLIO', disabled: dis });
     if (c < 0 || c === opts.length - 1) { await say('Abbi cura del tuo portafoglio!', NURSE); return; }
     switch (opts[c]) {
-      case 'Salva e riposa': {
+      case 'Salva e ricarica la Fiducia': {
         S.stats.fiducia = 100;
         S.lastClinic = { map: `clinic_${townIdx}`, x: 5, y: 4 };
         beep('heal');
         const ok = save();
-        await say([`La tua Fiducia è tornata al massimo.${ok ? ' Partita salvata.' : ' Attenzione: salvataggio non riuscito (spazio del browser?).'}`, 'Torna quando vuoi!'], NURSE);
+        await say([`Credito di Fiducia ricaricato: è tornata al massimo.${ok ? ' Partita salvata.' : ' Attenzione: salvataggio non riuscito (spazio del browser?).'}`, 'Torna quando vuoi!'], NURSE);
         break;
       }
       case 'Check-up': await checkup(); break;
@@ -70,7 +70,7 @@ export async function openClinic(townIdx: number) {
       case 'Leva e margine': await leverageDesk(); break;
       case 'Dividendi': await dividends(); break;
       case 'Capitale del conto di gioco': await deposit(); break;
-      case 'Cartella clinica': await records(); break;
+      case 'Estratto conto': await records(); break;
       case 'Chiavi API (conto Paper)': await apiKeysMenu(); break;
       case 'Osservatorio Alpaca (sola lettura)': await openObservatory(); break;
       case 'Specchio dell\'investitore': {
@@ -128,7 +128,7 @@ export function checkupHtml(): string {
     </div>
     <p class="small"><b>Allocazione del conto</b> rischiosi ${al.risky.toFixed(0)}% · difensivi ${al.defensive.toFixed(0)}% · liquidità ${al.cash.toFixed(0)}% — <span class="muted">obiettivo ${pf.target.risky}/${pf.target.defensive}/${pf.target.cash}</span><br>
     <b>Storico del conto</b> (${pf.valueHistory.length} giorni) rendimento ${fmtPct(m.ret)} · volatilità ${(m.vol * 100).toFixed(1)}% · max drawdown −${(m.mdd * 100).toFixed(1)}% · costi didattici e interessi ${fmtMoney(pf.costs)}</p>
-    ${rows ? `<table class="t"><tr><th>Asset</th><th class="n">Quote</th><th class="n">Prezzo</th><th class="n">Valore</th><th class="n">Peso</th><th class="n">P&amp;L</th></tr>${rows}</table>` : '<p class="muted">Nessuna posizione. Usa "Compra / Vendi" in una Clinica per il primo investimento.</p>'}
+    ${rows ? `<table class="t"><tr><th>Asset</th><th class="n">Quote</th><th class="n">Prezzo</th><th class="n">Valore</th><th class="n">Peso</th><th class="n">P&amp;L</th></tr>${rows}</table>` : '<p class="muted">Nessuna posizione. Usa "Compra / Vendi" in una Banca per il primo investimento.</p>'}
     <p class="small muted">Titoli e prezzi reali, eseguiti sul tuo conto Alpaca Paper (denaro finto) · ${asOfLabel()}. ${nextSealLine()}</p>`;
 }
 
@@ -393,7 +393,7 @@ async function deposit() {
 }
 
 async function records() {
-  await modal('Cartella clinica', ({ body, button, close }) => {
+  await modal('Estratto conto', ({ body, button, close }) => {
     const pf = S.portfolio;
     const log = pf.log.slice().reverse();
     const h = pf.valueHistory;
@@ -411,7 +411,7 @@ async function records() {
     c.stroke();
     button('Esporta CSV', () => {
       const rows = [['giorno', 'lato', 'tipo', 'asset', 'quote', 'prezzo', 'costo'], ...pf.log.map((l) => [l.day, l.side, l.type, l.asset, l.qty.toFixed(6), l.price.toFixed(4), l.fee.toFixed(2)])];
-      download('tradermon-cartella-clinica.csv', rows.map((r) => r.join(';')).join('\n'));
+      download('tradermon-estratto-conto.csv', rows.map((r) => r.join(';')).join('\n'));
     });
     button('Chiudi', () => close(), 'primary');
   }, { wide: true });

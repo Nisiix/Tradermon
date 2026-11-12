@@ -3,7 +3,7 @@ import { track } from '../systems/progress';
 import { decorateHome } from '../world/decor';
 import Phaser from 'phaser';
 import { drawPlaque } from '../art/plaque';
-import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal } from '../art/art';
+import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal, drawSpotBubble } from '../art/art';
 import { getMap, safeSpot, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, librarySection, type WorldApi } from '../world/scripts';
 import { S, save, hasTech, TECH } from '../systems/state';
@@ -87,12 +87,8 @@ export class WorldScene extends Phaser.Scene {
       grad.addColorStop(0, 'rgba(0,0,0,.34)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
       g.fillStyle = grad; g.beginPath(); g.ellipse(7 * RS, 2.5 * RS, 7 * RS, 2.4 * RS, 0, 0, Math.PI * 2); g.fill();
       this.textures.addCanvas('shadow', sh);
-      // fumetto "!" in pixel art
-      const bb = document.createElement('canvas'); bb.width = 12; bb.height = 14;
-      const b = bb.getContext('2d')!;
-      b.fillStyle = '#202020'; b.fillRect(1, 0, 10, 11); b.fillRect(0, 1, 12, 9); b.fillRect(4, 11, 4, 1); b.fillRect(5, 12, 2, 1);
-      b.fillStyle = '#ffffff'; b.fillRect(2, 1, 8, 9); b.fillRect(1, 2, 10, 7); b.fillRect(5, 10, 2, 1);
-      b.fillStyle = '#d83020'; b.fillRect(5, 2, 2, 5); b.fillRect(5, 8, 2, 1);
+      // fumetto "$" in pixel art: l'allenatore ti ha notato
+      const bb = drawSpotBubble();
       this.textures.addCanvas('bubble', RS === 3 ? scale3x(bb) : bb);
     }
   }
@@ -204,7 +200,7 @@ export class WorldScene extends Phaser.Scene {
     }
     S.map = id; S.x = x; S.y = y; S.facing = DIR_NAME[dir];
     this.idleMs = 0;
-    // l'ultima Clinica in cui sei entrato è quella in cui rinasci dopo una sconfitta
+    // l'ultima Banca in cui sei entrato è quella in cui rinasci dopo una sconfitta
     if (/^clinic_\d+$/.test(id)) S.lastClinic = { map: id, x: 5, y: 4 };
     this.walk = undefined;
     this.children.list.filter((c) => c !== this.overlay && c !== this.weather).forEach((c) => c.destroy());
@@ -216,7 +212,7 @@ export class WorldScene extends Phaser.Scene {
     this.map.tiles.forEach((row, yy) => row.forEach((t, xx) => { if (ANIMATED.has(t)) this.animCells.push([xx, yy]); }));
     const ts = this.tilemap.addTilesetImage('tiles', 'tiles', P, P, 0, 0, 0)!;
     this.layer = this.tilemap.createLayer(0, ts, 0, 0)!;
-    // insegne sul muro frontale degli edifici speciali (Clinica, Palestra, ...): le case normali non ne hanno
+    // insegne sul muro frontale degli edifici speciali (Banca, Palestra, ...): le case normali non ne hanno
     for (const pl of this.map.plaques ?? []) {
       const key = `plaque_${pl.kind}_${pl.text}`;
       if (!this.textures.exists(key)) this.textures.addCanvas(key, drawPlaque(pl.text, pl.kind));
@@ -584,7 +580,7 @@ export class WorldScene extends Phaser.Scene {
     this.updateHud(true);
   }
 
-  /** Sfida di un allenatore che ti nota: (se serve) si gira verso di te, "!", ti viene incontro e parte il duello a quiz. */
+  /** Sfida di un allenatore che ti nota: (se serve) si gira verso di te, "$", ti viene incontro e parte il duello a quiz. */
   async challenge(n: NpcSprite, turn: boolean) {
     if (turn && n.spr) {
       const dx = S.x - n.x, dy = S.y - n.y;
@@ -595,7 +591,7 @@ export class WorldScene extends Phaser.Scene {
     await this.exclaim(n.def.id);
     await this.approach(n.def.id);
     await interact(n.def, this.api());
-    // se perde contro un allievo, defeatRespawn (scripts.ts) lo riporta nella Clinica della stessa città
+    // se perde contro un allievo, defeatRespawn (scripts.ts) lo riporta nella Banca della stessa città
   }
 
   async exclaim(id: string) {

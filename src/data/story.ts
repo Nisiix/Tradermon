@@ -34,11 +34,11 @@ export interface MentorDef {
 
 const COMMON: Record<number, Omit<MentorDef, 'name' | 'technique' | 'techDesc'> & { name?: string; technique?: string; techDesc?: string }> = {
   1: { n: 1, name: 'Gaia Primo', badge: 'Medaglia Seme', technique: 'Lettura del Ticker', techDesc: 'L\'Investidex mostra i fondamentali delle carte (livello 2).', intro: 'Ogni grande albero è stato un seme. Vediamo se sai cosa stai piantando.', win: 'Hai radici solide. Ora vediamo se crescono anche sul mercato vero.', palette: 2 },
-  2: { n: 2, name: 'Orazio Limite', badge: 'Medaglia Ordine', technique: 'Ordine Limite', techDesc: 'Puoi usare ordini limite veri in Clinica e nella Macchina del Tempo.', intro: 'Al porto chi non sa dare ordini precisi affonda. Mostrami la tua rotta!', win: 'Ordini chiari, rotta sicura. Il treno ora ti aspetta.', palette: 3 },
-  3: { n: 3, name: 'Vera Varia', badge: 'Medaglia Mosaico', technique: 'Ribilanciamento', techDesc: 'La Clinica calcola quanto il conto si è allontanato dalla tua allocazione obiettivo. Gli ordini li scegli tu.', intro: 'Un mosaico con un solo colore è solo un muro. Sei pront{o|a} a diversificare?', win: 'Che bel mosaico! Porta con te l\'arte del ribilanciamento.', palette: 4 },
+  2: { n: 2, name: 'Orazio Limite', badge: 'Medaglia Ordine', technique: 'Ordine Limite', techDesc: 'Puoi usare ordini limite veri in Banca e nella Macchina del Tempo.', intro: 'Al porto chi non sa dare ordini precisi affonda. Mostrami la tua rotta!', win: 'Ordini chiari, rotta sicura. Il treno ora ti aspetta.', palette: 3 },
+  3: { n: 3, name: 'Vera Varia', badge: 'Medaglia Mosaico', technique: 'Ribilanciamento', techDesc: 'La Banca calcola quanto il conto si è allontanato dalla tua allocazione obiettivo. Gli ordini li scegli tu.', intro: 'Un mosaico con un solo colore è solo un muro. Sei pront{o|a} a diversificare?', win: 'Che bel mosaico! Porta con te l\'arte del ribilanciamento.', palette: 4 },
   4: { n: 4, name: 'Cosimo Composto', badge: 'Medaglia Spirale', technique: 'Piano di Accumulo', techDesc: 'Acquisti mensili nella Macchina del Tempo e nella Zona Simulazione. Sul conto di gioco il tuo piano di accumulo sono le rate di tappa.', intro: 'Il tempo è il mio alleato e i costi il mio nemico. E i tuoi?', win: 'Hai capito la spirale del composto. Piano piano, si va lontano.', palette: 5 },
   7: { n: 7, name: 'Serena Bias', badge: 'Medaglia Specchio', technique: 'Mente Fredda', techDesc: 'Le notizie urlate non ti smuovono più: puoi attraversare il Muro del Rumore sul Percorso 7.', intro: 'Il nemico più pericoloso dell\'investitore lo vedi ogni mattina allo specchio.', win: 'Hai guardato le tue emozioni senza farti guidare. Mente fredda, cuore caldo.', palette: 6 },
-  8: { n: 8, name: 'Rocco Rischio', badge: 'Medaglia Scudo', technique: 'Stop Loss', techDesc: 'Puoi usare ordini stop veri in Clinica e nella Macchina del Tempo.', intro: 'Nessuno vince sempre. Vince chi sa quanto può perdere. Lo sai tu?', win: 'Il tuo scudo è pronto. La Lega ti aspetta all\'Altopiano.', palette: 7 },
+  8: { n: 8, name: 'Rocco Rischio', badge: 'Medaglia Scudo', technique: 'Stop Loss', techDesc: 'Puoi usare ordini stop veri in Banca e nella Macchina del Tempo.', intro: 'Nessuno vince sempre. Vince chi sa quanto può perdere. Lo sai tu?', win: 'Il tuo scudo è pronto. La Lega ti aspetta all\'Altopiano.', palette: 7 },
 };
 
 const M5: Record<AssetClass | 'mixed', Partial<MentorDef>> = {
@@ -56,7 +56,7 @@ const M6: Record<AssetClass | 'mixed', Partial<MentorDef>> = {
 
 export function mentor(n: number, track: Track): MentorDef {
   if (n === 5) return { n, badge: 'Medaglia Lente', palette: 8, win: 'Ora vedi oltre la superficie. L\'Archivio di questa città è aperto per te.', ...(M5[track] as Partial<MentorDef>) } as MentorDef;
-  if (n === 6) return { n, badge: 'Medaglia Raccolto', palette: 9, technique: 'Reinvestimento', techDesc: 'Sai leggere il rendimento da dividendo: in Clinica la voce «Dividendi» mostra quali dei tuoi titoli ne pagano. (Il conto Paper non li simula: li vedi all\'opera nella missione.)', win: 'Il raccolto è tuo. Ricorda: reinvestire è seminare di nuovo.', ...(M6[track] as Partial<MentorDef>) } as MentorDef;
+  if (n === 6) return { n, badge: 'Medaglia Raccolto', palette: 9, technique: 'Reinvestimento', techDesc: 'Sai leggere il rendimento da dividendo: in Banca la voce «Dividendi» mostra quali dei tuoi titoli ne pagano. (Il conto Paper non li simula: li vedi all\'opera nella missione.)', win: 'Il raccolto è tuo. Ricorda: reinvestire è seminare di nuovo.', ...(M6[track] as Partial<MentorDef>) } as MentorDef;
   return COMMON[n] as MentorDef;
 }
 
@@ -98,7 +98,7 @@ export const TRAINER_TIPS = [
   'Consiglio: leggi sempre le spiegazioni, anche delle risposte giuste.',
   'Alla Biblioteca puoi ripassare le domande che hai sbagliato.',
   'Le Zone di Mercato pescano prima le domande che sbagli più spesso.',
-  'La Dott.ssa Ratio cura i bias con una riflessione: non servono pozioni.',
+  'In Banca la Dott.ssa Ratio smonta i bias con una riflessione: non servono scorciatoie.',
   'Il rendimento senza rischio non esiste. Diffida di chi lo promette.',
   'Un portafoglio con settori diversi soffre meno negli eventi di settore.',
 ];

@@ -1,7 +1,7 @@
 import { RS } from './art';
 
 /**
- * Insegne degli edifici (CLINICA, PALESTRA, ...): un piccolo font bitmap in pixel art, disegnato
+ * Insegne degli edifici (BANCA, PALESTRA, ...): un piccolo font bitmap in pixel art, disegnato
  * alla scala interna RS così resta nitido come il resto della grafica (non dipende dal caricamento dei web font).
  */
 const GLYPHS: Record<string, string[]> = {
@@ -31,7 +31,7 @@ const GLYPHS: Record<string, string[]> = {
 const GRAVE: Record<string, string> = { 'Ò': 'O', 'À': 'A', 'È': 'E', 'Ì': 'I', 'Ù': 'U' };
 
 export const PLAQUE_COLORS = {
-  clinic: { bg: '#d84848', hi: '#f07070', text: '#ffffff', edge: '#5a1418' },
+  clinic: { bg: '#1f6a4a', hi: '#3a8a64', text: '#f6dc78', edge: '#0c2a1e' },
   gym: { bg: '#2f4fa8', hi: '#4a6cc8', text: '#ffe060', edge: '#101c48' },
   public: { bg: '#f2e6c4', hi: '#fff6dc', text: '#5a3a1c', edge: '#4a3020' },
 } as const;

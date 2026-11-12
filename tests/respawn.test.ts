@@ -6,8 +6,8 @@ import { newGame } from '../src/systems/state';
 import { pickQuestions } from '../src/systems/quiz';
 import { mentorTopics } from '../src/data/quiz/build';
 
-describe('rinascita in Clinica', () => {
-  it('ogni mappa di città (anche gli interni) ha una Clinica della stessa città', () => {
+describe('rinascita in Banca', () => {
+  it('ogni mappa di città (anche gli interni) ha una Banca della stessa città', () => {
     for (const id of allMapIds()) {
       const t = townOf(id);
       if (t === undefined) continue;
@@ -16,7 +16,7 @@ describe('rinascita in Clinica', () => {
       expect(c.npcs.some((n) => n.kind === 'nurse')).toBe(true);
     }
   });
-  it('le Accademie e le case portano alla Clinica della loro città; i Percorsi no', () => {
+  it('le Accademie e le case portano alla Banca della loro città; i Percorsi no', () => {
     expect(townOf('academy_3')).toBe(3);
     expect(townOf('clinic_5')).toBe(5);
     expect(townOf('home')).toBe(0);
@@ -26,17 +26,17 @@ describe('rinascita in Clinica', () => {
 });
 
 describe('insegne degli edifici', () => {
-  it('Clinica e Palestra hanno l\'insegna in ogni città, le case no', () => {
+  it('Banca e Palestra hanno l\'insegna in ogni città, le case no', () => {
     for (let n = 1; n <= 8; n++) {
       const m = getMap(`t${n}`);
       const texts = (m.plaques ?? []).map((p) => p.text);
-      expect(texts).toContain('CLINICA');
+      expect(texts).toContain('BANCA');
       expect(texts).toContain('PALESTRA');
       // nessuna insegna davanti alla porta di una casa abitata
       for (const w of m.warps.filter((x) => /^h\d+_/.test(x.to))) expect(m.plaques!.some((p) => p.x === w.x && p.y === w.y - 1)).toBe(false);
     }
-    expect(getMap('t0').plaques!.map((p) => p.text)).toContain('CLINICA');
-    expect(getMap('t9').plaques!.map((p) => p.text)).toContain('CLINICA');
+    expect(getMap('t0').plaques!.map((p) => p.text)).toContain('BANCA');
+    expect(getMap('t9').plaques!.map((p) => p.text)).toContain('BANCA');
   });
   it('negli edifici con insegna le finestre stanno nella fila bassa, mai sulla porta', () => {
     for (const id of allMapIds()) {

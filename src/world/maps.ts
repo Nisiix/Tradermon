@@ -223,7 +223,7 @@ function buildHomeTown() {
       ...(t0House ? [t0House] : []),
     ],
     signs: [{ x: 11, y: 8, text: ['BORGO SEMINA', 'Dove ogni investitore pianta il primo seme.'] }],
-    plaques: [plaque(lab, 'LABORATORIO'), plaque(clinic, 'CLINICA', 'clinic')],
+    plaques: [plaque(lab, 'LABORATORIO'), plaque(clinic, 'BANCA', 'clinic')],
   };
   clearUnderPlaques(m);
   MAPS.t0 = m;
@@ -251,7 +251,7 @@ function buildHomeTown() {
 // ---------------- Città 1..8 ----------------
 
 function addClinic(n: number, dx: number, dy: number, back: string) {
-  const c = interior(`clinic_${n}`, 'Clinica del Portafoglio', 11, 9, back, dx, dy);
+  const c = interior(`clinic_${n}`, 'Banca del Portafoglio', 11, 9, back, dx, dy);
   rect(c.tiles, 3, 3, 5, 1, TILE.COUNTER);
   c.tiles[2][9] = TILE.PC; c.tiles[2][1] = TILE.PLANT; c.tiles[7][1] = TILE.PLANT; c.tiles[7][9] = TILE.PLANT;
   c.npcs.push(
@@ -316,7 +316,7 @@ function buildTown(n: number) {
       ...houseWarps,
     ],
     signs: [{ x: 2, y: 8, text: [def.name.toUpperCase(), `Accademia di ${def.name}: Mentore n. ${n}.`] }],
-    plaques: [plaque(clinic, 'CLINICA', 'clinic'), plaque(lib, 'BIBLIOTECA'), plaque(acad, 'PALESTRA', 'gym')],
+    plaques: [plaque(clinic, 'BANCA', 'clinic'), plaque(lib, 'BIBLIOTECA'), plaque(acad, 'PALESTRA', 'gym')],
   };
   if (n === 3) m.npcs.push({ id: 't3_rival', x: 15, y: 10, pal: 5, dir: 2, name: 'Rivale', kind: 'rival', data: { n: 3 } });
   addClinic(n, clinic.dx, clinic.dy, id);
@@ -424,7 +424,7 @@ function buildLeagueTown() {
       { x: tower.dx, y: tower.dy, to: 'tower', tx: 5, ty: 7, dir: 1, lock: 'tower' },
     ],
     signs: [],
-    plaques: [plaque(league, 'LEGA'), plaque(clinic, 'CLINICA', 'clinic'), plaque(tower, 'TORRE')] };
+    plaques: [plaque(league, 'LEGA'), plaque(clinic, 'BANCA', 'clinic'), plaque(tower, 'TORRE')] };
   clearUnderPlaques(m);
   MAPS.t9 = m;
   addClinic(9, clinic.dx, clinic.dy, 't9');
