@@ -269,12 +269,22 @@ league.className = 'badge league';
 league.innerHTML = `<span class="medal ml" aria-hidden="true"></span><b>Lega degli Investitori</b><span>Altopiano</span><span class="small">4 Superiori e il Campione</span>`;
 badges.append(league);
 
-// ---------------- Donazioni in crypto ----------------
+// ---------------- Donazioni: PayPal e crypto ----------------
+// Tutto da config/donazioni.json: link PayPal (paypal.me o paypal.com) e/o indirizzi crypto. Se manca tutto, l'invito non compare.
+
+const paypal = String((donazioni as { paypal?: string }).paypal ?? '').trim();
+if (/^https:\/\/(www\.)?(paypal\.me|paypal\.com)\//i.test(paypal)) {
+  const a = $<HTMLAnchorElement>('#dona-paypal');
+  a.href = paypal;
+  a.hidden = false;
+  $('#dona').hidden = false;
+}
 
 interface Indirizzo { rete: string; valute?: string; indirizzo: string }
 const list = ((donazioni as { indirizzi?: Indirizzo[] }).indirizzi ?? []).filter((d) => d && d.rete && d.indirizzo && d.indirizzo.trim());
 if (list.length) {
   $('#dona').hidden = false;
+  $('#dona-crypto').hidden = false;
   const box = $<HTMLDialogElement>('#donate-box');
   const tabs = $('#donate-tabs');
   const body = $('#donate-body');
