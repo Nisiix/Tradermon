@@ -1,3 +1,4 @@
+import { g, gtext } from '../systems/gender';
 import { revealedProfile } from '../systems/mirror';
 import { S, save, level, xpToNext, cardLevel, slots, exportSave } from '../systems/state';
 import { choose, modal, esc, say, el, toast, bar } from './core';
@@ -154,8 +155,8 @@ async function badges() {
     }
     h += '</div>';
     const ab = [{ a: ABILITY.swim, ok: canSwim() }, { a: ABILITY.cut, ok: S.badges >= ABILITY.cut.badge }, { a: ABILITY.transfer, ok: canTransfer() }, { a: ABILITY.dark, ok: S.badges >= ABILITY.dark.badge }, { a: ABILITY.cold, ok: S.badges >= 7 }];
-    h += `<h4>Abilità di esplorazione</h4>${ab.map(({ a, ok }) => `<p class="small" style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b> (Attestato ${a.badge}): ${ok ? esc(a.desc) : 'non ancora ottenuta.'}</p>`).join('')}`;
-    if (S.flags.champion) h += '<p class="good"><b>Campione della Lega degli Investitori</b></p>';
+    h += `<h4>Abilità di esplorazione</h4>${ab.map(({ a, ok }) => `<p class="small" style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b> (Attestato ${a.badge}): ${ok ? esc(gtext(a.desc)) : 'non ancora ottenuta.'}</p>`).join('')}`;
+    if (S.flags.champion) h += `<p class="good"><b>${g('Campione', 'Campionessa')} della Lega degli Investitori</b></p>`;
     if (S.legends.length) h += `<p>Crisi leggendarie superate: ${S.legends.length}/5</p>`;
     if (S.boss.beaten.length) h += `<p>Boss dei Mercati battuti: ${S.boss.beaten.length}/3</p>`;
     h += '<p class="small muted">Ogni Medaglia ha due metà: l\'Attestato (il duello con il Mentore) apre la strada e la Tecnica; il Sigillo pratico (missione su dati reali ed esercizio sul conto) la completa. Per la Lega servono otto Medaglie complete.</p>';
@@ -167,6 +168,7 @@ async function badges() {
 async function options() {
   await modal('Opzioni', ({ body, button, close }) => {
     body.innerHTML = `
+      <label style="display:block;margin-bottom:6px">Protagonista <select class="tx gd"><option value="m">Ragazzo</option><option value="f">Ragazza</option></select></label>
       <label>Velocità del testo <select class="tx ts"><option value="0">Lenta</option><option value="1">Normale</option><option value="2">Veloce</option><option value="3">Istantanea</option></select></label>
       <label style="display:block;margin-top:6px">Dimensione del testo <select class="tx fs"><option value="0.9">Piccola</option><option value="1">Normale</option><option value="1.2">Grande</option><option value="1.4">Molto grande</option></select></label>
       <label style="display:block;margin-top:6px">Effetti sonori <input class="vol" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
@@ -180,6 +182,7 @@ async function options() {
       <p class="small muted" style="margin:2px 0 0">Se una Prova sul conto viene annullata (vendita, stop, vendita forzata della leva, bancarotta) il risultato viene ignorato e prosegui lo stesso. Non salta la Prova: va comunque affrontata. <span class="bad">${esc(Acc.IGNORE_WARNING)}</span></p>
       <p class="small muted">${cloudPlayer() ? `Giocatore <b>${esc(cloudPlayer()!.name)}</b>: la partita è salvata online e la ritrovi su qualsiasi dispositivo entrando con nome e password. Le chiavi Alpaca non sono mai nel salvataggio: restano solo su questo dispositivo, cifrate con la tua password.` : 'Nessun giocatore collegato: il salvataggio resta solo in questo browser.'} Puoi sempre esportarne una copia come file.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
     const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
+    q<HTMLSelectElement>('.gd').value = S.gender ?? 'm';
     q<HTMLSelectElement>('.ts').value = String(S.options.textSpeed);
     q<HTMLSelectElement>('.fs').value = String(S.options.fontScale);
     q<HTMLInputElement>('.vol').value = String(S.options.volume);
@@ -197,6 +200,7 @@ async function options() {
     if (cloudPlayer()) button('Elimina il mio giocatore', () => { close(); void deletePlayer(); });
     button('Privacy', () => { window.open(PRIVACY_URL, '_blank', 'noopener'); });
     button('Applica', () => {
+      S.gender = q<HTMLSelectElement>('.gd').value === 'f' ? 'f' : 'm';
       S.options.textSpeed = Number(q<HTMLSelectElement>('.ts').value);
       S.options.fontScale = Number(q<HTMLSelectElement>('.fs').value);
       S.options.volume = Number(q<HTMLInputElement>('.vol').value);

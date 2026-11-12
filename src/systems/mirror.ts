@@ -74,7 +74,7 @@ export function mirrorReport(declared: RiskProfile = S.profile, obs = mirrorObs(
   const n = obs.length;
   const avg = (f: (o: MirrorObs) => number) => obs.reduce((s, o) => s + f(o), 0) / n;
   const facts: string[] = [];
-  facts.push(`In ${n} missioni sei rimasto investito in media al ${Math.round(avg((o) => o.inv) * 100)}% e hai sopportato cali fino al ${Math.round(Math.max(...obs.map((o) => o.mdd)) * 100)}%.`);
+  facts.push(`In ${n} missioni sei rimast{o|a} investit{o|a} in media al ${Math.round(avg((o) => o.inv) * 100)}% e hai sopportato cali fino al ${Math.round(Math.max(...obs.map((o) => o.mdd)) * 100)}%.`);
   const losses = obs.reduce((s, o) => s + o.loss, 0);
   if (losses > 0) facts.push(`Hai venduto in perdita ${losses} ${losses === 1 ? 'volta' : 'volte'}${obs.some((o) => o.loss >= 2) ? ', spesso proprio nei momenti di calo' : ''}.`);
   else facts.push('Non hai mai venduto in perdita: quando il mercato scendeva, hai tenuto.');
@@ -86,7 +86,7 @@ export function mirrorReport(declared: RiskProfile = S.profile, obs = mirrorObs(
     ? [`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}. Dire e fare coincidono.`, 'È più raro di quanto sembri. Conoscersi così bene è il primo scudo contro le decisioni prese di pancia.']
     : gap < 0
       ? [`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}, più prudente.`, 'Succede a molti: a mente fredda ci sentiamo coraggiosi, poi quando le perdite sono vere l\'avversione alle perdite prende il comando.', 'Un piano scritto prima del calo, e un\'allocazione che ti fa dormire, valgono più di un profilo ambizioso.']
-      : [`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}, più rischioso.`, 'Hai rischiato più di quanto dici di sopportare. Può essere fiducia in te stesso, ma anche eccesso di sicurezza.', 'Chiediti se reggeresti gli stessi cali con soldi veri: se la risposta è no, il tuo portafoglio dovrebbe seguire il profilo dichiarato.'];
+      : [`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}, più rischioso.`, 'Hai rischiato più di quanto dici di sopportare. Può essere fiducia in te stess{o|a}, ma anche eccesso di sicurezza.', 'Chiediti se reggeresti gli stessi cali con soldi veri: se la risposta è no, il tuo portafoglio dovrebbe seguire il profilo dichiarato.'];
   return { revealed, lines: [...verdict, ...facts] };
 }
 

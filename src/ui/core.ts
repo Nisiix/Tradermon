@@ -1,6 +1,7 @@
 import { pushHandler, popHandler, type Key } from './input';
 import { beep } from '../systems/audio';
 import { S } from '../systems/state';
+import { gtext } from '../systems/gender';
 
 let stage: HTMLElement;
 
@@ -23,7 +24,7 @@ export function esc(s: string): string {
 
 /** Sostituisce i segnaposto {nome}, {rivale} nei testi. */
 export function fill(s: string): string {
-  return s.replace(/\{nome\}/g, S?.name ?? '').replace(/\{rivale\}/g, S?.rival ?? '');
+  return gtext(s.replace(/\{nome\}/g, S?.name ?? '').replace(/\{rivale\}/g, S?.rival ?? ''));
 }
 
 // ---------------- Dialoghi ----------------
@@ -205,7 +206,7 @@ let toastTimer = 0;
 export function toast(msg: string) {
   if (typeof document === 'undefined' || !stage) return;
   document.querySelectorAll('.toast').forEach((t) => t.remove());
-  const t = el('div', 'box toast', esc(msg));
+  const t = el('div', 'box toast', esc(gtext(msg)));
   stage.appendChild(t);
   clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => t.remove(), 2600);

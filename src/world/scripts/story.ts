@@ -24,7 +24,7 @@ import { reward, TRACK_LABEL, defeatRespawn } from './common';
 import type { WorldApi } from './common';
 
 export async function mom() {
-  if (!S.flags.starter) return say([`${S.name}, finalmente sei sveglio!`, 'Il Professor Saldi ti aspetta al Laboratorio, qui a Borgo Semina.', 'E ricorda: i soldi che servono per l\'affitto non si investono!'], 'Zia Mara');
+  if (!S.flags.starter) return say([`${S.name}, finalmente sei svegli{o|a}!`, 'Il Professor Saldi ti aspetta al Laboratorio, qui a Borgo Semina.', 'E ricorda: i soldi che servono per l\'affitto non si investono!'], 'Zia Mara');
   S.stats.fiducia = 100;
   beep('heal');
   return say(['Riposati un po\'. Ecco, la tua Fiducia è tornata al massimo.', 'Tuo zio diceva sempre: "Il mercato può restare irrazionale più a lungo di quanto tu resti solvibile".'], 'Zia Mara');
@@ -35,7 +35,7 @@ export async function mom() {
 export async function prof(w: WorldApi) {
   if (!S.flags.starter) {
     if (!S.flags.profIntro) {
-      await say(['Eccoti! Benvenuto nel mio Laboratorio.', 'A Capitalia si studia. I titoli veri si comprano fuori dalla regione, sui Mercati di Fuori: le borse del mondo reale, con prezzi veri e orari veri.', 'Su quel tavolo ci sono tre Valigette. Ognuna apre un percorso e contiene la scheda del tuo primo titolo vero, scelto da te in una piccola vetrina.', 'Blu: il Sentiero dei Titoli, le azioni delle aziende.', 'Verde: il Sentiero degli Indici, gli ETF.', 'Arancione: il Sentiero Cripto, la frontiera più rischiosa.', 'Avvicinati a una Valigetta per leggere la scheda. Oppure parla con me se vuoi un percorso misto.'], 'Prof. Saldi');
+      await say(['Eccoti! Benvenut{o|a} nel mio Laboratorio.', 'A Capitalia si studia. I titoli veri si comprano fuori dalla regione, sui Mercati di Fuori: le borse del mondo reale, con prezzi veri e orari veri.', 'Su quel tavolo ci sono tre Valigette. Ognuna apre un percorso e contiene la scheda del tuo primo titolo vero, scelto da te in una piccola vetrina.', 'Blu: il Sentiero dei Titoli, le azioni delle aziende.', 'Verde: il Sentiero degli Indici, gli ETF.', 'Arancione: il Sentiero Cripto, la frontiera più rischiosa.', 'Avvicinati a una Valigetta per leggere la scheda. Oppure parla con me se vuoi un percorso misto.'], 'Prof. Saldi');
       await say(['In ogni città c\'è un Mentore: battilo in un duello di conoscenza e avrai il suo Attestato, che apre la strada verso la città successiva. Il resto te lo spiegherà lui.'], 'Prof. Saldi');
       S.flags.profIntro = true;
     }
@@ -50,7 +50,7 @@ export async function prof(w: WorldApi) {
     return startTrack('mixed', w);
   }
   if (!caseOpen()) await say(['La tua Valigetta è ancora sigillata: si apre con il primo acquisto sul conto Alpaca Paper.', 'Collega il conto dal menu, voce "Chiavi API", e passa in una Clinica. Nel frattempo studia: Attestati e storia non aspettano il conto.'], 'Prof. Saldi');
-  if (S.badges >= 8 && S.defeated.includes('league_4')) return say(['Campione! Sono fiero di te.', 'Alla Torre delle Sfide trovi le crisi leggendarie e i Boss. E se vuoi, dalla Torre puoi iniziare una Nuova Partita+: da zero, con i tuoi trofei e la difficoltà Leggenda.'], 'Prof. Saldi');
+  if (S.badges >= 8 && S.defeated.includes('league_4')) return say(['{Campione|Campionessa}! Sono fiero di te.', 'Alla Torre delle Sfide trovi le crisi leggendarie e i Boss. E se vuoi, dalla Torre puoi iniziare una Nuova Partita+: da zero, con i tuoi trofei e la difficoltà Leggenda.'], 'Prof. Saldi');
   return say([`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8${S.badges ? ` · Sigilli pratici: ${S.seals}/8` : ''}.`, S.badges === 0 ? 'Il primo Mentore, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.' : 'Continua così, e ricorda di passare dalle Cliniche.', 'E non fidarti di chi ti promette guadagni garantiti!'], 'Prof. Saldi');
 }
 
@@ -166,7 +166,7 @@ export async function rival(n: NpcDef, w: WorldApi) {
   const lines: Record<number, string[]> = {
     2: [`${S.name}! Ti stavo aspettando.`, 'Ho guadagnato un sacco questa settimana. E tu?', 'Confrontiamo le nostre conoscenze... e i nostri portafogli!'],
     3: ['Anche tu a Diversia?', 'Qui tutti parlano di correlazioni. Io preferisco i risultati!'],
-    4: ['Sapevo che saresti arrivato fin qui.', 'Prima della Lega, un\'ultima sfida tra noi due. Niente sconti!'],
+    4: ['Sapevo che saresti arrivat{o|a} fin qui.', 'Prima della Lega, un\'ultima sfida tra noi due. Niente sconti!'],
   };
   await say(lines[k] ?? ['Sfida!'], S.rival);
   await rivalDuel(k, w);

@@ -1,3 +1,4 @@
+import { gtext } from '../systems/gender';
 import { S, hasTech, TECH } from '../systems/state';
 import { TOWNS, mentor } from '../data/story';
 import { getMap } from '../world/maps';
@@ -102,7 +103,7 @@ export async function openRegionMap(): Promise<string | undefined> {
         }
         body.appendChild(grid);
       }
-    } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale si sblocca battendo il Mentore di mezzo (Attestato ${TRANSFER_BADGE}). Intanto, dal secondo Attestato, le stazioni collegano le città visitate.`));
+    } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale lo sblocchi battendo il Mentore di mezzo (Attestato ${TRANSFER_BADGE}). Intanto, dal secondo Attestato, le stazioni collegano le città visitate.`));
     const ab = [
       { a: ABILITY.swim, ok: canSwim() },
       { a: ABILITY.cut, ok: canCut() },
@@ -110,7 +111,7 @@ export async function openRegionMap(): Promise<string | undefined> {
       { a: ABILITY.dark, ok: canSeeDark() },
       { a: ABILITY.cold, ok: hasTech(TECH.COLD) },
     ];
-    body.appendChild(el('div', 'small', ab.map(({ a, ok }) => `<p style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b>: ${ok ? esc(a.desc) : `si sblocca con l'Attestato ${a.badge} (${esc(mentor(a.badge, S.track).badge)}).`}</p>`).join('')));
+    body.appendChild(el('div', 'small', ab.map(({ a, ok }) => `<p style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b>: ${ok ? esc(gtext(a.desc)) : `si sblocca con l'Attestato ${a.badge} (${esc(mentor(a.badge, S.track).badge)}).`}</p>`).join('')));
     button('Chiudi', () => close(), 'primary');
   }, { wide: true });
   if (!dest) return undefined;
@@ -118,6 +119,6 @@ export async function openRegionMap(): Promise<string | undefined> {
   if (!(await confirm(`Trasferire il capitale a ${name}? Il regolamento è T+1: passerà un giorno di mercato.`))) return undefined;
   beep('ok');
   tick();
-  toast(`Trasferimento completato: benvenuto a ${name}.`);
+  toast(`Trasferimento completato: benvenut{o|a} a ${name}.`);
   return dest;
 }

@@ -39,7 +39,7 @@ export async function checkLink(force = false): Promise<Link> {
   if (!force && Date.now() - linkAt < 20_000) return link;
   const st = await A.serverStatus();
   linkAt = Date.now();
-  if (!st) link = { server: false, paper: false, reason: A.isLocalHost() ? 'Il server locale di Tradermon non risponde: avvialo come spiegato nel file README.' : 'Dal sito il conto Alpaca si collega dopo essere entrati con il proprio giocatore: ricarica la pagina ed entra con nome e password.' };
+  if (!st) link = { server: false, paper: false, reason: A.isLocalHost() ? 'Il server locale di Tradermon non risponde: avvialo come spiegato nel file README.' : 'Dal sito colleghi il conto Alpaca quando entri con il tuo giocatore: ricarica la pagina ed entra con nome e password.' };
   else link = { server: true, paper: st.paper.configured, reason: st.paper.configured ? '' : 'Le chiavi del conto Alpaca Paper non sono collegate.' };
   return link;
 }
@@ -530,7 +530,7 @@ function voidMandate(asset: string): string {
   const id = mandateOn(S.boss, asset);
   if (!id || !sellOut(S.boss, id)) return '';
   const tick = ASSET_BY_ID[asset]?.ticker ?? asset;
-  return `Hai venduto ${tick}, il titolo del tuo piano con ${BOSS_BY_ID[id]?.name ?? 'il Boss'}: il mandato è annullato. Non conta come sconfitta: la sfida si ripete da capo, quiz compreso, con un titolo diverso da ${tick}.`;
+  return `Hai venduto ${tick}, il titolo del tuo piano con ${BOSS_BY_ID[id]?.name ?? 'il Boss'}: il mandato è annullato. Non conta come sconfitta: ripeti la sfida da capo, quiz compreso, con un titolo diverso da ${tick}.`;
 }
 
 /** Registra nel piano del Boss le vendite che ne fanno parte: servono a dire quanto capitale del conto di gioco ha mosso il mandato. */

@@ -383,7 +383,7 @@ async function deposit() {
     'È tutto denaro finto del conto Paper di Alpaca: Tradermon è un gioco, non usa mai soldi reali e non ti chiederà mai di versarne.',
   ];
   if (!Acc.graduated()) { await say([...lines, 'Dopo la Lega potrai aumentare il capitale del conto di gioco da qui.'], NURSE); return; }
-  await say([...lines, 'Sei Campione: ora puoi aumentare il capitale del conto di gioco. È sempre denaro finto del conto Paper.'], NURSE);
+  await say([...lines, 'Sei {Campione|Campionessa}: ora puoi aumentare il capitale del conto di gioco. È sempre denaro finto del conto Paper.'], NURSE);
   const steps = [0.25, 0.5, 1];
   const c = await choose([...steps.map((f) => `Aggiungi ${fmtMoney(pf.initial * f)}`), 'Niente'], { cancel: true, who: NURSE });
   if (c < 0 || c >= steps.length) return;

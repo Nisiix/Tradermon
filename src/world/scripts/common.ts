@@ -46,7 +46,7 @@ export async function afterDuel(win: boolean, id: string, rep: number, w: WorldA
   tick();
   if (win) {
     reward({ defeated: id, rep });
-    await say(['Complimenti, sei preparato!', pick(TRAINER_TIPS)], who);
+    await say(['Complimenti, sei preparat{o|a}!', pick(TRAINER_TIPS)], who);
   } else {
     await say('Ah! Ripassa e riprova.', who);
     await defeatRespawn(w);
@@ -66,7 +66,7 @@ export async function defeatRespawn(w: WorldApi) {
   const dest = town !== undefined ? { map: `clinic_${town}`, x: 5, y: 4 } : S.lastClinic;
   const atHome = !dest.map.startsWith('clinic_');
   await say([
-    tilt ? `${S.name} ha perso tutta la Fiducia ed è andato in tilt!` : `${S.name} non è riuscito a rispondere alle domande e ha perso la sfida.`,
+    tilt ? 'Hai perso tutta la Fiducia e sei andat{o|a} in tilt!' : 'Non sei riuscit{o|a} a rispondere alle domande e hai perso la sfida.',
     atHome ? 'Torni di corsa a casa per riprenderti.' : town !== undefined ? 'Torni di corsa alla Clinica della città per riprenderti.' : 'Torni di corsa all\'ultima Clinica visitata per riprenderti.',
   ], 'Sistema');
   if (tilt) S.stats.reputazione = Math.round(S.stats.reputazione * 0.95);

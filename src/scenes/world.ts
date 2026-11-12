@@ -112,7 +112,7 @@ export class WorldScene extends Phaser.Scene {
       cm.colorMatrix.saturate(0.12).contrast(0.05);
     } catch { /* renderer Canvas: nessun filtro */ }
     this.applyGraphics();
-    window.addEventListener('tradermon:options', () => this.applyGraphics());
+    window.addEventListener('tradermon:options', () => { this.applyGraphics(); if (this.player?.active) this.setFacing(S.facing); });
     // un salvataggio fatto prima di uno spostamento degli edifici può trovarsi in un muro: si riparte dalla casella libera più vicina
     const startMap = getMap(S.map);
     if (startMap) [S.x, S.y] = safeSpot(startMap, S.x, S.y);
@@ -223,7 +223,7 @@ export class WorldScene extends Phaser.Scene {
       this.add.image((pl.x + 0.5) * P, pl.y * P - 2 * RS, key).setOrigin(0.5, 0).setDepth(2);
     }
     this.cameras.main.setBackgroundColor(this.map.interior ? '#1b1b24' : '#2e7d32');
-    this.player = this.add.sprite(x * P + P / 2, y * P + P, 'chars', playerPal(S.avatar) * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
+    this.player = this.add.sprite(x * P + P / 2, y * P + P, 'chars', playerPal(S.avatar, S.gender) * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
     this.playerShadow = this.add.image(x * P + P / 2, y * P + P - RS, 'shadow').setDepth(4);
     this.raft = undefined;
     this.placeRaft(this.onWater(x, y));
@@ -387,7 +387,7 @@ export class WorldScene extends Phaser.Scene {
 
   setFacing(d: 'up' | 'down' | 'left' | 'right') {
     S.facing = d;
-    this.player.setFrame(playerPal(S.avatar) * 12 + DIRS[d][2] * 3);
+    this.player.setFrame(playerPal(S.avatar, S.gender) * 12 + DIRS[d][2] * 3);
   }
 
   /** Cammina contro un ostacolo: passo sul posto e suono, come nei classici (senza ripetere il suono a raffica). */
@@ -398,9 +398,9 @@ export class WorldScene extends Phaser.Scene {
     beep('bump');
     // l'animazione non blocca i comandi: si può girare e ripartire subito
     this.walkFrame = (this.walkFrame + 1) % 2;
-    this.player.setFrame(playerPal(S.avatar) * 12 + di * 3 + 1 + this.walkFrame);
+    this.player.setFrame(playerPal(S.avatar, S.gender) * 12 + di * 3 + 1 + this.walkFrame);
     const token = ++this.bumpToken;
-    this.time.delayedCall(200, () => { if (token === this.bumpToken && !this.walk) this.player.setFrame(playerPal(S.avatar) * 12 + DIRS[S.facing][2] * 3); });
+    this.time.delayedCall(200, () => { if (token === this.bumpToken && !this.walk) this.player.setFrame(playerPal(S.avatar, S.gender) * 12 + DIRS[S.facing][2] * 3); });
   }
 
   /** continuing: il giocatore stava già camminando, quindi un cambio di direzione cammina subito. */
@@ -451,7 +451,7 @@ export class WorldScene extends Phaser.Scene {
     const k = Math.min(1, w.t / STEP_MS);
     this.player.setPosition((w.fx + (w.tx - w.fx) * k) * P + P / 2, (w.fy + (w.ty - w.fy) * k) * P + P);
     // primo mezzo passo con il piede avanti, secondo mezzo in piedi: l'andatura dei classici
-    const base = playerPal(S.avatar) * 12 + w.di * 3;
+    const base = playerPal(S.avatar, S.gender) * 12 + w.di * 3;
     this.player.setFrame(k < 0.5 ? base + 1 + this.walkFrame : base);
     this.placeRaft(this.onWater(k < 0.5 ? w.fx : w.tx, k < 0.5 ? w.fy : w.ty));
   }
@@ -561,7 +561,7 @@ export class WorldScene extends Phaser.Scene {
   /** Taglio dei Costi: frantuma un Masso delle Commissioni (resta rotto nel salvataggio). */
   async breakBoulder(x: number, y: number) {
     if (!canCut()) return say(['Un masso enorme, pieno di crepe a forma di "%". Le chiamano Massi delle Commissioni.', `Con il ${ABILITY.cut.name} (Attestato ${ABILITY.cut.badge}) potresti toglierlo di mezzo.`]);
-    if ((await choose(['Sì', 'No'], { prompt: `Un Masso delle Commissioni blocca il passaggio. Usare ${ABILITY.cut.name}?`, cancel: true })) !== 0) return;
+    if ((await choose(['Sì', 'No'], { prompt: `Un Masso delle Commissioni blocca il passaggio. Vuoi usare ${ABILITY.cut.name}?`, cancel: true })) !== 0) return;
     beep('bump');
     S.flags[boulderFlag(S.map, x, y)] = true;
     this.cameras.main.shake(180, 0.006);

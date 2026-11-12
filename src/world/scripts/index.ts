@@ -105,9 +105,9 @@ function memoryLine(id: string, visits: number): string {
   // il grado di Reputazione cambia il saluto: la prima volta che ti vedono con un grado nuovo, lo notano
   const tier = repTier().index;
   if (tier > (S.npcMemory[`${id}_t`] ?? 0)) { S.npcMemory[`${id}_t`] = tier; if (visits > 0) return repGreeting(); }
-  if (visits === 1) return 'Di nuovo tu! Sei tornato a trovarmi.';
+  if (visits === 1) return 'Di nuovo tu! Sei tornat{o|a} a trovarmi.';
   if (S.title && visits % 3 === 2) return `Dicono che ora ti chiamano «${S.title}».`;
-  if (S.daily.streak >= 3 && visits % 3 === 0) return `Ho sentito che rispondi alla domanda del giorno da ${S.daily.streak} giorni di fila. Bravo!`;
+  if (S.daily.streak >= 3 && visits % 3 === 0) return `Ho sentito che rispondi alla domanda del giorno da ${S.daily.streak} giorni di fila. Brav{o|a}!`;
   if (visits >= 4) return `Ci siamo già parlati ${visits} volte, non te lo dimenticare!`;
   return '';
 }

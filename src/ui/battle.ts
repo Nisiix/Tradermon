@@ -1,3 +1,4 @@
+import { gtext } from '../systems/gender';
 import { play, stop, currentTrack, jingle } from '../systems/music';
 import { track } from '../systems/progress';
 import type { Question } from '../types';
@@ -69,7 +70,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       <div class="arena">
         <div class="box plate foe-p"><div class="nm">${esc(o.foeName)}${o.foeTitle ? ` <span class="muted">· ${esc(o.foeTitle)}</span>` : ''}</div><div class="small">Convinzione</div><div class="foebar">${bar(100)}</div></div>
         <div class="foe"><img class="sprite" src="${portrait(o.foePal)}" alt=""></div>
-        <div class="me"><img class="sprite" src="${portraitBack(playerPal(S.avatar))}" alt=""></div>
+        <div class="me"><img class="sprite" src="${portraitBack(playerPal(S.avatar, S.gender))}" alt=""></div>
         <div class="box plate me-p"><div class="nm">${esc(S.name)}${S.title ? ` <span class="muted">· ${esc(S.title)}</span>` : ''}</div>${o.practice ? '<div class="small">Allenamento · nessun rischio</div>' : `<div class="small">${risky ? 'Fiducia' : 'Tenuta'} <span class="fv">${lifeShown(life)}</span>/100 · <span class="el"></span></div><div class="mebar">${bar(lifeShown(life))}</div>`}</div>
       </div>
       <div class="box q"><div class="qhead row" style="justify-content:space-between"><span class="small muted qn"></span><span class="timer"></span></div><div class="qt"></div><div class="opts"></div><div class="exp"></div></div>`;
@@ -121,7 +122,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       const q = o.questions[idx];
       idx++;
       $('.qn').textContent = `Domanda ${idx}/${o.questions.length} · servono ${o.need} risposte giuste`;
-      $('.qt').textContent = q.q;
+      $('.qt').textContent = gtext(q.q);
       $('.exp').innerHTML = '';
       const order = shuffle([0, 1, 2, 3]);
       const optsEl = $('.opts');
@@ -129,7 +130,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       const render = () => {
         optsEl.innerHTML = '';
         order.forEach((oi, i) => {
-          const b = el('button', 'btn' + (i === sel ? ' sel' : ''), `${'ABCD'[i]}. ${esc(q.options[oi])}`);
+          const b = el('button', 'btn' + (i === sel ? ' sel' : ''), `${'ABCD'[i]}. ${esc(gtext(q.options[oi]))}`);
           b.addEventListener('click', () => answer(i));
           optsEl.appendChild(b);
         });
@@ -173,9 +174,9 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         if (risky) S.stats.fiducia = lifeShown(life);
         drawMe();
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
-        const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(q.options[q.answer])}`;
+        const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(gtext(q.options[q.answer]))}`;
         const hint = ok ? '' : studyHint(q);
-        $('.exp').innerHTML = `<p>${verdict} ${esc(q.explain)}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
+        $('.exp').innerHTML = `<p>${verdict} ${esc(gtext(q.explain))}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
         const cont = el('button', 'btn primary', 'Continua ▶');
         cont.style.marginTop = '6px';
         $('.exp').appendChild(cont);
@@ -192,7 +193,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       });
     };
 
-    if (o.intro) $('.qt').textContent = o.intro;
+    if (o.intro) $('.qt').textContent = gtext(o.intro);
     setTimeout(() => void ask(), o.intro ? 1400 : 300);
   });
 }
