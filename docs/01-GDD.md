@@ -59,7 +59,7 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 | 8 | Presentazione del rivale: Leo, un bambino rimasto senza famiglia che il Prof ha adottato e cresciuto (il nome è fisso; i vecchi salvataggi tengono quello scelto) | — | Dialoghi del rivale |
 | 9 | Risveglio in camera, si scende, si va al Laboratorio | — | Tutorial di movimento |
 | 10 | **La scelta delle Valigette** | Percorso: Titoli / ETF / Cripto (oppure Misto parlando col Professore) | Tutta la storia |
-| 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, allocazione obiettivo | Simulatore e Banca |
+| 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, allocazione obiettivo assegnata dal questionario | Simulatore e Banca |
 | 12 | Si usano soldi veri? | Il Professore spiega che il gioco usa solo denaro finto, sul conto Paper | Tessera da Apprendista nel menu |
 | 13 | Primo duello col rivale (3 domande facili) | — | Tutorial del quiz |
 | 14 | Primo acquisto guidato alla Banca di Borgo Semina | La Valigetta diventa una posizione in portafoglio | Tutorial della Banca |

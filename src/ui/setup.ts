@@ -74,7 +74,7 @@ export async function onboarding(playerName?: string): Promise<void> {
   S.profileScore = score;
   S.profile = profileFromScore(score);
   const desc = { prudente: 'PRUDENTE: preferisci la stabilità e oscillazioni contenute.', equilibrato: 'EQUILIBRATO: cerchi un compromesso tra crescita e tranquillità.', audace: 'AUDACE: tolleri bene le oscillazioni. Attent{o|a} però: audace non vuol dire avventato!' }[S.profile];
-  await say([`Il tuo profilo è ${desc}`, 'Non è una raccomandazione: l\'allocazione del conto la scriverai tu, quando lo aprirai.'], 'Prof. Saldi');
+  await say([`Il tuo profilo è ${desc}`, 'Non è una raccomandazione: serve a conoscerti, e in base alle risposte preparerò il piano del tuo conto di gioco.'], 'Prof. Saldi');
   // il rivale: un bambino rimasto senza famiglia che il Prof ha adottato; ha un nome suo, non lo sceglie il giocatore
   S.rival = 'Leo';
   img.src = portrait(PAL.RIVAL); img.alt = 'Leo';

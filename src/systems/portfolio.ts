@@ -16,7 +16,7 @@ export function spreadOf(a: AssetDef): number {
   return a.cls === 'crypto' ? 0.005 : 0.001;
 }
 
-/** Valore iniziale interno dell'allocazione, sostituito subito da quella che il giocatore scrive all'apertura del conto. */
+/** Piano del conto (rischiosi, difensivi, liquidità) assegnato dal questionario di rischio. Solo conto Paper, denaro finto. */
 export function presetTarget(profile: string): { risky: number; defensive: number; cash: number } {
   return profile === 'prudente' ? { risky: 40, defensive: 50, cash: 10 } : profile === 'audace' ? { risky: 80, defensive: 10, cash: 10 } : { risky: 60, defensive: 30, cash: 10 };
 }
