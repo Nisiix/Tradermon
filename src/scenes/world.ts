@@ -197,7 +197,7 @@ export class WorldScene extends Phaser.Scene {
     }
     S.map = id; S.x = x; S.y = y; S.facing = DIR_NAME[dir];
     this.idleMs = 0;
-    // l'ultima Clinica in cui sei entrato è quella in cui rinasci dopo una sconfitta
+    // l'ultima Banca in cui sei entrato è quella in cui rinasci dopo una sconfitta
     if (/^clinic_\d+$/.test(id)) S.lastClinic = { map: id, x: 5, y: 4 };
     this.walk = undefined;
     this.children.list.filter((c) => c !== this.overlay && c !== this.weather).forEach((c) => c.destroy());
@@ -209,7 +209,7 @@ export class WorldScene extends Phaser.Scene {
     this.map.tiles.forEach((row, yy) => row.forEach((t, xx) => { if (ANIMATED.has(t)) this.animCells.push([xx, yy]); }));
     const ts = this.tilemap.addTilesetImage('tiles', 'tiles', P, P, 0, 0, 0)!;
     this.layer = this.tilemap.createLayer(0, ts, 0, 0)!;
-    // insegne sul muro frontale degli edifici speciali (Clinica, Palestra, ...): le case normali non ne hanno
+    // insegne sul muro frontale degli edifici speciali (Banca, Palestra, ...): le case normali non ne hanno
     for (const pl of this.map.plaques ?? []) {
       const key = `plaque_${pl.kind}_${pl.text}`;
       if (!this.textures.exists(key)) this.textures.addCanvas(key, drawPlaque(pl.text, pl.kind));
@@ -588,7 +588,7 @@ export class WorldScene extends Phaser.Scene {
     await this.exclaim(n.def.id);
     await this.approach(n.def.id);
     await interact(n.def, this.api());
-    // se perde contro un allievo, defeatRespawn (scripts.ts) lo riporta nella Clinica della stessa città
+    // se perde contro un allievo, defeatRespawn (scripts.ts) lo riporta nella Banca della stessa città
   }
 
   async exclaim(id: string) {

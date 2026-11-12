@@ -48,9 +48,9 @@ export async function prof(w: WorldApi) {
     S.mixedClasses = sets[s];
     return startTrack('mixed', w);
   }
-  if (!caseOpen()) await say(['La tua Valigetta è ancora sigillata: si apre con il primo acquisto sul conto Alpaca Paper.', 'Collega il conto dal menu, voce "Chiavi API", e passa in una Clinica. Nel frattempo studia: Attestati e storia non aspettano il conto.'], 'Prof. Saldi');
+  if (!caseOpen()) await say(['La tua Valigetta è ancora sigillata: si apre con il primo acquisto sul conto Alpaca Paper.', 'Collega il conto dal menu, voce "Chiavi API", e passa in una Banca. Nel frattempo studia: Attestati e storia non aspettano il conto.'], 'Prof. Saldi');
   if (S.badges >= 8 && S.defeated.includes('league_4')) return say(['Campione! Sono fiero di te.', 'Alla Torre delle Sfide trovi le crisi leggendarie e i Boss. E se vuoi, dalla Torre puoi iniziare una Nuova Partita+: da zero, con i tuoi trofei e la difficoltà Leggenda.'], 'Prof. Saldi');
-  return say([`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8 · Sigilli pratici: ${S.seals}/8.`, S.badges === 0 ? 'Il primo Mentore, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.' : 'Continua così, e ricorda di passare dalle Cliniche.', 'E non fidarti di chi ti promette guadagni garantiti!'], 'Prof. Saldi');
+  return say([`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8 · Sigilli pratici: ${S.seals}/8.`, S.badges === 0 ? 'Il primo Mentore, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.' : 'Continua così, e ricorda di passare dalle Banche.', 'E non fidarti di chi ti promette guadagni garantiti!'], 'Prof. Saldi');
 }
 
 async function moneyTalk() {
@@ -113,7 +113,7 @@ async function startTrack(track: S_Track, w: WorldApi) {
     const D = DIFFICULTY[S.difficulty];
     await say(['Apriamo la Valigetta con il primo acquisto, così vedi come funziona un ordine vero.', `Il minimo per aprirla è ${fmtMoney(capital() * RATE * (1 - D.tolerance))}. Se vuoi investire di più puoi: il capitale è tutto tuo, e anche il rischio. Se la Borsa è chiusa l'ordine parte lo stesso e si esegue all'apertura.`], 'Dott.ssa Ratio');
     if (await trade(true)) { await say('Valigetta aperta: il tuo primo titolo vero è nel conto, o in coda per l\'apertura dei mercati.', 'Dott.ssa Ratio'); }
-    else await say('Nessun acquisto per ora: la Valigetta resta sigillata. La apri quando vuoi, da una Clinica.', 'Dott.ssa Ratio');
+    else await say('Nessun acquisto per ora: la Valigetta resta sigillata. La apri quando vuoi, da una Banca.', 'Dott.ssa Ratio');
   }
   await moneyTalk();
   await say(['Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu (tasto M), insieme all\'Investidex, al tuo Profilo e alle Chiavi API.'], 'Prof. Saldi');

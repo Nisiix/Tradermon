@@ -32,7 +32,7 @@ const QUESTIONS: [string, string[]][] = [
 ];
 
 export async function questionnaire(): Promise<number> {
-  await say(['Rispondi con sincerità: non ci sono risposte giuste o sbagliate.', 'Il profilo non ti darà vantaggi né svantaggi. Nelle missioni però osserverò come ti comporti davvero quando il mercato scende: alla Clinica lo Specchio dell\'investitore ti mostrerà se dire e fare coincidono.'], 'Prof. Saldi');
+  await say(['Rispondi con sincerità: non ci sono risposte giuste o sbagliate.', 'Il profilo non ti darà vantaggi né svantaggi. Nelle missioni però osserverò come ti comporti davvero quando il mercato scende: alla Banca lo Specchio dell\'investitore ti mostrerà se dire e fare coincidono.'], 'Prof. Saldi');
   let score = 0;
   for (const [q, opts] of QUESTIONS) {
     const c = await choose(opts, { prompt: q, who: 'Prof. Saldi' });

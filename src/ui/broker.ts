@@ -158,7 +158,7 @@ export async function allocationForm(title: string, introHtml: string, current: 
 export async function openGameAccount(): Promise<boolean> {
   const D = DIFFICULTY[S.difficulty];
   await say([
-    'Ciao, sono la Dott.ssa Ratio! Lavoro nelle Cliniche del Portafoglio di tutta la regione.',
+    'Ciao, sono la Dott.ssa Ratio! Lavoro nelle Banche del Portafoglio di tutta la regione.',
     'Il Professore mi ha chiesto di aprirti il conto di gioco. A Capitalia si studia; i titoli veri si comprano sui Mercati di Fuori, attraverso un broker che si chiama Alpaca.',
     `Il tuo conto parte da ${fmtMoney(D.capital)}: è la difficoltà ${D.name}, e non cambia più. È denaro finto su un conto Paper, ma prezzi, orari e ordini sono quelli veri.`,
     `Il capitale è tutto tuo da subito. Ogni tappa ti chiede solo un minimo da investire: ${fmtMoney(D.capital * RATE * (1 - D.tolerance))} adesso, con la Valigetta, e altrettanto a ogni Attestato. Sopra il minimo decidi tu, anche tutto il capitale.`,
@@ -174,7 +174,7 @@ export async function openGameAccount(): Promise<boolean> {
   if (link.server) await apiKeysMenu();
   const ok = (await Acc.checkLink(true)).paper;
   if (ok) await Acc.sync(true);
-  else await say(['Nessun problema: la Valigetta resta sigillata e il tuo viaggio di studio comincia lo stesso.', 'Quando vorrai aprirla, collega il conto dal menu (voce "Chiavi API") e passa in una Clinica.'], NURSE);
+  else await say(['Nessun problema: la Valigetta resta sigillata e il tuo viaggio di studio comincia lo stesso.', 'Quando vorrai aprirla, collega il conto dal menu (voce "Chiavi API") e passa in una Banca.'], NURSE);
   return ok;
 }
 
@@ -278,7 +278,7 @@ async function bankruptcy(): Promise<void> {
   const pf = S.portfolio;
   const D = DIFFICULTY[S.difficulty];
   const eq = Acc.equity();
-  await say([`BANCAROTTA: il conto di gioco è arrivato a zero (${fmtMoney(Math.max(0, eq))}).`, 'Non resta abbastanza nemmeno per l\'ordine più piccolo. È il punto in cui un investitore vero ha perso tutto. Fermiamoci a capire come ci siamo arrivati: guarda la Cartella clinica.'], NURSE);
+  await say([`BANCAROTTA: il conto di gioco è arrivato a zero (${fmtMoney(Math.max(0, eq))}).`, 'Non resta abbastanza nemmeno per l\'ordine più piccolo. È il punto in cui un investitore vero ha perso tutto. Fermiamoci a capire come ci siamo arrivati: guarda la Estratto conto.'], NURSE);
   const canRestart = D.bankrupt === 'riparti' || (D.bankrupt === 'una-volta' && pf.bankruptcies < 1);
   if (!canRestart) {
     S.flags.bankrupt = true; save();

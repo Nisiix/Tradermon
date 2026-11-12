@@ -1,4 +1,4 @@
-// Funzioni comuni agli script dei PNG: API del mondo, esito dei duelli, risveglio in Clinica, rivincite con le domande sbagliate.
+// Funzioni comuni agli script dei PNG: API del mondo, esito dei duelli, recupero di credito in Banca, rivincite con le domande sbagliate.
 import { townOf, type NpcDef } from '../maps';
 import type { Question } from '../../types';
 import { S, save, addRep } from '../../systems/state';
@@ -54,8 +54,8 @@ export async function afterDuel(win: boolean, id: string, rep: number, w: WorldA
 }
 
 /**
- * Sconfitta in un duello: come nei classici, il giocatore si risveglia nella Clinica della città in cui si trova
- * (sui Percorsi, nell'ultima Clinica visitata; a casa se non ne ha ancora visitata una) con la Fiducia al massimo.
+ * Sconfitta in un duello: recupero di credito. Il giocatore torna alla Banca della città in cui si trova
+ * (sui Percorsi, nell'ultima Banca visitata; a casa se non ne ha ancora visitata una) con la Fiducia al massimo.
  */
 export async function defeatRespawn(w: WorldApi) {
   beep('lose');
@@ -65,14 +65,14 @@ export async function defeatRespawn(w: WorldApi) {
   const atHome = !dest.map.startsWith('clinic_');
   await say([
     tilt ? `${S.name} ha perso tutta la Fiducia ed è andato in tilt!` : `${S.name} non è riuscito a rispondere alle domande e ha perso la sfida.`,
-    atHome ? 'Torni di corsa a casa per riprenderti.' : town !== undefined ? 'Torni di corsa alla Clinica della città per riprenderti.' : 'Torni di corsa all\'ultima Clinica visitata per riprenderti.',
+    atHome ? 'Torni di corsa a casa per riprenderti.' : town !== undefined ? 'Torni alla Banca della città per un recupero di credito.' : 'Torni all\'ultima Banca visitata per un recupero di credito.',
   ], 'Sistema');
   if (tilt) S.stats.reputazione = Math.round(S.stats.reputazione * 0.95);
   S.stats.fiducia = 100;
   S.lastClinic = { ...dest };
   w.warp(dest.map, dest.x, dest.y, atHome ? 0 : 1);
   save();
-  if (!atHome) await say(['Ecco fatto: la tua Fiducia è tornata al massimo.', 'Ripassa con calma e ritenta la sfida quando vuoi!'], 'Dott.ssa Ratio');
+  if (!atHome) await say(['Una sconfitta non chiude il conto: ti riapriamo la linea di credito e la tua Fiducia torna al massimo.', 'Il debito lo ripaghi studiando. Ripassa con calma e ritenta la sfida quando vuoi!'], 'Dott.ssa Ratio');
 }
 
 /** Dopo una sconfitta con un Mentore o un Superiore: si riprova solo dopo aver studiato. */

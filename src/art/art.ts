@@ -796,7 +796,7 @@ export const PALETTES: CharPal[] = [
   { skin: '#e8b48a', hair: '#1f1f2a', shirt: '#3d8ee8', pants: '#3a3a3a' }, // 1 avatar B
   { skin: '#c98e62', hair: '#e8c547', shirt: '#3a9a5b', pants: '#4a3a2a' }, // 2 avatar C / Gaia
   { skin: '#f5c9a0', hair: '#8a8a8a', shirt: '#f2f2f2', pants: '#5a5a6a', extra: '#3d7fd9' }, // 3 Prof / Orazio
-  { skin: '#f0c0a0', hair: '#ff8ab0', shirt: '#ffffff', pants: '#ff8ab0' }, // 4 Dott.ssa Ratio / Vera
+  { skin: '#f0c0a0', hair: '#7a3a28', shirt: '#2c4a7a', pants: '#22345a' }, // 4 Dott.ssa Ratio (funzionaria della Banca) / Vera
   { skin: '#e8b48a', hair: '#3a2a1a', shirt: '#8a56c2', pants: '#2a2a3a' }, // 5 rivale / Cosimo
   { skin: '#d9a77a', hair: '#c8463d', shirt: '#7af0ff', pants: '#3a5a7a' }, // 6 Serena
   { skin: '#b5835a', hair: '#1f1f2a', shirt: '#5a5a6a', pants: '#2a2a2a' }, // 7 Rocco

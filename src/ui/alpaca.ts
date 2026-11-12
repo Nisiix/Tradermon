@@ -226,7 +226,7 @@ export async function restoreKeys(st: A.ServerStatus): Promise<boolean> {
   } catch (e) { toast(`Chiavi Paper non ripristinate: ${(e as Error).message}`); return false; }
 }
 
-/** Conto Alpaca Paper intero, in sola lettura: si opera dal conto di gioco nel Check-up della Clinica. */
+/** Conto Alpaca Paper intero, in sola lettura: si opera dal conto di gioco nel Check-up della Banca. */
 async function accountScreen() {
   const env: A.Env = 'paper';
   await modal('Conto Alpaca Paper', ({ body, button, close }) => {
@@ -235,7 +235,7 @@ async function accountScreen() {
       try {
         const [acc, pos, ord, clk] = await Promise.all([A.account(env), A.positions(env), A.openOrders(env), A.clock(env).catch(() => null)]);
         body.innerHTML = `
-          <p class="small muted">Conto Paper di Alpaca, intero: denaro finto, prezzi veri. Il <b>conto di gioco</b> è una parte di questo conto: lo trovi nel Check-up della Clinica, e si opera solo da lì (voce «Compra / Vendi»), così ogni ordine entra nel registro delle tappe. Qui si guarda soltanto.</p>
+          <p class="small muted">Conto Paper di Alpaca, intero: denaro finto, prezzi veri. Il <b>conto di gioco</b> è una parte di questo conto: lo trovi nel Check-up della Banca, e si opera solo da lì (voce «Compra / Vendi»), così ogni ordine entra nel registro delle tappe. Qui si guarda soltanto.</p>
           <p><b>Valore:</b> ${Number(acc.portfolio_value).toFixed(2)} ${acc.currency} · <b>Liquidità:</b> ${Number(acc.cash).toFixed(2)} · <b>Stato:</b> ${esc(acc.status)} · ${clk ? (clk.is_open ? '<span class="good">Mercato aperto</span>' : 'Mercato chiuso') : ''}</p>
           ${pos.length ? `<table class="t"><tr><th>Simbolo</th><th class="n">Quantità</th><th class="n">Prezzo medio</th><th class="n">Valore</th><th class="n">P&amp;L</th></tr>${pos.map((p) => `<tr><td>${esc(p.symbol)}</td><td class="n">${p.qty}</td><td class="n">${Number(p.avg_entry_price).toFixed(2)}</td><td class="n">${Number(p.market_value).toFixed(2)}</td><td class="n ${Number(p.unrealized_pl) >= 0 ? 'good' : 'bad'}">${(Number(p.unrealized_plpc) * 100).toFixed(2)}%</td></tr>`).join('')}</table>` : '<p class="muted">Nessuna posizione.</p>'}
           <h4>Ordini aperti</h4>${ord.length ? `<ul class="small" style="margin:0 0 0 16px">${ord.map((o) => `<li>${esc(o.side)} ${esc(o.type)} ${esc(o.symbol)} ${o.notional ? o.notional + ' $' : o.qty} · ${esc(o.status)}</li>`).join('')}</ul>` : '<span class="muted">Nessuno</span>'}`;

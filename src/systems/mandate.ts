@@ -2,7 +2,7 @@
 // per un importo dimensionato sul rischio scelto, e mette uno stop vero al prezzo del piano.
 //  - Il giudizio (punti dell'esito) resta sulle candele reali del periodo: systems/boss.ts, `outcome`.
 //  - Il denaro segue gli ordini: se il piano va male la perdita resta sul conto, e la sfida si rifà da capo.
-//  - Vendere il titolo fuori dal piano (Clinica, sito di Alpaca) annulla la sfida: lo fa systems/account.ts.
+//  - Vendere il titolo fuori dal piano (Banca, sito di Alpaca) annulla la sfida: lo fa systems/account.ts.
 //  - L'ordine parte solo quando il giocatore invia il piano: il gioco non compra mai da solo.
 import type { BossPlan } from '../types';
 import * as A from './alpaca';
@@ -61,7 +61,7 @@ export async function openMandate(def: BossDef, want: { asset: string; stop: num
   if (err) return fail(`Il prezzo è ora ${fmtPx(last)} $ e il piano non regge: ${err}`);
   const equity = Acc.equity();
   const size = sizeFor(last, want.stop, want.risk);
-  if (!(size.amount >= 1)) return fail('Non hai liquidità disponibile per questo piano: libera capitale dalla Clinica e riprova.');
+  if (!(size.amount >= 1)) return fail('Non hai liquidità disponibile per questo piano: libera capitale dalla Banca e riprova.');
 
   const b = await Acc.buy(want.asset, size.amount, { tag: 'boss' });
   if (!b.ok) return fail(b.msg);
@@ -77,7 +77,7 @@ export async function openMandate(def: BossDef, want: { asset: string; stop: num
   const plan: BossPlan = { asset: want.asset, side: 'long', entry, stop: want.stop, target: want.target, risk, placedAt: Date.now(), deadline: Date.now() + def.durationMs, quality, real: true, amount: size.amount, qty };
   if (!(want.stop < entry && entry < want.target)) {
     save();
-    return fail(`L'acquisto è stato eseguito a ${fmtPx(entry)} $, fuori dai prezzi del piano: il mandato non parte. La posizione su ${a.ticker} è tua: puoi tenerla o venderla dalla Clinica. Il quiz resta valido.`);
+    return fail(`L'acquisto è stato eseguito a ${fmtPx(entry)} $, fuori dai prezzi del piano: il mandato non parte. La posizione su ${a.ticker} è tua: puoi tenerla o venderla dalla Banca. Il quiz resta valido.`);
   }
   run.plan = plan;
   const notes = [`Comprati ${fmtMoney(size.amount)} di ${a.ticker} a ${fmtPx(entry)} $ sul conto di gioco.`];

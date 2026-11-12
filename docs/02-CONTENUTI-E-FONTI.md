@@ -4,9 +4,9 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 
 ## In numeri
 
-- Domande: **348** in 21 argomenti
+- Domande: **336** in 20 argomenti
 - Lezioni: **26**
-- Consigli degli abitanti: **62** in 30 case
+- Lezioni degli abitanti: **62** in 30 case
 - Asset didattici (di fantasia): **32**
 - Fonti: **70**
 
@@ -23,7 +23,6 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 | macro | 23 |
 | analisi | 21 |
 | regole | 21 |
-| esame | 12 |
 | stocks_base | 14 |
 | stocks_bilanci | 15 |
 | stocks_dividendi | 14 |
@@ -40,8 +39,8 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 
 | Editore | Titolo | Citazioni | Link |
 |---|---|---:|---|
-| SEC – Investor.gov | Introduction to Investing | 8 | https://www.investor.gov/introduction-investing |
-| SEC – Investor.gov | Market Order | 5 | https://www.investor.gov/introduction-investing/investing-basics/glossary/market-order |
+| SEC – Investor.gov | Introduction to Investing | 5 | https://www.investor.gov/introduction-investing |
+| SEC – Investor.gov | Market Order | 4 | https://www.investor.gov/introduction-investing/investing-basics/glossary/market-order |
 | SEC – Investor.gov | Stop Order | 4 | https://www.investor.gov/introduction-investing/investing-basics/glossary/stop-order |
 | SEC – Investor.gov | Types of Orders | 14 | https://www.investor.gov/introduction-investing/investing-basics/how-stock-markets-work/types-orders |
 | SEC – Investor.gov | Diversify Your Investments | 15 | https://www.investor.gov/introduction-investing/investing-basics/save-and-invest/diversify-your-investments |
@@ -100,16 +99,16 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 | Investopedia | Technical Analysis | 6 | https://www.investopedia.com/terms/t/technicalanalysis.asp |
 | Investopedia | Liquidity | 4 | https://www.investopedia.com/terms/l/liquidity.asp |
 | Investopedia | Bear Market | 2 | https://www.investopedia.com/terms/b/bearmarket.asp |
-| Investopedia | Phishing | 6 | https://www.investopedia.com/terms/p/phishing.asp |
-| Investopedia | MiFID II | 5 | https://www.investopedia.com/terms/m/mifid-ii.asp |
+| Investopedia | Phishing | 5 | https://www.investopedia.com/terms/p/phishing.asp |
+| Investopedia | MiFID II | 4 | https://www.investopedia.com/terms/m/mifid-ii.asp |
 | Investopedia | Martingale System | 1 | https://www.investopedia.com/terms/m/martingalesystem.asp |
 | Investopedia | House Edge | 2 | https://www.investopedia.com/terms/h/houseedge.asp |
 | Investopedia | Paper Trade | 2 | https://www.investopedia.com/terms/p/paper-trade.asp |
 | Investopedia | Asset Allocation | 6 | https://www.investopedia.com/terms/a/assetallocation.asp |
 | Banca d'Italia | L'economia per tutti | 14 | https://economiapertutti.bancaditalia.it/ |
-| Consob | Educazione finanziaria | 19 | https://www.consob.it/web/investor-education |
-| CFA Institute | Investment Foundations | 30 | https://www.cfainstitute.org/ |
-| ESMA | Avvertenze per gli investitori | 14 | https://www.esma.europa.eu/ |
+| Consob | Educazione finanziaria | 16 | https://www.consob.it/web/investor-education |
+| CFA Institute | Investment Foundations | 29 | https://www.cfainstitute.org/ |
+| ESMA | Avvertenze per gli investitori | 12 | https://www.esma.europa.eu/ |
 
 ## Lezioni
 
@@ -140,7 +139,7 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 - **Le classi di attivo** (mixed_base) · fonte: SEC – Investor.gov
 - **Costruire un'allocazione** (mixed_allocazione) · fonte: Investopedia
 
-## Consigli degli abitanti
+## Lezioni degli abitanti
 
 Ogni abitante insegna un argomento diverso (controllato dai test).
 

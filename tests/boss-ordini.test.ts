@@ -100,7 +100,7 @@ describe('presentare il piano invia ordini veri sul conto di gioco', () => {
 });
 
 describe('vendere il titolo del mandato annulla la sfida', () => {
-  it('una vendita dalla Clinica, anche parziale, annulla il mandato: non è una sconfitta, si rifà con un altro titolo', async () => {
+  it('una vendita dalla Banca, anche parziale, annulla il mandato: non è una sconfitta, si rifà con un altro titolo', async () => {
     expect(M.sellCancelsMandate('AAPL')).toBe('marea');
     const q = pos('AAPL')!.qty;
     const r = await Acc.sell('AAPL', q / 4);
