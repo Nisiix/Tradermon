@@ -168,7 +168,7 @@ export function diagnosis(pf: Portfolio, prices: Record<string, number>, day: nu
     const al = allocation(pf, prices, locked);
     const LABEL = { risky: 'i titoli rischiosi sono', defensive: 'i titoli difensivi sono', cash: 'la liquidità è' } as const;
     const g = (['risky', 'defensive', 'cash'] as const).reduce((a, k) => (Math.abs(pf.target[k] - al[k]) > Math.abs(pf.target[a] - al[a]) ? k : a), 'risky' as 'risky' | 'defensive' | 'cash');
-    out.push({ text: `Il conto non segue più il tuo piano: ${LABEL[g]} al ${al[g].toFixed(0)}%, il piano dice ${pf.target[g]}%. Valuta un ribilanciamento.`, lesson: 'l_div_2' });
+    out.push({ text: `Il conto non segue più il tuo piano: ${LABEL[g]} ${pctArt(al[g], 'al')}, il piano dice ${pf.target[g]}%. Valuta un ribilanciamento.`, lesson: 'l_div_2' });
   }
   for (const p of pf.positions) {
     const v = p.qty * prices[p.id];
@@ -191,6 +191,13 @@ export function rebalanceGap(pf: Portfolio, prices: Record<string, number>, lock
 /** Scostamento massimo, in punti, tra un gruppo del conto e il piano. Sotto i 2 punti il conto è considerato in linea. */
 export function maxGap(gaps: { now: number; target: number }[]): number {
   return Math.max(0, ...gaps.map((g) => Math.abs(g.target - g.now)));
+}
+
+/** Percentuale con preposizione articolata corretta: "al 60%", "all'80%", "il 45%", "l'11%". */
+export function pctArt(x: number, art: 'il' | 'al' = 'il'): string {
+  const n = Math.round(x);
+  const vowel = /^(8|11$|1$)/.test(String(n));
+  return `${vowel ? (art === 'al' ? "all'" : "l'") : `${art} `}${n}%`;
 }
 
 export function fmtPx(p: number): string {
