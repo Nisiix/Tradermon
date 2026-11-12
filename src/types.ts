@@ -201,6 +201,8 @@ export interface SaveData {
   createdAt: number;
   name: string;
   avatar: number;
+  /** Genere del protagonista: accorda i testi e sceglie lo sprite. Assente nei vecchi salvataggi = 'm'. */
+  gender?: 'm' | 'f';
   rival: string;
   profile: RiskProfile;
   profileScore: number;

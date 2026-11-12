@@ -421,7 +421,7 @@ function buildLeagueTown() {
   lg.tiles[19][7] = TILE.MAT;
   lg.warps[0].x = 7;
   [16, 13, 10, 7, 4].forEach((y, i) => lg.npcs.push({ id: `league_${i}`, x: 7, y, pal: 10 + i, dir: 0, name: 'Superiore', kind: 'league', data: { i } }));
-  lg.npcs.push({ id: 'league_hall', x: 7, y: 2, pal: 3, dir: 0, name: 'Prof. Saldi', kind: 'talk', lines: ['Ce l\'hai fatta! Benvenuto nella Sala dei Campioni.', 'Ricorda: il titolo non ti rende infallibile. Continua a imparare.'] });
+  lg.npcs.push({ id: 'league_hall', x: 7, y: 2, pal: 3, dir: 0, name: 'Prof. Saldi', kind: 'talk', lines: ['Ce l\'hai fatta! Benvenut{o|a} nella Sala dei Campioni.', 'Ricorda: il titolo non ti rende infallibile. Continua a imparare.'] });
   MAPS.league = lg;
   const tw = interior('tower', 'Torre delle Sfide', 11, 9, 't9', tower.dx, tower.dy);
   rect(tw.tiles, 1, 2, 9, 1, TILE.SHELF);
@@ -623,7 +623,7 @@ function buildSeaAndCaves() {
   gold.npcs.push(
     { id: 'cave_gold_t0', x: 6, y: 2, pal: 21, dir: 3, name: 'Cercatrice d\'Oro', kind: 'trainer', sight: 4, lines: ['L\'oro non paga dividendi, ma nelle crisi molti lo cercano. Tu cosa cerchi?'], data: { r: 5 } },
     { id: 'cave_gold_t1', x: 15, y: 10, pal: 19, dir: 2, name: 'Minatore Prudente', kind: 'trainer', sight: 3, lines: ['Scavo piano e diversifico le gallerie. Vediamo se scavi bene anche tu!'], data: { r: 5 } },
-    { id: 'cave_gold_s', x: 21, y: 3, pal: 18, dir: 0, name: 'Vecchio Minatore', kind: 'talk', lines: ['Una volta ho messo tutto in una sola vena d\'oro. Si è esaurita in un mese.', 'Da allora scavo in tante gallerie diverse. Si chiama diversificare, ragazzo.'] },
+    { id: 'cave_gold_s', x: 21, y: 3, pal: 18, dir: 0, name: 'Vecchio Minatore', kind: 'talk', lines: ['Una volta ho messo tutto in una sola vena d\'oro. Si è esaurita in un mese.', 'Da allora scavo in tante gallerie diverse. Si chiama diversificare, ragazz{o|a}.'] },
   );
   MAPS.cave_gold = gold;
 }

@@ -170,7 +170,7 @@ export async function hodlRitual() {
   await say([
     'Una voce antica, come da sotto terra: "Hai resistito alla voglia di fare qualcosa. È la più difficile."',
     '"Ma ricorda: tenere con una tesi è pazienza. Tenere senza una tesi, solo per orgoglio, è testardaggine."',
-    '"Le mani di diamante servono a non vendere nel panico, non a ignorare quando ti sei sbagliato."',
+    '"Le mani di diamante servono a non vendere nel panico, non a ignorare quando ti sei sbagliat{o|a}."',
   ], 'Pietra delle Mani');
   S.stats.xp += 150;
   clampStat('pazienza', 10);

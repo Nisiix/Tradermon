@@ -68,8 +68,8 @@ export const BOOKS: Book[] = [
     'In borsa è uguale: un ordine dice al mercato cosa vuoi, a quale prezzo e per quanto tempo. Il Mentore interroga sui tipi di ordine e sui loro rischi.',
     'Nel duello compaiono ordini a mercato, limite e stop, lo spread denaro-lettera e gli orari in cui le borse sono aperte.'),
   B('b_ordini_1', 'ordini', 'Mercato, limite, stop',
-    'Ordine a mercato: eseguito subito al miglior prezzo disponibile. Sei sicuro dell\'esecuzione, non del prezzo.',
-    'Ordine limite: fissi il prezzo massimo per comprare (o minimo per vendere). Sei sicuro del prezzo, non dell\'esecuzione: se il mercato non ci arriva, resti fermo.',
+    'Ordine a mercato: eseguito subito al miglior prezzo disponibile. Sei sicur{o|a} dell\'esecuzione, non del prezzo.',
+    'Ordine limite: fissi il prezzo massimo per comprare (o minimo per vendere). Sei sicur{o|a} del prezzo, non dell\'esecuzione: se il mercato non ci arriva, resti ferm{o|a}.',
     'Ordine stop: resta dormiente finché il prezzo tocca la soglia, poi diventa un ordine a mercato. Serve per limitare le perdite (stop loss) o per entrare su una rottura.',
     'Validità: "giornaliero" scade a fine seduta, "fino a revoca" resta attivo per giorni. Controlla sempre gli ordini aperti.'),
   B('b_ordini_2', 'ordini', 'Spread, orari e liquidità',
@@ -186,9 +186,9 @@ export const BOOKS: Book[] = [
     'Nel duello: dimensione delle posizioni, stop loss, leva finanziaria, martingala e fondo di emergenza.'),
   B('b_gestione_1', 'gestione', 'Quanto rischiare',
     'Prima di quanto guadagnare, decidi quanto puoi perdere: per singola posizione e per l\'intero portafoglio. Molti usano l\'1-2% del capitale a operazione.',
-    'Lo stop loss trasforma una decisione emotiva in una regola: il punto di uscita è deciso quando sei lucido, non quando il prezzo crolla.',
+    'Lo stop loss trasforma una decisione emotiva in una regola: il punto di uscita è deciso quando sei lucid{o|a}, non quando il prezzo crolla.',
     'La leva moltiplica guadagni e perdite: con leva 5, un −20% azzera il capitale. La martingala (raddoppiare dopo ogni perdita) finisce sempre contro un limite: il tuo.',
-    'Fondo di emergenza prima di investire: 3-6 mesi di spese liquidi, così non sarai mai costretto a vendere nel momento peggiore.'),
+    'Fondo di emergenza prima di investire: 3-6 mesi di spese liquidi, così non sarai mai costrett{o|a} a vendere nel momento peggiore.'),
 ];
 
 export const BOOK_BY_ID: Record<string, Book> = Object.fromEntries(BOOKS.map((b) => [b.id, b]));

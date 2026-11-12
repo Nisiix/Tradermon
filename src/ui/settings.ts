@@ -125,7 +125,7 @@ export async function openControls() {
         captureNextKey((code) => {
           const stolen = bindKey(a, i, code);
           if (stolen) toast(`${keyName(code)} tolto da "${ACTIONS.find((x) => x.id === stolen)!.name}".`);
-          if (prefs.keys.a.length === 0 || prefs.keys.b.length === 0) toast('Attento: Conferma e Indietro devono avere almeno un tasto.');
+          if (prefs.keys.a.length === 0 || prefs.keys.b.length === 0) toast('Attent{o|a}: Conferma e Indietro devono avere almeno un tasto.');
           render();
           body.querySelector<HTMLButtonElement>(`.kb-b[data-a="${a}"][data-i="${Math.min(i, prefs.keys[a].length - 1)}"]`)?.focus();
         });

@@ -38,7 +38,7 @@ export async function accountScreen(): Promise<C.Player> {
   let gone = justDeleted();
   for (;;) {
     const mode = await modal<'new' | 'login'>('Il tuo giocatore', ({ body, button, close }) => {
-      body.innerHTML = `${gone ? '<p class="good">Il giocatore è stato cancellato, online e da questo browser.</p>' : ''}<p>Benvenuto in Tradermon! Per salvare i progressi serve un <b>giocatore</b>: un nome unico (nessun altro potrà usarlo) e una password.</p><p class="small muted">${PRIVACY} ${PRIVACY_LINK}.</p>`;
+      body.innerHTML = `${gone ? '<p class="good">Il giocatore è stato cancellato, online e da questo browser.</p>' : ''}<p>Ti diamo il benvenuto in Tradermon! Per salvare i progressi serve un <b>giocatore</b>: un nome unico (nessun altro potrà usarlo) e una password.</p><p class="small muted">${PRIVACY} ${PRIVACY_LINK}.</p>`;
       button('Nuovo giocatore', () => close('new'), 'primary');
       button('Ho già un giocatore', () => close('login'));
     }, { closable: false });

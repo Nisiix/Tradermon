@@ -22,7 +22,7 @@ export function repGreeting(): string {
   switch (repTier().index) {
     case 0: return '';
     case 1: return `Ah, tu sei ${S.name}! In città qualcuno parla di te.`;
-    case 2: return `${S.name}! Tutti dicono che sei un investitore serio. È un onore.`;
+    case 2: return `${S.name}! Tutti dicono che sei {un investitore serio|un'investitrice seria}. È un onore.`;
     case 3: return `Non ci credo, ${S.name} in persona! I Mentori parlano bene di te.`;
     default: return `${S.name}, la leggenda della regione! Posso stringerti la mano?`;
   }
@@ -34,7 +34,7 @@ export function mentorCharacterLine(): string {
   if (d >= TRAIT_HIGH && p >= TRAIT_HIGH) return 'Hai disciplina e pazienza: sono le due qualità che nessun mercato può comprare.';
   if (d >= TRAIT_HIGH) return 'Hai disciplina: segui il piano anche quando è scomodo. Lavora sulla pazienza, lascia lavorare il tempo.';
   if (p >= TRAIT_HIGH) return 'Sei paziente, e il tempo ti ripaga. Ora rafforza la disciplina: decidi con un piano, non con l\'umore.';
-  if (d <= TRAIT_LOW) return 'Attento: troppe scelte d\'impulso. Una regola scritta prima di comprare vale più di mille previsioni.';
+  if (d <= TRAIT_LOW) return 'Attent{o|a}: troppe scelte d\'impulso. Una regola scritta prima di comprare vale più di mille previsioni.';
   if (p <= TRAIT_LOW) return 'Vendi e compri troppo in fretta. Il mercato premia chi sa aspettare.';
   return 'Il tuo carattere da investitore si sta formando: le scelte di ogni giorno contano quanto le risposte.';
 }
@@ -42,7 +42,7 @@ export function mentorCharacterLine(): string {
 /** Epilogo dopo la Lega, diverso secondo il carattere. */
 export function epilogue(): string[] {
   const d = S.stats.disciplina, p = S.stats.pazienza;
-  if (d >= TRAIT_HIGH && p >= TRAIT_HIGH) return ['Anni dopo, a Capitalia si racconta di un investitore che non inseguiva le mode.', 'Comprava con un piano, aspettava con calma e insegnava ai giovani a fare lo stesso. Quell\'investitore eri tu.'];
+  if (d >= TRAIT_HIGH && p >= TRAIT_HIGH) return ['Anni dopo, a Capitalia si racconta di {un investitore|un\'investitrice} che non inseguiva le mode.', 'Comprava con un piano, aspettava con calma e insegnava ai giovani a fare lo stesso. {Quell\'investitore|Quell\'investitrice} eri tu.'];
   if (d >= TRAIT_HIGH) return ['Negli anni il tuo piano scritto è diventato famoso: lo copiano in tanti.', 'Qualche volta hai venduto troppo presto, ma non hai mai rotto le tue regole.'];
   if (p >= TRAIT_HIGH) return ['Gli anni sono passati e i tuoi investimenti sono cresciuti piano piano.', 'Non sempre avevi un piano preciso, ma sapevi aspettare: il tempo ha fatto il resto.'];
   return ['La Lega è tua, ma il viaggio vero comincia ora.', 'Disciplina e pazienza si allenano ogni giorno: torna a trovare i Mentori quando vuoi.'];

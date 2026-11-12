@@ -26,9 +26,9 @@ export async function librarian(n: NpcDef) {
   if (town && !S.flags[`lib_intro_${town}`]) {
     S.flags[`lib_intro_${town}`] = true;
     const md = mentor(town, S.track);
-    await say(['Benvenuto in Biblioteca! Qui si studia prima di sfidare il Mentore.', `Gli scaffali in alto a sinistra sono la Sezione del Mentore: i libri su ${mentorTopics(town, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}, l'argomento del duello con ${md.name}.`, 'A destra le lezioni generali; in basso l\'archivio delle domande sbagliate e l\'Investidex. Avvicinati a uno scaffale e premi il tasto di conferma.'], 'Bibliotecaria');
+    await say(['Benvenut{o|a} in Biblioteca! Qui si studia prima di sfidare il Mentore.', `Gli scaffali in alto a sinistra sono la Sezione del Mentore: i libri su ${mentorTopics(town, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}, l'argomento del duello con ${md.name}.`, 'A destra le lezioni generali; in basso l\'archivio delle domande sbagliate e l\'Investidex. Avvicinati a uno scaffale e premi il tasto di conferma.'], 'Bibliotecaria');
   }
-  const c = await choose(['Sezione del Mentore (libri)', 'Lezioni', 'Ripasso (domande in scadenza)', 'Minigiochi didattici', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenuto in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
+  const c = await choose(['Sezione del Mentore (libri)', 'Lezioni', 'Ripasso (domande in scadenza)', 'Minigiochi didattici', 'Investidex', 'Niente, grazie'], { cancel: true, prompt: 'Benvenut{o|a} in Biblioteca! Cosa vuoi fare?', who: 'Bibliotecaria' });
   if (c === 0) return mentorShelf(town);
   if (c === 1) return openLessons();
   if (c === 3) return playMinigame('Bibliotecaria');
@@ -141,7 +141,7 @@ async function realReplay() {
 }
 
 export async function casino() {
-  await say(['Benvenuto al Casinò dello Speculatore! Qui le fiches sono finte, ma la matematica è vera.', 'La roulette ha 37 caselle: 18 rosse, 18 nere e lo zero. Se punti sul rosso vinci 1:1, ma la probabilità è 18/37.', 'Il vantaggio del banco è del 2,7% su ogni puntata. È scritto qui sul tavolo.'], 'Croupier Speculatore');
+  await say(['Benvenut{o|a} al Casinò dello Speculatore! Qui le fiches sono finte, ma la matematica è vera.', 'La roulette ha 37 caselle: 18 rosse, 18 nere e lo zero. Se punti sul rosso vinci 1:1, ma la probabilità è 18/37.', 'Il vantaggio del banco è del 2,7% su ogni puntata. È scritto qui sul tavolo.'], 'Croupier Speculatore');
   const c = await choose(['Prova il "Sistema Martingala" (simulazione di 200 giri)', 'Una puntata singola sul rosso', 'No, grazie'], { cancel: true, prompt: 'Cosa vuoi fare?', who: 'Croupier Speculatore' });
   if (c === 1) {
     const win = Math.random() < 18 / 37;
@@ -157,13 +157,13 @@ export async function casino() {
       path.push(bank);
     }
     const ruin = bank < bet;
-    await say([`Partenza: 1.000 fiches, puntata base 10, raddoppio dopo ogni perdita.`, `Giri giocati: ${rounds}. Massimo raggiunto: ${maxBank}. Finale: ${bank} fiches.`, ruin ? `Una serie di sconfitte ha richiesto una puntata di ${bet} fiches: non potevi più coprirla. Rovina!` : 'Sei sopravvissuto questa volta, ma il rischio di rovina cresce a ogni giro: basta una serie di 7 sconfitte per perdere 1.270 fiches.', 'Lezione: piccoli guadagni frequenti e perdite rare ma enormi. È la martingala, ed è la stessa logica di molte strategie a leva.'], 'Croupier Speculatore');
+    await say([`Partenza: 1.000 fiches, puntata base 10, raddoppio dopo ogni perdita.`, `Giri giocati: ${rounds}. Massimo raggiunto: ${maxBank}. Finale: ${bank} fiches.`, ruin ? `Una serie di sconfitte ha richiesto una puntata di ${bet} fiches: non potevi più coprirla. Rovina!` : 'Sei sopravvissut{o|a} questa volta, ma il rischio di rovina cresce a ogni giro: basta una serie di 7 sconfitte per perdere 1.270 fiches.', 'Lezione: piccoli guadagni frequenti e perdite rare ma enormi. È la martingala, ed è la stessa logica di molte strategie a leva.'], 'Croupier Speculatore');
     if (!S.flags.casinoLesson) { reward({ flag: 'casinoLesson', xp: REWARD.xp.casinoLesson, save: false }); toast('Investidex: nuova voce "Azzardo vs investimento"'); }
   }
 }
 
 export async function archivist() {
-  await say(['Benvenuto nell\'Archivio di Bilancia. Qui custodiamo i fascicoli di tutte le Asset Card.', 'Studiarli fa crescere il livello delle tue carte.'], 'Archivista');
+  await say(['Benvenut{o|a} nell\'Archivio di Bilancia. Qui custodiamo i fascicoli di tutte le Asset Card.', 'Studiarli fa crescere il livello delle tue carte.'], 'Archivista');
   if (!S.flags.archiveBonus) {
     S.flags.archiveBonus = true;
     Object.keys(S.cards).forEach((id) => (card(id).xp += 40));
