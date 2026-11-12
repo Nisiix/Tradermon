@@ -336,7 +336,7 @@ async function rebalance() {
   if (maxGap(after) + 1 < maxGap(before)) {
     track('rebalance');
     S.stats.disciplina = Math.min(100, S.stats.disciplina + 3);
-    toast(`Scostamento dal piano: da ${maxGap(before).toFixed(0)} a ${maxGap(after).toFixed(0)} punti.`);
+    toast('Il conto ora è più vicino al tuo piano.');
     save();
   }
 }

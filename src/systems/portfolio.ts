@@ -164,7 +164,12 @@ export function diagnosis(pf: Portfolio, prices: Record<string, number>, day: nu
   if (pf.log.length > 0 && h.cashW > 60) out.push({ text: 'Gran parte è ferma in liquidità: l\'inflazione la erode nel tempo.', lesson: 'l_costi_1' });
   const recent = pf.log.filter((l) => l.day > day - 21).length;
   if (recent > 10) out.push({ text: `${recent} ordini nell'ultimo mese di mercato: più ordini significano più costi e spesso più emozioni.`, lesson: 'l_costi_2' });
-  if (h.dev > 15) out.push({ text: `L'allocazione si è allontanata di ${h.dev.toFixed(0)} punti dal tuo obiettivo: valuta un ribilanciamento.`, lesson: 'l_div_2' });
+  if (h.dev > 15) {
+    const al = allocation(pf, prices, locked);
+    const LABEL = { risky: 'i titoli rischiosi sono', defensive: 'i titoli difensivi sono', cash: 'la liquidità è' } as const;
+    const g = (['risky', 'defensive', 'cash'] as const).reduce((a, k) => (Math.abs(pf.target[k] - al[k]) > Math.abs(pf.target[a] - al[a]) ? k : a), 'risky' as 'risky' | 'defensive' | 'cash');
+    out.push({ text: `Il conto non segue più il tuo piano: ${LABEL[g]} al ${al[g].toFixed(0)}%, il piano dice ${pf.target[g]}%. Valuta un ribilanciamento.`, lesson: 'l_div_2' });
+  }
   for (const p of pf.positions) {
     const v = p.qty * prices[p.id];
     if (p.cost > 0 && v / p.cost - 1 < -0.2) out.push({ text: `${ASSET_BY_ID[p.id].name} è affaticata (${((v / p.cost - 1) * 100).toFixed(0)}%). La domanda giusta: la compreresti oggi?`, lesson: 'l_bias_1' });
