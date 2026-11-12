@@ -100,6 +100,11 @@ table.t td.n, table.t th.n { text-align: right; }
 .card[onclick], .cards .card:hover { border-color: var(--accent); }
 .card.gold { background: linear-gradient(135deg, #fff6c8, #ffe27a); }
 .card.locked { opacity: .45; }
+/* card che si sceglie toccandola (vetrina della Valigetta): la scelta resta dorata, la conferma è il pulsante OK */
+button.card.pick { text-align: left; font: inherit; color: inherit; cursor: pointer; width: 100%; box-sizing: border-box; display: flex; align-items: flex-start; overflow-wrap: break-word; }
+button.card.pick > span { display: block; min-width: 0; }
+button.card.pick.gold { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), 0 2px 0 rgba(0,0,0,.2); }
+button.card.pick:focus-visible { outline: 3px solid #f8d030; outline-offset: 2px; }
 .card .sector { font-family: var(--font); font-size: calc(var(--fs) * .9); padding: 2px 4px; border-radius: 3px; color: #fff; display: inline-block; }
 .bar { height: 8px; border: 2px solid var(--line); border-radius: 4px; background: #505868; overflow: hidden; box-shadow: inset 0 0 0 1px #f8f8f8; margin: 2px 0 4px; }
 .bar > i { display: block; height: 100%; background: linear-gradient(#70f8a8 0 35%, #48d078 35%); transition: width .5s steps(16); }
