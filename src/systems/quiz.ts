@@ -193,6 +193,7 @@ export function dailyQuestion(): Question {
 }
 
 export function mastery(): number {
-  const known = Object.values(S.review).filter((b) => b >= 3).length;
+  // contano solo le domande ancora in gioco: i salvataggi possono avere id di domande tolte (es. quelle con calcoli)
+  const known = QUESTIONS.filter((q) => (S.review[q.id] ?? 0) >= 3).length;
   return known / QUESTIONS.length;
 }
