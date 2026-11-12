@@ -6,7 +6,8 @@ import { pushHandler, popHandler, type Key } from './input';
 import { S, profileTimer } from '../systems/state';
 import { recordAnswer } from '../systems/quiz';
 import { shuffle } from '../systems/rng';
-import { portrait, portraitBack, playerPal } from '../art/art';
+import { portrait, playerPal } from '../art/art';
+import { arenaTransition, mountArena, ARENA_ACCENT, ARENA_TAPE, type Arena } from './arena';
 import { beep } from '../systems/audio';
 import { markDuelDone } from './savebtn';
 import { FIDUCIA_PER_CORRECT } from '../systems/balance';
@@ -22,37 +23,40 @@ export interface DuelOpts {
   intro?: string;
   /** Sfida a numero fisso di domande (Mentori e Lega): si rispondono tutte, ma a Fiducia zero si va in tilt. */
   fixed?: boolean;
+  /** Luogo della sfida: decide sfondo, colori e nastro (predefinito: la piazza delle quotazioni). */
+  arena?: Arena;
 }
 
 export interface DuelResult { win: boolean; correct: number; total: number; perfect: boolean; tilted: boolean; ids: string[]; wrong: string[] }
 
-/** Transizione d'ingresso al duello: due lampi, poi bande nere che si chiudono da lati alterni. */
-export async function battleTransition(): Promise<void> {
-  const stage = getStage();
-  const t = el('div', 'bt-trans');
-  t.innerHTML = '<div class="fl"></div>' + Array.from({ length: 8 }, (_, i) => `<i style="top:${i * 12.5}%;animation-delay:${520 + i * 45}ms" class="${i % 2 ? 'r' : 'l'}"></i>`).join('');
-  stage.appendChild(t);
-  beep('alert');
-  await wait(1050);
-  return new Promise((r) => { setTimeout(() => t.remove(), 450); t.classList.add('out'); r(); });
-}
-
 export async function runDuel(o: DuelOpts): Promise<DuelResult> {
   const prevTrack = currentTrack();
   play('battle');
-  await battleTransition();
+  const theme: Arena = o.arena ?? 'piazza';
+  await arenaTransition(theme);
   return new Promise((resolve) => {
     const stage = getStage();
-    const root = el('div', 'battle');
+    const root = el('div', `battle th-${theme}`);
+    root.style.setProperty('--acc', ARENA_ACCENT[theme]);
+    const words = ARENA_TAPE[theme].map((w) => `<span class="${w.endsWith('▼') ? 'dn' : 'up'}">${esc(w)}</span>`).join('');
+    // due postazioni affiancate alla stessa altezza, entrambe rivolte al giocatore: un confronto in sala, non un incontro nell'erba
     root.innerHTML = `
+      <div class="tape" aria-hidden="true"><div class="tape-in">${words}${words}</div></div>
       <div class="arena">
-        <div class="box plate foe-p"><div class="nm">${esc(o.foeName)}${o.foeTitle ? ` <span class="muted">· ${esc(o.foeTitle)}</span>` : ''}</div><div class="small">Convinzione</div><div class="foebar">${bar(100)}</div></div>
-        <div class="foe"><img class="sprite" src="${portrait(o.foePal)}" alt=""></div>
-        <div class="me"><img class="sprite" src="${portraitBack(playerPal(S.avatar))}" alt=""></div>
-        <div class="box plate me-p"><div class="nm">${esc(S.name)}${S.title ? ` <span class="muted">· ${esc(S.title)}</span>` : ''}</div><div class="small">Fiducia <span class="fv">${S.stats.fiducia}</span>/100</div><div class="mebar">${bar(S.stats.fiducia)}</div></div>
+        <div class="side me">
+          <div class="plate me-p"><div class="nm">${esc(S.name)}</div>${S.title ? `<div class="tt">${esc(S.title)}</div>` : '<div class="tt">Sfidante</div>'}<div class="row-m"><span class="lb">Fiducia</span><b class="fv">${S.stats.fiducia}</b></div><div class="mebar">${bar(S.stats.fiducia)}</div></div>
+          <div class="fig"><img class="sprite" src="${portrait(playerPal(S.avatar))}" alt=""></div>
+          <div class="desk"><i></i></div>
+        </div>
+        <div class="side foe">
+          <div class="plate foe-p"><div class="nm">${esc(o.foeName)}</div><div class="tt">${esc(o.foeTitle ?? 'Avversario')}</div><div class="row-m"><span class="lb">Convinzione</span><b class="cv">100</b></div><div class="foebar">${bar(100)}</div></div>
+          <div class="fig"><img class="sprite" src="${portrait(o.foePal)}" alt=""></div>
+          <div class="desk"><i></i></div>
+        </div>
       </div>
       <div class="box q"><div class="qhead row" style="justify-content:space-between"><span class="small muted qn"></span><span class="timer"></span></div><div class="qt"></div><div class="opts"></div><div class="exp"></div></div>`;
     stage.appendChild(root);
+    const unmount = mountArena(root, theme, o.foeName);
     const $ = (s: string) => root.querySelector(s) as HTMLElement;
     let foe = 100;
     let correct = 0;
@@ -71,6 +75,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
     const finish = async (win: boolean) => {
       setHandler(null);
       await wait(400);
+      unmount();
       root.remove();
       if (prevTrack) play(prevTrack); else stop();
       markDuelDone();
@@ -126,15 +131,16 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
           foe = Math.max(0, foe - per);
           if (o.damage > 0) S.stats.fiducia = Math.min(100, S.stats.fiducia + FIDUCIA_PER_CORRECT);
           beep('ok');
-          ($('.foe') as HTMLElement).classList.add('shake');
+          $('.foe .fig').classList.add('shake');
         } else {
           perfect = false;
           wrongIds.push(q.id);
           S.stats.fiducia = Math.max(0, S.stats.fiducia - o.damage);
           beep('bad');
-          ($('.me') as HTMLElement).classList.add('shake');
+          $('.me .fig').classList.add('shake');
         }
         $('.foebar').innerHTML = bar(foe);
+        $('.cv').textContent = String(Math.round(foe));
         $('.mebar').innerHTML = bar(S.stats.fiducia);
         $('.fv').textContent = String(S.stats.fiducia);
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);

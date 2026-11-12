@@ -70,7 +70,7 @@ async function bossFight(def: BossDef): Promise<void> {
     const qs = pickQuestions(def.topics, BOSS_RULES.quizN, { minDiff: 3, maxDiff: 4 });
     const fid = S.stats.fiducia;
     S.stats.fiducia = 100;
-    const r = await runDuel({ foeName: def.name, foeTitle: def.title, foePal: def.pal, questions: qs, need: BOSS_RULES.quizMin, damage: 0, fixed: true });
+    const r = await runDuel({ foeName: def.name, foeTitle: def.title, foePal: def.pal, questions: qs, need: BOSS_RULES.quizMin, damage: 0, fixed: true, arena: 'borsa' });
     S.stats.fiducia = fid;
     if (r.correct < BOSS_RULES.quizMin) return lose(def, [`${r.correct} risposte giuste su ${r.total}: ne servivano almeno ${BOSS_RULES.quizMin} per presentare un piano.`]);
     runs()[def.id] = { id: def.id, quiz: r.correct, quizMax: r.total, plan: null, startedAt: Date.now() };

@@ -219,7 +219,7 @@ async function leverageExam(): Promise<boolean> {
   await say(['L\'Esame della Leva ha 8 domande: ne servono 7 giuste. Nessun timer.', 'La leva non è una Tecnica come le altre: prima di usarla devi sapere come ti può rovinare.'], NURSE);
   const prev = S.options.studyMode, fid = S.stats.fiducia;
   S.options.studyMode = true; S.stats.fiducia = 100;
-  const r = await runDuel({ foeName: 'Commissione d\'Esame', foeTitle: 'Esame della Leva', foePal: PAL.PROF, questions: shuffle(LEVERAGE_EXAM), need: 7, damage: 0 });
+  const r = await runDuel({ foeName: 'Commissione d\'Esame', foeTitle: 'Esame della Leva', foePal: PAL.PROF, questions: shuffle(LEVERAGE_EXAM), need: 7, damage: 0, arena: 'aula' });
   S.options.studyMode = prev; S.stats.fiducia = fid;
   return r.correct >= 7;
 }

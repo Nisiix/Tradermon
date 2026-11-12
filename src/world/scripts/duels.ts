@@ -60,7 +60,7 @@ export async function speculator(n: NpcDef, w: WorldApi) {
     const c = await choose(['Mai!', 'Dimmi di più...'], { prompt: 'Cosa rispondi?' });
     if (c === 1) { clampStat('disciplina', -10); await say('Ah ah! Ti piacerebbe, eh? Ma prima dovrai battermi.', ant.boss); }
     const qs = pickQuestions(['regole', 'gestione', 'bias'], DUEL.boss.n, { target: targetDiff(routeStage(n) + 1) });
-    const r = await runDuel({ foeName: ant.boss, foeTitle: `Capo di ${ant.team}`, foePal: PAL.SPEC, questions: qs, ...DUEL.boss });
+    const r = await runDuel({ foeName: ant.boss, foeTitle: `Capo di ${ant.team}`, foePal: PAL.SPEC, questions: qs, ...DUEL.boss, arena: 'fossa' });
     if (r.win) {
       reward({ defeated: n.id, rep: REWARD.rep.boss }); clampStat('disciplina', 10);
       await say(['Impossibile... Le scorciatoie non funzionano con te.', `${ant.team} si ritira. Per ora.`], ant.boss);
@@ -86,7 +86,7 @@ export async function speculator(n: NpcDef, w: WorldApi) {
   }
   if (c !== 2) await say('Grr! Allora vediamo se sai anche rispondere!', 'Speculatore');
   const qs = pickQuestions(['regole', ...trackTopics(S.track, S.mixedClasses, S.badges)], DUEL.speculator.n, { target: targetDiff(routeStage(n)) });
-  const r = await runDuel({ foeName: 'Speculatore', foeTitle: ant.team, foePal: PAL.SPEC, questions: qs, ...DUEL.speculator });
+  const r = await runDuel({ foeName: 'Speculatore', foeTitle: ant.team, foePal: PAL.SPEC, questions: qs, ...DUEL.speculator, arena: 'fossa' });
   await afterDuel(r.win, n.id, REWARD.rep.speculator, w, 'Speculatore');
 }
 
@@ -101,7 +101,7 @@ export async function student(n: NpcDef, w: WorldApi) {
   await say('Prima di arrivare al Mentore devi superare me!', n.name);
   // gli allievi sono un gradino sotto il loro Mentore
   const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.student.n, { target: targetDiff(m - 1) - 0.25 });
-  const r = await runDuel({ foeName: n.name, foeTitle: 'Allievo dell\'Accademia', foePal: n.pal, questions: qs, ...DUEL.student });
+  const r = await runDuel({ foeName: n.name, foeTitle: 'Allievo dell\'Accademia', foePal: n.pal, questions: qs, ...DUEL.student, arena: 'aula' });
   tick();
   if (r.win) { reward({ defeated: n.id, rep: REWARD.rep.student }); await say('Bravo! Sei pronto per il Mentore.', n.name); }
   else { await say('Studia in Biblioteca e torna!', n.name); await defeatRespawn(w); }
@@ -117,7 +117,7 @@ async function mentorRematch(m: number, md: ReturnType<typeof mentor>) {
   if (c !== 0) return;
   const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentorRematch.n, { target: 3.5 });
   const prevFid = S.stats.fiducia;
-  const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m} · rivincita`, foePal: md.palette, questions: qs, ...DUEL.mentorRematch });
+  const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m} · rivincita`, foePal: md.palette, questions: qs, ...DUEL.mentorRematch, arena: 'sala' });
   S.stats.fiducia = Math.max(prevFid, S.stats.fiducia);
   if (r.win && !done) reward({ flag: `m${m}_rematch`, rep: REWARD.rep.mentorRematch, xp: REWARD.xp.mentorRematch });
   await say(r.win ? ['Da esperto a esperto: complimenti.', mentorCharacterLine()] : 'Le domande da esperto non perdonano. Torna quando vuoi.', md.name);
@@ -143,7 +143,7 @@ export async function mentorBattle(m: number, w: WorldApi) {
   if (!ok) return;
   // il Mentore m si affronta con m − 1 Attestati: dal livello 1 (Mentore 1) a quasi 3 (Mentore 8)
   const qs = withPreviousMistakes(`m${m}`, pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentor.n, { target: targetDiff(m - 1) }));
-  const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m}`, foePal: md.palette, questions: qs, ...DUEL.mentor, intro: md.intro });
+  const r = await runDuel({ foeName: md.name, foeTitle: `Mentore ${m}`, foePal: md.palette, questions: qs, ...DUEL.mentor, intro: md.intro, arena: 'sala' });
   tick();
   if (!r.win) { lockRetry(`m${m}`, r.wrong); await say(['Non ancora. Ripassa e torna: ti aspetto.', 'Le domande che hai sbagliato torneranno nel prossimo duello.'], md.name); return defeatRespawn(w); }
   clearRetry(`m${m}`);
@@ -289,7 +289,7 @@ export async function reviewDuel() {
   if (!q.length) return say(['Oggi non hai domande in scadenza. Ottimo lavoro!', nextReviewLine()], 'Bibliotecaria');
   const qs = shuffle(q.slice(0, 12)).slice(0, DUEL.review.n);
   const prevFid = S.stats.fiducia;
-  await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0 });
+  await runDuel({ foeName: 'Ripasso', foeTitle: 'Biblioteca', foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0, arena: 'biblioteca' });
   S.stats.fiducia = prevFid;
   track('review');
   return say(['Ogni domanda giusta torna più avanti: dopo 1, 3, 7 e poi 21 giorni. Quelle sbagliate tornano subito.', 'Rivedere al momento giusto è il modo migliore per ricordare.'], 'Bibliotecaria');
@@ -369,7 +369,7 @@ export async function league(i: number, w: WorldApi) {
   if (!S.flags[`league_${i}_p1`]) {
     if (!retryUnlocked(`league_${i}`)) return say(['Prima di riprovare, ripassa.', 'Fai il Ripasso in Biblioteca o leggi una lezione: le domande che hai sbagliato torneranno.'], L.name);
     const qs = withPreviousMistakes(`league_${i}`, pickQuestions(topics, P.n, { target: targetDiff(STAGE_LEAGUE + Math.min(i, 3)) }));
-    const r = await runDuel({ foeName: L.name, foeTitle: L.title, foePal: L.palette, questions: qs, ...P });
+    const r = await runDuel({ foeName: L.name, foeTitle: L.title, foePal: L.palette, questions: qs, ...P, arena: 'lega' });
     if (!r.win) { lockRetry(`league_${i}`, r.wrong); await say('Non sei ancora pronto. Torna dopo aver ripassato.', L.name); return defeatRespawn(w); }
     clearRetry(`league_${i}`);
     S.flags[`league_${i}_p1`] = true;
@@ -406,7 +406,7 @@ export async function tower() {
       const diff = Math.min(4, 1 + Math.floor(floor / 3));
       const pool = trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole']);
       const qs = pickQuestions(pool, 3, { minDiff: diff, maxDiff: diff });
-      const r = await runDuel({ foeName: `Piano ${floor + 1}`, foeTitle: 'Torre delle Sfide', foePal: 13, questions: qs, ...DUEL.tower });
+      const r = await runDuel({ foeName: `Piano ${floor + 1}`, foeTitle: 'Torre delle Sfide', foePal: 13, questions: qs, ...DUEL.tower, arena: 'torre' });
       if (!r.win) break;
       floor++;
       if ((await choose(['Sali ancora', 'Fermati qui'], { prompt: `Piano ${floor} superato!` })) === 1) break;
@@ -482,7 +482,7 @@ export async function legend() {
   await say(['Hai attraversato il Muro del Rumore. Pochi ci riescono.', 'Ti faccio cinque domande difficili. Se rispondi bene, ti lascio un dono di conoscenza.'], 'Investitrice Leggendaria');
   const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole']), 5, { target: targetDiff(STAGE_LEAGUE + 1) });
   const prevFid = S.stats.fiducia;
-  const r = await runDuel({ foeName: 'Investitrice Leggendaria', foePal: 14, questions: qs, need: 4, damage: 0 });
+  const r = await runDuel({ foeName: 'Investitrice Leggendaria', foePal: 14, questions: qs, need: 4, damage: 0, arena: 'lega' });
   S.stats.fiducia = prevFid;
   if (r.win) {
     S.flags.legendMet = true;

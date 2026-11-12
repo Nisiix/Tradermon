@@ -1,5 +1,6 @@
 import { S, profileFromScore, save } from '../systems/state';
 import { say, choose, ask, modal, el, esc } from './core';
+import { mountArena } from './arena';
 import { pickQuestions } from '../systems/quiz';
 import { runDuel } from './battle';
 import { PAL, titleBackdrop, portrait, playerPal, PLAYER_COLOR_LIST } from '../art/art';
@@ -44,9 +45,10 @@ export async function questionnaire(): Promise<number> {
 export async function onboarding(playerName?: string): Promise<void> {
   await disclaimer();
   await controlsTutorial();
-  // scena d'introduzione: il Professore su una pedana, come nei classici
-  const intro = el('div', 'intro-stage', `<img class="sprite" src="${portrait(PAL.PROF)}" alt="Prof. Saldi">`);
+  // scena d'introduzione: il Prof dietro il suo banco, davanti alla lavagna dell'aula
+  const intro = el('div', 'intro-stage', `<div class="fig"><img class="sprite" src="${portrait(PAL.PROF)}" alt="Prof. Saldi"></div><div class="desk"></div>`);
   getStage().prepend(intro);
+  const unmountIntro = mountArena(intro, 'aula', 'prof');
   await say(['Ciao! Benvenuto nella Regione di Capitalia!', 'Mi chiamo Bruno Saldi, ma tutti mi chiamano "il Prof".', 'Ho passato trent\'anni a gestire i risparmi degli altri. Ho visto bolle, crolli e riprese.', 'Oggi insegno ai giovani investitori a non ripetere i miei errori.'], 'Prof. Saldi');
   if (playerName) {
     S.name = playerName;
@@ -55,7 +57,7 @@ export async function onboarding(playerName?: string): Promise<void> {
     S.name = (await ask('Come ti chiami?', 'Alex', 10)) || 'Alex';
     await say(`${S.name}! Che bel nome.`, 'Prof. Saldi');
   }
-  // il colore scelto tinge vestiti e cappellino del protagonista ovunque (mappa, sfide); anteprima dal vivo sulla pedana
+  // il colore scelto tinge vestiti e cappellino del protagonista ovunque (mappa, sfide); anteprima dal vivo dietro il banco
   const img = intro.querySelector('img')!;
   const looks = PLAYER_COLOR_LIST.map((_, i) => portrait(playerPal(i)));
   const av = await choose(PLAYER_COLOR_LIST.map((c) => c.name), { prompt: 'Qual è il tuo colore preferito? Vestiti e cappellino saranno di quel colore (non cambia nulla nel gioco).', who: 'Prof. Saldi', onMove: (i) => { img.src = looks[i]; img.alt = S.name; } });
@@ -71,6 +73,7 @@ export async function onboarding(playerName?: string): Promise<void> {
   await say('Questo è mio nipote. Siete cresciuti insieme, ma investe in modo molto diverso da te...', 'Prof. Saldi');
   S.rival = (await ask('Come si chiama il tuo rivale?', 'Leo', 10)) || 'Leo';
   await say([`Giusto, ${S.rival}! Ora vai a casa a riposare.`, 'Domani vieni al mio Laboratorio: ti aspetta una scelta importante.'], 'Prof. Saldi');
+  unmountIntro();
   intro.remove();
   await say(['Un\'ultima scelta, e questa non si cambia più: la difficoltà.', 'Decide quanto capitale avrà il tuo conto di gioco e quanto margine di errore ti lascio lungo il viaggio. I punteggi sono in percentuale: un capitale più grande non dà vantaggi.'], 'Prof. Saldi');
   applyDifficulty(await chooseDifficulty());

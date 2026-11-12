@@ -52,7 +52,7 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 | 1 | Schermata titolo | Nuova partita / Continua / Importa salvataggio | — |
 | 2 | Avviso iniziale (schermata seria) | Presa visione: "gioco educativo, non consulenza finanziaria" | Obbligatorio per proseguire |
 | 3 | Il Prof. Bruno Saldi si presenta | Nome del giocatore (scelto alla creazione dell'account, 3-15 caratteri) | Dialoghi, salvataggio |
-| 4 | "Qual è il tuo colore preferito?" (8 colori, anteprima dal vivo sulla pedana) | Vestiti e cappellino del protagonista di quel colore, ovunque: mappa e sfide (nessuna implicazione di gameplay; i vecchi salvataggi 0-2 restano rosso, blu, verde) | Sprite del protagonista |
+| 4 | "Qual è il tuo colore preferito?" (8 colori, anteprima dal vivo dietro il banco del Prof) | Vestiti e cappellino del protagonista di quel colore, ovunque: mappa e sfide (nessuna implicazione di gameplay; i vecchi salvataggi 0-2 restano rosso, blu, verde) | Sprite del protagonista |
 | 5 | Questionario del Professore (5 domande) | Profilo di rischio: Prudente / Equilibrato / Audace | Tono dei consigli, durata timer, difficoltà missioni |
 | 6 | "Quale obiettivo hai?" | Obiettivo: Imparare le basi / Costruire un piano di lungo periodo / Capire il trading | Testi del diario e messaggi motivazionali |
 | 7 | "Qual è il tuo orizzonte?" | Orizzonte: < 3 anni / 3-10 anni / > 10 anni | Spiegazioni personalizzate su rischio e orizzonte |
@@ -503,8 +503,10 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 
 - Risoluzione logica 240×160 (quella delle console portatili dei primi anni 2000), tessere 16×16, personaggi 16×24, ingrandimento a pixel netti.
 - Stile grafico: pixel art originale disegnata in codice, ispirata alle portatili di metà anni 2000 (stile DS): rampe di 5 tonalità, contorni colorati invece che neri, ombre portate da alberi e facciate, ombre morbide sotto i personaggi, leggera vignettatura. Gli sprite delle sfide sono ingranditi con Scale2x per bordi più morbidi. Bordi automatici per sentieri, acqua e tetti; acqua, fiori e Muro del Rumore animati; erba alta (Zone di Mercato) con riflessi dorati.
-- Finestre nello stile classico: riquadro bianco a doppio bordo, freccia rossa lampeggiante, cursore a triangolo nei menu, cartello del luogo che scende all'ingresso di ogni zona.
-- Schermata di sfida: avversario in alto a destra su una pedana d'erba, giocatore di spalle in basso a sinistra, riquadri delle barre (Convinzione e Fiducia) verde/giallo/rosso, lampo d'ingresso e scorrimento dei personaggi.
+- Finestre nello stile classico: riquadro bianco a doppio bordo, freccia rossa lampeggiante, cursore a triangolo nei menu, tabellone a led del luogo che scorre da sinistra all'ingresso di ogni zona.
+- Schermata di sfida (src/ui/arena.ts): un confronto in sala. Giocatore e sfidante stanno affiancati alla stessa altezza, entrambi rivolti verso lo schermo, ciascuno dietro una postazione con un piccolo monitor; sopra di loro una targhetta da terminale con nome, titolo e barra a segmenti (Fiducia, Convinzione). In alto scorre un nastro di concetti del gioco (mai prezzi o titoli reali). Lo sfondo è dipinto in codice e dipende dal luogo: piazza delle quotazioni (sfide comuni), aula dell'Accademia (allievi, Esame della Leva), sala dei monitor (Mentori), tetto della città al tramonto (rivale), fossa degli speculatori (Speculatori e loro capi), sala grande della Borsa di notte (Boss del dopo-Lega), salone della Lega (Lega, Investitrice Leggendaria), Torre delle Sfide, Biblioteca.
+- Transizione d'ingresso "campanella d'apertura": una linea di prezzo attraversa lo schermo, dietro di lei crescono le candele fino a coprirlo, poi il grafico si apre in due lungo la linea e compare il luogo della sfida. Con "riduci movimento" dura un attimo.
+- Introduzione: il Prof parla dietro il suo banco, davanti alla lavagna dell'aula.
 - Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.
 - Touch: croce direzionale e pulsanti A, B, Menu sullo schermo.
 - Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo (con scelta del titolo), Medaglie, Tecniche, Mappa della Regione (con Trasferimento di Capitale), Salva, Opzioni (effetti, musica, velocità del testo, scala dei caratteri, contrasto alto, Comandi).

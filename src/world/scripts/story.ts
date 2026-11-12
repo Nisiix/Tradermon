@@ -156,7 +156,7 @@ async function rivalDuel(k: number, w: WorldApi) {
   const topics = trackTopics(S.track, S.mixedClasses, S.badges);
   const P = k === 1 ? DUEL.rivalFirst : DUEL.rival;
   const qs = pickQuestions(topics, P.n, { target: targetDiff(k === 1 ? 0 : storyStage()), preferReview: true });
-  const r = await runDuel({ foeName: S.rival, foeTitle: 'Rivale', foePal: PAL.RIVAL, questions: qs, ...P });
+  const r = await runDuel({ foeName: S.rival, foeTitle: 'Rivale', foePal: PAL.RIVAL, questions: qs, ...P, arena: 'tetto' });
   if (!r.win) { await say(['Ah! Te l\'avevo detto.', 'Ripassa un po\' e riprova.'], S.rival); return defeatRespawn(w); }
   reward({ defeated: `rival_${k}`, rep: REWARD.rep.rival, save: false });
   beep('win');

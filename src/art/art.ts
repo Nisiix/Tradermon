@@ -980,8 +980,6 @@ function bigSprite(pal: number, dir: number, scale: number): string {
 
 /** Sprite grande frontale per le schermate di sfida. */
 export function portrait(pal: number): string { return bigSprite(pal, 0, 4); }
-/** Il giocatore visto di spalle, come nelle sfide classiche. */
-export function portraitBack(pal: number): string { return bigSprite(pal, 1, 5); }
 
 /** Icona dell'app (PNG data URL) */
 export function appIcon(size: number): string {
