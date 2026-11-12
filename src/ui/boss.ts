@@ -29,22 +29,30 @@ function runs(): Record<string, BossRun> {
   return b.runs;
 }
 
+/** Come funzionano i Boss: si spiega da sola alla prima visita, poi resta alla voce "Come funziona". */
+function bossRules(): Promise<void> {
+  S.flags.bossRules = true;
+  save();
+  return say([
+    'Ogni Boss si affronta in due tempi: un quiz di livello esperto, poi UNA sola decisione su un grafico vero. Ingresso al prezzo del momento, uno stop, un obiettivo, quanto rischi.',
+    'Il piano muove ordini veri sul conto di gioco: quando lo invii compri davvero il titolo e parte uno stop vero al prezzo che hai indicato. Quanto compri lo decide il rischio che scegli: capitale × rischio ÷ distanza dello stop. L\'acquisto deve essere eseguito subito, quindi le azioni si usano a Borsa aperta e le cripto sempre.',
+    'Stop e obiettivo non si toccano più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata. I tre Boss si possono sfidare insieme: ognuno ha il suo mandato.',
+    'Se vedi che l\'obiettivo non arriva puoi decidere di vendere prima della scadenza e puntare su un altro titolo. La vendita può essere anche parziale, ma va dichiarata: scegli "vendo una parte per annullare la sfida". Decidere di vendere annulla la sfida in ogni caso: la ripeti da capo, quiz compreso, scegliendo un titolo diverso. Non conta come sconfitta.',
+    `Il Boss ha ${BOSS_RULES.energy} punti di energia: fino a ${BOSS_RULES.quizMax} li toglie il quiz, fino a ${BOSS_RULES.planMax} la qualità del piano, fino a ${BOSS_RULES.outcomeMax} l'esito reale. Ne servono ${BOSS_RULES.win}.`,
+    'Quiz e piano perfetti bastano da soli: l\'esito non lo controlla nessuno, quindi non può essere l\'unica strada. Se perdi, si rifà tutto il Boss, quiz compreso, e la perdita fatta su quella posizione resta sul conto.',
+    'Il punteggio dell\'esito si legge sulle candele reali del periodo; il denaro segue gli ordini veri. A mandato finito decidi tu se chiudere la posizione o tenerla.',
+  ], KEEPER);
+}
+
 export async function bossMenu(): Promise<void> {
+  if (!S.flags.bossRules) await bossRules();
   for (;;) {
     const all = runs();
     const opts = [...BOSSES.map((b) => `${b.name} · ${b.durationLabel}${S.boss.beaten.includes(b.id) ? ' ✓' : ''}${all[b.id] ? (all[b.id].plan ? ' · piano in corso' : ' · quiz superato') : ''}`), 'Come funziona', 'Esci'];
     const c = await choose(opts, { cancel: true, title: 'BOSS DEI MERCATI', who: KEEPER });
     if (c < 0 || c === opts.length - 1) return;
     if (c === BOSSES.length) {
-      await say([
-        'Ogni Boss si affronta in due tempi: un quiz di livello esperto, poi UNA sola decisione su un grafico vero. Ingresso al prezzo del momento, uno stop, un obiettivo, quanto rischi.',
-        'Il piano muove ordini veri sul conto di gioco: quando lo invii compri davvero il titolo e parte uno stop vero al prezzo che hai indicato. Quanto compri lo decide il rischio che scegli: capitale × rischio ÷ distanza dello stop. L\'acquisto deve essere eseguito subito, quindi le azioni si usano a Borsa aperta e le cripto sempre.',
-        'Stop e obiettivo non si toccano più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata. I tre Boss si possono sfidare insieme: ognuno ha il suo mandato.',
-        'Se vedi che l\'obiettivo non arriva puoi decidere di vendere prima della scadenza e puntare su un altro titolo. La vendita può essere anche parziale, ma va dichiarata: scegli "vendo una parte per annullare la sfida". Decidere di vendere annulla la sfida in ogni caso: la ripeti da capo, quiz compreso, scegliendo un titolo diverso. Non conta come sconfitta.',
-        `Il Boss ha ${BOSS_RULES.energy} punti di energia: fino a ${BOSS_RULES.quizMax} li toglie il quiz, fino a ${BOSS_RULES.planMax} la qualità del piano, fino a ${BOSS_RULES.outcomeMax} l'esito reale. Ne servono ${BOSS_RULES.win}.`,
-        'Quiz e piano perfetti bastano da soli: l\'esito non lo controlla nessuno, quindi non può essere l\'unica strada. Se perdi, si rifà tutto il Boss, quiz compreso, e la perdita fatta su quella posizione resta sul conto.',
-        'Il punteggio dell\'esito si legge sulle candele reali del periodo; il denaro segue gli ordini veri. A mandato finito decidi tu se chiudere la posizione o tenerla.',
-      ], KEEPER);
+      await bossRules();
       continue;
     }
     await bossFight(BOSSES[c]);
@@ -115,7 +123,7 @@ async function planForm(def: BossDef): Promise<void> {
     body.innerHTML = `
       <p class="small">Una sola decisione, su un grafico vero, con <b>ordini veri sul conto di gioco</b>: all'invio compri il titolo al prezzo del momento e parte uno stop vero al prezzo che indichi. Quanto compri lo decide il rischio: capitale × rischio ÷ distanza dello stop. Durata del mandato: <b>${def.durationLabel}</b>. Dopo l'invio stop e obiettivo non si cambiano.</p>
       <p class="small">Se il piano va male, la perdita resta sul conto e la sfida si rifà da capo.</p>
-      <p class="small">Se l'obiettivo non arriva puoi vendere prima della scadenza e puntare su un altro titolo: anche una vendita parziale annulla la sfida, che si ripete da capo con un titolo diverso.${sold ? ` Hai venduto <b>${esc(ASSET_BY_ID[sold]?.ticker ?? sold)}</b> nell'ultimo mandato: questa volta scegli un altro titolo.` : ''}</p>
+      <p class="small">Se l'obiettivo non arriva puoi vendere prima della scadenza e puntare su un altro titolo: anche una vendita parziale annulla la sfida, e la ripeti da capo con un titolo diverso.${sold ? ` Hai venduto <b>${esc(ASSET_BY_ID[sold]?.ticker ?? sold)}</b> nell'ultimo mandato: questa volta scegli un altro titolo.` : ''}</p>
       <label>Titolo <select class="tx as">${pool.map((a) => `<option value="${esc(a.id)}">${esc(a.ticker)} · ${esc(a.name)}</option>`).join('')}</select></label>
       <p class="px small muted">Prezzo: …</p>
       <div class="grid2">
@@ -204,20 +212,20 @@ async function sellMandate(def: BossDef): Promise<void> {
     // la vendita è vera: parte un ordine sul conto di gioco, e la sfida è annullata
     const r = await M.closeMandate(def.id, 'annulla', c === 1 ? 0.5 : 1);
     beep('bad');
-    await say([r.msg, r.cancelled ?? `Il mandato su ${tick} è annullato: non conta come sconfitta.`, `Quando vuoi riprovare si ricomincia dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.${c === 1 ? ` La parte di ${tick} che hai tenuto resta una posizione normale, senza lo stop del piano.` : ''}`], def.name);
+    await say([r.msg, r.cancelled ?? `Il mandato su ${tick} è annullato: non conta come sconfitta.`, `Quando vuoi riprovare ricominci dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.${c === 1 ? ` La parte di ${tick} che hai tenuto resta una posizione normale, senza lo stop del piano.` : ''}`], def.name);
     return;
   }
   if (!sellOut(S.boss, def.id)) return;
   save();
   beep('bad');
-  await say([`Hai deciso di vendere ${c === 1 ? 'una parte di ' : ''}${tick} per annullare la sfida: il mandato è chiuso${c === 1 ? ', anche se la vendita è parziale' : ''}. Non conta come sconfitta.`, `Quando vuoi riprovare si ricomincia dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.`], def.name);
+  await say([`Hai deciso di vendere ${c === 1 ? 'una parte di ' : ''}${tick} per annullare la sfida: il mandato è chiuso${c === 1 ? ', anche se la vendita è parziale' : ''}. Non conta come sconfitta.`, `Quando vuoi riprovare ricominci dal quiz, e per il piano sceglierai un titolo diverso da ${tick}.`], def.name);
 }
 
 async function resolve(def: BossDef): Promise<void> {
   // con gli ordini veri prima si legge che cosa è successo sul conto (stop scattato, vendite fatte altrove)
   if (runs()[def.id]?.plan?.real) {
     (await Acc.sync(true)).forEach((n) => toast(n));
-    if (!runs()[def.id]?.plan) { await say('Il titolo del piano è stato venduto fuori dal piano: il mandato è annullato. Non conta come sconfitta: quando vuoi si ricomincia dal quiz, con un altro titolo.', def.name); return; }
+    if (!runs()[def.id]?.plan) { await say('Il titolo del piano è stato venduto fuori dal piano: il mandato è annullato. Non conta come sconfitta: quando vuoi ricominci dal quiz, con un altro titolo.', def.name); return; }
   }
   const run = runs()[def.id];
   const p = run.plan!;

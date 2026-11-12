@@ -117,7 +117,7 @@ export function leagueTrial(i: number): Trial | null {
     case 0: return { id: 'l1', title: 'Capitale al lavoro', brief: 'Tassi e cicli non si prevedono: ci si prepara. Mostrami un conto investito davvero, diviso tra più titoli e con una parte che regge quando il vento gira.', checks: (b) => some([cInvested(b), cAssets(b), cDefensive(b)]) };
     case 1: return { id: 'l2', title: 'Entrata e uscita', brief: 'Un grafico serve a decidere prima dove si esce. Mostrami un conto senza scommesse su un solo titolo e con gli stop già piazzati su Alpaca.', checks: (b) => [cWeight(b), cStops(b)] };
     case 2: return null;
-    case 3: return { id: 'l4', title: 'Il piano prima dell\'umore', brief: 'La mente fredda si vede dai fatti: un conto che somiglia al piano che ti sei dato, e decisioni scritte con il loro motivo.', checks: (b) => [cPlan(b), cJournal()] };
+    case 3: return { id: 'l4', title: 'Il piano prima dell\'umore', brief: 'La mente fredda si vede dai fatti: un conto che somiglia al piano che ti sei dat{o|a}, e decisioni scritte con il loro motivo.', checks: (b) => [cPlan(b), cJournal()] };
     default: return { id: 'l5', title: 'La prova del Campione', brief: 'Tutto insieme, sul tuo conto, oggi: investito, diviso, protetto, fedele al piano.', checks: (b) => some([cInvested(b), cAssets(b), cWeight(b), cStops(b), cPlan(b), cCalm()]) };
   }
 }

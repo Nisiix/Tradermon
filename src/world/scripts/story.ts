@@ -2,7 +2,7 @@
 import { type NpcDef } from '../maps';
 import type { AssetClass } from '../../types';
 import { S, save, addRep, card, classes, capital } from '../../systems/state';
-import { say, choose, modal, esc, wait } from '../../ui/core';
+import { say, choose, modal, esc, wait, el } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { trade } from '../../ui/clinic';
 import { openGameAccount } from '../../ui/broker';
@@ -18,12 +18,13 @@ import { ASSETS, ASSET_BY_ID, starterFor, starterOptions, SECTOR_LABEL } from '.
 import { metrics, tradingDaysBetween } from '../../systems/market';
 import { PAL } from '../../art/art';
 import { beep } from '../../systems/audio';
+import { keysOf } from '../../systems/controls';
 import { track } from '../../systems/progress';
 import { reward, TRACK_LABEL, defeatRespawn } from './common';
 import type { WorldApi } from './common';
 
 export async function mom() {
-  if (!S.flags.starter) return say([`${S.name}, finalmente sei sveglio!`, 'Il Professor Saldi ti aspetta al Laboratorio, qui a Borgo Semina.', 'E ricorda: i soldi che servono per l\'affitto non si investono!'], 'Zia Mara');
+  if (!S.flags.starter) return say([`${S.name}, finalmente sei svegli{o|a}!`, 'Il Professor Saldi ti aspetta al Laboratorio, qui a Borgo Semina.', 'E ricorda: i soldi che servono per l\'affitto non si investono!'], 'Zia Mara');
   S.stats.fiducia = 100;
   beep('heal');
   return say(['Riposati un po\'. Ecco, la tua Fiducia è tornata al massimo.', 'Tuo zio diceva sempre: "Il mercato può restare irrazionale più a lungo di quanto tu resti solvibile".'], 'Zia Mara');
@@ -34,8 +35,8 @@ export async function mom() {
 export async function prof(w: WorldApi) {
   if (!S.flags.starter) {
     if (!S.flags.profIntro) {
-      await say(['Eccoti! Benvenuto nel mio Laboratorio.', 'A Capitalia si studia. I titoli veri si comprano fuori dalla regione, sui Mercati di Fuori: le borse del mondo reale, con prezzi veri e orari veri.', 'Su quel tavolo ci sono tre Valigette. Ognuna apre un percorso e contiene la scheda del tuo primo titolo vero, scelto da te in una piccola vetrina.', 'Blu: il Sentiero dei Titoli, le azioni delle aziende.', 'Verde: il Sentiero degli Indici, gli ETF.', 'Arancione: il Sentiero Cripto, la frontiera più rischiosa.', 'Avvicinati a una Valigetta per leggere la scheda. Oppure parla con me se vuoi un percorso misto.'], 'Prof. Saldi');
-      await say(['Prima che tu scelga, la regola che regge tutto il viaggio.', 'In ogni città c\'è un Mentore, e la sua Medaglia ha due metà. L\'ATTESTATO si vince con un duello di conoscenza: basta quello per proseguire verso la città successiva.', 'Il SIGILLO pratico si guadagna con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che il Mentore ti ha appena insegnato.', 'Puoi viaggiare con i soli Attestati, ma nella Lega degli Investitori entra solo chi ha tutti e otto i Sigilli. Studiare apre la strada; saper fare apre la Lega.'], 'Prof. Saldi');
+      await say(['Eccoti! Benvenut{o|a} nel mio Laboratorio.', 'A Capitalia si studia. I titoli veri si comprano fuori dalla regione, sui Mercati di Fuori: le borse del mondo reale, con prezzi veri e orari veri.', 'Su quel tavolo ci sono tre Valigette. Ognuna apre un percorso e contiene la scheda del tuo primo titolo vero, scelto da te in una piccola vetrina.', 'Blu: il Sentiero dei Titoli, le azioni delle aziende.', 'Verde: il Sentiero degli Indici, gli ETF.', 'Arancione: il Sentiero Cripto, la frontiera più rischiosa.', 'Avvicinati a una Valigetta per leggere la scheda. Oppure parla con me se vuoi un percorso misto.'], 'Prof. Saldi');
+      await say(['In ogni città c\'è un Mentore: battilo in un duello di conoscenza e avrai il suo Attestato, che apre la strada verso la città successiva. Il resto te lo spiegherà lui.'], 'Prof. Saldi');
       S.flags.profIntro = true;
     }
     const c = await choose(['Guardo le Valigette', 'Vorrei il Sentiero Misto', 'Si usano soldi veri?'], { cancel: true, prompt: 'Allora, hai deciso?', who: 'Prof. Saldi' });
@@ -49,8 +50,8 @@ export async function prof(w: WorldApi) {
     return startTrack('mixed', w);
   }
   if (!caseOpen()) await say(['La tua Valigetta è ancora sigillata: si apre con il primo acquisto sul conto Alpaca Paper.', 'Collega il conto dal menu, voce "Chiavi API", e passa in una Clinica. Nel frattempo studia: Attestati e storia non aspettano il conto.'], 'Prof. Saldi');
-  if (S.badges >= 8 && S.defeated.includes('league_4')) return say(['Campione! Sono fiero di te.', 'Alla Torre delle Sfide trovi le crisi leggendarie e i Boss. E se vuoi, dalla Torre puoi iniziare una Nuova Partita+: da zero, con i tuoi trofei e la difficoltà Leggenda.'], 'Prof. Saldi');
-  return say([`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8 · Sigilli pratici: ${S.seals}/8.`, S.badges === 0 ? 'Il primo Mentore, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.' : 'Continua così, e ricorda di passare dalle Cliniche.', 'E non fidarti di chi ti promette guadagni garantiti!'], 'Prof. Saldi');
+  if (S.badges >= 8 && S.defeated.includes('league_4')) return say(['{Campione|Campionessa}! Sono fiero di te.', 'Alla Torre delle Sfide trovi le crisi leggendarie e i Boss. E se vuoi, dalla Torre puoi iniziare una Nuova Partita+: da zero, con i tuoi trofei e la difficoltà Leggenda.'], 'Prof. Saldi');
+  return say([`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8${S.badges ? ` · Sigilli pratici: ${S.seals}/8` : ''}.`, S.badges === 0 ? 'Il primo Mentore, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.' : 'Continua così, e ricorda di passare dalle Cliniche.', 'E non fidarti di chi ti promette guadagni garantiti!'], 'Prof. Saldi');
 }
 
 async function moneyTalk() {
@@ -84,14 +85,34 @@ export async function chooseCase(n: NpcDef, w: WorldApi) {
 }
 
 /** Vetrina della Valigetta: il primo titolo vero, scelto dal giocatore tra pochi nomi curati. Non è un consiglio. */
-async function chooseStarter(cls: AssetClass): Promise<string> {
+export async function chooseStarter(cls: AssetClass): Promise<string> {
   const opts = starterOptions(cls);
   const px = S.market.prices;
   for (;;) {
     const id = await modal<string>('La vetrina della Valigetta', ({ body, button, close }) => {
-      body.innerHTML = `<p class="small">Scegli il tuo primo titolo. Sono titoli veri, messi in vetrina perché si prestano a imparare: non è un consiglio, e gli altri li ritroverai tutti dopo il primo Attestato.</p>
-        <div class="cards">${opts.map((a) => `<div class="card"><b>${esc(a.name)}</b> (${esc(a.ticker)})<br><span class="small">${SECTOR_LABEL[a.sector]} · rischio indicativo ${'★'.repeat(a.risk)}${hasPrices() && px[a.id] ? ` · ${fmtPx(px[a.id])} $` : ''}</span><br><span class="small">${esc(a.desc)}</span></div>`).join('')}</div>`;
-      opts.forEach((a) => button(a.ticker, () => close(a.id)));
+      // si sceglie toccando la card, poi si conferma con l'unico pulsante OK (come nel Carrello diversificato)
+      let pick = '';
+      body.innerHTML = `<p class="small">Scegli il tuo primo titolo: tocca la sua scheda, poi premi OK. Sono titoli veri, messi in vetrina perché si prestano a imparare: non è un consiglio, e gli altri li ritroverai tutti dopo il primo Attestato.</p>`;
+      const grid = el('div', 'cards');
+      const cards = opts.map((a) => {
+        const c = el('button', 'card pick', `<span><b>${esc(a.name)}</b> (${esc(a.ticker)})<br><span class="small">${SECTOR_LABEL[a.sector]} · rischio indicativo ${'★'.repeat(a.risk)}${hasPrices() && px[a.id] ? ` · ${fmtPx(px[a.id])} $` : ''}</span><br><span class="small">${esc(a.desc)}</span></span>`);
+        c.type = 'button';
+        c.dataset.id = a.id;
+        c.setAttribute('aria-pressed', 'false');
+        c.addEventListener('click', (ev) => {
+          pick = a.id;
+          for (const o of cards) { const on = o.dataset.id === pick; o.classList.toggle('gold', on); o.setAttribute('aria-pressed', String(on)); }
+          ok.disabled = false;
+          // da tastiera o pulsante A (clic senza puntatore) si passa subito a OK: un altro A conferma
+          if (ev.detail === 0) ok.focus();
+        });
+        grid.appendChild(c);
+        return c;
+      });
+      body.appendChild(grid);
+      const ok = button('OK', () => { if (pick) close(pick); }, 'primary');
+      ok.disabled = true;
+      setTimeout(() => cards[0]?.focus(), 40);
     }, { closable: false, wide: true });
     if (id) return id;
   }
@@ -111,12 +132,11 @@ async function startTrack(track: S_Track, w: WorldApi) {
   await say([`La scheda di ${ASSET_BY_ID[starter].name} è entrata nel tuo Investidex.`], 'Prof. Saldi');
   if (linked) {
     const D = DIFFICULTY[S.difficulty];
-    await say(['Apriamo la Valigetta con il primo acquisto, così vedi come funziona un ordine vero.', `Il minimo per aprirla è ${fmtMoney(capital() * RATE * (1 - D.tolerance))}. Se vuoi investire di più puoi: il capitale è tutto tuo, e anche il rischio. Se la Borsa è chiusa l'ordine parte lo stesso e si esegue all'apertura.`], 'Dott.ssa Ratio');
+    await say(['Apriamo la Valigetta con il primo acquisto, così vedi come funziona un ordine vero.', `Il minimo per aprirla è ${fmtMoney(capital() * RATE * (1 - D.tolerance))}. Se la Borsa è chiusa l'ordine parte lo stesso e si esegue all'apertura.`], 'Dott.ssa Ratio');
     if (await trade(true)) { await say('Valigetta aperta: il tuo primo titolo vero è nel conto, o in coda per l\'apertura dei mercati.', 'Dott.ssa Ratio'); }
     else await say('Nessun acquisto per ora: la Valigetta resta sigillata. La apri quando vuoi, da una Clinica.', 'Dott.ssa Ratio');
   }
-  await moneyTalk();
-  await say(['Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu (tasto M), insieme all\'Investidex, al tuo Profilo e alle Chiavi API.'], 'Prof. Saldi');
+  await say([`Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu${keysOf('menu')[0] ? ` (tasto ${keysOf('menu')[0]})` : ''}, insieme all'Investidex e al tuo Profilo.`], 'Prof. Saldi');
   await say(['Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.', 'Gli scaffali in alto a sinistra sono la Sezione del Mentore: libri sull\'argomento su cui il Mentore di quella città ti interrogherà nel duello.', 'Leggili prima di sfidarlo: in questo gioco si vince studiando, non indovinando.'], 'Prof. Saldi');
   save();
   w.refresh();
@@ -146,7 +166,7 @@ export async function rival(n: NpcDef, w: WorldApi) {
   const lines: Record<number, string[]> = {
     2: [`${S.name}! Ti stavo aspettando.`, 'Ho guadagnato un sacco questa settimana. E tu?', 'Confrontiamo le nostre conoscenze... e i nostri portafogli!'],
     3: ['Anche tu a Diversia?', 'Qui tutti parlano di correlazioni. Io preferisco i risultati!'],
-    4: ['Sapevo che saresti arrivato fin qui.', 'Prima della Lega, un\'ultima sfida tra noi due. Niente sconti!'],
+    4: ['Sapevo che saresti arrivat{o|a} fin qui.', 'Prima della Lega, un\'ultima sfida tra noi due. Niente sconti!'],
   };
   await say(lines[k] ?? ['Sfida!'], S.rival);
   await rivalDuel(k, w);

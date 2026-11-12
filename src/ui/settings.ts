@@ -92,7 +92,7 @@ export async function openSettings() {
         ign.addEventListener('click', () => {
           const msg = Acc.setIgnore(!Acc.ignoreOn());
           showIgn();
-          if (msg) { close(); void say(msg); } else toast(Acc.ignoreOn() ? 'Opzione attiva: una Prova andata male non ti ferma più. Resta una scelta sconsigliata per chi vuole imparare.' : 'Opzione spenta: una Prova annullata va rifatta.');
+          if (msg) { close(); void say(msg); } else toast(Acc.ignoreOn() ? 'Opzione attiva: una Prova andata male non ti ferma più. Resta una scelta sconsigliata se vuoi imparare.' : 'Opzione spenta: una Prova annullata va rifatta.');
         });
         showIgn();
       }
@@ -125,7 +125,7 @@ export async function openControls() {
         captureNextKey((code) => {
           const stolen = bindKey(a, i, code);
           if (stolen) toast(`${keyName(code)} tolto da "${ACTIONS.find((x) => x.id === stolen)!.name}".`);
-          if (prefs.keys.a.length === 0 || prefs.keys.b.length === 0) toast('Attento: Conferma e Indietro devono avere almeno un tasto.');
+          if (prefs.keys.a.length === 0 || prefs.keys.b.length === 0) toast('Attent{o|a}: Conferma e Indietro devono avere almeno un tasto.');
           render();
           body.querySelector<HTMLButtonElement>(`.kb-b[data-a="${a}"][data-i="${Math.min(i, prefs.keys[a].length - 1)}"]`)?.focus();
         });

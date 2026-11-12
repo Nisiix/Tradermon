@@ -132,7 +132,7 @@ export const HOUSEHOLDS: Household[][] = [
         'Ma l\'Italia è una piccola parte dell\'economia mondiale: diversificare per area geografica riduce la dipendenza da un solo Paese.']],
       ['matilde', 'Matilde Bianchi', 'bambina', 21, 'etf-mondiale', 'ip_index_fund', [
         'Il papà dice che un ETF su un indice mondiale contiene migliaia di aziende di tanti Paesi diversi.',
-        'Con una sola quota sei già diversificato. Che furbata!']],
+        'Con una sola quota sei già diversificat{o|a}. Che furbata!']],
     ]),
     hh('h3_lombardi', 'Casa Lombardi', 'couple', [
       ['filippo', 'Filippo Lombardi', 'cuoco', 26, 'azioni-datore-lavoro', 'ig_diversify', [
@@ -293,7 +293,7 @@ export const HOUSEHOLDS: Household[][] = [
         'Per chi preleva dal portafoglio, come un pensionato, un crollo nei primi anni fa molto più danno dello stesso crollo più avanti.',
         'Per questo, avvicinandosi all\'obiettivo, si riduce gradualmente il rischio.']],
       ['gemma', 'Gemma Rota', 'bambina', 21, 'stop-deciso-prima', 'ip_stoploss', [
-        'Ho imparato che lo stop loss si decide prima di comprare, quando sei calmo.',
+        'Ho imparato che lo stop loss si decide prima di comprare, quando sei calm{o|a}.',
         'Non quando il prezzo sta già crollando e hai il cuore che batte forte!']],
     ]),
     hh('h8_livio', 'Casa di Livio', 'single', [
