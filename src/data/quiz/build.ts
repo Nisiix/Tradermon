@@ -1,6 +1,7 @@
 import type { Question, QuizTopic, Track, AssetClass } from '../../types';
 import * as C from './core';
-import * as T from './tracks';
+import * as TR from './tracks';
+import { T } from '../../i18n';
 
 /** Riga di una domanda: [difficoltà, domanda, giusta, sbagliata×3, spiegazione, fonte, id?].
  *  L'id esplicito (9° elemento) tiene stabile il riferimento nei salvataggi anche se si riordinano o inseriscono righe;
@@ -30,17 +31,17 @@ const TABLE: Record<QuizTopic, QRow[]> = {
   macro: C.MACRO,
   analisi: C.ANALISI,
   regole: C.REGOLE,
-  stocks_base: T.STOCKS_BASE,
-  stocks_bilanci: T.STOCKS_BILANCI,
-  stocks_dividendi: T.STOCKS_DIVIDENDI,
-  etf_base: T.ETF_BASE,
-  etf_replica: T.ETF_REPLICA,
-  etf_obbligazioni: T.ETF_OBBLIGAZIONI,
-  crypto_base: T.CRYPTO_BASE,
-  crypto_custodia: T.CRYPTO_CUSTODIA,
-  crypto_stable: T.CRYPTO_STABLE,
-  mixed_base: T.MIXED_BASE,
-  mixed_allocazione: T.MIXED_ALLOCAZIONE,
+  stocks_base: TR.STOCKS_BASE,
+  stocks_bilanci: TR.STOCKS_BILANCI,
+  stocks_dividendi: TR.STOCKS_DIVIDENDI,
+  etf_base: TR.ETF_BASE,
+  etf_replica: TR.ETF_REPLICA,
+  etf_obbligazioni: TR.ETF_OBBLIGAZIONI,
+  crypto_base: TR.CRYPTO_BASE,
+  crypto_custodia: TR.CRYPTO_CUSTODIA,
+  crypto_stable: TR.CRYPTO_STABLE,
+  mixed_base: TR.MIXED_BASE,
+  mixed_allocazione: TR.MIXED_ALLOCAZIONE,
 };
 
 export const QUESTIONS: Question[] = (Object.keys(TABLE) as QuizTopic[]).flatMap((t) => build(t, TABLE[t]));
@@ -48,7 +49,7 @@ export const BY_ID: Record<string, Question> = Object.fromEntries(QUESTIONS.map(
 if (Object.keys(BY_ID).length !== QUESTIONS.length) {
   const seen = new Set<string>();
   const dup = QUESTIONS.map((q) => q.id).filter((id) => seen.size === seen.add(id).size);
-  throw new Error(`Id domanda duplicati: ${dup.join(', ')}`);
+  throw new Error(T`Id domanda duplicati: ${dup.join(', ')}`);
 }
 
 export function byTopic(topic: QuizTopic): Question[] {

@@ -11,6 +11,7 @@ import { beep } from '../../systems/audio';
 import { lastDuelTilted } from '../../ui/battle';
 import { pick, shuffle } from '../../systems/rng';
 import { tick } from '../../systems/account';
+import { T } from '../../i18n';
 
 export interface WorldApi {
   warp(map: string, x: number, y: number, dir?: 0 | 1 | 2 | 3): void;
@@ -22,7 +23,7 @@ export interface WorldApi {
   town(): number;
 }
 
-export const TRACK_LABEL: Record<string, string> = { stocks: 'Sentiero dei Titoli', etf: 'Sentiero degli Indici', crypto: 'Sentiero Cripto', mixed: 'Sentiero Misto' };
+export const TRACK_LABEL: Record<string, string> = { stocks: T('Sentiero dei Titoli'), etf: T('Sentiero degli Indici'), crypto: T('Sentiero Cripto'), mixed: T('Sentiero Misto') };
 
 /** Tappa di un avversario sul Percorso r: quella in cui lo si incontra di solito (r − 1 medaglie), o più avanti se lo affronti dopo. */
 export function routeStage(n: NpcDef): number {
@@ -46,9 +47,9 @@ export async function afterDuel(win: boolean, id: string, rep: number, w: WorldA
   tick();
   if (win) {
     reward({ defeated: id, rep });
-    await say(['Complimenti, sei preparat{o|a}!', pick(TRAINER_TIPS)], who);
+    await say([T('Complimenti, sei preparat{o|a}!'), pick(TRAINER_TIPS)], who);
   } else {
-    await say('Ah! Ripassa e riprova.', who);
+    await say(T('Ah! Ripassa e riprova.'), who);
     await defeatRespawn(w);
   }
   w.refresh();
@@ -66,15 +67,15 @@ export async function defeatRespawn(w: WorldApi) {
   const dest = town !== undefined ? { map: `clinic_${town}`, x: 5, y: 4 } : S.lastClinic;
   const atHome = !dest.map.startsWith('clinic_');
   await say([
-    tilt ? 'Hai perso tutta la Fiducia e sei andat{o|a} in tilt!' : 'Non sei riuscit{o|a} a rispondere alle domande e hai perso la sfida.',
-    atHome ? 'Torni di corsa a casa per riprenderti.' : town !== undefined ? 'Torni alla Banca della città per un recupero di credito.' : 'Torni all\'ultima Banca visitata per un recupero di credito.',
-  ], 'Sistema');
+    tilt ? T('Hai perso tutta la Fiducia e sei andat{o|a} in tilt!') : T('Non sei riuscit{o|a} a rispondere alle domande e hai perso la sfida.'),
+    atHome ? T('Torni di corsa a casa per riprenderti.') : town !== undefined ? T('Torni alla Banca della città per un recupero di credito.') : T('Torni all\'ultima Banca visitata per un recupero di credito.'),
+  ], T('Sistema'));
   if (tilt) S.stats.reputazione = Math.round(S.stats.reputazione * 0.95);
   S.stats.fiducia = 100;
   S.lastClinic = { ...dest };
   w.warp(dest.map, dest.x, dest.y, atHome ? 0 : 1);
   save();
-  if (!atHome) await say(['Una sconfitta non chiude il conto: ti riapriamo la linea di credito e la tua Fiducia torna al massimo.', 'Il debito lo ripaghi studiando. Ripassa con calma e ritenta la sfida quando vuoi!'], 'Dott.ssa Ratio');
+  if (!atHome) await say([T('Una sconfitta non chiude il conto: ti riapriamo la linea di credito e la tua Fiducia torna al massimo.'), T('Il debito lo ripaghi studiando. Ripassa con calma e ritenta la sfida quando vuoi!')], T('Dott.ssa Ratio'));
 }
 
 /** Dopo una sconfitta con una Whale o un Superiore: si riprova solo dopo aver studiato. */

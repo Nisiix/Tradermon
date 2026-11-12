@@ -7,6 +7,7 @@
 // sulle barre reali di Alpaca; il denaro segue gli ordini, quindi una perdita resta sul conto.
 import type { BossPlan, BossState, QuizTopic } from '../types';
 import type { BarTimeframe } from './alpaca';
+import { T } from '../i18n';
 
 export interface BossDef {
   id: string;
@@ -26,12 +27,12 @@ export interface BossDef {
 const H = 3600_000, D = 24 * H;
 
 export const BOSSES: BossDef[] = [
-  { id: 'fulmine', name: 'Il Fulmine', title: 'Boss dell\'intraday', tf: '5Min', durationMs: 2 * H, durationLabel: '2 ore, candele da 5 minuti', topics: ['ordini', 'analisi', 'bias'], cryptoOnlyWhenClosed: true, pal: 13,
-    intro: ['Io vivo in un pomeriggio. Due ore, candele da cinque minuti: qui chi esita ha già perso, e chi corre senza piano perde di più.', 'Prima le domande. Poi un solo piano: ingresso, stop, obiettivo. Non potrai toccarlo.'] },
-  { id: 'marea', name: 'La Marea', title: 'Boss dello swing', tf: '1Hour', durationMs: 3 * D, durationLabel: '3 giorni, candele da 1 ora', topics: ['analisi', 'gestione', 'macro'], cryptoOnlyWhenClosed: false, pal: 14,
-    intro: ['Io salgo e scendo in tre giorni. Chi mi guarda ogni ora impazzisce; chi ha deciso prima dorme.', 'Prima le domande. Poi un solo piano, e tre giorni per vedere se regge.'] },
-  { id: 'ghiacciaio', name: 'Il Ghiacciaio', title: 'Boss della posizione', tf: '1Day', durationMs: 28 * D, durationLabel: '4 settimane, candele da 1 giorno', topics: ['macro', 'gestione', 'diversificazione'], cryptoOnlyWhenClosed: false, pal: 16,
-    intro: ['Io mi muovo in settimane. La fretta con me non serve: serve un piano che sopravviva a quattro settimane di notizie.', 'Prima le domande. Poi un solo piano. Torna tra un mese.'] },
+  { id: 'fulmine', name: T('Il Fulmine'), title: T('Boss dell\'intraday'), tf: '5Min', durationMs: 2 * H, durationLabel: T('2 ore, candele da 5 minuti'), topics: ['ordini', 'analisi', 'bias'], cryptoOnlyWhenClosed: true, pal: 13,
+    intro: [T('Io vivo in un pomeriggio. Due ore, candele da cinque minuti: qui chi esita ha già perso, e chi corre senza piano perde di più.'), T('Prima le domande. Poi un solo piano: ingresso, stop, obiettivo. Non potrai toccarlo.')] },
+  { id: 'marea', name: T('La Marea'), title: T('Boss dello swing'), tf: '1Hour', durationMs: 3 * D, durationLabel: T('3 giorni, candele da 1 ora'), topics: ['analisi', 'gestione', 'macro'], cryptoOnlyWhenClosed: false, pal: 14,
+    intro: [T('Io salgo e scendo in tre giorni. Chi mi guarda ogni ora impazzisce; chi ha deciso prima dorme.'), T('Prima le domande. Poi un solo piano, e tre giorni per vedere se regge.')] },
+  { id: 'ghiacciaio', name: T('Il Ghiacciaio'), title: T('Boss della posizione'), tf: '1Day', durationMs: 28 * D, durationLabel: T('4 settimane, candele da 1 giorno'), topics: ['macro', 'gestione', 'diversificazione'], cryptoOnlyWhenClosed: false, pal: 16,
+    intro: [T('Io mi muovo in settimane. La fretta con me non serve: serve un piano che sopravviva a quattro settimane di notizie.'), T('Prima le domande. Poi un solo piano. Torna tra un mese.')] },
 ];
 
 export const BOSS_BY_ID: Record<string, BossDef> = Object.fromEntries(BOSSES.map((b) => [b.id, b]));
@@ -43,10 +44,10 @@ export interface PlanScore { points: number; rr: number; notes: { ok: boolean; t
 
 /** Controlli formali del piano: prezzi coerenti e rischio dentro i limiti. Restituisce l'errore, o '' se va bene. */
 export function planError(p: Pick<BossPlan, 'entry' | 'stop' | 'target' | 'risk'>): string {
-  if (!(p.entry > 0 && p.stop > 0 && p.target > 0)) return 'Indica stop e obiettivo.';
-  if (p.stop >= p.entry) return 'Lo stop va sotto il prezzo di ingresso: è il punto in cui ammetti di avere torto.';
-  if (p.target <= p.entry) return 'L\'obiettivo va sopra il prezzo di ingresso.';
-  if (p.risk < BOSS_RULES.riskMin || p.risk > BOSS_RULES.riskMax) return `Il rischio va tra ${BOSS_RULES.riskMin * 100}% e ${BOSS_RULES.riskMax * 100}% del capitale della sfida.`;
+  if (!(p.entry > 0 && p.stop > 0 && p.target > 0)) return T('Indica stop e obiettivo.');
+  if (p.stop >= p.entry) return T('Lo stop va sotto il prezzo di ingresso: è il punto in cui ammetti di avere torto.');
+  if (p.target <= p.entry) return T('L\'obiettivo va sopra il prezzo di ingresso.');
+  if (p.risk < BOSS_RULES.riskMin || p.risk > BOSS_RULES.riskMax) return T`Il rischio va tra ${BOSS_RULES.riskMin * 100}% e ${BOSS_RULES.riskMax * 100}% del capitale della sfida.`;
   return '';
 }
 
@@ -61,15 +62,15 @@ export function planScore(p: Pick<BossPlan, 'entry' | 'stop' | 'target' | 'risk'
   let pts = 0;
   const rrPts = rr >= 2 ? 12 : rr >= 1.5 ? 8 : rr >= 1 ? 4 : 0;
   pts += rrPts;
-  notes.push({ ok: rr >= 1.5, text: `Rapporto rendimento/rischio ${rr.toFixed(1)} a 1${rr >= 2 ? ': un errore costa metà di un successo.' : rr >= 1.5 ? ': accettabile.' : ': rischi più di quanto puoi guadagnare.'}` });
+  notes.push({ ok: rr >= 1.5, text: T`Rapporto rendimento/rischio ${rr.toFixed(1)} a 1${rr >= 2 ? T(': un errore costa metà di un successo.') : rr >= 1.5 ? ': accettabile.' : T(': rischi più di quanto puoi guadagnare.')}` });
   const riskPts = p.risk <= 0.02 ? 10 : p.risk <= 0.03 ? 6 : 2;
   pts += riskPts;
-  notes.push({ ok: p.risk <= 0.02, text: `Rischi il ${(p.risk * 100).toFixed(1)}% del capitale${p.risk <= 0.02 ? ': dieci errori di fila non ti fermano.' : ': troppi errori così e la sfida finisce presto.'}` });
+  notes.push({ ok: p.risk <= 0.02, text: T`Rischi il ${(p.risk * 100).toFixed(1)}% del capitale${p.risk <= 0.02 ? T(': dieci errori di fila non ti fermano.') : T(': troppi errori così e la sfida finisce presto.')}` });
   // uno stop dentro il rumore normale viene preso per caso; uno lontanissimo non protegge
   const lo = Math.max(0.001, vol * 1), hi = Math.max(0.01, vol * 8);
   const okStop = stopDist >= lo && stopDist <= hi;
   pts += okStop ? 8 : 2;
-  notes.push({ ok: okStop, text: okStop ? `Stop a ${(stopDist * 100).toFixed(1)}% dal prezzo: fuori dal rumore normale, ma abbastanza vicino da proteggere.` : stopDist < lo ? `Stop a ${(stopDist * 100).toFixed(2)}%: è dentro le oscillazioni normali, rischia di scattare per caso.` : `Stop a ${(stopDist * 100).toFixed(1)}%: è così lontano che non protegge.` });
+  notes.push({ ok: okStop, text: okStop ? T`Stop a ${(stopDist * 100).toFixed(1)}% dal prezzo: fuori dal rumore normale, ma abbastanza vicino da proteggere.` : stopDist < lo ? T`Stop a ${(stopDist * 100).toFixed(2)}%: è dentro le oscillazioni normali, rischia di scattare per caso.` : T`Stop a ${(stopDist * 100).toFixed(1)}%: è così lontano che non protegge.` });
   return { points: Math.min(BOSS_RULES.planMax, pts), rr, notes };
 }
 

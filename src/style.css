@@ -450,3 +450,4 @@ body { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
   .ld-dots::after { animation: none; content: '...'; }
 }
 .ld-slow { margin: 0; max-width: 26em; text-align: center; }
+.lang-ctl { display: flex; gap: 6px; flex-shrink: 0; }

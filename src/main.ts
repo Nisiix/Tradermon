@@ -26,6 +26,9 @@ import { syncAtBoot, startCloudSync, cloudPlayer } from './systems/sync';
 import { accountScreen, legacyPrompt } from './ui/account';
 import { busy, pauseBusy } from './ui/loading';
 import { whileAway } from './ui/broker';
+import { translateDom } from './i18n/dom';
+
+translateDom();
 
 function pickFile(): Promise<string | null> {
   return new Promise((resolve) => {
@@ -46,14 +49,14 @@ async function boot() {
   initMobile();
   const moved = await receiveTransfer((local, inc) => new Promise((ok) => {
     let answer = false;
-    void modal('Salvataggio trovato', ({ body, button, close }) => {
-      body.innerHTML = `<p>Dal vecchio indirizzo del gioco è arrivata la partita di <b>${esc(inc.name)}</b> (${Math.round(inc.playMs / 60000)} min, ${inc.badges} medaglie).</p>
+    void modal(T('Salvataggio trovato'), ({ body, button, close }) => {
+      body.innerHTML = T`<p>Dal vecchio indirizzo del gioco è arrivata la partita di <b>${esc(inc.name)}</b> (${Math.round(inc.playMs / 60000)} min, ${inc.badges} medaglie).</p>
         <p>In questo browser c'è già la partita di <b>${esc(local.name)}</b> (${Math.round(local.playMs / 60000)} min). Se la sostituisci, resta una copia di riserva.</p>`;
-      button('Usa quella arrivata', () => { answer = true; close(); }, 'primary');
-      button('Tieni questa', () => close());
+      button(T('Usa quella arrivata'), () => { answer = true; close(); }, 'primary');
+      button(T('Tieni questa'), () => close());
     }).then(() => ok(answer));
   }));
-  if (moved === 'imported') toast('Salvataggio trasferito dal vecchio indirizzo.');
+  if (moved === 'imported') toast(T('Salvataggio trasferito dal vecchio indirizzo.'));
   initInput();
   initTouch(document.getElementById('app')!);
   initSettings();
@@ -61,21 +64,21 @@ async function boot() {
   play('title');
   // Giocatore (nome univoco + password) prima di tutto, tutorial compreso: la partita vive su Supabase.
   if (cloudEnabled()) {
-    const player = (await busy('Controllo l\'accesso', currentPlayer())) ?? (await accountScreen());
-    const r = await busy('Carico la partita', syncAtBoot(player, (c) => pauseBusy(() => legacyPrompt(c))));
-    if (r === 'offline') toast('Il servizio dei salvataggi non è raggiungibile: giochi con la copia di questo dispositivo e la invio appena torna la rete.');
-    startCloudSync(() => toast('Salvato su questo dispositivo: lo invio online appena torna la connessione.'));
+    const player = (await busy(T('Controllo l\'accesso'), currentPlayer())) ?? (await accountScreen());
+    const r = await busy(T('Carico la partita'), syncAtBoot(player, (c) => pauseBusy(() => legacyPrompt(c))));
+    if (r === 'offline') toast(T('Il servizio dei salvataggi non è raggiungibile: giochi con la copia di questo dispositivo e la invio appena torna la rete.'));
+    startCloudSync(() => toast(T('Salvato su questo dispositivo: lo invio online appena torna la connessione.')));
   }
   for (;;) {
     const choice = await titleScreen(hasSave());
-    if (choice === 'continue') { if (load()) break; toast('Salvataggio non leggibile.'); continue; }
+    if (choice === 'continue') { if (load()) break; toast(T('Salvataggio non leggibile.')); continue; }
     if (choice === 'import') {
       const txt = await pickFile();
-      if (txt && importSave(txt)) { toast('Salvataggio importato.'); break; }
-      toast('File di salvataggio non valido.');
+      if (txt && importSave(txt)) { toast(T('Salvataggio importato.')); break; }
+      toast(T('File di salvataggio non valido.'));
       continue;
     }
-    if (hasSave() && !(await confirm('Iniziare una nuova partita? Al primo salvataggio sostituirà quella che hai adesso.'))) continue;
+    if (hasSave() && !(await confirm(T('Iniziare una nuova partita? Al primo salvataggio sostituirà quella che hai adesso.')))) continue;
     newGame();
     applyOptions();
     setPhase('onboarding');
@@ -124,4 +127,5 @@ void boot();
 import * as state from './systems/state';
 import { QUESTIONS } from './data/quiz/build';
 import { allMapIds } from './world/maps';
+import { T } from './i18n';
 if (import.meta.env.DEV || new URLSearchParams(location.search).has('debug')) Object.defineProperty(window, 'tradermon', { get: () => ({ state: state.S, questions: QUESTIONS, maps: allMapIds(), missions: { mentorMission, leagueMission }, scene: (window as unknown as { __game?: Phaser.Game }).__game?.scene.getScene('world') }) });

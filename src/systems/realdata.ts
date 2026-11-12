@@ -8,6 +8,7 @@ import * as A from './alpaca';
 import { S } from './state';
 import { ASSETS } from '../data/assets';
 import { computeClimate, tradingDaysBetween } from './market';
+import { T, LOCALE } from '../i18n';
 
 /** Periodo storico reale di un replay. Le date non vengono mostrate al giocatore finché il replay non finisce. */
 export interface RealWindow {
@@ -57,7 +58,7 @@ export async function loadWindow(w: RealWindow, assets: AssetDef[]): Promise<{ a
   const { start, end } = useCrypto ? w.crypto! : w;
   const { bars } = await A.daily(assets.map((a) => a.id), start, end);
   const al = alignBars(bars, assets.map((a) => a.id));
-  if (al.dates.length < 20 || !al.ids.length) throw new Error('Alpaca non ha dati sufficienti per questo periodo.');
+  if (al.dates.length < 20 || !al.ids.length) throw new Error(T('Alpaca non ha dati sufficienti per questo periodo.'));
   return { assets: assets.filter((a) => al.ids.includes(a.id)), prices: al.prices, dates: al.dates };
 }
 
@@ -112,9 +113,9 @@ export function hasPrices(): boolean {
 
 /** "aggiornato alle 15:42" oppure "aggiornato il 3/11 alle 21:59": i prezzi non fingono mai di essere più freschi. */
 export function asOfLabel(): string {
-  if (!S.market.asOf) return 'nessun prezzo scaricato';
+  if (!S.market.asOf) return T('nessun prezzo scaricato');
   const d = new Date(S.market.asOf);
   const sameDay = d.toDateString() === new Date().toDateString();
-  const hm = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-  return sameDay ? `prezzi aggiornati alle ${hm}` : `prezzi aggiornati il ${d.getDate()}/${d.getMonth() + 1} alle ${hm}`;
+  const hm = d.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
+  return sameDay ? T`prezzi aggiornati alle ${hm}` : T`prezzi aggiornati il ${d.getDate()}/${d.getMonth() + 1} alle ${hm}`;
 }

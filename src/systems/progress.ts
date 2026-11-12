@@ -7,6 +7,7 @@ import { jingle } from './music';
 import { ALL_RESIDENTS } from '../data/residents';
 import type { AgendaTask } from '../types';
 import { LEDGER_PAGES, pageFlag, SECRET_FLAGS } from '../world/secretsData';
+import { T } from '../i18n';
 
 // ---------------- Contatori di eventi ----------------
 
@@ -31,29 +32,29 @@ export function track(ev: GameEvent, n = 1) {
 interface TaskDef { id: string; ev: GameEvent; need: number; text: string; xp: number }
 
 const DAILY_POOL: TaskDef[] = [
-  { id: 'd_lesson', ev: 'lesson', need: 1, text: 'Leggi una lezione in Biblioteca o dal menu', xp: 15 },
-  { id: 'd_duel', ev: 'duel_win', need: 1, text: 'Vinci un duello di conoscenza', xp: 20 },
-  { id: 'd_duel2', ev: 'duel_win', need: 2, text: 'Vinci due duelli di conoscenza', xp: 30 },
-  { id: 'd_checkup', ev: 'checkup', need: 1, text: 'Fai il check-up del portafoglio in Banca', xp: 10 },
-  { id: 'd_tip', ev: 'tip', need: 2, text: 'Ascolta due lezioni degli abitanti', xp: 15 },
-  { id: 'd_daily', ev: 'daily_q', need: 1, text: 'Rispondi alla domanda del giorno', xp: 15 },
-  { id: 'd_steps', ev: 'steps', need: 150, text: 'Cammina 150 passi sui percorsi', xp: 10 },
-  { id: 'd_journal', ev: 'journal', need: 1, text: 'Scrivi una riga nel Diario dopo un\'operazione', xp: 15 },
-  { id: 'd_mini', ev: 'minigame', need: 1, text: 'Gioca un minigioco in Biblioteca o Zona Simulazione', xp: 15 },
-  { id: 'd_review', ev: 'review', need: 1, text: 'Fai il ripasso delle domande in scadenza in Biblioteca', xp: 20 },
+  { id: 'd_lesson', ev: 'lesson', need: 1, text: T('Leggi una lezione in Biblioteca o dal menu'), xp: 15 },
+  { id: 'd_duel', ev: 'duel_win', need: 1, text: T('Vinci un duello di conoscenza'), xp: 20 },
+  { id: 'd_duel2', ev: 'duel_win', need: 2, text: T('Vinci due duelli di conoscenza'), xp: 30 },
+  { id: 'd_checkup', ev: 'checkup', need: 1, text: T('Fai il check-up del portafoglio in Banca'), xp: 10 },
+  { id: 'd_tip', ev: 'tip', need: 2, text: T('Ascolta due lezioni degli abitanti'), xp: 15 },
+  { id: 'd_daily', ev: 'daily_q', need: 1, text: T('Rispondi alla domanda del giorno'), xp: 15 },
+  { id: 'd_steps', ev: 'steps', need: 150, text: T('Cammina 150 passi sui percorsi'), xp: 10 },
+  { id: 'd_journal', ev: 'journal', need: 1, text: T('Scrivi una riga nel Diario dopo un\'operazione'), xp: 15 },
+  { id: 'd_mini', ev: 'minigame', need: 1, text: T('Gioca un minigioco in Biblioteca o Zona Simulazione'), xp: 15 },
+  { id: 'd_review', ev: 'review', need: 1, text: T('Fai il ripasso delle domande in scadenza in Biblioteca'), xp: 20 },
 ];
 
 const WEEKLY_POOL: TaskDef[] = [
-  { id: 'w_duel', ev: 'duel_win', need: 8, text: 'Vinci 8 duelli nella settimana', xp: 80 },
-  { id: 'w_perfect', ev: 'duel_perfect', need: 2, text: 'Vinci 2 duelli senza errori', xp: 100 },
-  { id: 'w_lessons', ev: 'lesson', need: 5, text: 'Leggi 5 lezioni', xp: 60 },
-  { id: 'w_mission', ev: 'mission', need: 1, text: 'Completa una missione nella Macchina del Tempo', xp: 100 },
-  { id: 'w_tips', ev: 'tip', need: 8, text: 'Ascolta 8 abitanti', xp: 60 },
-  { id: 'w_daily', ev: 'daily_q', need: 4, text: 'Rispondi alla domanda del giorno 4 volte', xp: 80 },
-  { id: 'w_rematch', ev: 'rematch', need: 3, text: 'Vinci 3 rivincite', xp: 90 },
-  { id: 'w_mini', ev: 'minigame', need: 4, text: 'Gioca 4 minigiochi', xp: 70 },
-  { id: 'w_quest', ev: 'quest', need: 1, text: 'Completa una storia di un abitante', xp: 120 },
-  { id: 'w_journal', ev: 'journal', need: 3, text: 'Scrivi 3 righe di Diario', xp: 60 },
+  { id: 'w_duel', ev: 'duel_win', need: 8, text: T('Vinci 8 duelli nella settimana'), xp: 80 },
+  { id: 'w_perfect', ev: 'duel_perfect', need: 2, text: T('Vinci 2 duelli senza errori'), xp: 100 },
+  { id: 'w_lessons', ev: 'lesson', need: 5, text: T('Leggi 5 lezioni'), xp: 60 },
+  { id: 'w_mission', ev: 'mission', need: 1, text: T('Completa una missione nella Macchina del Tempo'), xp: 100 },
+  { id: 'w_tips', ev: 'tip', need: 8, text: T('Ascolta 8 abitanti'), xp: 60 },
+  { id: 'w_daily', ev: 'daily_q', need: 4, text: T('Rispondi alla domanda del giorno 4 volte'), xp: 80 },
+  { id: 'w_rematch', ev: 'rematch', need: 3, text: T('Vinci 3 rivincite'), xp: 90 },
+  { id: 'w_mini', ev: 'minigame', need: 4, text: T('Gioca 4 minigiochi'), xp: 70 },
+  { id: 'w_quest', ev: 'quest', need: 1, text: T('Completa una storia di un abitante'), xp: 120 },
+  { id: 'w_journal', ev: 'journal', need: 3, text: T('Scrivi 3 righe di Diario'), xp: 60 },
 ];
 
 export function weekKey(d = new Date()): string {
@@ -106,7 +107,7 @@ function agendaProgress(ev: GameEvent, n: number) {
       S.stats.xp += xp;
       if (S.agenda.daily.includes(t)) S.agenda.dailyDone++;
       jingle('quest');
-      toast(`Agenda: "${def?.text ?? t.id}" completata! +${xp} Conoscenza`);
+      toast(T`Agenda: "${def?.text ?? t.id}" completata! +${xp} Conoscenza`);
       if (S.agenda.daily.every((d) => d.done) && S.agenda.daily.length) { S.stats.xp += 25; S.counters.agenda_full = (S.counters.agenda_full ?? 0) + 1; }
     }
   }
@@ -137,53 +138,53 @@ export interface Achievement { id: string; name: string; desc: string; title?: s
 const c = (k: string) => S.counters[k] ?? 0;
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first_step', name: 'Primo seme', desc: 'Scegli la tua Valigetta', title: 'Germoglio', check: () => !!S.flags.starter },
-  { id: 'duel1', name: 'Prima vittoria', desc: 'Vinci il primo duello', check: () => c('duel_win') >= 1 },
-  { id: 'duel10', name: 'Dieci su dieci', desc: 'Vinci 10 duelli', title: 'Studioso', check: () => c('duel_win') >= 10 },
-  { id: 'duel50', name: 'Veterano dei quiz', desc: 'Vinci 50 duelli', title: 'Veterano', decor: 'trophy_silver', check: () => c('duel_win') >= 50 },
-  { id: 'perfect10', name: 'Senza sbavature', desc: '10 duelli perfetti', title: 'Infallibile', decor: 'trophy_gold', check: () => c('duel_perfect') >= 10 },
-  { id: 'badge1', name: 'Prima Medaglia', desc: 'Batti la prima Whale', title: 'Apprendista', decor: 'poster_badges', check: () => S.badges >= 1 },
-  { id: 'badge4', name: 'Metà strada', desc: 'Quattro Medaglie', title: 'Investitore in erba', check: () => S.badges >= 4 },
-  { id: 'badge8', name: 'Tutte le Medaglie', desc: 'Otto Medaglie', title: 'Maestro delle Whale', decor: 'poster_badges', check: () => S.badges >= 8 },
-  { id: 'champion', name: 'Campione', desc: 'Vinci Wall Street', title: 'Campione', decor: 'trophy_league', check: () => !!S.flags.champion },
-  { id: 'tips10', name: 'Buon vicino', desc: 'Ascolta 10 abitanti', check: () => S.tipsHeard.length >= 10 },
-  { id: 'tips_all', name: 'Orecchio della regione', desc: 'Ascolta tutti gli abitanti', title: 'Amico di tutti', decor: 'plant_big', check: () => S.tipsHeard.length >= ALL_RESIDENTS.length },
-  { id: 'lessons10', name: 'Topo di biblioteca', desc: 'Leggi 10 lezioni', title: 'Lettore', decor: 'bookshelf_full', check: () => S.lessonsRead.length >= 10 },
-  { id: 'lessons_all', name: 'Enciclopedia', desc: 'Leggi 30 lezioni', title: 'Enciclopedico', check: () => S.lessonsRead.length >= 30 },
-  { id: 'streak7', name: 'Una settimana di fila', desc: 'Serie di 7 domande del giorno', title: 'Costante', check: () => S.daily.streak >= 7 },
-  { id: 'streak30', name: 'Un mese di fila', desc: 'Serie di 30 domande del giorno', title: 'Disciplinato', decor: 'calendar', check: () => S.daily.streak >= 30 },
-  { id: 'checkup5', name: 'Cliente modello', desc: '5 check-up in Banca', check: () => c('checkup') >= 5 },
-  { id: 'rebalance3', name: 'In equilibrio', desc: '3 ribilanciamenti', title: 'Equilibrista', check: () => c('rebalance') >= 3 },
-  { id: 'mission3', name: 'Viaggiatore del tempo', desc: '3 missioni nella Macchina del Tempo', title: 'Cronista', check: () => c('mission') >= 3 },
-  { id: 'no_loss_sale', name: 'Mano ferma', desc: 'Completa una missione senza vendere in perdita', title: 'Mano ferma', check: () => !!S.flags.missionNoLossSale },
-  { id: 'journal5', name: 'Diarista', desc: '5 righe nel Diario', title: 'Diarista', decor: 'desk_journal', check: () => S.journal.length >= 5 },
-  { id: 'journal_review', name: 'Senno di poi', desc: 'Rileggi 5 operazioni dopo 30 giorni', title: 'Riflessivo', check: () => c('review_journal') >= 5 },
-  { id: 'rematch5', name: 'Rivincita servita', desc: 'Vinci 5 rivincite', title: 'Tenace', check: () => c('rematch') >= 5 },
-  { id: 'mini_all', name: 'Giocatore completo', desc: 'Prova tutti e 4 i minigiochi', title: 'Giocoliere', decor: 'arcade', check: () => Object.keys(S.minigames).length >= 4 },
-  { id: 'mini_ace', name: 'Asso dei minigiochi', desc: 'Punteggio pieno in un minigioco', check: () => Object.values(S.minigames).some((v) => v >= 100) },
-  { id: 'quest1', name: 'Una mano agli altri', desc: 'Completa una storia di un abitante', title: 'Buon consigliere', check: () => c('quest') >= 1 },
-  { id: 'quest_all', name: 'Il consigliere della regione', desc: 'Completa tutte le storie degli abitanti', title: 'Consigliere', decor: 'frame_letters', check: () => c('quest') >= 6 },
-  { id: 'houses_all', name: 'Porta a porta', desc: 'Entra in tutte le 30 case', check: () => c('house_unique') >= 30 },
-  { id: 'agenda7', name: 'Agenda piena', desc: 'Completa tutte le missioni del giorno 7 volte', title: 'Metodico', check: () => c('agenda_full') >= 7 },
-  { id: 'islets_all', name: 'Navigatore di Liquidità', desc: 'Vinci la sfida sulle tre Isole della Liquidità', title: 'Navigatore', check: () => [3, 5, 7].every((r) => !!S.flags[`islet_r${r}`]) },
-  { id: 'sea_all', name: 'Capitano di Liquidità', desc: 'Vinci le sfide della Guardiana del Faro e del Pescatore di Perle', title: 'Capitano', check: () => !!S.flags.islet_faro && !!S.flags.islet_perle },
-  { id: 'legend1', name: 'Storico', desc: 'Supera una crisi leggendaria', title: 'Storico', check: () => S.legends.length >= 1 },
-  { id: 'legend_all', name: 'Memoria dei mercati', desc: 'Supera tutte le crisi leggendarie', title: 'Memoria viva', decor: 'globe', check: () => S.legends.length >= 5 },
-  { id: 'tower10', name: 'Scalatore', desc: 'Piano 10 della Torre', title: 'Scalatore', check: () => S.tower.best >= 10 },
-  { id: 'level10', name: 'Conoscenza 10', desc: 'Raggiungi il livello 10', check: () => level() >= 10 },
-  { id: 'level25', name: 'Conoscenza 25', desc: 'Raggiungi il livello 25', title: 'Sapiente', decor: 'trophy_gold', check: () => level() >= 25 },
-  { id: 'challenge1', name: 'Sfidante', desc: 'Gioca una sfida settimanale', check: () => S.challenges.length >= 1 },
-  { id: 'challenge5', name: 'Rivale di tutti', desc: 'Gioca 5 sfide', title: 'Sfidante', check: () => S.challenges.length >= 5 },
-  { id: 'steps1000', name: 'Mille passi', desc: 'Cammina 1.000 passi', check: () => c('steps') >= 1000 },
-  { id: 'steps10000', name: 'Esploratore', desc: 'Cammina 10.000 passi', title: 'Esploratore', check: () => c('steps') >= 10000 },
-  { id: 'bias_all', name: 'Conosco i miei limiti', desc: 'Impara tutti e 4 i bias', title: 'Consapevole', check: () => S.biasSeen.length >= 4 },
-  { id: 'casino', name: 'Il banco vince sempre', desc: 'Scopri la lezione del Casinò', check: () => !!S.flags.casinoLesson },
+  { id: 'first_step', name: T('Primo seme'), desc: T('Scegli la tua Valigetta'), title: 'Germoglio', check: () => !!S.flags.starter },
+  { id: 'duel1', name: T('Prima vittoria'), desc: T('Vinci il primo duello'), check: () => c('duel_win') >= 1 },
+  { id: 'duel10', name: T('Dieci su dieci'), desc: T('Vinci 10 duelli'), title: 'Studioso', check: () => c('duel_win') >= 10 },
+  { id: 'duel50', name: T('Veterano dei quiz'), desc: T('Vinci 50 duelli'), title: 'Veterano', decor: 'trophy_silver', check: () => c('duel_win') >= 50 },
+  { id: 'perfect10', name: T('Senza sbavature'), desc: T('10 duelli perfetti'), title: 'Infallibile', decor: 'trophy_gold', check: () => c('duel_perfect') >= 10 },
+  { id: 'badge1', name: T('Prima Medaglia'), desc: T('Batti la prima Whale'), title: 'Apprendista', decor: 'poster_badges', check: () => S.badges >= 1 },
+  { id: 'badge4', name: T('Metà strada'), desc: T('Quattro Medaglie'), title: 'Investitore in erba', check: () => S.badges >= 4 },
+  { id: 'badge8', name: T('Tutte le Medaglie'), desc: T('Otto Medaglie'), title: 'Maestro delle Whale', decor: 'poster_badges', check: () => S.badges >= 8 },
+  { id: 'champion', name: T('Campione'), desc: T('Vinci Wall Street'), title: 'Campione', decor: 'trophy_league', check: () => !!S.flags.champion },
+  { id: 'tips10', name: T('Buon vicino'), desc: T('Ascolta 10 abitanti'), check: () => S.tipsHeard.length >= 10 },
+  { id: 'tips_all', name: T('Orecchio della regione'), desc: T('Ascolta tutti gli abitanti'), title: 'Amico di tutti', decor: 'plant_big', check: () => S.tipsHeard.length >= ALL_RESIDENTS.length },
+  { id: 'lessons10', name: T('Topo di biblioteca'), desc: T('Leggi 10 lezioni'), title: 'Lettore', decor: 'bookshelf_full', check: () => S.lessonsRead.length >= 10 },
+  { id: 'lessons_all', name: T('Enciclopedia'), desc: T('Leggi 30 lezioni'), title: 'Enciclopedico', check: () => S.lessonsRead.length >= 30 },
+  { id: 'streak7', name: T('Una settimana di fila'), desc: T('Serie di 7 domande del giorno'), title: 'Costante', check: () => S.daily.streak >= 7 },
+  { id: 'streak30', name: T('Un mese di fila'), desc: T('Serie di 30 domande del giorno'), title: 'Disciplinato', decor: 'calendar', check: () => S.daily.streak >= 30 },
+  { id: 'checkup5', name: T('Cliente modello'), desc: T('5 check-up in Banca'), check: () => c('checkup') >= 5 },
+  { id: 'rebalance3', name: T('In equilibrio'), desc: '3 ribilanciamenti', title: 'Equilibrista', check: () => c('rebalance') >= 3 },
+  { id: 'mission3', name: T('Viaggiatore del tempo'), desc: T('3 missioni nella Macchina del Tempo'), title: 'Cronista', check: () => c('mission') >= 3 },
+  { id: 'no_loss_sale', name: T('Mano ferma'), desc: T('Completa una missione senza vendere in perdita'), title: 'Mano ferma', check: () => !!S.flags.missionNoLossSale },
+  { id: 'journal5', name: T('Diarista'), desc: T('5 righe nel Diario'), title: 'Diarista', decor: 'desk_journal', check: () => S.journal.length >= 5 },
+  { id: 'journal_review', name: T('Senno di poi'), desc: T('Rileggi 5 operazioni dopo 30 giorni'), title: 'Riflessivo', check: () => c('review_journal') >= 5 },
+  { id: 'rematch5', name: T('Rivincita servita'), desc: T('Vinci 5 rivincite'), title: 'Tenace', check: () => c('rematch') >= 5 },
+  { id: 'mini_all', name: T('Giocatore completo'), desc: T('Prova tutti e 4 i minigiochi'), title: 'Giocoliere', decor: 'arcade', check: () => Object.keys(S.minigames).length >= 4 },
+  { id: 'mini_ace', name: T('Asso dei minigiochi'), desc: T('Punteggio pieno in un minigioco'), check: () => Object.values(S.minigames).some((v) => v >= 100) },
+  { id: 'quest1', name: T('Una mano agli altri'), desc: T('Completa una storia di un abitante'), title: 'Buon consigliere', check: () => c('quest') >= 1 },
+  { id: 'quest_all', name: T('Il consigliere della regione'), desc: T('Completa tutte le storie degli abitanti'), title: 'Consigliere', decor: 'frame_letters', check: () => c('quest') >= 6 },
+  { id: 'houses_all', name: T('Porta a porta'), desc: T('Entra in tutte le 30 case'), check: () => c('house_unique') >= 30 },
+  { id: 'agenda7', name: T('Agenda piena'), desc: T('Completa tutte le missioni del giorno 7 volte'), title: 'Metodico', check: () => c('agenda_full') >= 7 },
+  { id: 'islets_all', name: T('Navigatore di Liquidità'), desc: T('Vinci la sfida sulle tre Isole della Liquidità'), title: 'Navigatore', check: () => [3, 5, 7].every((r) => !!S.flags[`islet_r${r}`]) },
+  { id: 'sea_all', name: T('Capitano di Liquidità'), desc: T('Vinci le sfide della Guardiana del Faro e del Pescatore di Perle'), title: 'Capitano', check: () => !!S.flags.islet_faro && !!S.flags.islet_perle },
+  { id: 'legend1', name: T('Storico'), desc: T('Supera una crisi leggendaria'), title: 'Storico', check: () => S.legends.length >= 1 },
+  { id: 'legend_all', name: T('Memoria dei mercati'), desc: T('Supera tutte le crisi leggendarie'), title: 'Memoria viva', decor: 'globe', check: () => S.legends.length >= 5 },
+  { id: 'tower10', name: T('Scalatore'), desc: T('Piano 10 della Torre'), title: 'Scalatore', check: () => S.tower.best >= 10 },
+  { id: 'level10', name: 'Conoscenza 10', desc: T('Raggiungi il livello 10'), check: () => level() >= 10 },
+  { id: 'level25', name: 'Conoscenza 25', desc: T('Raggiungi il livello 25'), title: 'Sapiente', decor: 'trophy_gold', check: () => level() >= 25 },
+  { id: 'challenge1', name: T('Sfidante'), desc: T('Gioca una sfida settimanale'), check: () => S.challenges.length >= 1 },
+  { id: 'challenge5', name: T('Rivale di tutti'), desc: T('Gioca 5 sfide'), title: 'Sfidante', check: () => S.challenges.length >= 5 },
+  { id: 'steps1000', name: T('Mille passi'), desc: T('Cammina 1.000 passi'), check: () => c('steps') >= 1000 },
+  { id: 'steps10000', name: T('Esploratore'), desc: T('Cammina 10.000 passi'), title: 'Esploratore', check: () => c('steps') >= 10000 },
+  { id: 'bias_all', name: T('Conosco i miei limiti'), desc: T('Impara tutti e 4 i bias'), title: 'Consapevole', check: () => S.biasSeen.length >= 4 },
+  { id: 'casino', name: T('Il banco vince sempre'), desc: T('Scopri la lezione del Casinò'), check: () => !!S.flags.casinoLesson },
   // segreti della seconda parte (dalla Medaglia 4): restano "???" finché non li trovi
-  { id: 'secret_ledger', name: 'Il Libro Mastro Perduto', desc: 'Ritrova le sei pagine nascoste di Mastro Ventura', title: 'Custode del Libro Mastro', decor: 'ledger', secret: true, check: () => ledgerDone() },
-  { id: 'secret_tape', name: 'Lettore del Nastro', desc: 'Trova la Sala del Nastro e batti la Vecchia del Nastro', title: 'Lettore del Nastro', decor: 'tape', secret: true, check: () => !!S.flags[SECRET_FLAGS.tape] },
-  { id: 'secret_whale', name: 'Avvistamento', desc: 'Incontra lo Squalo nel fine settimana', title: 'Avvistatore di Squali', secret: true, check: () => !!S.flags[SECRET_FLAGS.whale] },
-  { id: 'secret_hodl', name: 'Mani di Diamante', desc: 'Compi il rituale della pietra sul Percorso 6', title: 'Mani di Diamante', secret: true, check: () => !!S.flags[SECRET_FLAGS.hodl] },
-  { id: 'secret_all', name: 'Cacciatore di Segreti', desc: 'Scopri tutti i segreti della regione', title: 'Cacciatore di Segreti', decor: 'lamp', secret: true, check: () => ledgerDone() && !!S.flags[SECRET_FLAGS.tape] && !!S.flags[SECRET_FLAGS.whale] && !!S.flags[SECRET_FLAGS.hodl] },
+  { id: 'secret_ledger', name: T('Il Libro Mastro Perduto'), desc: T('Ritrova le sei pagine nascoste di Mastro Ventura'), title: 'Custode del Libro Mastro', decor: 'ledger', secret: true, check: () => ledgerDone() },
+  { id: 'secret_tape', name: T('Lettore del Nastro'), desc: T('Trova la Sala del Nastro e batti la Vecchia del Nastro'), title: 'Lettore del Nastro', decor: 'tape', secret: true, check: () => !!S.flags[SECRET_FLAGS.tape] },
+  { id: 'secret_whale', name: T('Avvistamento'), desc: T('Incontra lo Squalo nel fine settimana'), title: 'Avvistatore di Squali', secret: true, check: () => !!S.flags[SECRET_FLAGS.whale] },
+  { id: 'secret_hodl', name: T('Mani di Diamante'), desc: T('Compi il rituale della pietra sul Percorso 6'), title: 'Mani di Diamante', secret: true, check: () => !!S.flags[SECRET_FLAGS.hodl] },
+  { id: 'secret_all', name: T('Cacciatore di Segreti'), desc: T('Scopri tutti i segreti della regione'), title: 'Cacciatore di Segreti', decor: 'lamp', secret: true, check: () => ledgerDone() && !!S.flags[SECRET_FLAGS.tape] && !!S.flags[SECRET_FLAGS.whale] && !!S.flags[SECRET_FLAGS.hodl] },
 ];
 
 function ledgerDone(): boolean { return LEDGER_PAGES.every((p) => !!S.flags[pageFlag(p.id)]); }
@@ -205,32 +206,33 @@ export function checkAchievements(): Achievement[] {
   if (got.length) {
     jingle('badge');
     const a = got[got.length - 1];
-    toast(`Traguardo: ${a.name}${a.title ? ` · titolo "${a.title}"` : ''}${a.decor ? ' · nuovo oggetto per la casa' : ''}${got.length > 1 ? ` (+${got.length - 1})` : ''}`);
+    toast(`${T`Traguardo: ${a.name}`}${a.title ? T` · titolo "${T(a.title!)}"` : ''}${a.decor ? T(' · nuovo oggetto per la casa') : ''}${got.length > 1 ? ` (+${got.length - 1})` : ''}`);
     save();
   }
   return got;
 }
 
+/** Titoli sbloccati, in italiano (sono la chiave salvata in S.title): mostrali con T(). */
 export function availableTitles(): string[] {
   return ACHIEVEMENTS.filter((a) => a.title && S.achievements.includes(a.id)).map((a) => a.title!);
 }
 
 export const DECOR_INFO: Record<string, { name: string; tile: string }> = {
-  trophy_silver: { name: 'Trofeo d\'argento', tile: 'trophy_silver' },
-  trophy_gold: { name: 'Trofeo d\'oro', tile: 'trophy_gold' },
-  trophy_league: { name: 'Coppa di Wall Street', tile: 'trophy_league' },
-  poster_badges: { name: 'Bacheca delle Medaglie', tile: 'poster' },
-  plant_big: { name: 'Pianta rigogliosa', tile: 'plant' },
-  bookshelf_full: { name: 'Libreria piena', tile: 'shelf' },
-  calendar: { name: 'Calendario delle serie', tile: 'calendar' },
-  desk_journal: { name: 'Scrivania del Diario', tile: 'desk' },
-  arcade: { name: 'Cabinato', tile: 'arcade' },
-  frame_letters: { name: 'Lettere di ringraziamento', tile: 'frame' },
-  globe: { name: 'Mappamondo', tile: 'globe' },
-  radio: { name: 'Radio di Eleonora', tile: 'radio' },
-  aquarium: { name: 'Acquario di Gennaro', tile: 'aquarium' },
-  painting: { name: 'Quadro di Ottavio', tile: 'painting' },
-  ledger: { name: 'Libro Mastro rilegato', tile: 'shelf' },
-  tape: { name: 'Nastro delle quotazioni incorniciato', tile: 'frame' },
-  lamp: { name: 'Mappamondo delle rotte segrete', tile: 'globe' },
+  trophy_silver: { name: T('Trofeo d\'argento'), tile: 'trophy_silver' },
+  trophy_gold: { name: T('Trofeo d\'oro'), tile: 'trophy_gold' },
+  trophy_league: { name: T('Coppa di Wall Street'), tile: 'trophy_league' },
+  poster_badges: { name: T('Bacheca delle Medaglie'), tile: 'poster' },
+  plant_big: { name: T('Pianta rigogliosa'), tile: 'plant' },
+  bookshelf_full: { name: T('Libreria piena'), tile: 'shelf' },
+  calendar: { name: T('Calendario delle serie'), tile: 'calendar' },
+  desk_journal: { name: T('Scrivania del Diario'), tile: 'desk' },
+  arcade: { name: T('Cabinato'), tile: 'arcade' },
+  frame_letters: { name: T('Lettere di ringraziamento'), tile: 'frame' },
+  globe: { name: T('Mappamondo'), tile: 'globe' },
+  radio: { name: T('Radio di Eleonora'), tile: 'radio' },
+  aquarium: { name: T('Acquario di Gennaro'), tile: 'aquarium' },
+  painting: { name: T('Quadro di Ottavio'), tile: 'painting' },
+  ledger: { name: T('Libro Mastro rilegato'), tile: 'shelf' },
+  tape: { name: T('Nastro delle quotazioni incorniciato'), tile: 'frame' },
+  lamp: { name: T('Mappamondo delle rotte segrete'), tile: 'globe' },
 };

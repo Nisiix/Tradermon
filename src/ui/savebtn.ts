@@ -3,6 +3,7 @@
 // (vinta o persa); il pulsante salva in qualsiasi momento in cui non sei in un dialogo o in una sfida.
 import { el, getStage, toast } from './core';
 import { save } from '../systems/state';
+import { T } from '../i18n';
 
 let guard: () => boolean = () => false;
 
@@ -16,9 +17,9 @@ export function markDuelDone(): void { duelDone = true; }
 export function takeDuelDone(): boolean { const d = duelDone; duelDone = false; return d; }
 
 export function quickSave(): boolean {
-  if (!guard()) { toast('Puoi salvare appena finisce il dialogo o la sfida in corso.'); return false; }
+  if (!guard()) { toast(T('Puoi salvare appena finisce il dialogo o la sfida in corso.')); return false; }
   const ok = save();
-  toast(ok ? 'Partita salvata.' : 'Salvataggio non riuscito: lo spazio del browser potrebbe essere pieno.');
+  toast(ok ? T('Partita salvata.') : T('Salvataggio non riuscito: lo spazio del browser potrebbe essere pieno.'));
   return ok;
 }
 
@@ -27,8 +28,8 @@ const ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 1h10l3 3v1
 export function initSaveButton(): void {
   if (document.querySelector('.save-btn')) return;
   const b = el('button', 'save-btn', ICON);
-  b.title = 'Salva la partita';
-  b.setAttribute('aria-label', 'Salva la partita');
+  b.title = T('Salva la partita');
+  b.setAttribute('aria-label', T('Salva la partita'));
   b.addEventListener('click', () => { quickSave(); (b as HTMLButtonElement).blur(); });
   getStage().appendChild(b);
 }

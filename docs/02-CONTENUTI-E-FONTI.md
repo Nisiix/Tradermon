@@ -185,7 +185,7 @@ Ogni abitante insegna un argomento diverso (controllato dai test).
 - **Annalisa Conti** (maestra, Casa Conti): Per sapere in quanti anni raddoppia un capitale divido 72 per il rendimento annuo: al 6% servono circa 12 anni. Vale anche per l'inflazione: al 3% i prezzi raddoppiano in circa 24 anni. _Fonte: Investopedia_
 - **Giorgio Marino** (operaio, Casa Marino): Investo la stessa cifra ogni mese, che il mercato salga o scenda. Quando i prezzi sono bassi la stessa cifra compra più quote: non devo indovinare il momento giusto. _Fonte: Investopedia_
 - **Laura Marino** (avvocata, Casa Marino): In Italia le plusvalenze finanziarie sono tassate di norma al 26%, i titoli di Stato al 12,5%. Con il regime amministrato ci pensa l'intermediario; con il dichiarativo devi indicarle tu nella dichiarazione dei redditi. _Fonte: Banca d'Italia_
-- **Leo Marino** (bambino, Casa Marino): Ho messo da parte 1 euro al giorno per un anno: 365 euro! Il papà dice che il segreto non è la cifra, ma cominciare presto e non smettere. _Fonte: Banca d'Italia_
+- **Tobia Marino** (bambino, Casa Marino): Ho messo da parte 1 euro al giorno per un anno: 365 euro! Il papà dice che il segreto non è la cifra, ma cominciare presto e non smettere. _Fonte: Banca d'Italia_
 - **Ornella** (ex croupier, Casa di Ornella): Tenevo tutto in liquidità "aspettando il momento giusto". Intanto il mercato saliva senza di me. I giorni di rialzo più forti arrivano spesso vicino a quelli peggiori: chi esce e rientra rischia di perderli. _Fonte: CFA Institute_
 
 ### Bilancia
@@ -276,4 +276,4 @@ Tutti di fantasia: nessun nome reale, così il gioco non suggerisce titoli da co
 1. Ogni domanda nasce da un concetto spiegato in una delle fonti elencate, riformulato in italiano semplice.
 2. La risposta corretta è una sola; le opzioni sbagliate sono errori tipici dei principianti.
 3. La spiegazione dice perché la risposta è giusta e rimanda alla fonte.
-4. I test automatici (`npm test`) controllano che ogni domanda abbia una fonte esistente, nessuna opzione duplicata e che ogni Whale abbia abbastanza domande.
+4. I test automatici (`npm test`) controllano che ogni domanda abbia una fonte esistente, nessuna opzione duplicata e che ogni Mentore abbia abbastanza domande.

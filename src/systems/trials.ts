@@ -7,6 +7,7 @@ import { S } from './state';
 import { ASSET_BY_ID, isDefensive, unlockedAssets } from '../data/assets';
 import { margin } from './account';
 import { pctArt } from './portfolio';
+import { T } from '../i18n';
 
 export const TRIAL = {
   /** Quota minima del patrimonio investita (prove 1 e del Campione). */
@@ -80,36 +81,36 @@ export interface Trial { id: string; title: string; brief: string; checks: (b: B
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 function cInvested(b: Book): Check {
-  return { label: `Almeno il ${pct(TRIAL.invested)} del patrimonio investito`, ok: b.equity > 0 && b.invested + 0.005 >= b.equity * TRIAL.invested, now: b.equity > 0 ? pct(b.invested / b.equity) : '0%' };
+  return { label: T`Almeno il ${pct(TRIAL.invested)} del patrimonio investito`, ok: b.equity > 0 && b.invested + 0.005 >= b.equity * TRIAL.invested, now: b.equity > 0 ? pct(b.invested / b.equity) : '0%' };
 }
 function cAssets(b: Book): Check {
   const n = Object.keys(b.byAsset).length;
-  return { label: `Almeno ${TRIAL.assets} titoli diversi`, ok: n >= TRIAL.assets, now: String(n) };
+  return { label: T`Almeno ${TRIAL.assets} titoli diversi`, ok: n >= TRIAL.assets, now: String(n) };
 }
 function cDefensive(b: Book): Check | null {
   // si chiede un titolo difensivo solo se il percorso del giocatore ne offre almeno uno
   const avail = unlockedAssets(S.track, S.mixedClasses, S.badges, Object.keys(S.cards)).some((a) => isDefensive(a));
-  return avail ? { label: 'Almeno un titolo difensivo (obbligazioni, oro, stablecoin o azioni a basso rischio)', ok: b.defensive, now: b.defensive ? 'sì' : 'no' } : null;
+  return avail ? { label: T('Almeno un titolo difensivo (obbligazioni, oro, stablecoin o azioni a basso rischio)'), ok: b.defensive, now: b.defensive ? T('sì') : 'no' } : null;
 }
 function cWeight(b: Book): Check {
-  return { label: `Nessun titolo oltre il ${pct(TRIAL.maxWeight)} dell'investito`, ok: b.invested > 0 && b.maxWeight <= TRIAL.maxWeight + 0.005, now: b.invested > 0 ? pct(b.maxWeight) : 'niente investito' };
+  return { label: T`Nessun titolo oltre il ${pct(TRIAL.maxWeight)} dell'investito`, ok: b.invested > 0 && b.maxWeight <= TRIAL.maxWeight + 0.005, now: b.invested > 0 ? pct(b.maxWeight) : T('niente investito') };
 }
 function cStops(b: Book): Check {
-  return { label: `Ordini stop attivi su almeno il ${pct(TRIAL.stopCover)} dell'investito`, ok: b.invested > 0 && b.stopCover + 0.005 >= TRIAL.stopCover, now: pct(b.stopCover) };
+  return { label: T`Ordini stop attivi su almeno il ${pct(TRIAL.stopCover)} dell'investito`, ok: b.invested > 0 && b.stopCover + 0.005 >= TRIAL.stopCover, now: pct(b.stopCover) };
 }
 function cPlan(b: Book): Check {
   const gap = Math.abs(b.risky - b.riskyPlan);
   const plan = Math.round(b.riskyPlan);
   const lo = Math.max(0, plan - TRIAL.planGap), hi = Math.min(100, plan + TRIAL.planGap);
-  return { label: `Titoli rischiosi tra ${pctArt(lo)} e ${pctArt(hi)} di quanto hai investito (il tuo piano dice ${plan}%)`, ok: b.invested > 0 && gap <= TRIAL.planGap + 0.05, now: b.invested > 0 ? `${Math.round(b.risky)}%` : 'niente investito' };
+  return { label: T`Titoli rischiosi tra ${pctArt(lo)} e ${pctArt(hi)} di quanto hai investito (il tuo piano dice ${plan}%)`, ok: b.invested > 0 && gap <= TRIAL.planGap + 0.05, now: b.invested > 0 ? `${Math.round(b.risky)}%` : T('niente investito') };
 }
 function cJournal(): Check {
   const n = S.journal.filter((j) => (j.reason ?? '').trim().length > 0).length;
-  return { label: `Almeno ${TRIAL.journal} decisioni motivate nel Diario`, ok: n >= TRIAL.journal, now: String(n) };
+  return { label: T`Almeno ${TRIAL.journal} decisioni motivate nel Diario`, ok: n >= TRIAL.journal, now: String(n) };
 }
 function cCalm(): Check {
   const call = margin().call;
-  return { label: 'Nessuna chiamata di margine aperta', ok: !call, now: call ? 'aperta' : 'nessuna' };
+  return { label: T('Nessuna chiamata di margine aperta'), ok: !call, now: call ? 'aperta' : 'nessuna' };
 }
 
 const some = (xs: (Check | null)[]) => xs.filter((x): x is Check => !!x);
@@ -117,11 +118,11 @@ const some = (xs: (Check | null)[]) => xs.filter((x): x is Check => !!x);
 /** Prova pratica del Superiore i (0-4). La terza (Regole) resta lo sportello delle offerte e non passa dal conto. */
 export function leagueTrial(i: number): Trial | null {
   switch (i) {
-    case 0: return { id: 'l1', title: 'Capitale al lavoro', brief: 'Tassi e cicli non si prevedono: ci si prepara. Mostrami un conto investito davvero, diviso tra più titoli e con una parte che regge quando il vento gira.', checks: (b) => some([cInvested(b), cAssets(b), cDefensive(b)]) };
-    case 1: return { id: 'l2', title: 'Entrata e uscita', brief: 'Un grafico serve a decidere prima dove si esce. Mostrami un conto senza scommesse su un solo titolo e con gli stop già piazzati su Alpaca.', checks: (b) => [cWeight(b), cStops(b)] };
+    case 0: return { id: 'l1', title: T('Capitale al lavoro'), brief: T('Tassi e cicli non si prevedono: ci si prepara. Mostrami un conto investito davvero, diviso tra più titoli e con una parte che regge quando il vento gira.'), checks: (b) => some([cInvested(b), cAssets(b), cDefensive(b)]) };
+    case 1: return { id: 'l2', title: T('Entrata e uscita'), brief: T('Un grafico serve a decidere prima dove si esce. Mostrami un conto senza scommesse su un solo titolo e con gli stop già piazzati su Alpaca.'), checks: (b) => [cWeight(b), cStops(b)] };
     case 2: return null;
-    case 3: return { id: 'l4', title: 'Il piano prima dell\'umore', brief: 'La mente fredda si vede dai fatti: un conto che somiglia al piano che ti sei dat{o|a}, e decisioni scritte con il loro motivo.', checks: (b) => [cPlan(b), cJournal()] };
-    default: return { id: 'l5', title: 'La prova del Campione', brief: 'Tutto insieme, sul tuo conto, oggi: investito, diviso, protetto, fedele al piano.', checks: (b) => some([cInvested(b), cAssets(b), cWeight(b), cStops(b), cPlan(b), cCalm()]) };
+    case 3: return { id: 'l4', title: T('Il piano prima dell\'umore'), brief: T('La mente fredda si vede dai fatti: un conto che somiglia al piano che ti sei dat{o|a}, e decisioni scritte con il loro motivo.'), checks: (b) => [cPlan(b), cJournal()] };
+    default: return { id: 'l5', title: T('La prova del Campione'), brief: T('Tutto insieme, sul tuo conto, oggi: investito, diviso, protetto, fedele al piano.'), checks: (b) => some([cInvested(b), cAssets(b), cWeight(b), cStops(b), cPlan(b), cCalm()]) };
   }
 }
 

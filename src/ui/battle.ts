@@ -14,6 +14,7 @@ import { markDuelDone } from './savebtn';
 import { FIDUCIA_PER_CORRECT, DIFFICULTY } from '../systems/balance';
 import { studyHint } from '../data/quiz/hint';
 import { errorsAllowed, errorsLeft, lifeAfterWrong, lifeShown, fiduciaAfterWin } from '../systems/duelLife';
+import { T } from '../i18n';
 
 export interface DuelOpts {
   foeName: string;
@@ -66,12 +67,12 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       <div class="tape" aria-hidden="true"><div class="tape-in">${words}${words}</div></div>
       <div class="arena">
         <div class="side me">
-          <div class="plate me-p"><div class="nm">${esc(S.name)}</div>${S.title ? `<div class="tt">${esc(S.title)}</div>` : '<div class="tt">Sfidante</div>'}${o.practice ? '<div class="row-m"><span class="lb">Allenamento</span><b>nessun rischio</b></div>' : `<div class="row-m"><span class="lb">${risky ? 'Fiducia' : 'Tenuta'}</span><b class="fv">${lifeShown(life)}</b></div><div class="mebar">${bar(lifeShown(life))}</div><div class="small el"></div>`}</div>
+          <div class="plate me-p"><div class="nm">${esc(S.name)}</div>${S.title ? `<div class="tt">${esc(T(S.title))}</div>` : T('<div class="tt">Sfidante</div>')}${o.practice ? T('<div class="row-m"><span class="lb">Allenamento</span><b>nessun rischio</b></div>') : `<div class="row-m"><span class="lb">${risky ? T('Fiducia') : T('Tenuta')}</span><b class="fv">${lifeShown(life)}</b></div><div class="mebar">${bar(lifeShown(life))}</div><div class="small el"></div>`}</div>
           <div class="fig"><img class="sprite" src="${portrait(playerPal(S.avatar, S.gender))}" alt=""></div>
           <div class="desk"><i></i></div>
         </div>
         <div class="side foe">
-          <div class="plate foe-p"><div class="nm">${esc(o.foeName)}</div><div class="tt">${esc(o.foeTitle ?? 'Avversario')}</div><div class="row-m"><span class="lb">Convinzione</span><b class="cv">100</b></div><div class="foebar">${bar(100)}</div></div>
+          <div class="plate foe-p"><div class="nm">${esc(o.foeName)}</div><div class="tt">${esc(o.foeTitle ?? T('Avversario'))}</div><div class="row-m"><span class="lb">Convinzione</span><b class="cv">100</b></div><div class="foebar">${bar(100)}</div></div>
           <div class="fig"><img class="sprite" src="${portrait(o.foePal)}" alt=""></div>
           <div class="desk"><i></i></div>
         </div>
@@ -88,9 +89,9 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
     const wrongIds: string[] = [];
     const per = 100 / o.need;
     const errLeft = () => {
-      if (lifeShown(life) <= 0) return wrongs > allowed ? 'troppi errori' : 'Fiducia esaurita';
+      if (lifeShown(life) <= 0) return wrongs > allowed ? T('troppi errori') : T('Fiducia esaurita');
       const left = errorsLeft(life, wrongs, total, o.need);
-      return left === 0 ? 'nessun errore concesso' : left === 1 ? '1 errore concesso' : `${left} errori concessi`;
+      return left === 0 ? T('nessun errore concesso') : left === 1 ? T('1 errore concesso') : T`${left} errori concessi`;
     };
     const drawMe = () => {
       if (o.practice) return;
@@ -130,7 +131,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       if (idx >= o.questions.length) return finish(correct >= o.need);
       const q = o.questions[idx];
       idx++;
-      $('.qn').textContent = `Domanda ${idx}/${o.questions.length} · servono ${o.need} risposte giuste`;
+      $('.qn').textContent = T`Domanda ${idx}/${o.questions.length} · servono ${o.need} risposte giuste`;
       $('.qt').textContent = gtext(q.q);
       $('.exp').innerHTML = '';
       const order = shuffle([0, 1, 2, 3]);
@@ -149,7 +150,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       let left = limit;
       let answered = false;
       const timerEl = $('.timer');
-      timerEl.textContent = limit ? `⏱ ${left}s` : 'Modalità Studio';
+      timerEl.textContent = limit ? `⏱ ${left}s` : T('Modalità Studio');
       const iv = limit ? window.setInterval(() => {
         left--;
         timerEl.textContent = `⏱ ${left}s`;
@@ -184,7 +185,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         if (risky) S.stats.fiducia = lifeShown(life);
         drawMe();
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
-        const verdict = i < 0 ? '<b class="bad">Tempo scaduto!</b>' : ok ? '<b class="good">Giusto!</b>' : `<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(gtext(q.options[q.answer]))}`;
+        const verdict = i < 0 ? T('<b class="bad">Tempo scaduto!</b>') : ok ? T('<b class="good">Giusto!</b>') : T`<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(gtext(q.options[q.answer]))}`;
         const hint = ok ? '' : studyHint(q);
         $('.exp').innerHTML = `<p>${verdict} ${esc(gtext(q.explain))}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
         const cont = el('button', 'btn primary', 'Continua ▶');

@@ -221,3 +221,16 @@ kbd { display: inline-block; font: 13px var(--font); background: #fff; border: 2
   .bar.simple .btn { font-size: 9px; padding: 8px 9px; }
   .doc .diff { min-width: 540px; }
 }
+
+/* Lingua: interruttore a due posizioni, come un selettore di cartuccia */
+.lang { display: inline-flex; border: 3px solid #000; box-shadow: 3px 3px 0 #000; background: var(--bg); }
+.lang button { font: 10px var(--font-title); color: #fff; background: none; border: 0; padding: 8px 9px; min-height: 34px; cursor: pointer; }
+.lang button + button { border-left: 3px solid #000; }
+.lang button[aria-pressed="true"] { background: var(--gold); color: #000; cursor: default; }
+.lang button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.lang button[aria-pressed="false"]:hover { background: var(--line); }
+@media (max-width: 900px) { .menu .lang { align-self: flex-start; } }
+/* Le pagine restano nascoste per un attimo finché il testo è nella lingua scelta (al massimo 1,2 s) */
+body { visibility: hidden; animation: i18n-show 0s 1.2s forwards; }
+html.i18n-ready body { visibility: visible; animation: none; }
+@keyframes i18n-show { to { visibility: visible; } }

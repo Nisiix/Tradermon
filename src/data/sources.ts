@@ -1,4 +1,5 @@
 import type { Source } from '../types';
+import { T } from '../i18n';
 
 // Fonti citate nelle spiegazioni dei quiz e nelle lezioni.
 // Gli URL di Investor.gov, Banca d'Italia, CFA Institute ed ESMA sono stati controllati il 9/11/2026.
@@ -38,7 +39,7 @@ export const SOURCES: Record<string, Source> = {
   ip_synthetic: { title: 'Synthetic ETF', publisher: IP, url: 'https://www.investopedia.com/terms/s/synthetic-etf.asp' },
   ip_ter: { title: 'Expense Ratio', publisher: IP, url: 'https://www.investopedia.com/terms/e/expenseratio.asp' },
   ip_index_fund: { title: 'Index Fund', publisher: IP, url: 'https://www.investopedia.com/terms/i/indexfund.asp' },
-  ip_stablecoin: { title: 'Stablecoin', publisher: IP, url: 'https://www.investopedia.com/terms/s/stablecoin.asp' },
+  ip_stablecoin: { title: T('Stablecoin'), publisher: IP, url: 'https://www.investopedia.com/terms/s/stablecoin.asp' },
   ip_private_key: { title: 'Private Key', publisher: IP, url: 'https://www.investopedia.com/terms/p/private-key.asp' },
   ip_seed: { title: 'Seed Phrase', publisher: IP, url: 'https://www.investopedia.com/terms/s/seed-phrase.asp' },
   ip_rugpull: { title: 'Rug Pull', publisher: IP, url: 'https://www.investopedia.com/terms/r/rug-pull-crypto.asp' },
@@ -76,9 +77,9 @@ export const SOURCES: Record<string, Source> = {
   ip_asset_alloc: { title: 'Asset Allocation', publisher: IP, url: 'https://www.investopedia.com/terms/a/assetallocation.asp' },
 
   bdi: { title: "L'economia per tutti", publisher: "Banca d'Italia", url: 'https://economiapertutti.bancaditalia.it/' },
-  consob: { title: 'Educazione finanziaria', publisher: 'Consob', url: 'https://www.consob.it/web/investor-education' },
+  consob: { title: T('Educazione finanziaria'), publisher: 'Consob', url: 'https://www.consob.it/web/investor-education' },
   cfa: { title: 'Investment Foundations', publisher: 'CFA Institute', url: 'https://www.cfainstitute.org/' },
-  esma: { title: 'Avvertenze per gli investitori', publisher: 'ESMA', url: 'https://www.esma.europa.eu/' },
+  esma: { title: T('Avvertenze per gli investitori'), publisher: 'ESMA', url: 'https://www.esma.europa.eu/' },
 };
 
 export function sourceLabel(key: string): string {

@@ -6,6 +6,7 @@ import { track, weekKey } from '../systems/progress';
 import { runDuel } from './battle';
 import { pickQuestions, SHARED_TOPICS } from '../systems/quiz';
 import { mulberry32 } from '../systems/rng';
+import { T } from '../i18n';
 
 const N = 8;
 
@@ -35,13 +36,15 @@ export async function weeklyChallenge() {
   const week = weekKey();
   const mine = S.challenges.find((c) => c.label === S.name && c.code.includes(week.replace('-W', 'W')));
   for (;;) {
-    const opts = [mine ? `Classifica della settimana (${board(week).length})` : 'Gioca la sfida di questa settimana', 'Inserisci il codice di un amico', mine ? 'Mostra il mio codice' : '', 'Esci'].filter(Boolean);
-    const c = await choose(opts, { cancel: true, prompt: `Sfida ${week}: ${N} domande uguali per tutti, un solo tentativo. Il risultato dà un codice da scambiare con gli amici.`, who: 'Operatrice' });
-    if (c < 0 || opts[c] === 'Esci') return;
-    if (opts[c].startsWith('Gioca')) { await play(week); return weeklyChallenge(); }
-    if (opts[c].startsWith('Classifica')) await showBoard(week);
-    if (opts[c].startsWith('Inserisci')) await enterCode(week);
-    if (opts[c].startsWith('Mostra') && mine) await showCode(mine.code);
+    const lPlay = T('Gioca la sfida di questa settimana'), lBoard = T`Classifica della settimana (${board(week).length})`;
+    const lEnter = T('Inserisci il codice di un amico'), lShow = T('Mostra il mio codice');
+    const opts = [mine ? lBoard : lPlay, lEnter, mine ? lShow : '', T('Esci')].filter(Boolean);
+    const c = await choose(opts, { cancel: true, prompt: T`Sfida ${week}: ${N} domande uguali per tutti, un solo tentativo. Il risultato dà un codice da scambiare con gli amici.`, who: T('Operatrice') });
+    if (c < 0 || opts[c] === T('Esci')) return;
+    if (opts[c] === lPlay) { await play(week); return weeklyChallenge(); }
+    if (opts[c] === lBoard) await showBoard(week);
+    if (opts[c] === lEnter) await enterCode(week);
+    if (opts[c] === lShow && mine) await showCode(mine.code);
   }
 }
 
@@ -51,7 +54,7 @@ async function play(week: string) {
   const qs = pickQuestions(SHARED_TOPICS, N, { rng, minDiff: 1, maxDiff: 3, shared: true });
   const prevFid = S.stats.fiducia;
   const t0 = Date.now();
-  const r = await runDuel({ foeName: `Sfida ${week}`, foeTitle: 'Tutti gli sfidanti', foePal: 11, questions: qs, need: N, damage: 0, practice: true });
+  const r = await runDuel({ foeName: T`Sfida ${week}`, foeTitle: T('Tutti gli sfidanti'), foePal: 11, questions: qs, need: N, damage: 0, practice: true });
   S.stats.fiducia = prevFid;
   const secs = (Date.now() - t0) / 1000;
   const score = Math.min(100, Math.round((r.correct / N) * 80 + (r.correct === N ? 20 : Math.max(0, 20 - secs / 15))));
@@ -60,33 +63,33 @@ async function play(week: string) {
   S.stats.xp += 20 + Math.round(score / 5);
   track('challenge');
   save();
-  await say([`Risposte esatte: ${r.correct}/${N} in ${Math.round(secs)} secondi. Punteggio: ${score}.`, 'Ecco il tuo codice: condividilo con gli amici, loro lo inseriscono qui per confrontarsi con te.'], 'Operatrice');
+  await say([T`Risposte esatte: ${r.correct}/${N} in ${Math.round(secs)} secondi. Punteggio: ${score}.`, T('Ecco il tuo codice: condividilo con gli amici, loro lo inseriscono qui per confrontarsi con te.')], T('Operatrice'));
   await showCode(code);
 }
 
 function showCode(code: string) {
-  return modal('Il tuo codice della settimana', ({ body, button, close }) => {
-    body.innerHTML = `<p style="text-align:center"><b style="font-size:1.3em;letter-spacing:1px">${esc(code)}</b></p><p class="small muted">Chi lo inserisce vede il tuo nome e il tuo punteggio nella sua classifica. Il codice non contiene dati del conto.</p>`;
-    button('Copia', () => { void navigator.clipboard?.writeText(code).then(() => toast('Codice copiato.')); });
-    button('Chiudi', () => close(), 'primary');
+  return modal(T('Il tuo codice della settimana'), ({ body, button, close }) => {
+    body.innerHTML = T`<p style="text-align:center"><b style="font-size:1.3em;letter-spacing:1px">${esc(code)}</b></p><p class="small muted">Chi lo inserisce vede il tuo nome e il tuo punteggio nella sua classifica. Il codice non contiene dati del conto.</p>`;
+    button(T('Copia'), () => { void navigator.clipboard?.writeText(code).then(() => toast(T('Codice copiato.'))); });
+    button(T('Chiudi'), () => close(), 'primary');
   });
 }
 
 async function enterCode(week: string) {
-  const code = await ask('Codice dell\'amico', '', 32);
+  const code = await ask(T('Codice dell\'amico'), '', 32);
   if (!code) return;
   const p = parseCode(code);
-  if (!p) return say('Codice non valido.', 'Operatrice');
-  if (S.challenges.some((c) => c.code.toUpperCase() === code.trim().toUpperCase())) return say('Questo codice è già in classifica.', 'Operatrice');
+  if (!p) return say(T('Codice non valido.'), T('Operatrice'));
+  if (S.challenges.some((c) => c.code.toUpperCase() === code.trim().toUpperCase())) return say(T('Questo codice è già in classifica.'), T('Operatrice'));
   S.challenges.push({ code: code.trim().toUpperCase(), score: p.score, date: new Date().toISOString().slice(0, 10), label: p.name });
   save();
-  await say(`${p.name} entra in classifica con ${p.score} punti${p.week === week ? '' : ` (settimana ${p.week})`}.`, 'Operatrice');
+  await say(T`${p.name} entra in classifica con ${p.score} punti${p.week === week ? '' : ` (settimana ${p.week})`}.`, T('Operatrice'));
 }
 
 function showBoard(week: string) {
   const rows = board(week);
-  return modal('Classifica della settimana', ({ body, button, close }) => {
-    body.innerHTML = rows.length ? `<table class="t"><tr><th>#</th><th>Nome</th><th class="n">Punti</th><th>Data</th></tr>${rows.map((r, i) => `<tr${r.label === S.name ? ' style="font-weight:bold"' : ''}><td>${i + 1}</td><td>${esc(r.label)}</td><td class="n">${r.score}</td><td>${esc(r.date)}</td></tr>`).join('')}</table>` : '<p class="muted">Nessun risultato per questa settimana.</p>';
-    button('Chiudi', () => close(), 'primary');
+  return modal(T('Classifica della settimana'), ({ body, button, close }) => {
+    body.innerHTML = rows.length ? T`<table class="t"><tr><th>#</th><th>Nome</th><th class="n">Punti</th><th>Data</th></tr>${rows.map((r, i) => `<tr${r.label === S.name ? ' style="font-weight:bold"' : ''}><td>${i + 1}</td><td>${esc(r.label)}</td><td class="n">${r.score}</td><td>${esc(r.date)}</td></tr>`).join('')}</table>` : T('<p class="muted">Nessun risultato per questa settimana.</p>');
+    button(T('Chiudi'), () => close(), 'primary');
   });
 }

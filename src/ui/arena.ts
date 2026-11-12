@@ -6,6 +6,7 @@
  */
 import { getStage, el } from './core';
 import { beep } from '../systems/audio';
+import { T } from '../i18n';
 
 export type Arena = 'piazza' | 'aula' | 'sala' | 'tetto' | 'fossa' | 'lega' | 'torre' | 'biblioteca' | 'borsa';
 
@@ -17,14 +18,14 @@ export const ARENA_ACCENT: Record<Arena, string> = {
 
 /** Parole del nastro scorrevole in alto: concetti del gioco, mai prezzi o titoli reali. */
 export const ARENA_TAPE: Record<Arena, string[]> = {
-  piazza: ['DOMANDA ▲', 'OFFERTA ▼', 'LIQUIDITÀ ▲', 'SPREAD ▼', 'VOLUMI ▲', 'PREZZO ▲'],
-  aula: ['DIVERSIFICARE ▲', 'INTERESSE COMPOSTO ▲', 'COSTI ▼', 'ORIZZONTE ▲', 'FONDO EMERGENZE ▲'],
+  piazza: ['DOMANDA ▲', 'OFFERTA ▼', T('LIQUIDITÀ ▲'), 'SPREAD ▼', 'VOLUMI ▲', 'PREZZO ▲'],
+  aula: ['DIVERSIFICARE ▲', T('INTERESSE COMPOSTO ▲'), 'COSTI ▼', 'ORIZZONTE ▲', T('FONDO EMERGENZE ▲')],
   sala: ['PIANO ▲', 'STOP ▲', 'RISCHIO ▼', 'DISCIPLINA ▲', 'PAZIENZA ▲', 'IMPULSO ▼'],
-  tetto: ['RIVALITÀ ▲', 'CONFRONTO ▲', 'FRETTA ▼', 'METODO ▲', 'COSTANZA ▲'],
-  fossa: ['LEVA ▼', 'PANICO ▼', 'VOCI ▼', 'FOMO ▼', 'PROMESSE ▼', 'SANGUE FREDDO ▲'],
+  tetto: [T('RIVALITÀ ▲'), 'CONFRONTO ▲', 'FRETTA ▼', 'METODO ▲', 'COSTANZA ▲'],
+  fossa: ['LEVA ▼', 'PANICO ▼', 'VOCI ▼', 'FOMO ▼', 'PROMESSE ▼', T('SANGUE FREDDO ▲')],
   lega: ['ESPERIENZA ▲', 'METODO ▲', 'PROCESSO ▲', 'ALLOCAZIONE ▲', 'CALMA ▲'],
-  torre: ['PIANO SUCCESSIVO ▲', 'RESISTENZA ▲', 'CONCENTRAZIONE ▲', 'FIDUCIA ▲'],
-  biblioteca: ['RIPASSO ▲', 'APPUNTI ▲', 'CURIOSITÀ ▲', 'DUBBI ▼', 'STUDIO ▲'],
+  torre: [T('PIANO SUCCESSIVO ▲'), 'RESISTENZA ▲', 'CONCENTRAZIONE ▲', 'FIDUCIA ▲'],
+  biblioteca: ['RIPASSO ▲', 'APPUNTI ▲', T('CURIOSITÀ ▲'), 'DUBBI ▼', 'STUDIO ▲'],
   borsa: ['INGRESSO ▲', 'STOP ▲', 'OBIETTIVO ▲', 'SCADENZA ▲', 'ESITO ▲', 'PROCESSO ▲'],
 };
 

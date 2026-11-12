@@ -1,10 +1,11 @@
 // Candele: tipi, aggregazione, media mobile e lettura guidata. Le barre sono sempre quelle reali di Alpaca
 // (ui/alpaca.ts realChart): il gioco non ricostruisce e non inventa candele.
 
+import { T } from '../i18n';
 export type Timeframe = '5m' | '15m' | '1h' | '4h' | '1g';
 export const TIMEFRAMES: Timeframe[] = ['5m', '15m', '1h', '4h', '1g'];
 export const TF_MINUTES: Record<Timeframe, number> = { '5m': 5, '15m': 15, '1h': 60, '4h': 240, '1g': 1440 };
-export const TF_LABEL: Record<Timeframe, string> = { '5m': '5 min', '15m': '15 min', '1h': '1 ora', '4h': '4 ore', '1g': '1 giorno' };
+export const TF_LABEL: Record<Timeframe, string> = { '5m': '5 min', '15m': '15 min', '1h': T('1 ora'), '4h': T('4 ore'), '1g': T('1 giorno') };
 
 export interface Candle { t: number; o: number; h: number; l: number; c: number; v: number }
 
@@ -30,7 +31,7 @@ export function sma(bars: Candle[], n: number): (number | null)[] {
 
 /** Lettura didattica del grafico: descrive cosa si vede e fa una domanda sul piano del giocatore (non un consiglio). */
 export function reading(bars: Candle[], tf: Timeframe): { lines: string[]; trend: 'su' | 'giu' | 'laterale' } {
-  if (bars.length < 10) return { lines: ['Pochi dati per una lettura.'], trend: 'laterale' };
+  if (bars.length < 10) return { lines: [T('Pochi dati per una lettura.')], trend: 'laterale' };
   const last = bars[bars.length - 1].c;
   const m20 = sma(bars, 20)[bars.length - 1];
   const hi = Math.max(...bars.map((b) => b.h)), lo = Math.min(...bars.map((b) => b.l));
@@ -39,14 +40,14 @@ export function reading(bars: Candle[], tf: Timeframe): { lines: string[]; trend
   const chg = (last - first) / first;
   const trend: 'su' | 'giu' | 'laterale' = chg > 0.03 && m20 !== null && last > m20 ? 'su' : chg < -0.03 && m20 !== null && last < m20 ? 'giu' : 'laterale';
   const lines: string[] = [];
-  const horizon = tf === '1g' ? 'di settimane o mesi' : tf === '4h' || tf === '1h' ? 'di giorni' : 'di ore: rumore, per chi investe';
-  lines.push(`Orizzonte ${TF_LABEL[tf]}: movimenti ${horizon}. Ultime 30 barre: ${chg >= 0 ? '+' : ''}${(chg * 100).toFixed(1)}%, escursione massimo-minimo ${(range * 100).toFixed(1)}%.`);
+  const horizon = tf === '1g' ? T('di settimane o mesi') : tf === '4h' || tf === '1h' ? T('di giorni') : T('di ore: rumore, per chi investe');
+  lines.push(T`Orizzonte ${TF_LABEL[tf]}: movimenti ${horizon}. Ultime 30 barre: ${chg >= 0 ? '+' : ''}${(chg * 100).toFixed(1)}%, escursione massimo-minimo ${(range * 100).toFixed(1)}%.`);
   // Solo descrizione di ciò che il grafico mostra, più una domanda sul piano del giocatore: mai un'indicazione su come
   // o quando operare su questo titolo (sarebbe una raccomandazione su uno strumento preciso).
-  if (trend === 'su') lines.push('Tendenza al rialzo: il prezzo è sopra la media a 20 barre. Domanda per il tuo piano: avevi deciso prima come e quando entrare, o lo decide il grafico?');
-  else if (trend === 'giu') lines.push('Tendenza al ribasso: il prezzo è sotto la media a 20 barre. Un prezzo sceso non è per forza basso. Domanda per il tuo piano: quale motivo, fuori dal grafico, giustificherebbe una decisione?');
-  else lines.push('Fase laterale: il prezzo oscilla intorno alla media a 20 barre, dentro un intervallo. Domanda per il tuo piano: hai già deciso dove metteresti lo stop, se dovessi entrare?');
-  if (tf === '5m' || tf === '15m') lines.push('Su questi orizzonti il grafico è quasi tutto rumore: chi investe di solito non decide su candele così brevi.');
-  if (tf === '1g') lines.push('È l\'orizzonte dell\'investitore: qui si vedono le fasi di mercato. Confronta con i fondamentali dell\'Asset Card prima di decidere.');
+  if (trend === 'su') lines.push(T('Tendenza al rialzo: il prezzo è sopra la media a 20 barre. Domanda per il tuo piano: avevi deciso prima come e quando entrare, o lo decide il grafico?'));
+  else if (trend === 'giu') lines.push(T('Tendenza al ribasso: il prezzo è sotto la media a 20 barre. Un prezzo sceso non è per forza basso. Domanda per il tuo piano: quale motivo, fuori dal grafico, giustificherebbe una decisione?'));
+  else lines.push(T('Fase laterale: il prezzo oscilla intorno alla media a 20 barre, dentro un intervallo. Domanda per il tuo piano: hai già deciso dove metteresti lo stop, se dovessi entrare?'));
+  if (tf === '5m' || tf === '15m') lines.push(T('Su questi orizzonti il grafico è quasi tutto rumore: chi investe di solito non decide su candele così brevi.'));
+  if (tf === '1g') lines.push(T('È l\'orizzonte dell\'investitore: qui si vedono le fasi di mercato. Confronta con i fondamentali dell\'Asset Card prima di decidere.'));
   return { lines, trend };
 }

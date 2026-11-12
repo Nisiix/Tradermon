@@ -9,6 +9,11 @@ import { mentor, TOWNS } from '../src/data/story';
 import type { Track } from '../src/types';
 import donazioni from './config/donazioni.json';
 import segnalazioni from './config/segnalazioni.json';
+import { T } from '../src/i18n';
+import { translateDom, wireLangSwitch } from '../src/i18n/dom';
+
+translateDom();
+wireLangSwitch();
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -54,7 +59,7 @@ function hero() {
   const c = cv.getContext('2d')!;
   const h = new Date().getHours();
   const phase: Phase = h >= 20 || h < 6 ? 'night' : h >= 17 || h < 8 ? 'dusk' : 'day';
-  const T = THEMES[phase];
+  const TH = THEMES[phase];
   document.body.dataset.sky = phase;
 
   // dati deterministici: la stessa città a ogni visita
@@ -87,12 +92,12 @@ function hero() {
       g.fillStyle = color;
       g.fillRect(Math.round(x), Math.round(top), Math.ceil(w), Math.ceil(hh) + 1);
       if (b.spire) { g.fillRect(Math.round(x + w / 2 - 1.5 * dpr), Math.round(top - b.spire * H), Math.ceil(3 * dpr), Math.ceil(b.spire * H)); }
-      g.fillStyle = T.edge; g.globalAlpha = 0.35; g.fillRect(Math.round(x), Math.round(top), Math.ceil(2 * dpr), Math.ceil(hh)); g.globalAlpha = 1;
+      g.fillStyle = TH.edge; g.globalAlpha = 0.35; g.fillRect(Math.round(x), Math.round(top), Math.ceil(2 * dpr), Math.ceil(hh)); g.globalAlpha = 1;
       if (!lit) continue;
       const sx = winSize * 2.2, sy = winSize * 2.6;
       const cols = Math.max(1, Math.floor((w - winSize * 2) / sx)), rows = Math.max(1, Math.floor((hh - winSize * 3) / sy));
       const ox = x + (w - cols * sx + (sx - winSize)) / 2;
-      g.fillStyle = T.win;
+      g.fillStyle = TH.win;
       for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) {
         if (b.win[(r * cols + k) % 80] > lit) continue;
         g.globalAlpha = 0.55 + b.win[(r * 7 + k) % 80] * 0.45;
@@ -111,29 +116,29 @@ function hero() {
     // sfondo: cielo, bagliore all'orizzonte, luna o sole
     const b = back.getContext('2d')!;
     const sky = b.createLinearGradient(0, 0, 0, horizon);
-    sky.addColorStop(0, T.sky[0]); sky.addColorStop(0.6, T.sky[1]); sky.addColorStop(1, T.sky[2]);
+    sky.addColorStop(0, TH.sky[0]); sky.addColorStop(0.6, TH.sky[1]); sky.addColorStop(1, TH.sky[2]);
     b.fillStyle = sky; b.fillRect(0, 0, W, H);
     const glow = b.createRadialGradient(W * 0.62, horizon, 0, W * 0.62, horizon, W * 0.7);
-    glow.addColorStop(0, T.glow + '66'); glow.addColorStop(1, T.glow + '00');
+    glow.addColorStop(0, TH.glow + '66'); glow.addColorStop(1, TH.glow + '00');
     b.fillStyle = glow; b.fillRect(0, 0, W, H);
     const ox = W * (W / dpr > 900 ? 0.86 : 0.8), oy = phase === 'dusk' ? horizon * 0.62 : H * (W / dpr > 900 ? 0.2 : 0.15), r = Math.max(26, Math.min(W, H) * 0.06);
     const halo = b.createRadialGradient(ox, oy, r * 0.8, ox, oy, r * 4);
-    halo.addColorStop(0, T.orb + '55'); halo.addColorStop(1, T.orb + '00');
+    halo.addColorStop(0, TH.orb + '55'); halo.addColorStop(1, TH.orb + '00');
     b.fillStyle = halo; b.fillRect(0, 0, W, H);
-    b.fillStyle = T.orb; b.beginPath(); b.arc(ox, oy, r, 0, Math.PI * 2); b.fill();
+    b.fillStyle = TH.orb; b.beginPath(); b.arc(ox, oy, r, 0, Math.PI * 2); b.fill();
     if (phase === 'night') { b.fillStyle = '#00000018'; b.beginPath(); b.arc(ox - r * 0.3, oy - r * 0.2, r * 0.25, 0, 7); b.arc(ox + r * 0.35, oy + r * 0.3, r * 0.16, 0, 7); b.fill(); }
     // primo piano: tre file di palazzi e il porto
     const f = front.getContext('2d')!;
     f.clearRect(0, 0, W, H);
     const haze = (col: string, a: number) => { f.fillStyle = col; f.globalAlpha = a; f.fillRect(0, 0, W, horizon); f.globalAlpha = 1; };
-    drawCity(f, far, T.far, horizon, 1.15, T.winOn * 0.5, 2 * dpr);
-    haze(T.sky[2], 0.12);
-    drawCity(f, mid, T.mid, horizon, 1, T.winOn * 0.8, 3 * dpr);
-    drawCity(f, near, T.near, horizon, 0.9, T.winOn, 3.5 * dpr);
+    drawCity(f, far, TH.far, horizon, 1.15, TH.winOn * 0.5, 2 * dpr);
+    haze(TH.sky[2], 0.12);
+    drawCity(f, mid, TH.mid, horizon, 1, TH.winOn * 0.8, 3 * dpr);
+    drawCity(f, near, TH.near, horizon, 0.9, TH.winOn, 3.5 * dpr);
     const water = f.createLinearGradient(0, horizon, 0, H);
-    water.addColorStop(0, T.water[0]); water.addColorStop(1, T.water[1]);
+    water.addColorStop(0, TH.water[0]); water.addColorStop(1, TH.water[1]);
     f.fillStyle = water; f.fillRect(0, horizon, W, H - horizon);
-    f.fillStyle = T.edge; f.globalAlpha = 0.6; f.fillRect(0, horizon, W, Math.ceil(2 * dpr)); f.globalAlpha = 1;
+    f.fillStyle = TH.edge; f.globalAlpha = 0.6; f.fillRect(0, horizon, W, Math.ceil(2 * dpr)); f.globalAlpha = 1;
   };
 
   const ease = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
@@ -190,7 +195,7 @@ function hero() {
     c.save(); c.translate(0, -parallax * 0.35 * dpr); drawChart(t); c.restore();
     c.drawImage(front, 0, 0);
     // riflessi delle luci sull'acqua
-    c.fillStyle = T.win;
+    c.fillStyle = TH.win;
     for (let i = 0; i < 26; i++) {
       const x = ((i * 0.0383 + 0.02) % 1) * W, y = horizon + (6 + (i % 5) * 9) * dpr * (H / 900 + 0.6);
       c.globalAlpha = 0.18 + 0.14 * Math.sin(now / 700 + i);
@@ -225,10 +230,10 @@ if ('IntersectionObserver' in window) {
 // ---------------- Percorsi ----------------
 
 const TRACKS: { id: Track; name: string; color: string; desc: string }[] = [
-  { id: 'stocks', name: 'Sentiero dei Titoli', color: 'blue', desc: 'Le azioni delle aziende: bilanci, settori, scelte.' },
-  { id: 'etf', name: 'Sentiero degli Indici', color: 'green', desc: 'Gli ETF: panieri, costi bassi, pazienza.' },
-  { id: 'crypto', name: 'Sentiero Cripto', color: 'orange', desc: 'La frontiera più rischiosa: reti, chiavi, volatilità.' },
-  { id: 'mixed', name: 'Sentiero Misto', color: 'purple', desc: 'Due o tre classi insieme: l\'arte delle proporzioni.' },
+  { id: 'stocks', name: T('Sentiero dei Titoli'), color: 'blue', desc: T('Le azioni delle aziende: bilanci, settori, scelte.') },
+  { id: 'etf', name: T('Sentiero degli Indici'), color: 'green', desc: T('Gli ETF: panieri, costi bassi, pazienza.') },
+  { id: 'crypto', name: T('Sentiero Cripto'), color: 'orange', desc: T('La frontiera più rischiosa: reti, chiavi, volatilità.') },
+  { id: 'mixed', name: T('Sentiero Misto'), color: 'purple', desc: T('Due o tre classi insieme: l\'arte delle proporzioni.') },
 ];
 const cards = $('#cards');
 for (const t of TRACKS) {
@@ -236,9 +241,9 @@ for (const t of TRACKS) {
   const card = document.createElement('button');
   card.type = 'button';
   card.className = `card ${t.color}`;
-  card.setAttribute('aria-label', `${t.name}: ${t.desc} Whale della quinta città: ${m5.name}, Tecnica ${m5.technique}.`);
+  card.setAttribute('aria-label', T`${t.name}: ${t.desc} Whale della quinta città: ${m5.name}, Tecnica ${m5.technique}.`);
   card.innerHTML = `<span class="inner"><span class="front"><span class="case"></span><b>${t.name}</b><span>${t.desc}</span></span>`
-    + `<span class="back"><img alt="" width="64" height="96" src="${portrait(m5.palette)}"><b>${m5.name}</b><span>Whale di ${TOWNS[5].name}</span><span class="tech">${m5.technique}</span></span></span>`;
+    + T`<span class="back"><img alt="" width="64" height="96" src="${portrait(m5.palette)}"><b>${m5.name}</b><span>Whale di ${TOWNS[5].name}</span><span class="tech">${m5.technique}</span></span></span>`;
   card.addEventListener('click', () => card.classList.toggle('flip'));
   cards.append(card);
 }
@@ -248,7 +253,7 @@ for (const t of TRACKS) {
 const badges = $('#badges');
 for (let n = 1; n <= 8; n++) {
   const m = mentor(n, 'stocks');
-  const name = n === 5 || n === 6 ? (n === 5 ? 'La Whale del percorso' : 'La Whale del Raccolto') : m.name;
+  const name = n === 5 || n === 6 ? (n === 5 ? T('La Whale del percorso') : T('La Whale del Raccolto')) : m.name;
   const el = document.createElement('div');
   el.className = 'badge';
   el.innerHTML = `<span class="medal m${n}" aria-hidden="true"></span><b>${m.badge}</b><span>${TOWNS[n].name}</span><span class="small">${name}</span>`;
@@ -256,7 +261,7 @@ for (let n = 1; n <= 8; n++) {
 }
 const league = document.createElement('div');
 league.className = 'badge league';
-league.innerHTML = `<span class="medal ml" aria-hidden="true"></span><b>Wall Street</b><span>la Borsa finale</span><span class="small">4 Superiori e il Campione</span>`;
+league.innerHTML = T`<span class="medal ml" aria-hidden="true"></span><b>Wall Street</b><span>la Borsa finale</span><span class="small">4 Superiori e il Campione</span>`;
 badges.append(league);
 
 // ---------------- Donazioni: PayPal e crypto ----------------
@@ -287,10 +292,10 @@ if (list.length) {
     body.innerHTML = `<p><b>${esc(d.rete)}</b>${d.valute ? ` · ${esc(d.valute)}` : ''}</p>`
       + `<div class="qr">${qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true })}</div>`
       + `<p class="addr"><code>${esc(d.indirizzo.trim())}</code></p>`
-      + `<p><button type="button" class="btn btn-blue" id="copy">Copia indirizzo</button></p><p class="bubble-ok" id="copied" role="status"></p>`;
+      + T`<p><button type="button" class="btn btn-blue" id="copy">Copia indirizzo</button></p><p class="bubble-ok" id="copied" role="status"></p>`;
     $('#copy').addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(d.indirizzo.trim()); $('#copied').textContent = 'Indirizzo copiato, grazie allenatore!'; }
-      catch { $('#copied').textContent = 'Copia non riuscita: seleziona l\'indirizzo a mano.'; }
+      try { await navigator.clipboard.writeText(d.indirizzo.trim()); $('#copied').textContent = T('Indirizzo copiato, grazie allenatore!'); }
+      catch { $('#copied').textContent = T('Copia non riuscita: seleziona l\'indirizzo a mano.'); }
     });
   };
   list.forEach((d, i) => {
@@ -324,10 +329,10 @@ if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(reportTo)) {
     e.preventDefault();
     const data = new FormData(form);
     const testo = String(data.get('testo') ?? '').trim();
-    if (testo.length < 10) { err.textContent = 'Scrivi almeno una frase su cosa è successo.'; form.querySelector('textarea')!.focus(); return; }
+    if (testo.length < 10) { err.textContent = T('Scrivi almeno una frase su cosa è successo.'); form.querySelector('textarea')!.focus(); return; }
     err.textContent = '';
-    const tipo = String(data.get('tipo') ?? 'Altro');
-    const info = data.get('info') ? `\n\n---\nBrowser: ${navigator.userAgent}\nSchermo: ${innerWidth}×${innerHeight}\nPagina: ${location.href.split('#')[0]}` : '';
+    const tipo = String(data.get('tipo') ?? T('Altro'));
+    const info = data.get('info') ? T`\n\n---\nBrowser: ${navigator.userAgent}\nSchermo: ${innerWidth}×${innerHeight}\nPagina: ${location.href.split('#')[0]}` : '';
     location.href = `mailto:${reportTo}?subject=${encodeURIComponent(`[Tradermon] ${tipo}`)}&body=${encodeURIComponent(testo + info)}`;
     $('#report-fallback').hidden = false;
   });

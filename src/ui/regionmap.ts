@@ -6,26 +6,27 @@ import { ABILITY, ISLET_ROUTES, LABEL_ABOVE, REGION_POS, canSwim, canTransfer, c
 import { modal, esc, el, confirm, toast } from './core';
 import { beep } from '../systems/audio';
 import { tick } from '../systems/account';
+import { T } from '../i18n';
 
 const SEA_POS: [number, number] = [45, 65];
 const SEA_ISLANDS: [number, number, number][] = [[37, 64, 3], [54, 63, 2.6], [45, 68, 3.4]];
 const CAVES = [
-  { name: 'Galleria del Dark Pool (Percorso 2 → Diversia)', from: 't1', route: 2, to: 't3', bend: [0, -9] },
-  { name: 'Miniera dei Lingotti (Percorso 5 → Valdividendo)', from: 't4', route: 5, to: 't6', bend: [-6, 8] },
+  { name: T('Galleria del Dark Pool (Percorso 2 → Diversia)'), from: 't1', route: 2, to: 't3', bend: [0, -9] },
+  { name: T('Miniera dei Lingotti (Percorso 5 → Valdividendo)'), from: 't4', route: 5, to: 't6', bend: [-6, 8] },
 ];
 
 /** Luogo in cui si trova il giocatore sulla mappa: una città o il punto medio di un percorso. */
 function herePos(): { pos: [number, number]; label: string; town?: string } {
   const out = outdoorOf(S.map, getMap);
-  if (out === 'sea') return { pos: SEA_POS, label: 'Mare della Liquidità' };
+  if (out === 'sea') return { pos: SEA_POS, label: T('Mare della Liquidità') };
   if (REGION_POS[out]) return { pos: REGION_POS[out], label: TOWNS.find((t) => t.id === out)?.name ?? out, town: out };
   const r = /^r(\d+)$/.exec(out);
   if (r) {
     const k = Number(r[1]);
     const a = REGION_POS[`t${k - 1}`], b = REGION_POS[`t${k}`];
-    return { pos: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], label: `Percorso ${k}` };
+    return { pos: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], label: T`Percorso ${k}` };
   }
-  return { pos: REGION_POS.t0, label: 'Borgo Semina' };
+  return { pos: REGION_POS.t0, label: T('Borgo Semina') };
 }
 
 function svg(): string {
@@ -42,8 +43,8 @@ function svg(): string {
     const [px2, py2] = REGION_POS.t2;
     const seaSeen = !!S.flags.seaVisited;
     s += `<line x1="${px2}" y1="${py2 + 3}" x2="${SEA_POS[0]}" y2="${SEA_POS[1] - 4}" stroke="#d8f0ff" stroke-width="1" stroke-dasharray="1.2 1.2"/>`;
-    s += `<g><title>Mare della Liquidità</title>${SEA_ISLANDS.map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 0.6}" fill="${seaSeen ? '#e6cf94' : '#a8b8c0'}" stroke="#86683c" stroke-width=".4"/>`).join('')}
-      <text x="${SEA_POS[0]}" y="${SEA_POS[1] + 6.5}" class="rg-name${seaSeen ? '' : ' rg-unknown'}">${seaSeen ? 'Mare della Liquidità' : '???'}</text></g>`;
+    s += T`<g><title>Mare della Liquidità</title>${SEA_ISLANDS.map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 0.6}" fill="${seaSeen ? '#e6cf94' : '#a8b8c0'}" stroke="#86683c" stroke-width=".4"/>`).join('')}
+      <text x="${SEA_POS[0]}" y="${SEA_POS[1] + 6.5}" class="rg-name${seaSeen ? '' : ' rg-unknown'}">${seaSeen ? T('Mare della Liquidità') : '???'}</text></g>`;
   }
   // grotte: scorciatoie da metà percorso a una città più avanti
   for (const c of CAVES) {
@@ -63,9 +64,9 @@ function svg(): string {
       const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
       const side = k === 5 ? -1 : 1;
       const ix = mx + side * ((b[1] - a[1]) / len) * 6, iy = my - side * ((b[0] - a[0]) / len) * 6;
-      s += `<g><title>Isola della Liquidità (Percorso ${k})</title><ellipse cx="${ix}" cy="${iy}" rx="4" ry="2.5" fill="#3a8ad8" stroke="#2060a8" stroke-width=".4"/><ellipse cx="${ix}" cy="${iy - 0.2}" rx="1.6" ry="1" fill="${done ? '#f0c040' : '#6cc04a'}"/></g>`;
+      s += T`<g><title>Isola della Liquidità (Percorso ${k})</title><ellipse cx="${ix}" cy="${iy}" rx="4" ry="2.5" fill="#3a8ad8" stroke="#2060a8" stroke-width=".4"/><ellipse cx="${ix}" cy="${iy - 0.2}" rx="1.6" ry="1" fill="${done ? '#f0c040' : '#6cc04a'}"/></g>`;
     }
-    if (known && k === 7) s += `<path d="M${mx - 3} ${my - 3} l1 -1.6 l1 1.6 l1 -1.6 l1 1.6 l1 -1.6 l1 1.6" fill="none" stroke="#e04848" stroke-width=".7"><title>Muro del Rumore</title></path>`;
+    if (known && k === 7) s += T`<path d="M${mx - 3} ${my - 3} l1 -1.6 l1 1.6 l1 -1.6 l1 1.6 l1 -1.6 l1 1.6" fill="none" stroke="#e04848" stroke-width=".7"><title>Muro del Rumore</title></path>`;
     if (known) s += `<text x="${mx}" y="${my + 1}" class="rg-route">${k}</text>`;
   }
   // città
@@ -74,7 +75,7 @@ function svg(): string {
     const v = vis(t.id);
     const gold = i >= 1 && i <= 8 && S.badges >= i;
     const fill = !v ? '#9aa0a8' : i === 9 ? '#c050c0' : gold ? '#f0c040' : '#f8f8f8';
-    s += `<g><title>${esc(v ? t.name : 'Città non ancora visitata')}</title><rect x="${x - 2.6}" y="${y - 2.6}" width="5.2" height="5.2" rx="1" fill="${fill}" stroke="#203050" stroke-width=".7"/>`;
+    s += `<g><title>${esc(v ? t.name : T('Città non ancora visitata'))}</title><rect x="${x - 2.6}" y="${y - 2.6}" width="5.2" height="5.2" rx="1" fill="${fill}" stroke="#203050" stroke-width=".7"/>`;
     s += `<text x="${x}" y="${LABEL_ABOVE.has(t.id) ? y - 3.6 : y + 6.6}" class="rg-name${v ? '' : ' rg-unknown'}">${esc(v ? t.name : '???')}</text></g>`;
   });
   const [hx, hy] = here.pos;
@@ -86,15 +87,15 @@ function svg(): string {
 export async function openRegionMap(): Promise<string | undefined> {
   const here = herePos();
   const inLeague = S.map === 'league';
-  const dest = await modal<string>('Mappa della Regione', ({ body, button, close }) => {
+  const dest = await modal<string>(T('Mappa della Regione'), ({ body, button, close }) => {
     body.appendChild(el('div', 'region-map', svg()));
-    body.appendChild(el('p', 'small', `Sei qui: <b>${esc(here.label)}</b> · Città visitate: <b>${S.visited.filter((v) => /^t\d$/.test(v)).length}/${TOWNS.length}</b>`));
+    body.appendChild(el('p', 'small', T`Sei qui: <b>${esc(here.label)}</b> · Città visitate: <b>${S.visited.filter((v) => /^t\d$/.test(v)).length}/${TOWNS.length}</b>`));
     if (canTransfer()) {
       const targets = transferTargets(here.town ?? '');
-      if (inLeague) body.appendChild(el('p', 'small muted', 'Dentro Wall Street il Trasferimento di Capitale non funziona: finisci prima le sfide.'));
-      else if (!targets.length) body.appendChild(el('p', 'small muted', 'Visita altre città per poterti trasferire.'));
+      if (inLeague) body.appendChild(el('p', 'small muted', T('Dentro Wall Street il Trasferimento di Capitale non funziona: finisci prima le sfide.')));
+      else if (!targets.length) body.appendChild(el('p', 'small muted', T('Visita altre città per poterti trasferire.')));
       else {
-        body.appendChild(el('h4', '', 'Trasferimento di Capitale'));
+        body.appendChild(el('h4', '', T('Trasferimento di Capitale')));
         const grid = el('div', 'region-dest');
         for (const id of targets) {
           const b = el('button', 'btn', esc(TOWNS.find((t) => t.id === id)!.name));
@@ -103,7 +104,7 @@ export async function openRegionMap(): Promise<string | undefined> {
         }
         body.appendChild(grid);
       }
-    } else body.appendChild(el('p', 'small muted', `Il Trasferimento di Capitale lo sblocchi battendo la Whale di mezzo (Attestato ${TRANSFER_BADGE}). Intanto, dal secondo Attestato, le stazioni collegano le città visitate.`));
+    } else body.appendChild(el('p', 'small muted', T`Il Trasferimento di Capitale lo sblocchi battendo la Whale di mezzo (Attestato ${TRANSFER_BADGE}). Intanto, dal secondo Attestato, le stazioni collegano le città visitate.`));
     const ab = [
       { a: ABILITY.swim, ok: canSwim() },
       { a: ABILITY.cut, ok: canCut() },
@@ -111,14 +112,14 @@ export async function openRegionMap(): Promise<string | undefined> {
       { a: ABILITY.dark, ok: canSeeDark() },
       { a: ABILITY.cold, ok: hasTech(TECH.COLD) },
     ];
-    body.appendChild(el('div', 'small', ab.map(({ a, ok }) => `<p style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b>: ${ok ? esc(gtext(a.desc)) : `si sblocca con l'Attestato ${a.badge} (${esc(mentor(a.badge, S.track).badge)}).`}</p>`).join('')));
-    button('Chiudi', () => close(), 'primary');
+    body.appendChild(el('div', 'small', ab.map(({ a, ok }) => `<p style="margin:3px 0">${ok ? '✓' : '🔒'} <b>${esc(a.name)}</b>: ${ok ? esc(gtext(a.desc)) : T`si sblocca con l'Attestato ${a.badge} (${esc(mentor(a.badge, S.track).badge)}).`}</p>`).join('')));
+    button(T('Chiudi'), () => close(), 'primary');
   }, { wide: true });
   if (!dest) return undefined;
   const name = TOWNS.find((t) => t.id === dest)?.name ?? dest;
-  if (!(await confirm(`Trasferire il capitale a ${name}? Il regolamento è T+1: passerà un giorno di mercato.`))) return undefined;
+  if (!(await confirm(T`Trasferire il capitale a ${name}? Il regolamento è T+1: passerà un giorno di mercato.`))) return undefined;
   beep('ok');
   tick();
-  toast(`Trasferimento completato: benvenut{o|a} a ${name}.`);
+  toast(T`Trasferimento completato: benvenut{o|a} a ${name}.`);
   return dest;
 }

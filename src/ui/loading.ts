@@ -4,6 +4,7 @@
 // un momento quando compare, e per tutta l'attesa blocca tasti, tocchi e campi di testo sotto.
 import { el, esc, getStage } from './core';
 import { pushHandler, popHandler } from './input';
+import { T } from '../i18n';
 
 /** Dopo quanto compare (ms): sotto questa soglia l'attesa non si nota. */
 export const SHOW_AFTER = 220;
@@ -60,7 +61,7 @@ function mount(): void {
   wrap.tabIndex = -1;
   const box = el('div', 'box loading', chart());
   labelEl = el('p', 'ld-label');
-  slowEl = el('p', 'ld-slow small muted', 'Ci vuole più del solito: controlla la connessione.');
+  slowEl = el('p', 'ld-slow small muted', T('Ci vuole più del solito: controlla la connessione.'));
   slowEl.hidden = true;
   box.append(labelEl, slowEl);
   slowTimer = window.setTimeout(() => { if (slowEl) slowEl.hidden = false; }, SLOW_AFTER - SHOW_AFTER);

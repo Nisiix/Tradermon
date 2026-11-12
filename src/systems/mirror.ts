@@ -1,6 +1,7 @@
 import { S } from './state';
 import type { RiskProfile } from '../types';
 import type { SimResult } from '../data/missions';
+import { T } from '../i18n';
 
 /**
  * Specchio dell'investitore: confronta il profilo di rischio DICHIARATO nel questionario
@@ -69,24 +70,24 @@ export function mirrorReport(declared: RiskProfile = S.profile, obs = mirrorObs(
   const revealed = revealedProfile(obs);
   if (!revealed) {
     const left = MIN_OBS - obs.length;
-    return { revealed, lines: [`Nel questionario il tuo profilo è ${declared.toUpperCase()}.`, `Lo Specchio ha bisogno di vederti all'opera: completa ancora ${left} ${left === 1 ? 'missione' : 'missioni'} nella Macchina del Tempo (Zona Simulazione di Diversia, o crisi leggendarie alla Torre), facendo almeno un ordine.`] };
+    return { revealed, lines: [T`Nel questionario il tuo profilo è ${declared.toUpperCase()}.`, T`Lo Specchio ha bisogno di vederti all'opera: completa ancora ${left} ${left === 1 ? T('missione') : T('missioni')} nella Macchina del Tempo (Zona Simulazione di Diversia, o crisi leggendarie alla Torre), facendo almeno un ordine.`] };
   }
   const n = obs.length;
   const avg = (f: (o: MirrorObs) => number) => obs.reduce((s, o) => s + f(o), 0) / n;
   const facts: string[] = [];
-  facts.push(`In ${n} missioni sei rimast{o|a} investit{o|a} in media al ${Math.round(avg((o) => o.inv) * 100)}% e hai sopportato cali fino al ${Math.round(Math.max(...obs.map((o) => o.mdd)) * 100)}%.`);
+  facts.push(T`In ${n} missioni sei rimast{o|a} investit{o|a} in media al ${Math.round(avg((o) => o.inv) * 100)}% e hai sopportato cali fino al ${Math.round(Math.max(...obs.map((o) => o.mdd)) * 100)}%.`);
   const losses = obs.reduce((s, o) => s + o.loss, 0);
-  if (losses > 0) facts.push(`Hai venduto in perdita ${losses} ${losses === 1 ? 'volta' : 'volte'}${obs.some((o) => o.loss >= 2) ? ', spesso proprio nei momenti di calo' : ''}.`);
-  else facts.push('Non hai mai venduto in perdita: quando il mercato scendeva, hai tenuto.');
+  if (losses > 0) facts.push(T`Hai venduto in perdita ${losses} ${losses === 1 ? T('volta') : T('volte')}${obs.some((o) => o.loss >= 2) ? T(', spesso proprio nei momenti di calo') : ''}.`);
+  else facts.push(T('Non hai mai venduto in perdita: quando il mercato scendeva, hai tenuto.'));
   const conc = obs.filter((o) => o.maxW > 0.4).length;
-  if (conc) facts.push(`In ${conc} ${conc === 1 ? 'missione' : 'missioni'} oltre il 40% del portafoglio era su un solo asset.`);
+  if (conc) facts.push(T`In ${conc} ${conc === 1 ? T('missione') : T('missioni')} oltre il 40% del portafoglio era su un solo asset.`);
 
   const gap = RANK[revealed] - RANK[declared];
   const verdict = gap === 0
-    ? [`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}. Dire e fare coincidono.`, 'È più raro di quanto sembri. Conoscersi così bene è il primo scudo contro le decisioni prese di pancia.']
+    ? [T`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}. Dire e fare coincidono.`, T('È più raro di quanto sembri. Conoscersi così bene è il primo scudo contro le decisioni prese di pancia.')]
     : gap < 0
-      ? [`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}, più prudente.`, 'Succede a molti: a mente fredda ci sentiamo coraggiosi, poi quando le perdite sono vere l\'avversione alle perdite prende il comando.', 'Un piano scritto prima del calo, e un\'allocazione che ti fa dormire, valgono più di un profilo ambizioso.']
-      : [`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}, più rischioso.`, 'Hai rischiato più di quanto dici di sopportare. Può essere fiducia in te stess{o|a}, ma anche eccesso di sicurezza.', 'Chiediti se reggeresti gli stessi cali con soldi veri: se la risposta è no, il tuo portafoglio dovrebbe seguire il profilo dichiarato.'];
+      ? [T`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}, più prudente.`, T('Succede a molti: a mente fredda ci sentiamo coraggiosi, poi quando le perdite sono vere l\'avversione alle perdite prende il comando.'), T('Un piano scritto prima del calo, e un\'allocazione che ti fa dormire, valgono più di un profilo ambizioso.')]
+      : [T`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}, più rischioso.`, T('Hai rischiato più di quanto dici di sopportare. Può essere fiducia in te stess{o|a}, ma anche eccesso di sicurezza.'), T('Chiediti se reggeresti gli stessi cali con soldi veri: se la risposta è no, il tuo portafoglio dovrebbe seguire il profilo dichiarato.')];
   return { revealed, lines: [...verdict, ...facts] };
 }
 
@@ -95,6 +96,6 @@ export function mirrorEpilogue(): string | null {
   const r = revealedProfile();
   if (!r) return null;
   return r === S.profile
-    ? `Lo Specchio dell'investitore non ha mai mentito: il tuo profilo dichiarato era ${S.profile}, e le tue scelte lo sono state fino alla fine.`
-    : `Il tuo profilo dichiarato era ${S.profile}, ma lungo il viaggio lo Specchio ha mostrato scelte da profilo ${r}. Ora lo sai: è questo che conta.`;
+    ? T`Lo Specchio dell'investitore non ha mai mentito: il tuo profilo dichiarato era ${S.profile}, e le tue scelte lo sono state fino alla fine.`
+    : T`Il tuo profilo dichiarato era ${S.profile}, ma lungo il viaggio lo Specchio ha mostrato scelte da profilo ${r}. Ora lo sai: è questo che conta.`;
 }
