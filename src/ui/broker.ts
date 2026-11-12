@@ -28,7 +28,7 @@ export const GUIDE_LINES = [
   '1) Registrati sulla piattaforma di Alpaca (alpaca.markets): per il conto Paper basta questo, ed è gratuito.',
   '2) Nella dashboard, in modalità Paper, genera una coppia di chiavi API (Key ID e Secret) e inseriscile alla voce "Chiavi API" del menu.',
   '3) Le chiavi restano solo sul tuo dispositivo. Dal sito sono cifrate con la password del tuo giocatore e il browser le usa per parlare direttamente con Alpaca: non vanno online e nessun server di Tradermon le riceve. Giocando sul tuo computer le custodisce il server locale di Tradermon, che non le rimanda mai al browser.',
-  'DOVE SI OPERA: dal sito è il tuo browser a inviare gli ordini direttamente al conto Paper di Alpaca; serve essere entrati con il proprio giocatore, perché la sua password apre le chiavi. Su un altro dispositivo le chiavi vanno inserite di nuovo. Se il browser non riesce a raggiungere Alpaca, il gioco ti chiede se far passare il conto Paper dal servizio di Tradermon.',
+  'DOVE SI OPERA: dal sito è il tuo browser a inviare gli ordini direttamente al conto Paper di Alpaca; devi entrare con il tuo giocatore, perché la tua password apre le chiavi. Su un altro dispositivo le chiavi vanno inserite di nuovo. Se il browser non riesce a raggiungere Alpaca, il gioco ti chiede se far passare il conto Paper dal servizio di Tradermon.',
   'Il conto Paper diventa il tuo conto di gioco, in dollari come i mercati americani da cui arrivano i prezzi. Gli ordini si danno in dollari e comprano anche frazioni di titolo. Tradermon non ti chiederà mai di versare denaro.',
   'Le regole del viaggio (Prove sul conto, Sigilli, leva, Boss) te le spiegano i personaggi quando servono. Il riepilogo delle tappe è nel menu, alla voce "Tappe, Prove e Sigilli".',
 ];
