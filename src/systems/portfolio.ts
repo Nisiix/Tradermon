@@ -166,9 +166,14 @@ export function diagnosis(pf: Portfolio, prices: Record<string, number>, day: nu
   if (recent > 10) out.push({ text: `${recent} ordini nell'ultimo mese di mercato: più ordini significano più costi e spesso più emozioni.`, lesson: 'l_costi_2' });
   if (h.dev > 15) {
     const al = allocation(pf, prices, locked);
-    const LABEL = { risky: 'i titoli rischiosi sono', defensive: 'i titoli difensivi sono', cash: 'la liquidità è' } as const;
+    const WHAT = {
+      risky: 'in titoli rischiosi (quelli che salgono e scendono di più)',
+      defensive: 'in titoli difensivi (quelli che oscillano poco)',
+      cash: 'in liquidità (dollari non investiti)',
+    } as const;
     const g = (['risky', 'defensive', 'cash'] as const).reduce((a, k) => (Math.abs(pf.target[k] - al[k]) > Math.abs(pf.target[a] - al[a]) ? k : a), 'risky' as 'risky' | 'defensive' | 'cash');
-    out.push({ text: `Il conto non segue più il tuo piano: ${LABEL[g]} ${pctArt(al[g], 'al')}, il piano dice ${pf.target[g]}%. Valuta un ribilanciamento.`, lesson: 'l_div_2' });
+    const now = pctArt(al[g]), plan = pctArt(pf.target[g]);
+    out.push({ text: `Oggi ${now} del tuo conto è ${WHAT[g]}, ma il tuo piano ne prevede ${plan}. Il ribilanciamento serve a riportarlo vicino al piano.`, lesson: 'l_div_2' });
   }
   for (const p of pf.positions) {
     const v = p.qty * prices[p.id];
