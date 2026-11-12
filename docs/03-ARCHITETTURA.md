@@ -22,7 +22,7 @@ src/
   main.ts             avvio: giocatore (Supabase), titolo, onboarding o caricamento, poi la scena del mondo
   config/supabase.ts  indirizzo e chiave pubblica del progetto Supabase
   art/art.ts          tileset in stile DS con bordi automatici e ombre portate, sprite 16×24 con contorni colorati, ritratti Scale2x, fondale del titolo
-  scenes/world.ts     scena Phaser: mappa, movimento a griglia (passo alternato, giro sul posto, urto), passaggi con dissolvenza, NPC che passeggiano, erba alta, fumetto "!", HUD
+  scenes/world.ts     scena Phaser: mappa, movimento a griglia (passo alternato, giro sul posto, urto), passaggi con dissolvenza, NPC che passeggiano, erba alta, fumetto "$" (drawSpotBubble in art.ts), HUD
   world/maps.ts       costruzione delle mappe (città, percorsi, interni, Lega, Torre)
   world/scripts.ts    storia ed eventi: Prof, Valigette, rivale, Mentori, Lega, Torre
   ui/core.ts          dialoghi, menu di scelta, finestre modali, notifiche

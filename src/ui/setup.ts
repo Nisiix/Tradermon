@@ -70,9 +70,12 @@ export async function onboarding(playerName?: string): Promise<void> {
   S.profile = profileFromScore(score);
   const desc = { prudente: 'PRUDENTE: preferisci la stabilità e oscillazioni contenute.', equilibrato: 'EQUILIBRATO: cerchi un compromesso tra crescita e tranquillità.', audace: 'AUDACE: tolleri bene le oscillazioni. Attento però: audace non vuol dire avventato!' }[S.profile];
   await say([`Il tuo profilo è ${desc}`, 'Ricorda: non è una raccomandazione. Serve a conoscerti: l\'allocazione del conto la scriverai tu, quando lo aprirai.', 'Vedremo nelle missioni se le tue scelte gli somigliano.'], 'Prof. Saldi');
-  await say('Questo è mio nipote. Siete cresciuti insieme, ma investe in modo molto diverso da te...', 'Prof. Saldi');
-  S.rival = (await ask('Come si chiama il tuo rivale?', 'Leo', 10)) || 'Leo';
-  await say([`Giusto, ${S.rival}! Ora vai a casa a riposare.`, 'Domani vieni al mio Laboratorio: ti aspetta una scelta importante.'], 'Prof. Saldi');
+  // il rivale: un bambino rimasto senza famiglia che il Prof ha adottato; ha un nome suo, non lo sceglie il giocatore
+  S.rival = 'Leo';
+  img.src = portrait(PAL.RIVAL); img.alt = 'Leo';
+  await say(['E lui è Leo. Quando era piccolo è rimasto senza famiglia: l\'ho adottato e da allora vive con me.', 'Siete cresciuti insieme in questo borgo, ma investe in modo molto diverso da te...', 'Mi ha chiesto lui di fare il tuo stesso viaggio. Credo voglia dimostrare qualcosa, a me e a sé stesso.'], 'Prof. Saldi');
+  img.src = portrait(PAL.PROF); img.alt = 'Prof. Saldi';
+  await say([`Ora vai a casa a riposare, ${S.name}.`, 'Domani vieni al mio Laboratorio: ti aspetta una scelta importante.'], 'Prof. Saldi');
   unmountIntro();
   intro.remove();
   await say(['Un\'ultima scelta, e questa non si cambia più: la difficoltà.', 'Decide quanto capitale avrà il tuo conto di gioco e quanto margine di errore ti lascio lungo il viaggio. I punteggi sono in percentuale: un capitale più grande non dà vantaggi.'], 'Prof. Saldi');

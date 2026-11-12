@@ -3,7 +3,7 @@ import { track } from '../systems/progress';
 import { decorateHome } from '../world/decor';
 import Phaser from 'phaser';
 import { drawPlaque } from '../art/plaque';
-import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal } from '../art/art';
+import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal, drawSpotBubble } from '../art/art';
 import { getMap, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, librarySection, type WorldApi } from '../world/scripts';
 import { S, save, hasTech, TECH } from '../systems/state';
@@ -87,12 +87,8 @@ export class WorldScene extends Phaser.Scene {
       grad.addColorStop(0, 'rgba(0,0,0,.34)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
       g.fillStyle = grad; g.beginPath(); g.ellipse(7 * RS, 2.5 * RS, 7 * RS, 2.4 * RS, 0, 0, Math.PI * 2); g.fill();
       this.textures.addCanvas('shadow', sh);
-      // fumetto "!" in pixel art
-      const bb = document.createElement('canvas'); bb.width = 12; bb.height = 14;
-      const b = bb.getContext('2d')!;
-      b.fillStyle = '#202020'; b.fillRect(1, 0, 10, 11); b.fillRect(0, 1, 12, 9); b.fillRect(4, 11, 4, 1); b.fillRect(5, 12, 2, 1);
-      b.fillStyle = '#ffffff'; b.fillRect(2, 1, 8, 9); b.fillRect(1, 2, 10, 7); b.fillRect(5, 10, 2, 1);
-      b.fillStyle = '#d83020'; b.fillRect(5, 2, 2, 5); b.fillRect(5, 8, 2, 1);
+      // fumetto "$" in pixel art: l'allenatore ti ha notato
+      const bb = drawSpotBubble();
       this.textures.addCanvas('bubble', RS === 3 ? scale3x(bb) : bb);
     }
   }
@@ -581,7 +577,7 @@ export class WorldScene extends Phaser.Scene {
     this.updateHud(true);
   }
 
-  /** Sfida di un allenatore che ti nota: (se serve) si gira verso di te, "!", ti viene incontro e parte il duello a quiz. */
+  /** Sfida di un allenatore che ti nota: (se serve) si gira verso di te, "$", ti viene incontro e parte il duello a quiz. */
   async challenge(n: NpcSprite, turn: boolean) {
     if (turn && n.spr) {
       const dx = S.x - n.x, dy = S.y - n.y;
