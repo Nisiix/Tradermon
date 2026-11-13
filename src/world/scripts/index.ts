@@ -106,7 +106,7 @@ async function resident(n: NpcDef) {
 /** Una frase che dipende da quante volte ci siamo parlati e da cosa è successo nel frattempo. */
 function memoryLine(id: string, visits: number): string {
   const seen = S.npcMemory[`${id}_b`] ?? 0;
-  if (S.badges > seen) { S.npcMemory[`${id}_b`] = S.badges; if (visits > 0) return S.badges === 1 ? T('Ho saputo della tua prima Medaglia. Complimenti!') : T`Ho saputo che hai già ${S.badges} Medaglie. Che strada hai fatto!`; }
+  if (S.badges > seen) { S.npcMemory[`${id}_b`] = S.badges; if (visits > 0) return S.badges === 1 ? T('Ho saputo del tuo primo Attestato. Complimenti!') : T`Ho saputo che hai già ${S.badges} Attestati. Che strada hai fatto!`; }
   // il grado di Reputazione cambia il saluto: la prima volta che ti vedono con un grado nuovo, lo notano
   const tier = repTier().index;
   if (tier > (S.npcMemory[`${id}_t`] ?? 0)) { S.npcMemory[`${id}_t`] = tier; if (visits > 0) return repGreeting(); }

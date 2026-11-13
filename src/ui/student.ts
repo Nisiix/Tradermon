@@ -52,7 +52,7 @@ export function nextStep(cards: TopicCard[]): string {
   if (w && w.known / w.total < 0.5) {
     const book = booksFor([w.topic]).find((b) => !b.id.endsWith('_ctx'));
     const town = townForTopic(w.topic);
-    return book ? T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: rileggi «${book.title}»${town ? T` nella Biblioteca di ${town}` : ''}, poi sfida gli allievi.` : T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: le Lezioni dal menu lo coprono.`;
+    return book ? T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: rileggi «${book.title}»${town ? T` nella Biblioteca di ${town}` : ''}, poi sfida gli allievi.` : T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: le Lezioni in Biblioteca lo coprono.`;
   }
   const ms = missionStars().find((m) => m.sim && m.done && m.stars < 3);
   if (ms) return T`La missione «${ms.title}» ha ${ms.stars}/3 stelle di processo: puoi ripeterla dalla Whale per migliorarle.`;

@@ -263,7 +263,7 @@ export interface SaveData {
   lastClinic: { map: string; x: number; y: number };
   ngPlus: number;
   playMs: number;
-  options: { textSpeed: number; fontScale: number; contrast: boolean; studyMode: boolean; volume: number; music: number; gfx: '2d' | '3d'; fx: 'alti' | 'bassi'; /** Prosegui anche se una Prova sul conto va male (solo Apprendista e Investitore). */ ignoreProva?: boolean };
+  options: { textSpeed: number; fontScale: number; contrast: boolean; studyMode: boolean; volume: number; music: number; fx: 'alti' | 'bassi'; /** Prosegui anche se una Prova sul conto va male (solo Apprendista e Investitore). */ ignoreProva?: boolean };
   // ---- novità: agenda, traguardi, casa, storie, diario, minigiochi, sfide ----
   counters: Record<string, number>;
   agenda: { day: string; week: string; daily: AgendaTask[]; weekly: AgendaTask[]; dailyDone: number };

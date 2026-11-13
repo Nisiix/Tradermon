@@ -16,7 +16,7 @@ L'essenziale per partire. Le regole complete te le spiegano i personaggi, dentro
 
 ### #01 Attestati e Sigilli
 
-In ogni città una Whale assegna una Medaglia in due metà. **L'Attestato** si vince a quiz e basta per proseguire. **Il Sigillo** si guadagna con la Prova sul conto: ordini veri, con denaro finto, usando la Tecnica appena imparata.
+In ogni città una Whale assegna un Attestato e un Sigillo. **L'Attestato** si vince a quiz e basta per proseguire. **Il Sigillo** si guadagna con la Prova sul conto: ordini veri, con denaro finto, usando la Tecnica appena imparata.
 
 > Puoi viaggiare con i soli Attestati, ma **a Wall Street entra solo chi ha tutti e otto i Sigilli**.
 

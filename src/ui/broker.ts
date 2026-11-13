@@ -15,7 +15,7 @@ import { shuffle } from '../systems/rng';
 import { say, choose, modal, toast, esc } from './core';
 import { ASSET_BY_ID } from '../data/assets';
 import { runDuel } from './battle';
-import { keysForm, offerRelay, openAlpacaHub, restoreKeys, PAPER_ONLY } from './alpaca';
+import { keysForm, offerRelay, unlinkPaper, backToDirect, restoreKeys, PAPER_ONLY } from './alpaca';
 import { T } from '../i18n';
 
 const NURSE = T('Dott.ssa Ratio');
@@ -45,18 +45,22 @@ export async function apiKeysMenu(): Promise<void> {
     if (st && (st.direct || st.cloud) && !askedUnlock && (askedUnlock = true) && (await restoreKeys(st))) { await Acc.checkLink(true); (await Acc.sync(true)).forEach((n) => toast(n)); continue; }
     // il browser non raggiunge Alpaca: la riserva per il Paper la sceglie il giocatore
     if (A.directBlocked() && !A.relayAllowed() && !askedRelay && (askedRelay = true) && (await offerRelay())) { await Acc.checkLink(true); (await Acc.sync(true)).forEach((n) => toast(n)); continue; }
+    const on = !!st?.paper.configured;
+    const how = !on ? '' : st!.direct ? T('Collegamento: diretto, dal tuo browser ad Alpaca. Le chiavi restano cifrate su questo dispositivo.') : st!.cloud ? T('Collegamento: attraverso il servizio di Tradermon, come hai scelto su questo dispositivo perché il browser non raggiungeva Alpaca.') : T('Collegamento: server locale di Tradermon su questo computer, che custodisce le chiavi.');
+    // una sola voce: collega quando il conto manca, scollega quando c'è
     const opts = [
-      st?.paper.configured ? T`Conto Paper collegato (${st.paper.keyHint})` : T('Collega il conto Alpaca Paper'),
-      T('Conto Paper e scollegamento'),
+      on ? T('Scollega il conto Alpaca Paper') : T('Collega il conto Alpaca Paper'),
+      ...(on && st!.cloud ? [T('Torna al collegamento diretto')] : []),
       T('Guida: come ottenere le chiavi'),
       T('Indietro'),
     ];
-    const c = await choose(opts, { cancel: true, title: T('CHIAVI API'), prompt: PAPER_ONLY });
-    if (c < 0 || c === 3) return;
+    const c = await choose(opts, { cancel: true, title: T('CHIAVI API'), prompt: on ? T`Conto Alpaca Paper collegato (${st!.paper.keyHint}): è il tuo conto di gioco, con denaro finto. ${how}` : PAPER_ONLY });
+    const pick = c < 0 ? T('Indietro') : opts[c];
+    if (pick === T('Indietro')) return;
     if (c === 0) {
-      if (st?.paper.configured) await say([T('Il conto Paper è collegato: è il tuo conto di gioco, con denaro finto.'), st.direct ? T('Collegamento: diretto, dal tuo browser ad Alpaca. Le chiavi restano cifrate su questo dispositivo.') : st.cloud ? T('Collegamento: attraverso il servizio di Tradermon, come hai scelto su questo dispositivo perché il browser non raggiungeva Alpaca.') : T('Collegamento: server locale di Tradermon su questo computer, che custodisce le chiavi.'), T('Per cambiarlo scollega le chiavi da "Conto Paper e scollegamento": il registro di gioco si riallinea al nuovo conto e riparte dal capitale iniziale.')], T('Chiavi API'));
+      if (on) await unlinkPaper(st!);
       else if (await keysForm()) { await Acc.checkLink(true); (await Acc.sync(true)).forEach((n) => toast(n)); toast(T('Conto Paper collegato: prezzi reali scaricati.')); }
-    } else if (c === 1) await openAlpacaHub();
+    } else if (pick === T('Torna al collegamento diretto')) await backToDirect();
     else await say(GUIDE_LINES, T('Guida'));
   }
 }

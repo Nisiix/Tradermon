@@ -49,14 +49,15 @@ function legend(touch: boolean, hint: Action | null): string {
       [['a'], '<span class="lg-round">A</span>', T('Parli con le persone, leggi i cartelli, confermi e fai scorrere i dialoghi.')],
       [['b'], '<span class="lg-round">B</span>', T('Chiudi una finestra, annulli una scelta, torni indietro.')],
       [['menu'], '<span class="lg-pill">MENU</span>', T('Apri il menu di gioco (Investidex, Portafoglio, Agenda, Salva, Opzioni).')],
-      [['settings'], '<span class="lg-pill">⚙</span>', T('In alto a destra: comandi, modalità touch, volume e ritorno alla home.')],
+      [['settings'], '<span class="lg-pill">⚙</span>', T('In alto a destra: apre le Opzioni (lingua, comandi e modalità touch, volume, schermo intero).')],
     ]
     : [
       [['up', 'down', 'left', 'right'], moveKeys(), T('Cammini nel mondo; nei menu e nelle finestre sposti la selezione.')],
       [['a'], kbd('a'), T('Parli con chi hai davanti, leggi i cartelli, confermi e fai scorrere i dialoghi.')],
       [['b'], kbd('b'), T('Chiudi la finestra aperta, annulli una scelta, torni indietro.')],
-      [['menu'], kbd('menu'), T('Apri il menu di gioco (Investidex, Portafoglio, Agenda, Diario, Lezioni, Salva, Opzioni).')],
-      [['settings'], kbd('settings'), T('Apri e chiudi le impostazioni ⚙, anche nel mondo (o clicca l\'icona in alto a destra): comandi, touch, volume, home.')],
+      [['menu'], kbd('menu'), T('Apri il menu di gioco (Investidex, Portafoglio, Agenda, Diario, Mappa, Opzioni, Salva).')],
+      [['map'], kbd('map'), T('Apri subito la Mappa della Regione.')],
+      [['settings'], kbd('settings'), T('Apri e chiudi le Opzioni ⚙, anche nel mondo (o clicca l\'icona in alto a destra): lingua, comandi, volume, schermo intero.')],
     ];
   return `<div class="tut-legend"><div class="lg-title">${touch ? T('Cosa fa ogni pulsante') : T('Cosa fa ogni tasto')}</div>${rows.map(([ks, keys, use]) =>
     `<div class="lg-row${hint && ks.includes(hint) ? ' on' : ''}"><span class="lg-keys">${keys}</span><span class="lg-use">${use}</span></div>`).join('')}</div>`;

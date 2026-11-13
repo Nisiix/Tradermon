@@ -110,7 +110,8 @@ export async function choose(options: string[], opts: ChooseOpts = {}): Promise<
       if (k === 'up') { sel = (sel + options.length - 1) % options.length; beep('tick'); render(); }
       else if (k === 'down') { sel = (sel + 1) % options.length; beep('tick'); render(); }
       else if (k === 'a') pick();
-      else if (k === 'b' && opts.cancel) done(-1);
+      // un menu che si può annullare si chiude con Indietro e anche ripremendo il tasto Menu
+      else if ((k === 'b' || k === 'menu') && opts.cancel) done(-1);
     };
     pushHandler(h);
     render();

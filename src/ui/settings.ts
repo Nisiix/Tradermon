@@ -1,6 +1,7 @@
-// Pannello impostazioni ⚙ (in alto a destra, o tasto Impostazioni: Esc di default): comandi e touch, volume, ritorno alla home.
+// ⚙ (in alto a destra, o tasto Impostazioni: Esc di default). In partita apre le Opzioni del menu di gioco (ui/menu.ts);
+// prima della partita (titolo e presentazione) apre questo pannello ridotto: lingua, comandi e touch, volume, ritorno alla home.
 import { fullscreenSupported, isFullscreen, enterFullscreen, exitFullscreen } from './mobile';
-import { modal, el, esc, getStage, toast, say } from './core';
+import { modal, el, esc, getStage, toast } from './core';
 import { captureNextKey, onSettingsKey, press } from './input';
 import { controlsTutorial } from './tutorial';
 import {
@@ -11,11 +12,10 @@ import { S, save } from '../systems/state';
 import { setVolume, beep } from '../systems/audio';
 import { setMusicVolume } from '../systems/music';
 import { goHome as leaveToHome } from '../systems/home';
-import * as Acc from '../systems/account';
 import { T, LANG, setLang, type Lang } from '../i18n';
 
 /** Riga della lingua: il nome dell'altra lingua resta scritto nella sua lingua, così si trova anche senza capire il resto. */
-const langRow = () => `
+export const langRow = () => `
         <div class="set-row lang-row"><div><b>${T('Lingua')}</b> <span class="small muted" lang="${LANG === 'it' ? 'en' : 'it'}">· ${LANG === 'it' ? 'Language' : 'Lingua'}</span><p class="small muted">${T('Vale anche per la pagina principale. Il gioco salva e si ricarica.')}</p></div><div class="lang-ctl" role="group" aria-label="Language / Lingua"><button class="btn" data-lang="en" lang="en">English</button><button class="btn" data-lang="it" lang="it">Italiano</button></div></div>`;
 
 export type Phase = 'title' | 'onboarding' | 'game';
@@ -31,8 +31,22 @@ export function applyAudio() {
   setMusicVolume(o.music * prefs.volume);
 }
 
-const mark = (body: HTMLElement) => body.closest('.modal-wrap')?.classList.add('settings-wrap');
+export const mark = (body: HTMLElement) => body.closest('.modal-wrap')?.classList.add('settings-wrap');
 let open = false;
+
+/** In partita ⚙ ed Esc aprono le Opzioni del menu di gioco: tutte le regolazioni stanno in un posto solo. */
+let gameOptions: (() => Promise<void>) | null = null;
+export function onGameOptions(fn: () => Promise<void>) { gameOptions = fn; }
+
+/** Pulsanti della lingua (riga di langRow): cambia lingua, salva se serve e ricarica. */
+export function wireLang(body: HTMLElement) {
+  body.querySelectorAll<HTMLButtonElement>('[data-lang]').forEach((b) => {
+    const l = b.dataset.lang as Lang;
+    b.setAttribute('aria-pressed', String(l === LANG));
+    if (l === LANG) b.classList.add('primary');
+    b.addEventListener('click', () => setLang(l, () => { if (phase === 'game') save(); }));
+  });
+}
 
 export function initSettings() {
   const b = el('button', 'gear-btn', '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1h2l.4 2 1.3.6 1.7-1.2 1.4 1.4-1.2 1.7.6 1.3 2 .4v2l-2 .4-.6 1.3 1.2 1.7-1.4 1.4-1.7-1.2-1.3.6L9 15H7l-.4-2-1.3-.6-1.7 1.2-1.4-1.4 1.2-1.7L2.8 9.2 1 9V7l2-.4.6-1.3-1.2-1.7 1.4-1.4 1.7 1.2 1.3-.6z M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z" fill-rule="evenodd"/></svg>');
@@ -54,6 +68,7 @@ export async function openSettings() {
   open = true;
   window.dispatchEvent(new Event('tradermon:settings'));
   try {
+    if (phase === 'game' && gameOptions) { await gameOptions(); return; }
     const r = await modal<'controls' | 'home'>(T('⚙ Impostazioni'), ({ body, button, close }) => {
       mark(body);
       body.innerHTML = langRow() + T`
@@ -62,9 +77,6 @@ export async function openSettings() {
           <div class="vol-ctl"><button class="btn vmin" aria-label="Abbassa">−</button><input class="vrange" type="range" min="0" max="100" step="5" aria-label="Volume generale"><button class="btn vplus" aria-label="Alza">+</button><button class="btn vmute"></button></div>
           <p class="small muted">Portalo a zero per togliere musica ed effetti. Il bilanciamento tra musica ed effetti è in Menu → Opzioni.</p></div></div>
         ${fullscreenSupported() ? T`<div class="set-row"><div><b>Schermo intero</b><p class="small muted">Nasconde le barre del browser; sul telefono blocca anche lo schermo in orizzontale.</p></div><button class="btn fs">${isFullscreen() ? T('Esci') : T('Attiva')}</button></div>` : ''}
-        ${phase === 'game' ? T`<div class="set-row"><div><b>Prove sul conto: prosegui anche se vanno male</b> <span class="ign-val"></span>
-          <p class="small muted">Se una Prova sul conto finisce male (annullata da una vendita, da uno stop, dalla vendita forzata della leva o da una bancarotta) il risultato viene ignorato e prosegui lo stesso. Non salta la Prova: va comunque affrontata. Vale solo in Apprendista e Investitore.</p>
-          <p class="small bad">${esc(Acc.IGNORE_WARNING)}</p></div><button class="btn ign"></button></div>` : ''}
         <div class="set-row"><div><b>3. Home</b><p class="small muted">Esci dal gioco e torna alla pagina principale di Tradermon.</p></div><button class="btn home">Torna alla home</button></div>`;
       const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
       let before = prefs.volume || 0.8;
@@ -79,12 +91,7 @@ export async function openSettings() {
       q('.vmin').addEventListener('click', () => setV(Math.max(0, prefs.volume - 0.1)));
       q('.vplus').addEventListener('click', () => setV(Math.min(1, prefs.volume + 0.1)));
       q('.vmute').addEventListener('click', () => setV(prefs.volume > 0 ? 0 : before));
-      body.querySelectorAll<HTMLButtonElement>('[data-lang]').forEach((b) => {
-        const l = b.dataset.lang as Lang;
-        b.setAttribute('aria-pressed', String(l === LANG));
-        if (l === LANG) b.classList.add('primary');
-        b.addEventListener('click', () => setLang(l, () => { if (phase === 'game') save(); }));
-      });
+      wireLang(body);
       q('.ctl').addEventListener('click', () => close('controls'));
       q('.home').addEventListener('click', () => close('home'));
       body.querySelector('.fs')?.addEventListener('click', async (e) => {
@@ -92,21 +99,6 @@ export async function openSettings() {
         if (isFullscreen()) await exitFullscreen(); else await enterFullscreen();
         b.textContent = isFullscreen() ? T('Esci') : T('Attiva');
       });
-      const ign = body.querySelector<HTMLButtonElement>('.ign');
-      if (ign) {
-        const showIgn = () => {
-          const ok = Acc.ignoreAllowed();
-          ign.disabled = !ok;
-          ign.textContent = !ok ? T('Non disponibile') : Acc.ignoreOn() ? T('Disattiva') : T('Attiva');
-          q('.ign-val').textContent = !ok ? T('· solo Apprendista e Investitore') : Acc.ignoreOn() ? T('· attiva') : T('· spenta');
-        };
-        ign.addEventListener('click', () => {
-          const msg = Acc.setIgnore(!Acc.ignoreOn());
-          showIgn();
-          if (msg) { close(); void say(msg); } else toast(Acc.ignoreOn() ? T('Opzione attiva: una Prova andata male non ti ferma più. Resta una scelta sconsigliata se vuoi imparare.') : T('Opzione spenta: una Prova annullata va rifatta.'));
-        });
-        showIgn();
-      }
       show();
       button(T('Chiudi'), () => close(), 'primary');
     });
