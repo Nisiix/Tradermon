@@ -2,6 +2,7 @@ import { g, gtext } from '../systems/gender';
 import { revealedProfile } from '../systems/mirror';
 import { S, save, level, xpToNext, cardLevel, slots, exportSave } from '../systems/state';
 import { choose, modal, esc, say, el, toast, bar } from './core';
+import { press } from './input';
 import { ASSETS, SECTOR_LABEL, SECTOR_COLOR, classesOf } from '../data/assets';
 import { LESSONS, lessonsFor } from '../data/lessons';
 import { trackTopics } from '../data/quiz/build';
@@ -15,8 +16,9 @@ import { DIFFICULTY } from '../systems/balance';
 import * as Acc from '../systems/account';
 import { mastery } from '../systems/quiz';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
-import { applyAudio, openControls } from './settings';
-import { prefs } from '../systems/controls';
+import { applyAudio, openControls, langRow, wireLang, mark, onGameOptions } from './settings';
+import { prefs, setMasterVolume } from '../systems/controls';
+import { fullscreenSupported, isFullscreen, enterFullscreen, exitFullscreen } from './mobile';
 import { availableTitles, track } from '../systems/progress';
 import { openAgenda } from './agenda';
 import { openJournal } from './journal';
@@ -31,15 +33,17 @@ import { deletePlayerForm, PRIVACY_URL } from './account';
 import { busy } from './loading';
 import { openRegionMap } from './regionmap';
 import { ABILITY, canSwim, canTransfer } from '../world/travel';
+import { goHome } from '../systems/home';
 import { T } from '../i18n';
 
 export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) {
   for (;;) {
     const pending = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length;
-    const opts = ['Investidex', T('Portafoglio'), T`Agenda e traguardi${pending ? ` (${pending})` : ''}`, T('Diario'), T('Giornale dei Mercati'), T('Cartella dello studente'), T('Profilo'), T('Medaglie e Tecniche'), T('Tappe, Prove e Sigilli'), T('Chiavi API'), T('Lezioni'), T('Mappa della Regione'), T('Salva'), T('Opzioni'), T('Chiudi')];
+    const opts = ['Investidex', T('Portafoglio'), T`Agenda e traguardi${pending ? ` (${pending})` : ''}`, T('Diario'), T('Giornale dei Mercati'), T('Cartella dello studente'), T('Profilo'), T('Attestati e Tecniche'), T('Tappe, Prove e Sigilli'), T('Chiavi API'), T('Mappa della Regione'), T('Opzioni'), T('Salva'), T('Esci dal gioco')];
     const c = await choose(opts, { cancel: true, title: 'MENU' });
-    if (c < 0 || c === opts.length - 1) return;
+    if (c < 0) return;
     const o = opts[c];
+    if (c === opts.length - 1) { if (await leaveGame()) return; continue; }
     if (o === 'Investidex') await openInvestidex();
     else if (o === T('Portafoglio')) await modal(T('Portafoglio'), ({ body, button, close }) => { body.innerHTML = checkupHtml(); button(T('Chiudi'), () => close(), 'primary'); }, { wide: true });
     else if (c === 2) await openAgenda();
@@ -49,8 +53,7 @@ export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) 
     else if (o === T('Chiavi API')) await apiKeysMenu();
     else if (o === T('Cartella dello studente')) await openStudentFolder();
     else if (o === T('Profilo')) await profile();
-    else if (o === T('Medaglie e Tecniche')) await badges();
-    else if (o === T('Lezioni')) await openLessons();
+    else if (o === T('Attestati e Tecniche')) await badges();
     else if (o === T('Mappa della Regione')) {
       const dest = await openRegionMap();
       if (dest) { await onTravel(dest); return; }
@@ -58,6 +61,17 @@ export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) 
     else if (o === T('Salva')) { toast(save() ? T('Partita salvata.') : T('Salvataggio non riuscito.')); }
     else if (o === T('Opzioni')) await options();
   }
+}
+
+/** "Esci dal gioco": salva la partita (anche online, se c'è un giocatore) e torna alla pagina principale. */
+async function leaveGame(): Promise<boolean> {
+  if (!save()) { toast(T('Salvataggio non riuscito: resto qui.')); return false; }
+  if (cloudPlayer() && !(await busy(T('Salvo la partita'), flush()))) {
+    const c = await choose([T('Esci lo stesso'), T('Resta')], { prompt: T('La partita è salvata su questo dispositivo, ma il servizio dei salvataggi non è raggiungibile: verrà inviata online la prossima volta che apri il gioco da qui. Uscire lo stesso?'), cancel: true });
+    if (c !== 0) return false;
+  }
+  goHome();
+  return true;
 }
 
 export async function openInvestidex() {
@@ -146,13 +160,13 @@ async function pickTitle() {
 }
 
 async function badges() {
-  await modal(T('Medaglie e Tecniche'), ({ body, button, close }) => {
+  await modal(T('Attestati e Tecniche'), ({ body, button, close }) => {
     let h = '<div class="cards">';
     for (let i = 1; i <= 8; i++) {
       const m = mentor(i, S.track);
       const got = S.badges >= i;
       const seal = S.seals >= i;
-      h += `<div class="card ${got && seal ? 'gold' : got ? '' : 'locked'}"><b>${got && seal ? '🏅' : got ? '📜' : '○'} ${esc(m.badge)}</b> <span class="small">${got ? (seal ? T('Attestato e Sigillo') : T('Attestato · manca il Sigillo pratico')) : ''}</span><br><span class="small">${esc(m.name)} · ${TOWNS[i].name}</span><br><span class="small">${got ? `Tecnica: <b>${esc(m.technique)}</b>. ${esc(m.techDesc)}` : T('Non ancora ottenuta')}</span></div>`;
+      h += `<div class="card ${got && seal ? 'gold' : got ? '' : 'locked'}"><b>${got && seal ? '🏅' : got ? '📜' : '○'} ${esc(m.badge)}</b> <span class="small">${got ? (seal ? T('Attestato e Sigillo') : T('Attestato · manca il Sigillo pratico')) : ''}</span><br><span class="small">${esc(m.name)} · ${TOWNS[i].name}</span><br><span class="small">${got ? `Tecnica: <b>${esc(m.technique)}</b>. ${esc(m.techDesc)}` : T('Non ancora ottenuto')}</span></div>`;
     }
     h += '</div>';
     const ab = [{ a: ABILITY.swim, ok: canSwim() }, { a: ABILITY.cut, ok: S.badges >= ABILITY.cut.badge }, { a: ABILITY.transfer, ok: canTransfer() }, { a: ABILITY.dark, ok: S.badges >= ABILITY.dark.badge }, { a: ABILITY.cold, ok: S.badges >= 7 }];
@@ -160,53 +174,70 @@ async function badges() {
     if (S.flags.champion) h += T`<p class="good"><b>${g(T('Campione'), T('Campionessa'))} di Wall Street</b></p>`;
     if (S.legends.length) h += T`<p>Crisi leggendarie superate: ${S.legends.length}/5</p>`;
     if (S.boss.beaten.length) h += T`<p>Boss dei Mercati battuti: ${S.boss.beaten.length}/3</p>`;
-    h += T('<p class="small muted">Ogni Medaglia ha due metà: l\'Attestato (il duello con la Whale) apre la strada e la Tecnica; il Sigillo pratico (missione su dati reali ed esercizio sul conto) la completa. Per Wall Street servono otto Medaglie complete.</p>');
+    h += T('<p class="small muted">Ogni Whale assegna due riconoscimenti: l\'Attestato (il duello con la Whale) apre la strada e la Tecnica; il Sigillo pratico (la Prova sul conto) lo completa. Per Wall Street servono tutti e otto gli Attestati, ognuno con il suo Sigillo.</p>');
     body.innerHTML = h;
     button(T('Chiudi'), () => close(), 'primary');
   }, { wide: true });
 }
 
+// ⚙ ed Esc in partita: aprono queste Opzioni e, se sono già aperte, le chiudono
+let optionsOpen = false;
+onGameOptions(async () => { if (optionsOpen) press('b'); else await options(); });
+
 async function options() {
+  optionsOpen = true;
+  try { await optionsModal(); } finally { optionsOpen = false; }
+}
+
+async function optionsModal() {
   await modal(T('Opzioni'), ({ body, button, close }) => {
-    body.innerHTML = T`
-      <label style="display:block;margin-bottom:6px">Protagonista <select class="tx gd"><option value="m">Ragazzo</option><option value="f">Ragazza</option></select></label>
+    mark(body);
+    body.innerHTML = langRow() + T`
       <label>Velocità del testo <select class="tx ts"><option value="0">Lenta</option><option value="1">Normale</option><option value="2">Veloce</option><option value="3">Istantanea</option></select></label>
       <label style="display:block;margin-top:6px">Dimensione del testo <select class="tx fs"><option value="0.9">Piccola</option><option value="1">Normale</option><option value="1.2">Grande</option><option value="1.4">Molto grande</option></select></label>
       <label style="display:block;margin-top:6px">Effetti sonori <input class="vol" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
       <label style="display:block;margin-top:6px">Musica <input class="mus" type="range" min="0" max="1" step="0.1" style="width:100%"></label>
-      <p class="small muted" style="margin:4px 0 0">Volume generale: <b>${prefs.volume === 0 ? T('muto') : Math.round(prefs.volume * 100) + '%'}</b> (si regola dall'icona ⚙ in alto a destra).</p>
-      <label style="display:block;margin-top:6px">Grafica <select class="tx gfx"><option value="3d">2.5D (diorama con luci e ombre)</option><option value="2d">2D classica</option></select></label>
-      <label style="display:block;margin-top:6px">Effetti 2.5D <select class="tx fx"><option value="alti">Alti (occlusione, tilt-shift, alta risoluzione)</option><option value="bassi">Bassi (per computer meno potenti)</option></select></label>
+      <label style="display:block;margin-top:6px">Volume generale <span class="mv-val small muted"></span><input class="mv" type="range" min="0" max="1" step="0.05" style="width:100%"></label>
+      <label style="display:block;margin-top:6px">Effetti grafici <select class="tx fx"><option value="alti">Alti (occlusione, tilt-shift, alta risoluzione)</option><option value="bassi">Bassi (per computer meno potenti)</option></select></label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="hc"> Contrasto alto</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="sm"> Modalità Studio (nessun timer nei quiz, Reputazione dimezzata nei duelli)</label>
       <label style="display:block;margin-top:6px"><input type="checkbox" class="ig"${Acc.ignoreAllowed() ? '' : ' disabled'}> Prove sul conto: prosegui anche se vanno male${Acc.ignoreAllowed() ? '' : T(' (solo in Apprendista e Investitore)')}</label>
       <p class="small muted" style="margin:2px 0 0">Se una Prova sul conto viene annullata (vendita, stop, vendita forzata della leva, bancarotta) il risultato viene ignorato e prosegui lo stesso. Non salta la Prova: va comunque affrontata. <span class="bad">${esc(Acc.IGNORE_WARNING)}</span></p>
       <p class="small muted">${cloudPlayer() ? T`Giocatore <b>${esc(cloudPlayer()!.name)}</b>: la partita è salvata online e la ritrovi su qualsiasi dispositivo entrando con nome e password. Le chiavi Alpaca non sono mai nel salvataggio: restano solo su questo dispositivo, cifrate con la tua password.` : T('Nessun giocatore collegato: il salvataggio resta solo in questo browser.')} Puoi sempre esportarne una copia come file.</p>${safariAtRisk() ? `<p class="small">${SAFARI_TEXT}</p>` : ''}`;
     const q = <T extends HTMLElement>(s: string) => body.querySelector(s) as T;
-    q<HTMLSelectElement>('.gd').value = S.gender ?? 'm';
     q<HTMLSelectElement>('.ts').value = String(S.options.textSpeed);
     q<HTMLSelectElement>('.fs').value = String(S.options.fontScale);
     q<HTMLInputElement>('.vol').value = String(S.options.volume);
     q<HTMLInputElement>('.mus').value = String(S.options.music);
-    q<HTMLSelectElement>('.gfx').value = S.options.gfx;
     q<HTMLSelectElement>('.fx').value = S.options.fx;
     q<HTMLInputElement>('.hc').checked = S.options.contrast;
     q<HTMLInputElement>('.sm').checked = S.options.studyMode;
     q<HTMLInputElement>('.ig').checked = Acc.ignoreOn();
+    wireLang(body);
+    // il volume generale è una preferenza del dispositivo: vale subito, senza "Applica"
+    const mv = q<HTMLInputElement>('.mv');
+    const showMv = () => { q('.mv-val').textContent = prefs.volume === 0 ? T('· Muto') : `· ${Math.round(prefs.volume * 100)}%`; };
+    mv.value = String(prefs.volume);
+    mv.addEventListener('input', () => { setMasterVolume(Number(mv.value)); showMv(); });
+    showMv();
+    if (fullscreenSupported()) {
+      const row = el('label', '', T`Schermo intero <button type="button" class="btn fs" style="margin-left:8px">${isFullscreen() ? T('Esci') : T('Attiva')}</button><span class="small muted" style="display:block">Nasconde le barre del browser; sul telefono blocca anche lo schermo in orizzontale.</span>`);
+      row.style.cssText = 'display:block;margin-top:6px';
+      q('.hc').closest('label')!.before(row);
+      const fsb = row.querySelector<HTMLButtonElement>('.fs')!;
+      fsb.addEventListener('click', async (e) => { e.preventDefault(); if (isFullscreen()) await exitFullscreen(); else await enterFullscreen(); fsb.textContent = isFullscreen() ? T('Esci') : T('Attiva'); });
+    }
     button(T('Comandi'), () => { close(); void openControls(); });
-    button(T('Chiavi API'), () => { close(); void apiKeysMenu(); });
     button(T('Crediti e fonti'), () => { close(); void credits(); });
     button(T('Esporta salvataggio'), () => download(`tradermon-${S.name}.json`, exportSave()));
     if (cloudPlayer()) button(T('Esci dal giocatore'), () => { close(); void leavePlayer(); });
     if (cloudPlayer()) button(T('Elimina il mio giocatore'), () => { close(); void deletePlayer(); });
     button(T('Privacy'), () => { window.open(PRIVACY_URL, '_blank', 'noopener'); });
     button(T('Applica'), () => {
-      S.gender = q<HTMLSelectElement>('.gd').value === 'f' ? 'f' : 'm';
       S.options.textSpeed = Number(q<HTMLSelectElement>('.ts').value);
       S.options.fontScale = Number(q<HTMLSelectElement>('.fs').value);
       S.options.volume = Number(q<HTMLInputElement>('.vol').value);
       S.options.music = Number(q<HTMLInputElement>('.mus').value);
-      S.options.gfx = q<HTMLSelectElement>('.gfx').value as '2d' | '3d';
       S.options.fx = q<HTMLSelectElement>('.fx').value as 'alti' | 'bassi';
       S.options.contrast = q<HTMLInputElement>('.hc').checked;
       S.options.studyMode = q<HTMLInputElement>('.sm').checked;
@@ -267,6 +298,6 @@ export function applyOptions() {
   document.documentElement.style.setProperty('--fs-scale', String(S.options.fontScale));
   document.body.classList.toggle('contrast', S.options.contrast);
   applyAudio();
-  // la scena del mondo ascolta e cambia resa (2D / 2.5D) senza ricaricare
+  // la scena del mondo ascolta e aggiorna gli effetti della resa 2.5D senza ricaricare
   window.dispatchEvent(new CustomEvent('tradermon:options'));
 }

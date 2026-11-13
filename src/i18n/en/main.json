@@ -1,6 +1,6 @@
 {
  "Salvataggio trovato": "Save found",
- "<p>Dal vecchio indirizzo del gioco è arrivata la partita di <b>{0}</b> ({1} min, {2} medaglie).</p>\n        <p>In questo browser c'è già la partita di <b>{3}</b> ({4} min). Se la sostituisci, resta una copia di riserva.</p>": "<p>A game by <b>{0}</b> ({1} min, {2} medals) arrived from the game's old address.</p>\n        <p>This browser already has a game by <b>{3}</b> ({4} min). If you replace it, a backup copy is kept.</p>",
+ "<p>Dal vecchio indirizzo del gioco è arrivata la partita di <b>{0}</b> ({1} min, {2} Attestati).</p>\n        <p>In questo browser c'è già la partita di <b>{3}</b> ({4} min). Se la sostituisci, resta una copia di riserva.</p>": "<p>A game by <b>{0}</b> ({1} min, {2} Certificates) arrived from the game's old address.</p>\n        <p>This browser already has a game by <b>{3}</b> ({4} min). If you replace it, a backup copy is kept.</p>",
  "Usa quella arrivata": "Use the one that arrived",
  "Tieni questa": "Keep this one",
  "Salvataggio trasferito dal vecchio indirizzo.": "Save transferred from the old address.",

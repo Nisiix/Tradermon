@@ -12,7 +12,7 @@ const SEA_POS: [number, number] = [45, 65];
 const SEA_ISLANDS: [number, number, number][] = [[37, 64, 3], [54, 63, 2.6], [45, 68, 3.4]];
 const CAVES = [
   { name: T('Galleria del Dark Pool (Percorso 2 → Diversia)'), from: 't1', route: 2, to: 't3', bend: [0, -9] },
-  { name: T('Miniera dei Lingotti (Percorso 5 → Valdividendo)'), from: 't4', route: 5, to: 't6', bend: [-6, 8] },
+  { name: T('Miniera dei Lingotti (Percorso 6 → Valdividendo)'), from: 't5', route: 6, to: 't6', bend: [-2, -7] },
 ];
 
 /** Luogo in cui si trova il giocatore sulla mappa: una città o il punto medio di un percorso. */

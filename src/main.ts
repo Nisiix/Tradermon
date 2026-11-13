@@ -52,7 +52,7 @@ async function boot() {
   const moved = await receiveTransfer((local, inc) => new Promise((ok) => {
     let answer = false;
     void modal(T('Salvataggio trovato'), ({ body, button, close }) => {
-      body.innerHTML = T`<p>Dal vecchio indirizzo del gioco è arrivata la partita di <b>${esc(inc.name)}</b> (${Math.round(inc.playMs / 60000)} min, ${inc.badges} medaglie).</p>
+      body.innerHTML = T`<p>Dal vecchio indirizzo del gioco è arrivata la partita di <b>${esc(inc.name)}</b> (${Math.round(inc.playMs / 60000)} min, ${inc.badges} Attestati).</p>
         <p>In questo browser c'è già la partita di <b>${esc(local.name)}</b> (${Math.round(local.playMs / 60000)} min). Se la sostituisci, resta una copia di riserva.</p>`;
       button(T('Usa quella arrivata'), () => { answer = true; close(); }, 'primary');
       button(T('Tieni questa'), () => close());

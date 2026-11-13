@@ -112,7 +112,7 @@ export async function mentorBattle(m: number, w: WorldApi) {
   if (S.badges < m - 1) return say([T('Sei arrivat{o|a} qui troppo presto!'), T`Prima ti serve l'Attestato della Whale ${S.badges + 1}.`], md.name);
   if (!allStudentsBeaten(m)) return say([T('Benvenut{o|a} nel mio Exchange.'), T('Prima di sfidarmi devi battere tutti i miei allievi.')], md.name);
   // la regola della Medaglia la spiega la prima Whale, quando serve; gli altri non la ripetono
-  await say([md.intro, ...(m > 1 || S.flags.medalRule ? [] : [T('La mia Medaglia ha due metà. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada verso la città successiva.'), T('Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che ti ho appena insegnato. Puoi viaggiare con i soli Attestati, ma entri a Wall Street solo se hai tutti e otto i Sigilli.')])], md.name);
+  await say([md.intro, ...(m > 1 || S.flags.medalRule ? [] : [T('Da me si guadagnano due cose. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada verso la città successiva.'), T('Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che ti ho appena insegnato. Puoi viaggiare con i soli Attestati, ma entri a Wall Street solo se hai tutti e otto i Sigilli.')])], md.name);
   S.flags.medalRule = true;
   const unread = mentorBooks(m, S.track, S.mixedClasses).filter((b) => !S.booksRead.includes(b.id)).length;
   if (unread) await say([T`Un consiglio da Whale: nella Biblioteca di ${TOWNS[m]?.name ?? T('questa città')} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, T('Le domande del duello vengono da lì.')], md.name);
@@ -245,7 +245,7 @@ async function winBadge(m: number, w: WorldApi) {
   if (m === 5) extra.push(T('L\'Archivio di Bilancia ora è aperto. E in Banca puoi sostenere l\'Esame della Leva: per ora vale solo nei replay.'));
   if (m === SWIM_BADGE) extra.push(T`Nuova abilità: ${ABILITY.swim.name}. Cammina verso l'acqua e la attraverserai su una zattera. Sui Percorsi 3, 5 e 7 ci sono isole da raggiungere.`);
   if (m === ABILITY.cut.badge) extra.push(T`Nuova abilità: ${ABILITY.cut.name}. Ora puoi frantumare i Massi delle Commissioni: prova la Galleria del Dark Pool sul Percorso 2.`);
-  if (m === ABILITY.dark.badge) extra.push(T`Nuova abilità: ${ABILITY.dark.name}. Le grotte buie non ti fermano più: la Miniera dei Lingotti sul Percorso 5 porta dritta a Valdividendo.`);
+  if (m === ABILITY.dark.badge) extra.push(T`Nuova abilità: ${ABILITY.dark.name}. Le grotte buie non ti fermano più: a metà del Percorso 6 la Miniera dei Lingotti porta a Valdividendo.`);
   if (m === TRANSFER_BADGE) extra.push(T`Nuova abilità: ${ABILITY.transfer.name}. Apri il menu, scegli "Mappa della Regione" e trasferisciti in una città già visitata.`);
   if (m === 8) extra.push(T('Wall Street è oltre il Percorso 9. La Guardia ti fa passare solo se hai tutti e otto i Sigilli pratici. Con l\'ottavo Attestato, se hai superato l\'Esame della Leva, la leva si apre anche sul conto di gioco.'));
   if (extra.length) await say(extra, T('Prof. Saldi (messaggio)'));
@@ -255,7 +255,7 @@ async function winBadge(m: number, w: WorldApi) {
 
 export async function guard(n: NpcDef, w: WorldApi) {
   const b = n.data?.badge as number;
-  if (n.data?.league) await say([T('Alt! Entri a Wall Street solo se hai completato tutte e otto le Medaglie: Attestato e Sigillo pratico.'), T`Hai ${S.seals} Sigilli su 8. ${nextSealLine()}`, T('A Wall Street i Superiori guardano il tuo conto com\'è, sul mercato di oggi: per questo serve aver fatto pratica con ordini veri.')], n.name);
+  if (n.data?.league) await say([T('Alt! Entri a Wall Street solo se hai tutti e otto gli Attestati, ognuno con il suo Sigillo pratico.'), T`Hai ${S.seals} Sigilli su 8. ${nextSealLine()}`, T('A Wall Street i Superiori guardano il tuo conto com\'è, sul mercato di oggi: per questo serve aver fatto pratica con ordini veri.')], n.name);
   else await say([T`Alt! Per proseguire serve l'Attestato della ${mentor(b, S.track).badge}.`, T`Te lo consegna la Whale dell'Exchange di ${TOWNS[b].name}, se vinci il suo duello.`], n.name);
   w.bumpBack();
 }

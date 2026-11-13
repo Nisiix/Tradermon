@@ -2,7 +2,7 @@
 // Restano valide anche nella schermata iniziale, prima di caricare una partita.
 
 import { T } from '../i18n';
-export type Action = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'menu' | 'settings';
+export type Action = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'menu' | 'map' | 'settings';
 export type TouchMode = 'auto' | 'on' | 'off';
 
 export interface ActionInfo { id: Action; name: string; use: string }
@@ -15,8 +15,9 @@ export const ACTIONS: ActionInfo[] = [
   { id: 'right', name: T('Destra'), use: T('Cammina a destra; nelle finestre passa al pulsante successivo.') },
   { id: 'a', name: T('Conferma (A)'), use: T('Parla con chi hai davanti, legge i cartelli, conferma una scelta e fa scorrere i dialoghi.') },
   { id: 'b', name: T('Indietro (B)'), use: T('Chiude la finestra aperta, annulla una scelta e torna al passo precedente.') },
-  { id: 'menu', name: T('Menu'), use: T('Apre il menu di gioco: Investidex, Portafoglio, Agenda, Diario, Lezioni, Salva e Opzioni.') },
-  { id: 'settings', name: T('Impostazioni'), use: T('Apre e chiude il pannello ⚙ (anche nel mondo): comandi, touch, volume e ritorno alla home.') },
+  { id: 'menu', name: T('Menu'), use: T('Apre il menu di gioco: Investidex, Portafoglio, Agenda, Diario, Mappa, Opzioni e Salva.') },
+  { id: 'map', name: T('Mappa'), use: T('Apre la Mappa della Regione senza passare dal menu.') },
+  { id: 'settings', name: T('Impostazioni'), use: T('Apre e chiude le Opzioni ⚙ (anche nel mondo): lingua, comandi, touch, volume e schermo intero.') },
 ];
 
 export const MAX_KEYS = 3;
@@ -29,6 +30,7 @@ export const DEFAULT_BINDINGS: Record<Action, string[]> = {
   a: ['KeyZ', 'Enter', 'Space'],
   b: ['KeyX', 'Backspace'],
   menu: ['KeyM'],
+  map: ['KeyN'],
   settings: ['Escape'],
 };
 
@@ -55,6 +57,8 @@ function read(): Prefs {
       const v = p.keys?.[a.id];
       if (Array.isArray(v) && v.every((c) => typeof c === 'string')) keys[a.id] = v.slice(0, MAX_KEYS);
     }
+    // comandi aggiunti dopo: il tasto predefinito non deve togliere un tasto già scelto per un altro comando
+    for (const a of ACTIONS) if (!p.keys?.[a.id]) keys[a.id] = keys[a.id].filter((c) => !ACTIONS.some((o) => o.id !== a.id && p.keys?.[o.id] && keys[o.id].includes(c)));
     // prima versione: Impostazioni su O ed Esc su Indietro → passa ai nuovi predefiniti (Esc = Impostazioni)
     if (keys.settings.length === 1 && keys.settings[0] === 'KeyO') {
       keys.settings = ['Escape'];

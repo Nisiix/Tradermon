@@ -66,5 +66,5 @@ export const SECRET_HINTS: Record<string, { about: SecretKind; line: string }> =
   t7_npc1: { about: 'hodl', line: T('Qui a Mentelucida si dice che certe pietre parlino solo a chi sa restare fermo. Non un attimo: a lungo.') },
   t8_npc1: { about: 'hodl', line: T('Sul percorso che porta a Valdividendo, in alto tra i fiori, c\'è una pietra che nessuno sa leggere. Io ci ho provato, ma mi annoio subito.') },
   t6_npc1: { about: 'rumors', line: T('Al Casinò di Interessa c\'è uno che sussurra voci a chiunque. Metà sono fandonie... l\'altra metà no.') },
-  t8_npc2: { about: 'rumors', line: T('Da quando hai metà delle Medaglie la gente ti racconta cose strane, vero? Ascolta bene chi parla a bassa voce.') },
+  t8_npc2: { about: 'rumors', line: T('Da quando hai metà degli Attestati la gente ti racconta cose strane, vero? Ascolta bene chi parla a bassa voce.') },
 };

@@ -10,7 +10,8 @@ import { S, save, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc, choose } from '../ui/core';
 import { pauseMenu } from '../ui/menu';
-import { initSaveButton, setSaveGuard, takeDuelDone } from '../ui/savebtn';
+import { openRegionMap } from '../ui/regionmap';
+import { takeDuelDone } from '../ui/savebtn';
 import { canSwim, canCut, canSeeDark, boulderFlag, ABILITY } from '../world/travel';
 import { hiddenPage, findPage, isTapeShelf, tapeShelf, atHodlStone, hodlRitual } from '../world/secrets';
 import { SECRET_FLAGS, HODL_MS } from '../world/secretsData';
@@ -75,6 +76,8 @@ export class WorldScene extends Phaser.Scene {
   /** Resa 2.5D (Opzioni → Grafica): rispecchia questa scena in un diorama Three.js; la logica resta qui. */
   view3d?: View3D;
   view3dFx = '';
+  /** Il WebGL della resa 2.5D non è partito su questo dispositivo: non si riprova fino al prossimo avvio. */
+  no3d = false;
   /** Trasferimento di Capitale: altezza del volo (0 a terra, 1 in cielo) e nuvole che scorrono sullo schermo. */
   flightLift = 0; flightClouds: { x: number; y: number; w: number; s: number }[] = [];
   /** Movimento a tocco: caselle ancora da percorrere, punto toccato e direzione verso cui girarsi all'arrivo. */
@@ -103,8 +106,6 @@ export class WorldScene extends Phaser.Scene {
   create() {
     this.hud = el('div', 'hud');
     getStage().appendChild(this.hud);
-    initSaveButton();
-    setSaveGuard(() => !this.busy && !this.moving && !uiActive());
     this.overlay = this.add.rectangle(0, 0, 10, 10, 0x000000, 0).setOrigin(0).setScrollFactor(0).setDepth(100);
     this.weather = this.add.graphics().setScrollFactor(0).setDepth(99);
     // post-processing della camera (filtri nativi di Phaser 4, solo WebGL): vignetta morbida e colori un po' più vivi
@@ -250,9 +251,12 @@ export class WorldScene extends Phaser.Scene {
 
   endRoute() { this.route = undefined; this.showTapMark(); }
 
-  /** Accende o spegne la resa 2.5D secondo le Opzioni. Se il WebGL non regge, resta il 2D. */
+  /**
+   * Il mondo si vede sempre in 2.5D; le Opzioni scelgono solo il livello degli effetti.
+   * Se il dispositivo non regge il WebGL si resta, per questa sessione, sulla vista d'emergenza di Phaser.
+   */
   applyGraphics() {
-    const want = S.options.gfx === '3d' ? S.options.fx : '';
+    const want = this.no3d ? '' : S.options.fx;
     if (want === this.view3dFx) return;
     this.view3d?.destroy(); this.view3d = undefined;
     this.view3dFx = want;
@@ -260,7 +264,7 @@ export class WorldScene extends Phaser.Scene {
       try {
         this.view3d = new View3D(document.getElementById('game')!, want as 'alti' | 'bassi');
         if (this.map) { this.syncMood(); this.view3d.loadMap(this.map, this.night, this.animFrame); }
-      } catch (e) { console.error(e); this.view3d = undefined; this.view3dFx = ''; S.options.gfx = '2d'; toast(T('Grafica 2.5D non disponibile su questo dispositivo: resta il 2D.')); }
+      } catch (e) { console.error(e); this.view3d = undefined; this.view3dFx = ''; this.no3d = true; toast(T('Questo dispositivo non regge la grafica completa: il gioco usa una vista semplificata.')); }
     }
     this.game.canvas.style.display = this.view3d ? 'none' : '';
     if (!this.view3d) this.scale.refresh();
@@ -491,6 +495,7 @@ export class WorldScene extends Phaser.Scene {
     const p = takeWorldPress();
     if (p) this.idleMs = 0;
     if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => this.flyTo(id)));
+    if (p === 'map') return void this.runScript(async () => { const dest = await openRegionMap(); if (dest) await this.flyTo(dest); });
     if (p === 'a') return void this.interactFront();
     const dir = this.nextDir();
     if (dir) { this.idleMs = 0; this.tryMove(dir, !!this.route || this.time.now - this.lastStepEnd < MOMENTUM_MS); return; }
@@ -682,12 +687,12 @@ export class WorldScene extends Phaser.Scene {
     }
     const sec = this.map.sections?.find((sc) => fy === sc.y && fx >= sc.x && fx < sc.x + sc.w);
     if (t === TILE.SHELF && sec) return void this.runScript(() => librarySection(sec, Number(/^library_(\d+)$/.exec(this.map.id)?.[1] ?? 0)));
-    if (t === TILE.SHELF) return void this.runScript(() => say(T('Scaffali pieni di libri di economia. Le lezioni si leggono parlando con la Bibliotecaria o dal menu.')));
+    if (t === TILE.SHELF) return void this.runScript(() => say(T('Scaffali pieni di libri di economia. Le lezioni si leggono parlando con la Bibliotecaria.')));
     if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? T('Il rumore delle notizie non ti tocca più: puoi attraversare.') : [T('Un muro di notizie urlate, grafici impazziti e "consigli" dai social.'), T('Serve una mente fredda per attraversarlo (Whale 7).')]));
     if (t === TILE.STATION) { const st = this.npcs.find((x) => x.def.kind === 'station'); if (st) void this.runScript(() => interact(st.def, this.api())); }
     if (t === TILE.BOULDER) return void this.runScript(() => this.breakBoulder(fx, fy));
     if (t === TILE.CAVE_MOUTH) return void this.runScript(() => say(T('L\'ingresso di una grotta. Cammina verso di lui per entrare.')));
-    if (t === TILE.WATER) return void this.runScript(() => say(canSwim() ? [T('L\'acqua scorre tranquilla. Con il Flusso di Liquidità puoi attraversarla: cammina verso di lei.')] : [T('L\'acqua scorre tranquilla. Come la liquidità: utile, ma col tempo l\'inflazione la erode.'), T('Con il Flusso di Liquidità (Medaglia 3) potresti attraversarla.')]));
+    if (t === TILE.WATER) return void this.runScript(() => say(canSwim() ? [T('L\'acqua scorre tranquilla. Con il Flusso di Liquidità puoi attraversarla: cammina verso di lei.')] : [T('L\'acqua scorre tranquilla. Come la liquidità: utile, ma col tempo l\'inflazione la erode.'), T('Con il Flusso di Liquidità (Attestato 3) potresti attraversarla.')]));
   }
 
   /** Taglio dei Costi: frantuma un Masso delle Commissioni (resta rotto nel salvataggio). */

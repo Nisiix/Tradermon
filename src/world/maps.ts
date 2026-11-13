@@ -401,7 +401,7 @@ const TOWN_TALK = [
   T('Sui percorsi c\'è più di quanto sembri: chi esplora trova pagine perdute e passaggi nascosti.'),
   T('Il mio portafoglio è diversificato: azioni, obbligazioni e un po\' di liquidità. Dormo tranquillo.'),
   T('Dicono che nel Casinò di Interessa il banco vinca sempre. Matematicamente, è vero.'),
-  T('Per sfidare Wall Street servono otto Medaglie complete: Attestato e Sigillo pratico, guadagnato sul conto Paper.'),
+  T('Per sfidare Wall Street servono otto Attestati, ognuno con il suo Sigillo pratico, guadagnato sul conto Paper.'),
   T('Un buon investitore scrive il suo piano a mente fredda.'),
   T('L\'Archivio di Bilancia si apre solo a chi sa leggere oltre la superficie.'),
 ];
@@ -647,13 +647,15 @@ function buildSeaAndCaves() {
   );
   MAPS.cave_dp = dp;
 
-  // --- Miniera dei Lingotti: Percorso 5 (a metà) ↔ Valdividendo. Buia: serve la Lanterna ---
-  const r5 = MAPS.r5;
-  caveMouth(r5.tiles, 28, 1);
-  rect(r5.tiles, 28, 2, 1, 4, TILE.PATH);
-  r5.tiles[4][27] = TILE.SIGN;
-  r5.signs.push({ x: 27, y: 4, text: [T('MINIERA DEI LINGOTTI'), T('Porta a Valdividendo. All\'interno è buio pesto.')] });
-  r5.warps.push({ x: 28, y: 1, to: 'cave_gold', tx: 2, ty: 12, dir: 1, lock: 'dark' });
+  // --- Miniera dei Lingotti: Percorso 6 (oltre il ruscello) ↔ Valdividendo. Buia: serve la Lanterna.
+  // Regola: una grotta buia si apre dal percorso che viene dopo la Whale che dà la Lanterna (Attestato 5 → Percorso 6),
+  // così chi arriva alla bocca ha già la luce per entrare ---
+  const r6 = MAPS.r6;
+  caveMouth(r6.tiles, 28, 1);
+  rect(r6.tiles, 28, 2, 1, 4, TILE.PATH);
+  r6.tiles[4][27] = TILE.SIGN;
+  r6.signs.push({ x: 27, y: 4, text: [T('MINIERA DEI LINGOTTI'), T('Porta a Valdividendo. Dentro è buio pesto: si entra con la Lanterna della Due Diligence (Attestato 5).')] });
+  r6.warps.push({ x: 28, y: 1, to: 'cave_gold', tx: 2, ty: 12, dir: 1, lock: 'dark' });
   const t6 = MAPS.t6;
   caveMouth(t6.tiles, 27, cy);
   rect(t6.tiles, 27, SOUTH_ST + 1, 1, cy - 1 - SOUTH_ST, TILE.PATH);
@@ -662,10 +664,10 @@ function buildSeaAndCaves() {
     [1, 10, 4, 3], [2, 4, 3, 6], [2, 2, 10, 2], [10, 4, 3, 5], [10, 9, 9, 3], [17, 3, 3, 6], [19, 3, 7, 2], [24, 5, 3, 8],
   ]);
   gold.tiles[14][2] = TILE.CAVE; gold.tiles[13][2] = TILE.CAVE; gold.tiles[14][25] = TILE.CAVE; gold.tiles[13][25] = TILE.CAVE;
-  gold.warps.push({ x: 2, y: 14, to: 'r5', tx: 28, ty: 2, dir: 0 }, { x: 25, y: 14, to: 't6', tx: 27, ty: cy - 1, dir: 0 });
+  gold.warps.push({ x: 2, y: 14, to: 'r6', tx: 28, ty: 2, dir: 0 }, { x: 25, y: 14, to: 't6', tx: 27, ty: cy - 1, dir: 0 });
   gold.npcs.push(
-    { id: 'cave_gold_t0', x: 6, y: 2, pal: 21, dir: 3, name: T('Cercatrice d\'Oro'), kind: 'trainer', sight: 4, lines: [T('L\'oro non paga dividendi, ma nelle crisi molti lo cercano. Tu cosa cerchi?')], data: { r: 5 } },
-    { id: 'cave_gold_t1', x: 15, y: 10, pal: 19, dir: 2, name: T('Minatore Prudente'), kind: 'trainer', sight: 3, lines: [T('Scavo piano e diversifico le gallerie. Vediamo se scavi bene anche tu!')], data: { r: 5 } },
+    { id: 'cave_gold_t0', x: 6, y: 2, pal: 21, dir: 3, name: T('Cercatrice d\'Oro'), kind: 'trainer', sight: 4, lines: [T('L\'oro non paga dividendi, ma nelle crisi molti lo cercano. Tu cosa cerchi?')], data: { r: 6 } },
+    { id: 'cave_gold_t1', x: 15, y: 10, pal: 19, dir: 2, name: T('Minatore Prudente'), kind: 'trainer', sight: 3, lines: [T('Scavo piano e diversifico le gallerie. Vediamo se scavi bene anche tu!')], data: { r: 6 } },
     { id: 'cave_gold_s', x: 21, y: 3, pal: 18, dir: 0, name: T('Vecchio Minatore'), kind: 'talk', lines: [T('Una volta ho messo tutto in una sola vena d\'oro. Si è esaurita in un mese.'), T('Da allora scavo in tante gallerie diverse. Si chiama diversificare, ragazz{o|a}.')] },
   );
   MAPS.cave_gold = gold;

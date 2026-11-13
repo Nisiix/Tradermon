@@ -21,7 +21,7 @@ export function newGame(): SaveData {
     portfolio: newPortfolio(DIFFICULTY.investitore.capital, 0, 'equilibrato'), market: emptyMarket(), saveId, difficulty: 'investitore', seals: 0, exDone: 0, exTools: { limit: false, stop: false }, levExam: false,
     lastSeen: { t: 0, value: 0 }, boss: { run: null, beaten: [], tries: {} }, review: {}, reviewDue: {}, answered: {}, daily: { lastDate: '', streak: 0 },
     tower: { best: 0 }, legends: [], stepCounter: 0, lastClinic: { map: 'home', x: 4, y: 4 }, ngPlus: 0, playMs: 0,
-    options: { textSpeed: 2, fontScale: 1, contrast: false, studyMode: false, volume: 0.5, music: 0.5, gfx: '3d', fx: 'alti' },
+    options: { textSpeed: 2, fontScale: 1, contrast: false, studyMode: false, volume: 0.5, music: 0.5, fx: 'alti' },
     counters: {}, agenda: { day: '', week: '', daily: [], weekly: [], dailyDone: 0 }, achievements: [], title: '', decor: [], rematch: {},
     quests: {}, journal: [], minigames: {}, challenges: [], npcMemory: {},
   };
@@ -133,6 +133,8 @@ function dropObsolete(s: SaveData) {
   s.achievements = (s.achievements ?? []).filter((a) => a !== 'license');
   s.decor = (s.decor ?? []).filter((d) => d !== 'frame_license');
   if (s.title === 'Abilitato') s.title = '';
+  // la resa del mondo è una sola (2.5D): la vecchia scelta 2D/2.5D esce dal salvataggio
+  if (s.options) delete (s.options as unknown as Record<string, unknown>).gfx;
 }
 function newGameShape(): SaveData {
   const keep = S;

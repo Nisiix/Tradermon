@@ -9,6 +9,14 @@ describe('comandi personalizzabili', () => {
     expect(actionFor('Escape')).toBe('settings');
     expect(actionFor('KeyO')).toBeUndefined();
   });
+  it('la Mappa della Regione ha un tasto suo, che si può riassegnare', () => {
+    resetBindings();
+    expect(actionFor('KeyN')).toBe('map');
+    bindKey('map', 0, 'KeyP');
+    expect(actionFor('KeyP')).toBe('map');
+    expect(actionFor('KeyN')).toBeUndefined();
+    resetBindings();
+  });
   it('riassegna un tasto e lo toglie dal comando che lo usava', () => {
     resetBindings();
     const stolen = bindKey('a', 0, 'KeyM');

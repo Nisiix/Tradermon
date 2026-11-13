@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { allMapIds } from '../src/world/maps';
+import { allMapIds, getMap } from '../src/world/maps';
+import { ABILITY } from '../src/world/travel';
 import { explore, mapsOf, type St } from './reachSim';
 
 describe('struttura del mondo', () => {
@@ -26,5 +27,14 @@ describe('struttura del mondo', () => {
       const stuck = [...seen].filter((s) => !ok.has(s));
       expect(stuck.slice(0, 5), `Medaglie ${b}`).toEqual([]);
     }
+  });
+  it('la Miniera dei Lingotti si apre dal percorso che segue la Whale della Lanterna (chi arriva alla bocca può già entrare)', () => {
+    const route = ABILITY.dark.badge + 1;
+    const mouths = allMapIds().filter((id) => getMap(id).warps.some((w) => w.to === 'cave_gold'));
+    expect(mouths.sort()).toEqual([`r${route}`, `t${route}`].sort());
+    // con un Attestato in meno la bocca della miniera non è nemmeno raggiungibile
+    const before = mapsOf(explore(ABILITY.dark.badge - 1).seen);
+    expect(before.has(`r${route}`)).toBe(false);
+    expect(mapsOf(explore(ABILITY.dark.badge).seen).has('cave_gold')).toBe(true);
   });
 });

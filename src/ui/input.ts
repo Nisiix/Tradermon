@@ -1,6 +1,6 @@
 import { actionFor, onPrefsChange, touchActive } from '../systems/controls';
 
-export type Key = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'menu';
+export type Key = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'menu' | 'map';
 
 type Handler = (k: Key, ev?: KeyboardEvent) => boolean | void;
 const stack: Handler[] = [];
