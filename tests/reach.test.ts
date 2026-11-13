@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { allMapIds } from '../src/world/maps';
+import { allMapIds, getMap } from '../src/world/maps';
+import { ABILITY } from '../src/world/travel';
 import { explore, mapsOf, type St } from './reachSim';
 
 describe('struttura del mondo', () => {
@@ -26,5 +27,20 @@ describe('struttura del mondo', () => {
       const stuck = [...seen].filter((s) => !ok.has(s));
       expect(stuck.slice(0, 5), `Medaglie ${b}`).toEqual([]);
     }
+  });
+  it('le grotte buie si incontrano solo dopo la Whale che dà la Lanterna: chi arriva a una bocca può già entrare', () => {
+    const mouths = allMapIds().filter((id) => !id.startsWith('cave_') && getMap(id).warps.some((w) => w.lock === 'dark'));
+    expect(mouths.sort()).toEqual(['r6', 'r7', 'r8', 't6', 't7']);
+    // ogni grotta è buia: nessuna bocca senza il blocco della Lanterna
+    for (const id of allMapIds()) for (const w of getMap(id).warps) if (w.to.startsWith('cave_') && !id.startsWith('cave_')) expect(w.lock, `${id} → ${w.to}`).toBe('dark');
+    // con un Attestato in meno nessuna bocca è raggiungibile; con la Lanterna la prima grotta si apre subito
+    const before = mapsOf(explore(ABILITY.dark.badge - 1).seen);
+    for (const id of mouths) expect(before.has(id), id).toBe(false);
+    expect(mapsOf(explore(ABILITY.dark.badge).seen).has('cave_gold')).toBe(true);
+    // le altre due seguono il viaggio: Galleria del Dark Pool dal Percorso 7, Grotta delle Perle dal Percorso 8
+    expect(mapsOf(explore(5).seen).has('cave_dp')).toBe(false);
+    expect(mapsOf(explore(6).seen).has('cave_dp')).toBe(true);
+    expect(mapsOf(explore(6).seen).has('cave_pearl')).toBe(false);
+    expect(mapsOf(explore(7).seen).has('cave_pearl')).toBe(true);
   });
 });

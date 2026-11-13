@@ -272,7 +272,7 @@ function voidExercise(asset: string, forced = false): string {
 function ignoreHint(): string {
   if (!ignoreAllowed() || ignoreOn() || S.flags.ignoreHint) return '';
   S.flags.ignoreHint = true;
-  return T(' In questa difficoltà puoi attivare, dalle Impostazioni (⚙) o da Menu → Opzioni, "Prove sul conto: prosegui anche se vanno male": l\'esito negativo viene ignorato e prosegui lo stesso. ') + IGNORE_WARNING;
+  return T(' In questa difficoltà puoi attivare, dalle Opzioni (⚙ o menu di gioco), "Prove sul conto: prosegui anche se vanno male": l\'esito negativo viene ignorato e prosegui lo stesso. ') + IGNORE_WARNING;
 }
 
 /** Dopo un ordine accettato: chiude gli esercizi completati (in ordine) e dice quali. */
@@ -287,7 +287,7 @@ function closeExercises(): string {
   }
   if (msg) finishStage();
   const seals = grantSeals();
-  if (seals.length) msg += T` Sigillo pratico ${seals.join(T(' e '))} ottenuto: la Medaglia è completa!`;
+  if (seals.length) msg += T` Sigillo pratico ${seals.join(T(' e '))} ottenuto: l'Attestato è completo!`;
   return msg;
 }
 

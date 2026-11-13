@@ -144,7 +144,7 @@ export function unlockForm(why: string): Promise<boolean> {
 export function legacyPrompt(c: LegacyChoice): Promise<boolean> {
   const l = c.local as unknown as { name: string; playMs: number; badges: number };
   return modal<boolean>(T('Partita trovata in questo browser'), ({ body, button, close }) => {
-    body.innerHTML = T`<p>In questo browser c'è la partita di <b>${esc(l.name)}</b> (${formatPlayTime(l.playMs)}, ${l.badges} medaglie), salvata prima che esistessero i giocatori.</p>
+    body.innerHTML = T`<p>In questo browser c'è la partita di <b>${esc(l.name)}</b> (${formatPlayTime(l.playMs)}, ${l.badges} Attestati), salvata prima che esistessero i giocatori.</p>
       ${c.cloud ? T`<p>Il tuo giocatore ha già una partita online (${formatPlayTime(c.cloud.playMs)}). Se porti quella del browser, sostituisce quella online.</p>` : T('<p>Vuoi portarla nel tuo giocatore? Da ora in poi sarà salvata online.</p>')}
       <p class="small muted">Se non la porti, ne resta comunque una copia di riserva in questo browser.</p>`;
     button(T('Porta questa partita'), () => close(true), 'primary');

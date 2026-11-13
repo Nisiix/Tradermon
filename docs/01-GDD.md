@@ -8,7 +8,7 @@ Regole d'oro del progetto:
 
 1. **Si sblocca solo sapendo.** Nessun oggetto di cattura, nessuna pozione, nessun negozio. Asset, informazioni e tecniche si ottengono solo battendo Whale e superando sfide.
 2. **Solo denaro finto.** Tradermon è pensato per aiutare chi vuole entrare nel mondo degli investimenti e del trading, ed è volto solo all'apprendimento. Tutto il gioco si svolge con denaro finto, sul conto Alpaca Paper: non vengono mai usati soldi reali.
-3. **Premi solo dallo studio e dal conto di gioco.** XP, Medaglie, classifiche e carte si ottengono in simulazione o sul conto Paper.
+3. **Premi solo dallo studio e dal conto di gioco.** XP, Attestati, classifiche e carte si ottengono in simulazione o sul conto Paper.
 4. **Educazione, non consulenza.** Il gioco non dice mai "compra X": il giocatore sceglie da solo.
 5. **Le chiavi non stanno nel codice.** Le chiavi Alpaca si inseriscono nel gioco e vengono custodite dal server locale, mai nel browser né nel repository.
 
@@ -19,7 +19,7 @@ Regole d'oro del progetto:
 > - Titoli, prezzi e grafici sono solo quelli reali di Alpaca; i titoli di fantasia e l'indice "Capitalia 100" non esistono più. Senza conto Alpaca Paper collegato resta il percorso di studio.
 > - Difficoltà scelta all'inizio (Apprendista 10.000 $, Investitore 5.000 $, Stratega 2.500 $, Leggenda 1.000 $): fissa capitale, costo didattico per ordine, quota minima di tappa e regola della bancarotta. Non si cambia. Leggenda si sblocca solo con la Nuova Partita+.
 > - Conto di gioco: registro dentro il conto Alpaca Paper, aggiornato solo dagli ordini inviati dal gioco e riconciliato con le posizioni vere. Tutto il capitale è investibile dal primo giorno; ogni tappa chiede una quota minima cumulata (5% / 7% / 8,5% / 9,5% del capitale per tappa), mai un massimo. Ordini anche frazionati.
-> - Medaglia = Attestato (duello, apre la strada) più Sigillo pratico (Prova sul conto: quota della tappa investita con ordini veri sul mercato di oggi, usando la Tecnica appena imparata). Wall Street chiede otto Sigilli. I replay vivono solo nella Macchina del Tempo (Zona Simulazione: missioni facoltative, periodi liberi, crisi storiche) e nelle crisi leggendarie della Torre; le Whale non ne propongono.
+> - Ogni Whale assegna l'Attestato (duello, apre la strada) e il Sigillo pratico (Prova sul conto: quota della tappa investita con ordini veri sul mercato di oggi, usando la Tecnica appena imparata). Wall Street chiede otto Sigilli. I replay vivono solo nella Macchina del Tempo (Zona Simulazione: missioni facoltative, periodi liberi, crisi storiche) e nelle crisi leggendarie della Torre; le Whale non ne propongono.
 > - Wall Street: duello più verifica del conto com'è adesso. Marta Macro: almeno metà del patrimonio investito, tre titoli, uno difensivo. Tito Tecnico: nessun titolo oltre il 40% dell'investito e stop attivi su almeno un quarto. Giulia Garante: lo sportello delle offerte (non passa dal conto). Fabio Freddo: titoli rischiosi entro una fascia di 15 punti percentuali sopra o sotto il proprio piano (per esempio tra 45% e 75% con un piano al 60%) e tre decisioni motivate nel Diario. Campione: tutto insieme, senza chiamate di margine. Nessuna prova chiede un rendimento; contano solo gli ordini eseguiti (`src/systems/trials.ts`).
 > - Bancarotta: quando il conto arriva a zero (sotto 1 $), in ogni difficoltà. Le quote di tappa sono importi fissi sul capitale di partenza della difficoltà, anche dopo perdite o una ripartenza (`stageQuota`, `ZERO`). Ripartenza con metà del capitale di partenza; una sola in Stratega; nessuna in Leggenda.
 > - Leva: esame dal 5º Attestato (vale nei replay), sul conto dall'8º, massimo 2×, interessi 6,5%, mantenimento 30%, chiamata di margine di tre giorni di mercato. Dividendi: solo teoria.
@@ -33,7 +33,7 @@ Regole d'oro del progetto:
 | Fase | Durata indicativa | Cosa impara | Cosa sblocca |
 |---|---|---|---|
 | Prologo e onboarding | 8-12 min | Paper trading, profilo di rischio, primo acquisto | Percorso, Valigetta iniziale, tessera da Apprendista |
-| Regione (8 città) | 4-8 h | 8 moduli, uno per Whale | 8 Medaglie, tecniche, slot di portafoglio, Asset Card |
+| Regione (8 città) | 4-8 h | 8 moduli, uno per Whale | 8 Attestati, tecniche, slot di portafoglio, Asset Card |
 | Wall Street | 1-2 h | Macro, analisi, regole, psicologia | Titolo di Campione, Nuova Partita+ |
 | Post-game | illimitato | Crisi storiche, Torre delle Sfide | Carte dorate, record |
 
@@ -132,20 +132,20 @@ Borgo Semina ─ P1 ─ Ponte Cedola ─ P2 ─ Porto Ordini ─ P3 ─ Diversia
 Wall Street ─ P9 ─ Rocca Rischio ─ P8 ─ Mentelucida ─ P7 ─ Valdividendo ─ P6 ─ Bilancia ─ P5
 ```
 
-| Città | Edifici | Whale e Medaglia | Particolarità |
+| Città | Edifici | Whale e Attestato | Particolarità |
 |---|---|---|---|
 | Borgo Semina | Casa, Laboratorio, Banca | — | Scelta delle Valigette |
-| Ponte Cedola | Banca, Biblioteca, Exchange | 1. Gaia Primo – Medaglia Seme | Prima Prova sul conto |
-| Porto Ordini | Banca, Biblioteca, Exchange | 2. Orazio Limite – Medaglia Ordine | Abbonamento al treno |
-| Diversia | Banca, Biblioteca, Exchange, **Zona Simulazione** | 3. Vera Varia – Medaglia Mosaico | Sandbox Macchina del Tempo · abilità Flusso di Liquidità |
-| Interessa | Banca, Biblioteca, Exchange, **Casinò dello Speculatore** | 4. Cosimo Composto – Medaglia Spirale | Mini-gioco sull'azzardo · abilità Trasferimento di Capitale |
-| Bilancia | Banca, Biblioteca, Exchange, **Archivio** (chiuso) | 5. Whale specifico A – Medaglia Lente | L'Archivio si apre con "Lettura del Bilancio" |
-| Valdividendo | Banca, Biblioteca, Exchange | 6. Whale specifico B – Medaglia Raccolto | — |
-| Mentelucida | Banca, Biblioteca, Exchange | 7. Serena Bias – Medaglia Specchio | Muro del Rumore sul percorso 7 |
-| Rocca Rischio | Banca, Biblioteca, Exchange | 8. Rocco Rischio – Medaglia Scudo | Ultimo scontro con gli antagonisti |
+| Ponte Cedola | Banca, Biblioteca, Exchange | 1. Gaia Primo – Attestato Seme | Prima Prova sul conto |
+| Porto Ordini | Banca, Biblioteca, Exchange | 2. Orazio Limite – Attestato Ordine | Abbonamento al treno |
+| Diversia | Banca, Biblioteca, Exchange, **Zona Simulazione** | 3. Vera Varia – Attestato Mosaico | Sandbox Macchina del Tempo · abilità Flusso di Liquidità |
+| Interessa | Banca, Biblioteca, Exchange, **Casinò dello Speculatore** | 4. Cosimo Composto – Attestato Spirale | Mini-gioco sull'azzardo · abilità Trasferimento di Capitale |
+| Bilancia | Banca, Biblioteca, Exchange, **Archivio** (chiuso) | 5. Whale specifico A – Attestato Lente | L'Archivio si apre con "Lettura del Bilancio" |
+| Valdividendo | Banca, Biblioteca, Exchange | 6. Whale specifico B – Attestato Raccolto | — |
+| Mentelucida | Banca, Biblioteca, Exchange | 7. Serena Bias – Attestato Specchio | Muro del Rumore sul percorso 7 |
+| Rocca Rischio | Banca, Biblioteca, Exchange | 8. Rocco Rischio – Attestato Scudo | Ultimo scontro con gli antagonisti |
 | Wall Street | Banca, Wall Street, **Torre delle Sfide** (post-game) | 4 Superiori + Campione | Crisi leggendarie dopo Wall Street |
 
-Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta solo decorativa (nessun incontro casuale), cartelli didattici, e all'uscita di ogni città una **Guardia della Borsa** che lascia passare solo con la Medaglia della città.
+Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta solo decorativa (nessun incontro casuale), cartelli didattici, e all'uscita di ogni città una **Guardia della Borsa** che lascia passare solo con l'Attestato della città.
 
 ### 3.2 Edifici ricorrenti
 
@@ -216,7 +216,7 @@ Schermata a due lati, avversario in alto a destra, giocatore in basso a sinistra
 | Campione (fase 1) | 12 | 10 | 2 | 33 |
 | Torre delle Sfide (piano) | 3 | 3 | 0 | 100 |
 
-**Sfida della Whale.** Fase 1 duello di quiz; fase 2 **missione pratica** nella Macchina del Tempo (sezione 6). Se si perde la fase 2 si ripete solo la fase 2. Vincere dà: Medaglia, Tecnica, Asset Card della Whale, slot di portafoglio, sblocchi della Banca, +200 Reputazione.
+**Sfida della Whale.** Fase 1 duello di quiz; fase 2 **missione pratica** nella Macchina del Tempo (sezione 6). Se si perde la fase 2 si ripete solo la fase 2. Vincere dà: Attestato, Tecnica, Asset Card della Whale, slot di portafoglio, sblocchi della Banca, +200 Reputazione.
 
 **Investitori sul percorso.** Linea di vista di 4 tessere: quando il giocatore entra nella linea, il personaggio mostra il fumetto con il "$", si avvicina e sfida. Una volta battuto non sfida più (ma si può riparlarci per un consiglio).
 
@@ -256,7 +256,7 @@ La lezione: un portafoglio con tipi diversi soffre meno di uno con un solo tipo.
 
 ### 5.5 Slot di portafoglio (la "squadra")
 
-Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 4 / 5 / 6 / 6 / 8 / 8 / 10 / 10 dopo le Medaglie 1-8. Le carte sbloccate ma non possedute stanno nella **Watchlist** (il "box"), consultabile dalla Banca e dal menu.
+Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 4 / 5 / 6 / 6 / 8 / 8 / 10 / 10 dopo gli Attestati 1-8. Le carte sbloccate ma non possedute stanno nella **Watchlist** (il "box"), consultabile dalla Banca e dal menu.
 
 ### 5.6 Tecniche (al posto degli strumenti)
 
@@ -296,7 +296,7 @@ Il portafoglio del rivale è simulato con regole fisse (Audace: 2 asset ad alto 
 
 ### 5.10 Viaggio: treno e viaggio rapido
 
-Dopo la Medaglia 2 l'**abbonamento al treno**: dalle stazioni nelle città si va alla città successiva già visitata. Dopo la Medaglia 6 il **viaggio rapido** dal menu verso qualsiasi città visitata.
+Dopo l'Attestato 2 l'**abbonamento al treno**: dalle stazioni nelle città si va alla città successiva già visitata. Dopo l'Attestato 6 il **viaggio rapido** dal menu verso qualsiasi città visitata.
 
 ### 5.11 Zona Simulazione (sandbox)
 
@@ -336,11 +336,11 @@ La Biblioteca propone ogni giorno reale una domanda; rispondere ogni giorno aume
 ### 5.16b Agenda, traguardi, titoli e rivincite
 
 - **Agenda**: ogni giorno reale tre missioni (lezione, duelli, check-up, consigli, domanda del giorno, passi, Diario, minigioco, ripasso) e ogni settimana ISO una missione più lunga. Le missioni sono estratte con un seme dalla data e dal nome, così sono uguali per tutti i giocatori con lo stesso nome. Ricompensa: solo punti Conoscenza (+25 extra se si completa tutta l'agenda del giorno).
-- **Traguardi**: circa 40 obiettivi (duelli, Medaglie, consigli, lezioni, serie, Diario, minigiochi, storie, passi, Torre...). Alcuni danno un **titolo** (scelto dal Profilo, mostrato sulla targhetta dei duelli) e un **oggetto per la casa**.
+- **Traguardi**: circa 40 obiettivi (duelli, Attestati, consigli, lezioni, serie, Diario, minigiochi, storie, passi, Torre...). Alcuni danno un **titolo** (scelto dal Profilo, mostrato sulla targhetta dei duelli) e un **oggetto per la casa**.
 - **Una sfida sola per sfidante**: allenatori dei Percorsi, allievi, Whale, Rivale e Speculatori si affrontano una volta. Dopo una vittoria non ti viene più incontro; dopo una sconfitta la sfida riparte come la prima volta (si gira, "$", ti viene incontro e ti sfida). Battuti, ti parlano solo dell'argomento del posto (pagine dei libri della Whale di quella zona; a Wall Street gli argomenti dei Superiori). La prima sfida con Leo, nel Laboratorio, è una sfida di prova: niente rischio, niente sconfitta, alla fine si prosegue comunque.
 - **Rivincite**: solo a Wall Street, dopo il titolo di Campione. I Superiori e il Campione si risfidano in ordine (un giro alla volta), solo il duello, con le domande del fine gioco; vincere dà Reputazione e conta per agenda e traguardi.
-- **Dialoghi che ricordano**: gli abitanti contano le visite e commentano Medaglie nuove, titolo e serie della domanda del giorno.
-- **Storie a tappe** (`src/world/quests.ts`): sei abitanti, alla seconda visita, chiedono un favore in 2-3 tappe (parlare con un altro abitante, leggere una lezione, fare un check-up, giocare un minigioco, avere N Medaglie, superare una piccola prova). Ricompensa: Conoscenza e un oggetto (radio, acquario, quadro).
+- **Dialoghi che ricordano**: gli abitanti contano le visite e commentano Attestati nuovi, titolo e serie della domanda del giorno.
+- **Storie a tappe** (`src/world/quests.ts`): sei abitanti, alla seconda visita, chiedono un favore in 2-3 tappe (parlare con un altro abitante, leggere una lezione, fare un check-up, giocare un minigioco, avere N Attestati, superare una piccola prova). Ricompensa: Conoscenza e un oggetto (radio, acquario, quadro).
 - **Casa arredabile**: gli oggetti sbloccati compaiono nella casa di Borgo Semina (bacheca, calendario, cornici sui muri; trofei, scrivania, cabinato, mappamondo, pianta, libreria, radio, acquario a terra).
 - **Orari**: di notte (orologio di New York) bambini e ragazzi non sono in giro, le finestre delle case si accendono e compaiono le lucciole.
 - **Meteo di mercato**: pioggia con il clima orso, temporale con lampi con la tempesta, scintille con il toro, foglie negli altri casi.
@@ -363,23 +363,25 @@ Non portati, per scelta: oggetti di cattura, pozioni, negozi, loot box, scambi d
 
 ### 5.16d Mappa della Regione e abilità di esplorazione
 
-Abilità legate alle Medaglie (non sono oggetti né aiuti nei duelli; codice in `src/world/travel.ts`):
+Abilità legate agli Attestati (non sono oggetti né aiuti nei duelli; codice in `src/world/travel.ts`):
 
-| Abilità | Medaglia | Effetto |
+| Abilità | Attestato | Effetto |
 |---|---|---|
 | Flusso di Liquidità | 3 (Mosaico) | Il giocatore attraversa l'acqua su una zattera. Sui Percorsi 3, 5 e 7 un lago circonda un'Isola della Liquidità con un abitante che propone un duello difficile una sola volta (5 domande, 4 giuste, nessuna perdita di Fiducia): +120 Conoscenza e studio per tutte le carte. Le tre isole danno il traguardo "Navigatore di Liquidità". |
 | Trasferimento di Capitale | 4 (Spirale, la Whale di mezzo) | Dal menu, voce **Mappa della Regione**, ci si sposta in una città già visitata (si entra in una città la prima volta e diventa disponibile). Regolamento T+1: passa un giorno di mercato. Non funziona dentro Wall Street. Animazione del volo: il personaggio si solleva mentre la camera si allontana e passano le nuvole, dissolvenza bianca, poi atterraggio nella città scelta (in 2D e in 2.5D). |
-| Taglio dei Costi | 4 (Spirale) | Frantuma i Massi delle Commissioni (restano rotti nel salvataggio). Apre la Galleria del Dark Pool dal Percorso 2. |
-| Lanterna della Due Diligence | 5 (Lente) | Si entra nelle grotte buie: Miniera dei Lingotti e Grotta delle Perle. |
+| Taglio dei Costi | 4 (Spirale) | Frantuma i Massi delle Commissioni (restano rotti nel salvataggio). Il primo chiude la Galleria del Dark Pool, sul Percorso 7. |
+| Lanterna della Due Diligence | 5 (Lente) | Si entra nelle grotte buie: Miniera dei Lingotti (Percorso 6), Galleria del Dark Pool (Percorso 7), Grotta delle Perle (Percorso 8). |
 | Mente Fredda | 7 (Specchio) | Attraversa il Muro del Rumore sul Percorso 7 (già esistente). |
 
 **Struttura del mondo (non lineare).** Oltre alla strada principale Borgo Semina → Altopiano:
-- **Mare della Liquidità**: dal molo di Porto Ordini (Medaglia 3) verso sud. Isola del Faro (Guardiana del Faro, duello unico), Isola del Relitto (la bolla della "Compagnia dei Mari Lontani"), Isola Lontana con la **Grotta delle Perle** (buia, Pescatore di Perle). Traguardo "Capitano di Liquidità".
-- **Galleria del Dark Pool**: da metà del Percorso 2 a Diversia, saltando Porto Ordini. Il masso è sul lato del Percorso 2; da Diversia la galleria è un vicolo finché il masso non è rotto.
-- **Miniera dei Lingotti**: da metà del Percorso 5 a Valdividendo, saltando Bilancia (buia, quindi solo dalla Medaglia 5).
-- `tests/reach.test.ts` simula il mondo per ogni numero di Medaglie: nessuna scorciatoia porta a un'Exchange oltre la successiva, con 8 Medaglie ogni luogo è raggiungibile e da ogni casella si torna a casa.
+- **Mare della Liquidità**: dal molo di Porto Ordini (Attestato 3) verso sud. Isola del Faro (Guardiana del Faro, duello unico), Isola del Relitto (la bolla della "Compagnia dei Mari Lontani"), Isola Lontana (l'antica spiaggia dei pescatori di perle, con un cartello che manda al Percorso 8). Traguardo "Capitano di Liquidità".
+- **Galleria del Dark Pool**: da metà del Percorso 7 a Mentelucida. Un Masso delle Commissioni davanti alla bocca del Percorso 7 e buia dentro: servono Taglio dei Costi e Lanterna.
+- **Miniera dei Lingotti**: da metà del Percorso 6 a Valdividendo (buia: serve la Lanterna).
+- **Grotta delle Perle**: sul Percorso 8, oltre uno stagno del torrente: ci si arriva in zattera e si entra con la Lanterna (Pescatore di Perle, duello unico; con la Guardiana del Faro dà il traguardo "Capitano di Liquidità").
+- **Regola delle grotte**: tutte le grotte sono buie e si incontrano solo dopo la Whale che dà la Lanterna (Attestato 5), cioè dal Percorso 6 in poi: chi arriva a una bocca può già entrare. Chi aveva salvato dentro una grotta che oggi sta più avanti riparte dalla città da cui era entrato.
+- `tests/reach.test.ts` simula il mondo per ogni numero di Attestati: nessuna scorciatoia porta a un'Exchange oltre la successiva, con 8 Attestati ogni luogo è raggiungibile e da ogni casella si torna a casa.
 
-La Mappa della Regione è sempre consultabile: mostra città visitate e no (???), percorsi, isole, Muro del Rumore, la posizione del giocatore e lo stato delle abilità. Il treno dalle stazioni resta disponibile dalla seconda Medaglia.
+La Mappa della Regione è sempre consultabile: mostra città visitate e no (???), percorsi, isole, Muro del Rumore, la posizione del giocatore e lo stato delle abilità. Il treno dalle stazioni resta disponibile dal secondo Attestato.
 
 ## 6. Macchina del Tempo: le missioni di trading
 
@@ -513,14 +515,14 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 - Introduzione: il Prof parla dietro il suo banco, davanti alla lavagna dell'aula.
 - Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.
 - Touch: croce direzionale e pulsanti A, B, Menu sullo schermo.
-- Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo (con scelta del titolo), Medaglie, Tecniche, Mappa della Regione (con Trasferimento di Capitale), Salva, Opzioni (effetti, musica, velocità del testo, scala dei caratteri, contrasto alto, Comandi).
+- Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo (con scelta del titolo), Attestati e Tecniche, Tappe, Chiavi API (una sola voce: collega o scollega il conto Alpaca Paper), Mappa della Regione (con Trasferimento di Capitale; ha anche un tasto dedicato, N di default), Opzioni (effetti, musica, velocità del testo, scala dei caratteri, effetti grafici, contrasto alto, Comandi), Salva, Esci dal gioco (salva e torna alla pagina principale). Le lezioni si leggono in Biblioteca; il mondo si vede sempre in 2.5D.
 - Resa: la griglia 240×160 è disegnata a risoluzione interna 720×480 (Scale3x per tile e sprite) e adattata allo schermo con filtro lineare; la camera aggiunge vignettatura e una leggera saturazione. Niente sfocatura né scalini.
-- Musica: chiptune originale generata in codice, un brano per tipo di luogo, uno per i duelli e uno per la notte; con il clima orso o tempesta i brani maggiori passano in minore e rallentano, con il toro accelerano. Brevi motivi per vittorie, Medaglie e missioni completate. Volume separato dagli effetti nelle Opzioni.
+- Musica: chiptune originale generata in codice, un brano per tipo di luogo, uno per i duelli e uno per la notte; con il clima orso o tempesta i brani maggiori passano in minore e rallentano, con il toro accelerano. Brevi motivi per vittorie, Attestati e missioni completate. Volume separato dagli effetti nelle Opzioni.
 - Accessibilità: testo ingrandibile, nessuna informazione solo a colori, timer disattivabile in modalità "Studio" (in cambio dimezza la Reputazione dei duelli).
 
 ## 11. Salvataggio
 
-Al primo avvio, prima del tutorial, si crea un giocatore (nome univoco + password) o si entra con uno esistente. Il salvataggio (automatico all'entrata e uscita dagli edifici e dopo le sfide, manuale dal pulsante e dal menu) va su Supabase, una riga per giocatore; sul dispositivo resta una copia di lavoro per giocare senza rete, inviata appena la connessione torna. Esporta/Importa come file JSON. Il salvataggio contiene: profilo, percorso, posizione, flag della storia, statistiche, Medaglie, tecniche, carte e livelli, portafoglio simulato, stato del mercato simulato, coda di ripasso, record, contatori ed agenda, traguardi e titolo, oggetti della casa, rivincite programmate, storie, Diario, record dei minigiochi, sfide e classifica, memoria dei dialoghi. Non contiene mai le chiavi: le chiavi Alpaca restano solo sul dispositivo del giocatore, cifrate con la sua password, e non vanno su Supabase.
+Al primo avvio, prima del tutorial, si crea un giocatore (nome univoco + password) o si entra con uno esistente. Il salvataggio (automatico all'entrata e uscita dagli edifici e dopo le sfide, manuale dal menu, voce Salva) va su Supabase, una riga per giocatore; sul dispositivo resta una copia di lavoro per giocare senza rete, inviata appena la connessione torna. Esporta/Importa come file JSON. Il salvataggio contiene: profilo, percorso, posizione, flag della storia, statistiche, Attestati, tecniche, carte e livelli, portafoglio simulato, stato del mercato simulato, coda di ripasso, record, contatori ed agenda, traguardi e titolo, oggetti della casa, rivincite programmate, storie, Diario, record dei minigiochi, sfide e classifica, memoria dei dialoghi. Non contiene mai le chiavi: le chiavi Alpaca restano solo sul dispositivo del giocatore, cifrate con la sua password, e non vanno su Supabase.
 
 ## 12. Fuori dall'ambito della versione 1.0
 

@@ -32,7 +32,7 @@ export function track(ev: GameEvent, n = 1) {
 interface TaskDef { id: string; ev: GameEvent; need: number; text: string; xp: number }
 
 const DAILY_POOL: TaskDef[] = [
-  { id: 'd_lesson', ev: 'lesson', need: 1, text: T('Leggi una lezione in Biblioteca o dal menu'), xp: 15 },
+  { id: 'd_lesson', ev: 'lesson', need: 1, text: T('Leggi una lezione in Biblioteca'), xp: 15 },
   { id: 'd_duel', ev: 'duel_win', need: 1, text: T('Vinci un duello di conoscenza'), xp: 20 },
   { id: 'd_duel2', ev: 'duel_win', need: 2, text: T('Vinci due duelli di conoscenza'), xp: 30 },
   { id: 'd_checkup', ev: 'checkup', need: 1, text: T('Fai il check-up del portafoglio in Banca'), xp: 10 },
@@ -126,9 +126,9 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'duel10', name: T('Dieci su dieci'), desc: T('Vinci 10 duelli'), title: 'Studioso', check: () => c('duel_win') >= 10 },
   { id: 'duel50', name: T('Veterano dei quiz'), desc: T('Vinci 50 duelli'), title: 'Veterano', decor: 'trophy_silver', check: () => c('duel_win') >= 50 },
   { id: 'perfect10', name: T('Senza sbavature'), desc: T('10 duelli perfetti'), title: 'Infallibile', decor: 'trophy_gold', check: () => c('duel_perfect') >= 10 },
-  { id: 'badge1', name: T('Prima Medaglia'), desc: T('Batti la prima Whale'), title: 'Apprendista', decor: 'poster_badges', check: () => S.badges >= 1 },
-  { id: 'badge4', name: T('Metà strada'), desc: T('Quattro Medaglie'), title: 'Investitore in erba', check: () => S.badges >= 4 },
-  { id: 'badge8', name: T('Tutte le Medaglie'), desc: T('Otto Medaglie'), title: 'Maestro delle Whale', decor: 'poster_badges', check: () => S.badges >= 8 },
+  { id: 'badge1', name: T('Primo Attestato'), desc: T('Batti la prima Whale'), title: 'Apprendista', decor: 'poster_badges', check: () => S.badges >= 1 },
+  { id: 'badge4', name: T('Metà strada'), desc: T('Quattro Attestati'), title: 'Investitore in erba', check: () => S.badges >= 4 },
+  { id: 'badge8', name: T('Tutti gli Attestati'), desc: T('Otto Attestati'), title: 'Maestro delle Whale', decor: 'poster_badges', check: () => S.badges >= 8 },
   { id: 'champion', name: T('Campione'), desc: T('Vinci Wall Street'), title: 'Campione', decor: 'trophy_league', check: () => !!S.flags.champion },
   { id: 'tips10', name: T('Buon vicino'), desc: T('Ascolta 10 abitanti'), check: () => S.tipsHeard.length >= 10 },
   { id: 'tips_all', name: T('Orecchio della regione'), desc: T('Ascolta tutti gli abitanti'), title: 'Amico di tutti', decor: 'plant_big', check: () => S.tipsHeard.length >= ALL_RESIDENTS.length },
@@ -204,7 +204,7 @@ export const DECOR_INFO: Record<string, { name: string; tile: string }> = {
   trophy_silver: { name: T('Trofeo d\'argento'), tile: 'trophy_silver' },
   trophy_gold: { name: T('Trofeo d\'oro'), tile: 'trophy_gold' },
   trophy_league: { name: T('Coppa di Wall Street'), tile: 'trophy_league' },
-  poster_badges: { name: T('Bacheca delle Medaglie'), tile: 'poster' },
+  poster_badges: { name: T('Bacheca degli Attestati'), tile: 'poster' },
   plant_big: { name: T('Pianta rigogliosa'), tile: 'plant' },
   bookshelf_full: { name: T('Libreria piena'), tile: 'shelf' },
   calendar: { name: T('Calendario delle serie'), tile: 'calendar' },

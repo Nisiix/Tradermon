@@ -35,52 +35,20 @@ export function realChart(sym: string, marker?: { price: number; label: string }
   });
 }
 
-/** Conto Alpaca Paper: stato, scollegamento, collegamento diretto, guida. Tradermon è un gioco: niente denaro reale. */
-export async function openAlpacaHub() {
-  const st = await A.serverStatus();
-  if (!st) {
-    await say(A.noServerLines(T('il collegamento al conto Alpaca Paper')), NURSE);
-    return;
-  }
-  if (await restoreKeys(st)) Object.assign(st, await A.serverStatus());
-  for (;;) {
-    const opts = [
-      st.paper.configured ? T`Conto Alpaca Paper (${st.paper.keyHint})` : T('Collega Alpaca Paper (chiavi)'),
-      T('Scollega le chiavi Paper'),
-      ...(st.cloud ? [T('Torna al collegamento diretto')] : []),
-      T('Come ottenere le chiavi'),
-      T('Indietro'),
-    ];
-    const c = await choose(opts, { cancel: true, title: 'ALPACA PAPER', disabled: [false, !st.paper.configured, ...opts.slice(2).map(() => false)] });
-    const pick = c < 0 ? T('Indietro') : opts[c];
-    if (pick === T('Indietro')) return;
-    if (c === 0) {
-      if (!st.paper.configured) { if (await keysForm()) Object.assign(st, await A.serverStatus()); }
-      else await accountScreen();
-    } else if (pick === T('Scollega le chiavi Paper')) {
-      if (!(await confirm(T('Scollegare le chiavi Paper? Potrai inserirle di nuovo quando vuoi.')))) continue;
-      await A.deleteKeys('paper');
-      // le versioni precedenti tenevano una copia cifrata su Supabase: se c'è ancora, va via anche quella
-      if (cloudPlayer()) { try { await C.removeAlpacaKeys('paper'); } catch { /* nessuna copia o offline: verrà tolta al prossimo accesso */ } }
-      Object.assign(st, await A.serverStatus());
-      toast(onSite(st) ? T('Chiavi Paper rimosse da questo dispositivo. Per renderle inutilizzabili ovunque, revocale anche dalla dashboard di Alpaca.') : T('Chiavi rimosse dal server locale.'));
-    } else if (pick === T('Torna al collegamento diretto')) {
-      await say(T('Su questo dispositivo hai scelto di far passare il conto Paper dal servizio di Tradermon, perché il browser non raggiungeva Alpaca. Se ora la connessione lo permette puoi tornare al collegamento diretto.'), NURSE);
-      if ((await choose([T('Torna al collegamento diretto'), T('Resta così')], { cancel: true })) === 0) { A.allowRelay(false); Object.assign(st, { cloud: false }, await A.serverStatus()); toast(T('Collegamento diretto con Alpaca riattivato: le chiavi non passano più dal servizio di Tradermon.')); }
-    } else {
-      await say([
-        PAPER_ONLY,
-        T('1) Crea un account su alpaca.markets. Il conto Paper è gratuito e usa denaro finto.'),
-        T('2) Nella dashboard Paper genera una coppia di chiavi API (Key ID e Secret).'),
-        ...(onSite(st)
-          ? [T('3) Inseriscile qui: restano SOLO su questo dispositivo, cifrate con la password del tuo giocatore. Non vanno online, non entrano nel salvataggio e nessun server di Tradermon le riceve.'),
-            T('Quando operi, il browser apre le chiavi e parla direttamente con Alpaca, su connessione cifrata. Su un altro dispositivo dovrai inserirle di nuovo; se cancelli i dati del sito le perdi e ne generi di nuove dalla dashboard di Alpaca.')]
-          : [T('3) Inseriscile qui: il gioco le manda al server locale, che le salva sul tuo computer e non le rimanda mai al browser.'),
-            T('Le chiavi restano solo su questo computer: non vanno online e non entrano nel salvataggio. Su un altro computer dovrai inserirle di nuovo.')]),
-        T('Non condividere mai le chiavi con nessuno.'),
-      ], NURSE);
-    }
-  }
+/** Scollega il conto Alpaca Paper da questo dispositivo, dopo conferma. Restituisce true se le chiavi sono state tolte. */
+export async function unlinkPaper(st: A.ServerStatus): Promise<boolean> {
+  if (!(await confirm(T('Scollegare il conto Alpaca Paper? Potrai collegarlo di nuovo quando vuoi: se ne colleghi uno diverso, il registro di gioco si riallinea al nuovo conto e riparte dal capitale iniziale.')))) return false;
+  await A.deleteKeys('paper');
+  // le versioni precedenti tenevano una copia cifrata online: se c'è ancora, va via anche quella
+  if (cloudPlayer()) { try { await C.removeAlpacaKeys('paper'); } catch { /* nessuna copia o offline: verrà tolta al prossimo accesso */ } }
+  toast(onSite(st) ? T('Conto Alpaca Paper scollegato da questo dispositivo. Per rendere le chiavi inutilizzabili ovunque, revocale anche dalla dashboard di Alpaca.') : T('Conto Alpaca Paper scollegato: chiavi rimosse dal server locale.'));
+  return true;
+}
+
+/** Chi aveva scelto di passare dal servizio di Tradermon può tornare al collegamento diretto con Alpaca. */
+export async function backToDirect(): Promise<void> {
+  await say(T('Su questo dispositivo hai scelto di far passare il conto Paper dal servizio di Tradermon, perché il browser non raggiungeva Alpaca. Se ora la connessione lo permette puoi tornare al collegamento diretto.'), NURSE);
+  if ((await choose([T('Torna al collegamento diretto'), T('Resta così')], { cancel: true })) === 0) { A.allowRelay(false); toast(T('Collegamento diretto con Alpaca riattivato: le chiavi non passano più dal servizio di Tradermon.')); }
 }
 
 /** Osservatorio: conto Paper, posizioni e prezzi Alpaca in sola lettura. Nessun pulsante d'ordine: qui si guarda, non si opera. */
@@ -137,7 +105,7 @@ function keysNotice(site: boolean): string {
     </div>`;
 }
 
-const RELAY_TEXT = T('Le chiavi Paper verranno inviate, a ogni richiesta e su connessione cifrata, al servizio di Tradermon, che le usa per parlare con Alpaca e non le salva. Vale solo su questo dispositivo: puoi tornare al collegamento diretto dalla voce "Conto Paper e scollegamento".');
+const RELAY_TEXT = T('Le chiavi Paper verranno inviate, a ogni richiesta e su connessione cifrata, al servizio di Tradermon, che le usa per parlare con Alpaca e non le salva. Vale solo su questo dispositivo: puoi tornare al collegamento diretto dalla voce "Chiavi API" del menu.');
 
 /** Il browser non raggiunge Alpaca: chiede al giocatore se far passare il conto Paper dal servizio di Tradermon. */
 export async function offerRelay(): Promise<boolean> {
@@ -225,25 +193,4 @@ export async function restoreKeys(st: A.ServerStatus): Promise<boolean> {
     toast(T('Chiavi Alpaca Paper riportate sul server locale e tolte dalla copia online.'));
     return true;
   } catch (e) { toast(T`Chiavi Paper non ripristinate: ${(e as Error).message}`); return false; }
-}
-
-/** Conto Alpaca Paper intero, in sola lettura: si opera dal conto di gioco nel Check-up della Banca. */
-async function accountScreen() {
-  const env: A.Env = 'paper';
-  await modal(T('Conto Alpaca Paper'), ({ body, button, close }) => {
-    const load = async () => {
-      body.innerHTML = T('<p>Caricamento...</p>');
-      try {
-        const [acc, pos, ord, clk] = await Promise.all([A.account(env), A.positions(env), A.openOrders(env), A.clock(env).catch(() => null)]);
-        body.innerHTML = T`
-          <p class="small muted">Conto Paper di Alpaca, intero: denaro finto, prezzi veri. Il <b>conto di gioco</b> è una parte di questo conto: lo trovi nel Check-up della Banca, e si opera solo da lì (voce «Compra / Vendi»), così ogni ordine entra nel registro delle tappe. Qui si guarda soltanto.</p>
-          <p><b>Valore:</b> ${Number(acc.portfolio_value).toFixed(2)} ${acc.currency} · <b>Liquidità:</b> ${Number(acc.cash).toFixed(2)} · <b>Stato:</b> ${esc(acc.status)} · ${clk ? (clk.is_open ? T('<span class="good">Mercato aperto</span>') : T('Mercato chiuso')) : ''}</p>
-          ${pos.length ? T`<table class="t"><tr><th>Simbolo</th><th class="n">Quantità</th><th class="n">Prezzo medio</th><th class="n">Valore</th><th class="n">P&amp;L</th></tr>${pos.map((p) => `<tr><td>${esc(p.symbol)}</td><td class="n">${p.qty}</td><td class="n">${Number(p.avg_entry_price).toFixed(2)}</td><td class="n">${Number(p.market_value).toFixed(2)}</td><td class="n ${Number(p.unrealized_pl) >= 0 ? 'good' : 'bad'}">${(Number(p.unrealized_plpc) * 100).toFixed(2)}%</td></tr>`).join('')}</table>` : T('<p class="muted">Nessuna posizione.</p>')}
-          <h4>Ordini aperti</h4>${ord.length ? `<ul class="small" style="margin:0 0 0 16px">${ord.map((o) => `<li>${esc(o.side)} ${esc(o.type)} ${esc(o.symbol)} ${o.notional ? o.notional + ' $' : o.qty} · ${esc(o.status)}</li>`).join('')}</ul>` : T('<span class="muted">Nessuno</span>')}`;
-      } catch (e) { body.innerHTML = `<p class="bad">${esc((e as Error).message)}</p>`; }
-    };
-    void load();
-    button(T('Apri la dashboard di Alpaca'), () => window.open(A.ALPACA_DASHBOARD, '_blank', 'noopener'));
-    button(T('Chiudi'), () => close(), 'primary');
-  }, { wide: true });
 }

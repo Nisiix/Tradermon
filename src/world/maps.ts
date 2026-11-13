@@ -401,7 +401,7 @@ const TOWN_TALK = [
   T('Sui percorsi c\'è più di quanto sembri: chi esplora trova pagine perdute e passaggi nascosti.'),
   T('Il mio portafoglio è diversificato: azioni, obbligazioni e un po\' di liquidità. Dormo tranquillo.'),
   T('Dicono che nel Casinò di Interessa il banco vinca sempre. Matematicamente, è vero.'),
-  T('Per sfidare Wall Street servono otto Medaglie complete: Attestato e Sigillo pratico, guadagnato sul conto Paper.'),
+  T('Per sfidare Wall Street servono otto Attestati, ognuno con il suo Sigillo pratico, guadagnato sul conto Paper.'),
   T('Un buon investitore scrive il suo piano a mente fredda.'),
   T('L\'Archivio di Bilancia si apre solo a chi sa leggere oltre la superficie.'),
 ];
@@ -557,6 +557,9 @@ export function allMapIds(): string[] {
 
 // ---------------- Mare della Liquidità e grotte ----------------
 
+/** Bocca della Grotta delle Perle sul Percorso 8 (oltre lo stagno). */
+export const PEARL_MOUTH = { x: 26, y: 1 } as const;
+
 /** Bocca di grotta su una mappa esterna: roccia intorno, ingresso al centro, sentiero davanti. */
 function caveMouth(t: number[][], x: number, y: number) {
   rect(t, x - 1, y - 1, 3, 2, TILE.ROCK);
@@ -593,11 +596,11 @@ function buildSeaAndCaves() {
   // Isola del Relitto (est)
   rect(t, 29, 5, 8, 6, TILE.SAND); rect(t, 31, 6, 3, 2, TILE.GRASS);
   t[8][30] = TILE.SIGN; t[9][34] = TILE.FENCE; t[9][35] = TILE.FENCE; t[8][35] = TILE.FENCE;
-  // Isola Lontana (sud) con la Grotta delle Perle
+  // Isola Lontana (sud): l'antica spiaggia dei pescatori di perle. La Grotta delle Perle sta sul Percorso 8,
+  // perché ogni grotta buia si incontra solo dopo la Whale che dà la Lanterna
   rect(t, 14, 17, 12, 7, TILE.SAND); rect(t, 15, 18, 10, 5, TILE.GRASS);
   [[15, 18], [24, 18], [15, 22], [24, 22]].forEach(([x, y]) => (t[y][x] = TILE.TREE));
-  caveMouth(t, 20, 19);
-  rect(t, 20, 20, 1, 3, TILE.PATH);
+  t[20][19] = TILE.FLOWERS; t[19][21] = TILE.FLOWERS;
   t[21][22] = TILE.SIGN;
   MAPS.sea = { id: 'sea', name: T('Mare della Liquidità'), w, h, tiles: t, interior: false, encounterRate: 0, bg: '#3060c0',
     npcs: [
@@ -607,53 +610,66 @@ function buildSeaAndCaves() {
         T('Le sue azioni salirono di dieci volte in pochi mesi. Tutti compravano perché tutti compravano.'),
         T('Poi si scoprì che i commerci erano quasi nulli. Il prezzo crollò e molti persero tutto. Succede ancora oggi, con nomi nuovi.'),
       ] },
-      { id: 'sea_sailor', x: 17, y: 2, pal: 16, dir: 0, name: T('Marinaia'), kind: 'talk', lines: [T('Più lontano vai dalla riva, più le onde sono alte. Come il rischio, quando cerchi rendimenti lontani dalla media!'), T('L\'isola a sud ha una grotta buia: senza una lanterna non entri.')] },
+      { id: 'sea_sailor', x: 17, y: 2, pal: 16, dir: 0, name: T('Marinaia'), kind: 'talk', lines: [T('Più lontano vai dalla riva, più le onde sono alte. Come il rischio, quando cerchi rendimenti lontani dalla media!'), T('L\'isola a sud era la spiaggia dei pescatori di perle. Ora pescano al chiuso, in una grotta sul Percorso 8.')] },
     ],
-    warps: [{ x: 20, y: 0, to: 't2', tx: 25, ty: port.h - 3, dir: 1 }, { x: 20, y: 19, to: 'cave_pearl', tx: 6, ty: 7, dir: 1, lock: 'dark' }],
+    warps: [{ x: 20, y: 0, to: 't2', tx: 25, ty: port.h - 3, dir: 1 }],
     signs: [
       { x: 30, y: 8, text: [T('RELITTO DELLA COMPAGNIA DEI MARI LONTANI'), T('Una bolla speculativa finita in fondo al mare.')] },
-      { x: 22, y: 21, text: [T('GROTTA DELLE PERLE'), T('Buia come un bilancio non letto. Serve la Lanterna della Due Diligence (Attestato 5).')] },
+      { x: 22, y: 21, text: [T('ISOLA LONTANA'), T('Qui un tempo si pescavano perle. I pescatori si sono trasferiti nella grotta del Percorso 8.')] },
     ] };
 
   const pearl = cave('cave_pearl', T('Grotta delle Perle'), 13, 10, [[5, 7, 3, 3], [2, 2, 9, 5], [1, 4, 2, 2]]);
   pearl.tiles[9][6] = TILE.CAVE;
-  pearl.warps.push({ x: 6, y: 9, to: 'sea', tx: 20, ty: 20, dir: 0 });
+  pearl.warps.push({ x: 6, y: 9, to: 'r8', tx: PEARL_MOUTH.x, ty: PEARL_MOUTH.y + 1, dir: 0 });
+  // bocca sul Percorso 8: uno stagno del torrente, a nord del sentiero, la separa dalla strada. Ci si arriva in zattera
+  // (Flusso di Liquidità) e si entra con la Lanterna: a quel punto del viaggio le hai entrambe
+  const r8 = MAPS.r8;
+  rect(r8.tiles, 24, PEARL_MOUTH.y + 2, PEARL_MOUTH.x + 2 - 24, 3, TILE.WATER); // lo stagno si allarga dal torrente (x 22-23)
+  caveMouth(r8.tiles, PEARL_MOUTH.x, PEARL_MOUTH.y);
+  r8.tiles[PEARL_MOUTH.y + 1][PEARL_MOUTH.x] = TILE.SAND;
+  r8.tiles[PEARL_MOUTH.y + 1][PEARL_MOUTH.x - 1] = TILE.ROCK; r8.tiles[PEARL_MOUTH.y + 1][PEARL_MOUTH.x + 1] = TILE.ROCK;
+  r8.tiles[5][PEARL_MOUTH.x + 2] = TILE.SIGN;
+  r8.signs.push({ x: PEARL_MOUTH.x + 2, y: 5, text: [T('GROTTA DELLE PERLE'), T('Oltre lo stagno. Buia come un bilancio non letto: si entra con la Lanterna della Due Diligence.')] });
+  r8.warps.push({ x: PEARL_MOUTH.x, y: PEARL_MOUTH.y, to: 'cave_pearl', tx: 6, ty: 7, dir: 1, lock: 'dark' });
   pearl.npcs.push({ id: 'cave_pearl_h', x: 6, y: 2, pal: HERMITS.perle.pal, dir: 0, name: HERMITS.perle.name, kind: 'hermit', data: { key: 'perle' } });
   MAPS.cave_pearl = pearl;
 
-  // --- Galleria del Dark Pool: Percorso 2 (a metà, lato nord) ↔ Diversia. Massi delle Commissioni ai due capi ---
-  const r2 = MAPS.r2;
-  caveMouth(r2.tiles, 30, 1);
-  rect(r2.tiles, 30, 2, 1, 4, TILE.PATH);
-  r2.tiles[3][30] = TILE.BOULDER;
+  // --- Galleria del Dark Pool: Percorso 7 (a metà, lato nord) ↔ Mentelucida. Un Masso delle Commissioni davanti alla bocca,
+  // buia dentro: come ogni grotta si incontra solo dopo la Whale che dà la Lanterna ---
+  const r7 = MAPS.r7;
+  caveMouth(r7.tiles, 28, 1);
+  rect(r7.tiles, 28, 2, 1, 4, TILE.PATH);
+  r7.tiles[3][28] = TILE.BOULDER;
   // roccia ai lati: il masso non si aggira
-  rect(r2.tiles, 29, 2, 1, 2, TILE.ROCK); rect(r2.tiles, 31, 2, 1, 2, TILE.ROCK);
-  r2.warps.push({ x: 30, y: 1, to: 'cave_dp', tx: 3, ty: 11, dir: 1 });
-  r2.signs.push({ x: 29, y: 4, text: [T('GALLERIA DEL DARK POOL'), T('Scorciatoia per Diversia. Bloccata dai Massi delle Commissioni.')] });
-  r2.tiles[4][29] = TILE.SIGN;
-  const t3 = MAPS.t3;
+  rect(r7.tiles, 27, 2, 1, 2, TILE.ROCK); rect(r7.tiles, 29, 2, 1, 2, TILE.ROCK);
+  r7.warps.push({ x: 28, y: 1, to: 'cave_dp', tx: 3, ty: 11, dir: 1, lock: 'dark' });
+  r7.signs.push({ x: 27, y: 4, text: [T('GALLERIA DEL DARK POOL'), T('Scorciatoia per Mentelucida. Chiusa da un Masso delle Commissioni e buia: servono il Taglio dei Costi e la Lanterna.')] });
+  r7.tiles[4][27] = TILE.SIGN;
+  const t7 = MAPS.t7;
   const cy = TOWN_H - 3; // bocca della grotta al limite sud, collegata alla via delle case
-  caveMouth(t3.tiles, 27, cy);
-  rect(t3.tiles, 27, SOUTH_ST + 1, 1, cy - 1 - SOUTH_ST, TILE.PATH);
-  t3.warps.push({ x: 27, y: cy, to: 'cave_dp', tx: 22, ty: 11, dir: 1 });
+  caveMouth(t7.tiles, 27, cy);
+  rect(t7.tiles, 27, SOUTH_ST + 1, 1, cy - 1 - SOUTH_ST, TILE.PATH);
+  t7.warps.push({ x: 27, y: cy, to: 'cave_dp', tx: 22, ty: 11, dir: 1, lock: 'dark' });
   const dp = cave('cave_dp', T('Galleria del Dark Pool'), 26, 14, [
     [2, 9, 3, 4], [2, 2, 3, 7], [5, 2, 8, 3], [12, 5, 3, 5], [15, 7, 6, 3], [20, 3, 3, 5], [20, 9, 4, 4], [8, 7, 4, 4],
   ]);
   dp.tiles[13][3] = TILE.CAVE; dp.tiles[13][22] = TILE.CAVE;
-  dp.warps.push({ x: 3, y: 13, to: 'r2', tx: 30, ty: 2, dir: 0 }, { x: 22, y: 13, to: 't3', tx: 27, ty: cy - 1, dir: 0 });
+  dp.warps.push({ x: 3, y: 13, to: 'r7', tx: 28, ty: 2, dir: 0 }, { x: 22, y: 13, to: 't7', tx: 27, ty: cy - 1, dir: 0 });
   dp.npcs.push(
-    { id: 'cave_dp_t0', x: 9, y: 3, pal: 20, dir: 0, name: T('Operatore Ombra'), kind: 'trainer', sight: 3, lines: [T('Qui gli ordini non si vedono finché non sono eseguiti. Tu invece ti vedo benissimo!')], data: { r: 3 } },
-    { id: 'cave_dp_t1', x: 17, y: 8, pal: 15, dir: 2, name: T('Broker Notturna'), kind: 'trainer', sight: 3, lines: [T('Nel buio si fanno affari grossi. Ma servono regole chiare, sai?')], data: { r: 3 } },
+    { id: 'cave_dp_t0', x: 9, y: 3, pal: 20, dir: 0, name: T('Operatore Ombra'), kind: 'trainer', sight: 3, lines: [T('Qui gli ordini non si vedono finché non sono eseguiti. Tu invece ti vedo benissimo!')], data: { r: 7 } },
+    { id: 'cave_dp_t1', x: 17, y: 8, pal: 15, dir: 2, name: T('Broker Notturna'), kind: 'trainer', sight: 3, lines: [T('Nel buio si fanno affari grossi. Ma servono regole chiare, sai?')], data: { r: 7 } },
   );
   MAPS.cave_dp = dp;
 
-  // --- Miniera dei Lingotti: Percorso 5 (a metà) ↔ Valdividendo. Buia: serve la Lanterna ---
-  const r5 = MAPS.r5;
-  caveMouth(r5.tiles, 28, 1);
-  rect(r5.tiles, 28, 2, 1, 4, TILE.PATH);
-  r5.tiles[4][27] = TILE.SIGN;
-  r5.signs.push({ x: 27, y: 4, text: [T('MINIERA DEI LINGOTTI'), T('Porta a Valdividendo. All\'interno è buio pesto.')] });
-  r5.warps.push({ x: 28, y: 1, to: 'cave_gold', tx: 2, ty: 12, dir: 1, lock: 'dark' });
+  // --- Miniera dei Lingotti: Percorso 6 (oltre il ruscello) ↔ Valdividendo. Buia: serve la Lanterna.
+  // Regola: una grotta buia si apre dal percorso che viene dopo la Whale che dà la Lanterna (Attestato 5 → Percorso 6),
+  // così chi arriva alla bocca ha già la luce per entrare ---
+  const r6 = MAPS.r6;
+  caveMouth(r6.tiles, 28, 1);
+  rect(r6.tiles, 28, 2, 1, 4, TILE.PATH);
+  r6.tiles[4][27] = TILE.SIGN;
+  r6.signs.push({ x: 27, y: 4, text: [T('MINIERA DEI LINGOTTI'), T('Porta a Valdividendo. Dentro è buio pesto: si entra con la Lanterna della Due Diligence (Attestato 5).')] });
+  r6.warps.push({ x: 28, y: 1, to: 'cave_gold', tx: 2, ty: 12, dir: 1, lock: 'dark' });
   const t6 = MAPS.t6;
   caveMouth(t6.tiles, 27, cy);
   rect(t6.tiles, 27, SOUTH_ST + 1, 1, cy - 1 - SOUTH_ST, TILE.PATH);
@@ -662,10 +678,10 @@ function buildSeaAndCaves() {
     [1, 10, 4, 3], [2, 4, 3, 6], [2, 2, 10, 2], [10, 4, 3, 5], [10, 9, 9, 3], [17, 3, 3, 6], [19, 3, 7, 2], [24, 5, 3, 8],
   ]);
   gold.tiles[14][2] = TILE.CAVE; gold.tiles[13][2] = TILE.CAVE; gold.tiles[14][25] = TILE.CAVE; gold.tiles[13][25] = TILE.CAVE;
-  gold.warps.push({ x: 2, y: 14, to: 'r5', tx: 28, ty: 2, dir: 0 }, { x: 25, y: 14, to: 't6', tx: 27, ty: cy - 1, dir: 0 });
+  gold.warps.push({ x: 2, y: 14, to: 'r6', tx: 28, ty: 2, dir: 0 }, { x: 25, y: 14, to: 't6', tx: 27, ty: cy - 1, dir: 0 });
   gold.npcs.push(
-    { id: 'cave_gold_t0', x: 6, y: 2, pal: 21, dir: 3, name: T('Cercatrice d\'Oro'), kind: 'trainer', sight: 4, lines: [T('L\'oro non paga dividendi, ma nelle crisi molti lo cercano. Tu cosa cerchi?')], data: { r: 5 } },
-    { id: 'cave_gold_t1', x: 15, y: 10, pal: 19, dir: 2, name: T('Minatore Prudente'), kind: 'trainer', sight: 3, lines: [T('Scavo piano e diversifico le gallerie. Vediamo se scavi bene anche tu!')], data: { r: 5 } },
+    { id: 'cave_gold_t0', x: 6, y: 2, pal: 21, dir: 3, name: T('Cercatrice d\'Oro'), kind: 'trainer', sight: 4, lines: [T('L\'oro non paga dividendi, ma nelle crisi molti lo cercano. Tu cosa cerchi?')], data: { r: 6 } },
+    { id: 'cave_gold_t1', x: 15, y: 10, pal: 19, dir: 2, name: T('Minatore Prudente'), kind: 'trainer', sight: 3, lines: [T('Scavo piano e diversifico le gallerie. Vediamo se scavi bene anche tu!')], data: { r: 6 } },
     { id: 'cave_gold_s', x: 21, y: 3, pal: 18, dir: 0, name: T('Vecchio Minatore'), kind: 'talk', lines: [T('Una volta ho messo tutto in una sola vena d\'oro. Si è esaurita in un mese.'), T('Da allora scavo in tante gallerie diverse. Si chiama diversificare, ragazz{o|a}.')] },
   );
   MAPS.cave_gold = gold;
