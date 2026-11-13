@@ -33,6 +33,9 @@ const BASICS = (): { label: string; lines: string[] }[] => [
     T('Primo, il rischio. Rischio e rendimento vanno insieme: se qualcosa promette di rendere di più, di solito oscilla di più.'),
     T('Quanto si muove su e giù un prezzo si chiama volatilità. Quanto calo riesci a reggere, con i nervi e con il portafoglio, è la tua tolleranza al rischio.'),
     T('E se metti quasi tutto su un solo titolo o settore, basta che vada male quello: è il rischio di concentrazione.'),
+    T('Le grandi classi di attivo sono azioni, obbligazioni, liquidità e alternativi, come materie prime e cripto.'),
+    T('Attent{o|a} alla parola liquidità: sono i soldi pronti per spese e occasioni, che però l\'inflazione rosicchia ogni anno.'),
+    T('Ma un investimento è "liquido" anche quando lo puoi vendere in fretta senza far crollare il prezzo.'),
   ] },
   { label: T('Azioni ed ETF'), lines: [
     T('Un\'azione è un pezzetto di proprietà di un\'azienda, e il suo prezzo lo fanno domanda e offerta.'),
@@ -40,12 +43,9 @@ const BASICS = (): { label: string; lines: string[] }[] => [
     T('Un indice è un paniere di titoli che racconta come va un mercato. Un ETF è un fondo quotato che di solito lo replica, e si scambia in orario di borsa.'),
     T('In Europa la sigla UCITS su un fondo vuol dire che segue le regole europee di tutela per chi investe.'),
   ] },
-  { label: T('Cripto e liquidità'), lines: [
+  { label: T('Cripto'), lines: [
     T('Le cripto stanno su una blockchain, un registro condiviso da tanti nodi. Un token lì sopra rappresenta un valore o un diritto.'),
     T('Si scambiano giorno e notte, anche nei festivi, e oscillano molto più delle grandi azioni.'),
-    T('Le grandi classi di attivo sono azioni, obbligazioni, liquidità e alternativi, come materie prime e cripto.'),
-    T('Attent{o|a} alla parola liquidità: sono i soldi pronti per spese e occasioni, che però l\'inflazione rosicchia ogni anno.'),
-    T('Ma un investimento è "liquido" anche quando lo puoi vendere in fretta senza far crollare il prezzo.'),
   ] },
 ];
 

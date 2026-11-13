@@ -57,7 +57,7 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 | 6 | "Quale obiettivo hai?" | Obiettivo: Imparare le basi / Costruire un piano di lungo periodo / Capire il trading | Testi del diario e messaggi motivazionali |
 | 7 | "Qual è il tuo orizzonte?" | Orizzonte: < 3 anni / 3-10 anni / > 10 anni | Spiegazioni personalizzate su rischio e orizzonte |
 | 8 | Presentazione del rivale: Leo, un bambino rimasto senza famiglia che il Prof ha adottato e cresciuto (il nome è fisso; i vecchi salvataggi tengono quello scelto) | — | Dialoghi del rivale |
-| 9 | Risveglio in camera: la mamma augura buon viaggio e ripassa le nozioni base delle prime sfide (rischio, azioni, ETF, cripto, liquidità; si possono saltare e ripetere), poi si va al Laboratorio | — | Tutorial di movimento |
+| 9 | Risveglio in camera: la mamma augura buon viaggio e ripassa le nozioni base delle prime sfide (rischio, azioni, ETF, cripto, liquidità; si possono saltare e ripetere per argomento: Rischio, Azioni ed ETF, Cripto), poi si va al Laboratorio | — | Tutorial di movimento |
 | 10 | **La scelta delle Valigette** | Percorso: Titoli / ETF / Cripto (oppure Misto parlando col Professore) | Tutta la storia |
 | 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, allocazione obiettivo assegnata dal questionario | Simulatore e Banca |
 | 12 | Si usano soldi veri? | Il Professore spiega che il gioco usa solo denaro finto, sul conto Paper | Tessera da Apprendista nel menu |
