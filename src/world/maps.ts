@@ -232,7 +232,7 @@ function buildHomeTown() {
 
   const hm = interior('home', T('Casa'), 10, 8, 't0', home.dx, home.dy);
   hm.tiles[2][1] = TILE.BED; hm.tiles[3][1] = TILE.BED; hm.tiles[2][8] = TILE.PLANT; hm.tiles[2][5] = TILE.TABLE; hm.tiles[2][3] = TILE.SHELF;
-  hm.npcs.push({ id: 'mom', x: 6, y: 4, pal: 19, dir: 2, name: T('Zia Mara'), kind: 'mom' });
+  hm.npcs.push({ id: 'mom', x: 6, y: 4, pal: 26, dir: 2, name: T('Mamma'), kind: 'mom' });
   MAPS.home = hm;
 
   const lb = interior('lab', T('Laboratorio del Prof. Saldi'), 13, 10, 't0', lab.dx, lab.dy);

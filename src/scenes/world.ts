@@ -5,7 +5,7 @@ import Phaser from 'phaser';
 import { drawPlaque } from '../art/plaque';
 import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal, drawSpotBubble } from '../art/art';
 import { getMap, safeSpot, type MapDef, type NpcDef } from '../world/maps';
-import { interact, npcVisible, onEnterTown, travelTo, librarySection, type WorldApi } from '../world/scripts';
+import { interact, npcVisible, onEnterTown, travelTo, librarySection, momIntro, type WorldApi } from '../world/scripts';
 import { S, save, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc, choose } from '../ui/core';
@@ -365,6 +365,8 @@ export class WorldScene extends Phaser.Scene {
     if (mw <= vw && mh <= vh) { cam.removeBounds(); cam.centerOn(mw / 2, mh / 2); }
     else { cam.setBounds(Math.min(0, (mw - vw) / 2), Math.min(0, (mh - vh) / 2), Math.max(mw, vw), Math.max(mh, vh)); cam.startFollow(this.player, true, 1, 1); }
     if (this.map.town !== undefined && !this.map.interior) void onEnterTown(this.map.id);
+    // prima mattina della partita: la mamma ti viene incontro e ti saluta prima che tu esca di casa
+    if (id === 'home' && !S.flags.starter && !S.flags.momIntro && !S.ngPlus) this.startMomIntro();
     if (id === 'sea') S.flags.seaVisited = true;
     setMood(S.market.climate);
     play(trackForMap(id, this.map.interior, marketClock().night));
@@ -699,6 +701,15 @@ export class WorldScene extends Phaser.Scene {
     this.loadMap(S.map, S.x, S.y, dir);
     toast(T('Costi tagliati: il masso si sbriciola e il passaggio è libero!'));
     save();
+  }
+
+  /** Avvia il saluto della mamma appena la scena è libera (niente finestre aperte, nessun passo in corso). */
+  startMomIntro(tries = 0) {
+    window.setTimeout(() => {
+      if (!this.sys.isActive() || S.map !== 'home' || S.flags.momIntro) return;
+      if ((this.busy || this.moving || uiActive()) && tries < 40) return this.startMomIntro(tries + 1);
+      void this.runScript(async () => { await this.approach('mom'); await momIntro(); });
+    }, tries ? 250 : 600);
   }
 
   async runScript(fn: () => Promise<void>) {
