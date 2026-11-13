@@ -244,8 +244,8 @@ async function winBadge(m: number, w: WorldApi) {
   if (m === 2) extra.push(T('Con l\'abbonamento al treno puoi viaggiare tra le città visitate dalle stazioni.'));
   if (m === 5) extra.push(T('L\'Archivio di Bilancia ora è aperto. E in Banca puoi sostenere l\'Esame della Leva: per ora vale solo nei replay.'));
   if (m === SWIM_BADGE) extra.push(T`Nuova abilità: ${ABILITY.swim.name}. Cammina verso l'acqua e la attraverserai su una zattera. Sui Percorsi 3, 5 e 7 ci sono isole da raggiungere.`);
-  if (m === ABILITY.cut.badge) extra.push(T`Nuova abilità: ${ABILITY.cut.name}. Ora puoi frantumare i Massi delle Commissioni: prova la Galleria del Dark Pool sul Percorso 2.`);
-  if (m === ABILITY.dark.badge) extra.push(T`Nuova abilità: ${ABILITY.dark.name}. Le grotte buie non ti fermano più: a metà del Percorso 6 la Miniera dei Lingotti porta a Valdividendo.`);
+  if (m === ABILITY.cut.badge) extra.push(T`Nuova abilità: ${ABILITY.cut.name}. Ora puoi frantumare i Massi delle Commissioni: più avanti, sul Percorso 7, uno chiude la Galleria del Dark Pool.`);
+  if (m === ABILITY.dark.badge) extra.push(T`Nuova abilità: ${ABILITY.dark.name}. Le grotte buie non ti fermano più: la prima è la Miniera dei Lingotti, a metà del Percorso 6.`);
   if (m === TRANSFER_BADGE) extra.push(T`Nuova abilità: ${ABILITY.transfer.name}. Apri il menu, scegli "Mappa della Regione" e trasferisciti in una città già visitata.`);
   if (m === 8) extra.push(T('Wall Street è oltre il Percorso 9. La Guardia ti fa passare solo se hai tutti e otto i Sigilli pratici. Con l\'ottavo Attestato, se hai superato l\'Esame della Leva, la leva si apre anche sul conto di gioco.'));
   if (extra.length) await say(extra, T('Prof. Saldi (messaggio)'));

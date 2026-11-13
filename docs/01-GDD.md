@@ -369,14 +369,16 @@ Abilità legate agli Attestati (non sono oggetti né aiuti nei duelli; codice in
 |---|---|---|
 | Flusso di Liquidità | 3 (Mosaico) | Il giocatore attraversa l'acqua su una zattera. Sui Percorsi 3, 5 e 7 un lago circonda un'Isola della Liquidità con un abitante che propone un duello difficile una sola volta (5 domande, 4 giuste, nessuna perdita di Fiducia): +120 Conoscenza e studio per tutte le carte. Le tre isole danno il traguardo "Navigatore di Liquidità". |
 | Trasferimento di Capitale | 4 (Spirale, la Whale di mezzo) | Dal menu, voce **Mappa della Regione**, ci si sposta in una città già visitata (si entra in una città la prima volta e diventa disponibile). Regolamento T+1: passa un giorno di mercato. Non funziona dentro Wall Street. Animazione del volo: il personaggio si solleva mentre la camera si allontana e passano le nuvole, dissolvenza bianca, poi atterraggio nella città scelta (in 2D e in 2.5D). |
-| Taglio dei Costi | 4 (Spirale) | Frantuma i Massi delle Commissioni (restano rotti nel salvataggio). Apre la Galleria del Dark Pool dal Percorso 2. |
-| Lanterna della Due Diligence | 5 (Lente) | Si entra nelle grotte buie: Miniera dei Lingotti e Grotta delle Perle. |
+| Taglio dei Costi | 4 (Spirale) | Frantuma i Massi delle Commissioni (restano rotti nel salvataggio). Il primo chiude la Galleria del Dark Pool, sul Percorso 7. |
+| Lanterna della Due Diligence | 5 (Lente) | Si entra nelle grotte buie: Miniera dei Lingotti (Percorso 6), Galleria del Dark Pool (Percorso 7), Grotta delle Perle (Percorso 8). |
 | Mente Fredda | 7 (Specchio) | Attraversa il Muro del Rumore sul Percorso 7 (già esistente). |
 
 **Struttura del mondo (non lineare).** Oltre alla strada principale Borgo Semina → Altopiano:
-- **Mare della Liquidità**: dal molo di Porto Ordini (Attestato 3) verso sud. Isola del Faro (Guardiana del Faro, duello unico), Isola del Relitto (la bolla della "Compagnia dei Mari Lontani"), Isola Lontana con la **Grotta delle Perle** (buia, Pescatore di Perle). Traguardo "Capitano di Liquidità".
-- **Galleria del Dark Pool**: da metà del Percorso 2 a Diversia, saltando Porto Ordini. Il masso è sul lato del Percorso 2; da Diversia la galleria è un vicolo finché il masso non è rotto.
-- **Miniera dei Lingotti**: da metà del Percorso 6 a Valdividendo (buia: serve la Lanterna). Regola: una grotta buia si apre dal percorso che segue la Whale che dà la Lanterna (Attestato 5 → Percorso 6), così chi arriva alla bocca può già entrare.
+- **Mare della Liquidità**: dal molo di Porto Ordini (Attestato 3) verso sud. Isola del Faro (Guardiana del Faro, duello unico), Isola del Relitto (la bolla della "Compagnia dei Mari Lontani"), Isola Lontana (l'antica spiaggia dei pescatori di perle, con un cartello che manda al Percorso 8). Traguardo "Capitano di Liquidità".
+- **Galleria del Dark Pool**: da metà del Percorso 7 a Mentelucida. Un Masso delle Commissioni davanti alla bocca del Percorso 7 e buia dentro: servono Taglio dei Costi e Lanterna.
+- **Miniera dei Lingotti**: da metà del Percorso 6 a Valdividendo (buia: serve la Lanterna).
+- **Grotta delle Perle**: sul Percorso 8, oltre uno stagno del torrente: ci si arriva in zattera e si entra con la Lanterna (Pescatore di Perle, duello unico; con la Guardiana del Faro dà il traguardo "Capitano di Liquidità").
+- **Regola delle grotte**: tutte le grotte sono buie e si incontrano solo dopo la Whale che dà la Lanterna (Attestato 5), cioè dal Percorso 6 in poi: chi arriva a una bocca può già entrare. Chi aveva salvato dentro una grotta che oggi sta più avanti riparte dalla città da cui era entrato.
 - `tests/reach.test.ts` simula il mondo per ogni numero di Attestati: nessuna scorciatoia porta a un'Exchange oltre la successiva, con 8 Attestati ogni luogo è raggiungibile e da ogni casella si torna a casa.
 
 La Mappa della Regione è sempre consultabile: mostra città visitate e no (???), percorsi, isole, Muro del Rumore, la posizione del giocatore e lo stato delle abilità. Il treno dalle stazioni resta disponibile dal secondo Attestato.

@@ -28,13 +28,19 @@ describe('struttura del mondo', () => {
       expect(stuck.slice(0, 5), `Medaglie ${b}`).toEqual([]);
     }
   });
-  it('la Miniera dei Lingotti si apre dal percorso che segue la Whale della Lanterna (chi arriva alla bocca può già entrare)', () => {
-    const route = ABILITY.dark.badge + 1;
-    const mouths = allMapIds().filter((id) => getMap(id).warps.some((w) => w.to === 'cave_gold'));
-    expect(mouths.sort()).toEqual([`r${route}`, `t${route}`].sort());
-    // con un Attestato in meno la bocca della miniera non è nemmeno raggiungibile
+  it('le grotte buie si incontrano solo dopo la Whale che dà la Lanterna: chi arriva a una bocca può già entrare', () => {
+    const mouths = allMapIds().filter((id) => !id.startsWith('cave_') && getMap(id).warps.some((w) => w.lock === 'dark'));
+    expect(mouths.sort()).toEqual(['r6', 'r7', 'r8', 't6', 't7']);
+    // ogni grotta è buia: nessuna bocca senza il blocco della Lanterna
+    for (const id of allMapIds()) for (const w of getMap(id).warps) if (w.to.startsWith('cave_') && !id.startsWith('cave_')) expect(w.lock, `${id} → ${w.to}`).toBe('dark');
+    // con un Attestato in meno nessuna bocca è raggiungibile; con la Lanterna la prima grotta si apre subito
     const before = mapsOf(explore(ABILITY.dark.badge - 1).seen);
-    expect(before.has(`r${route}`)).toBe(false);
+    for (const id of mouths) expect(before.has(id), id).toBe(false);
     expect(mapsOf(explore(ABILITY.dark.badge).seen).has('cave_gold')).toBe(true);
+    // le altre due seguono il viaggio: Galleria del Dark Pool dal Percorso 7, Grotta delle Perle dal Percorso 8
+    expect(mapsOf(explore(5).seen).has('cave_dp')).toBe(false);
+    expect(mapsOf(explore(6).seen).has('cave_dp')).toBe(true);
+    expect(mapsOf(explore(6).seen).has('cave_pearl')).toBe(false);
+    expect(mapsOf(explore(7).seen).has('cave_pearl')).toBe(true);
   });
 });
