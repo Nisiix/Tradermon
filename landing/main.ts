@@ -14,7 +14,7 @@ import donazioni from './config/donazioni.json';
 import segnalazioni from './config/segnalazioni.json';
 import { T, keepKeys } from '../src/i18n';
 import { translateDom, wireLangSwitch } from '../src/i18n/dom';
-import { playInShell } from './play';
+import { playInShell, shellOpen } from './play';
 
 keepKeys(false);
 translateDom();
@@ -29,14 +29,18 @@ const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySe
 // ---------------- Barra in alto ----------------
 
 const burger = $('.burger');
+const closeMenu = () => { document.body.classList.remove('menu-open'); burger.setAttribute('aria-expanded', 'false'); };
 burger.addEventListener('click', () => {
   const open = document.body.classList.toggle('menu-open');
   burger.setAttribute('aria-expanded', String(open));
 });
-document.querySelectorAll('.menu a').forEach((a) => a.addEventListener('click', () => {
-  document.body.classList.remove('menu-open');
-  burger.setAttribute('aria-expanded', 'false');
-}));
+document.querySelectorAll('.menu a').forEach((a) => a.addEventListener('click', closeMenu));
+// il menu si chiude anche toccando fuori o con Esc, così non resta mai aperto sopra la pagina
+document.addEventListener('click', (e) => {
+  const t = e.target as Node;
+  if (document.body.classList.contains('menu-open') && !$('#menu').contains(t) && !burger.contains(t)) closeMenu();
+});
+addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 
 // Transizione a tendine verso il gioco
 document.querySelectorAll<HTMLAnchorElement>('[data-play]').forEach((a) => a.addEventListener('click', (e) => {
@@ -214,18 +218,22 @@ function hero() {
     }
     c.globalAlpha = 1;
   };
+  // un solo ciclo di animazione alla volta: tornando sulla pagina o sull'hero non se ne avvia un secondo
+  let running = false;
+  const active = () => !reduced && document.visibilityState === 'visible' && heroVisible && !shellOpen();
   const loop = (now: number) => {
+    if (!active()) { running = false; return; }
     // dopo l'apertura bastano pochi fotogrammi al secondo: stelle e riflessi si muovono piano
     if (now - start < INTRO || now - last > 66) { frame(now); last = now; }
-    if (!reduced && document.visibilityState === 'visible' && heroVisible) requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
   };
   let heroVisible = true;
   build();
-  requestAnimationFrame(loop);
+  const restart = () => { if (!running && active()) { running = true; requestAnimationFrame(loop); } };
+  if (reduced) requestAnimationFrame(() => frame(performance.now())); else restart();
   let rt = 0;
   addEventListener('resize', () => { clearTimeout(rt); rt = window.setTimeout(() => { build(); frame(performance.now()); }, 120); });
   addEventListener('scroll', () => { parallax = Math.min(scrollY, innerHeight); }, { passive: true });
-  const restart = () => { if (!reduced && document.visibilityState === 'visible' && heroVisible) requestAnimationFrame(loop); };
   document.addEventListener('visibilitychange', restart);
   if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { const was = heroVisible; heroVisible = e.isIntersecting; if (!was && heroVisible) restart(); }).observe(cv);
 }
@@ -397,9 +405,20 @@ function walkers() {
       const [sx, sy] = frame(p.pal, p.v > 0 ? 3 : 2, f);
       c.drawImage(sheet, sx, sy, FW, FH, Math.round(p.x), 4 * RS, FW, FH);
     }
-    if (!reduced) requestAnimationFrame(draw);
   };
+  // si anima solo quando il footer si vede (e non sotto il gioco aperto nella cornice): un ciclo solo alla volta
+  let seen = !('IntersectionObserver' in window), running = false, last = 0;
+  const active = () => !reduced && seen && document.visibilityState === 'visible' && !shellOpen();
+  const loop = (now: number) => {
+    if (!active()) { running = false; return; }
+    if (now - last > 30) { draw(); last = now; }
+    requestAnimationFrame(loop);
+  };
+  const restart = () => { if (!running && active()) { running = true; requestAnimationFrame(loop); } };
   draw();
+  document.addEventListener('visibilitychange', restart);
+  if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { seen = e.isIntersecting; restart(); }).observe(cv);
+  restart();
 }
 // Disegnare il foglio dei personaggi costa mezzo secondo su un telefono: si fa dopo, quando la pagina è già visibile
 // e ferma, così i testi compaiono subito.
