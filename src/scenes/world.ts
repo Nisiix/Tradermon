@@ -5,7 +5,7 @@ import Phaser from 'phaser';
 import { drawPlaque } from '../art/plaque';
 import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal, drawSpotBubble } from '../art/art';
 import { getMap, safeSpot, type MapDef, type NpcDef } from '../world/maps';
-import { interact, npcVisible, onEnterTown, travelTo, librarySection, momIntro, type WorldApi } from '../world/scripts';
+import { interact, npcVisible, onEnterTown, travelTo, librarySection, momIntro, leoTourPending, leoTour, type WorldApi } from '../world/scripts';
 import { S, save, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc, choose } from '../ui/core';
@@ -553,7 +553,7 @@ export class WorldScene extends Phaser.Scene {
         beep('door');
         this.moving = true;
         this.cameras.main.fadeOut(220, 0, 0, 0);
-        this.time.delayedCall(240, () => { this.loadMap(warp.to, warp.tx, warp.ty, warp.dir ?? (di as 0 | 1 | 2 | 3)); this.cameras.main.fadeIn(260, 0, 0, 0); this.moving = false; save(); });
+        this.time.delayedCall(240, () => { this.loadMap(warp.to, warp.tx, warp.ty, warp.dir ?? (di as 0 | 1 | 2 | 3)); this.cameras.main.fadeIn(260, 0, 0, 0); this.moving = false; save(); this.arrivalScene(); });
       });
       return;
     }
@@ -724,6 +724,17 @@ export class WorldScene extends Phaser.Scene {
     this.busy = false;
     this.refreshNpcs();
     this.updateHud(true);
+  }
+
+  /** Scene che partono da sole all'arrivo in una mappa (dopo la dissolvenza): oggi solo Leo al primo ingresso a Ponte Cedola. */
+  arrivalScene(tries = 0) {
+    if (!leoTourPending(S.map)) return;
+    this.time.delayedCall(tries ? 120 : 320, () => {
+      if (!leoTourPending(S.map)) return;
+      // aspetta che il passo in corso finisca e che non ci siano finestre aperte
+      if (this.busy || this.walk || this.moving || uiActive()) { if (tries < 40) this.arrivalScene(tries + 1); return; }
+      void this.runScript(() => leoTour(this.api()));
+    });
   }
 
   /** Sfida di un allenatore che ti nota: (se serve) si gira verso di te, "$", ti viene incontro e parte il duello a quiz. */

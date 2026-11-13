@@ -546,7 +546,7 @@
  "Ah! Te l'avevo detto.": "Ha! I told you so.",
  "Ripassa un po' e riprova.": "Review a bit and try again.",
  "Uff, sai il fatto tuo...": "Ugh, you know your stuff...",
- "Ma il mercato vero è un'altra cosa. Ci vediamo sul Percorso 2!": "But the real market is another story. See you on Trail 2!",
+ "Ma il mercato vero è un'altra cosa. Ci vediamo a Ponte Cedola!": "But the real market is another story. See you in Coupon Bridge!",
  "Ma vediamo i portafogli!": "But let's look at the portfolios!",
  "{0} voleva confrontare i portafogli, ma {1}: servono i prezzi veri e almeno cinque giorni in cui il conto è stato misurato.": "{0} wanted to compare portfolios, but {1}: it needs real prices and at least five days in which the account was measured.",
  "il tuo conto non è collegato": "your account isn't linked",
@@ -657,6 +657,16 @@
  "Lanterna della Due Diligence": "Due Diligence Lantern",
  "Illumini le grotte buie: la Miniera dei Lingotti (Percorso 5 ↔ Valdividendo) e la Grotta delle Perle nel Mare della Liquidità.": "You light up dark caves: the Bullion Mine (Trail 5 ↔ Dividend Vale) and the Pearl Cave in the Sea of Liquidity.",
  "Le notizie urlate non ti smuovono: attraversi il Muro del Rumore sul Percorso 7.": "Shouted news no longer moves you: you cross the Wall of Noise on Trail 7.",
+ "Ehi {0}! Finalmente sei arrivat{o|a} a Ponte Cedola.": "Hey {0}! You finally made it to Coupon Bridge.",
+ "Sono corso avanti e ho già battuto {0}, la Whale dell'Exchange. Il suo Attestato ce l'ho già io!": "I ran on ahead and I've already beaten {0}, the Exchange's Whale. Her Certificate is already mine!",
+ "Visto che sei appena arrivat{o|a}, ti spiego come funziona una città.": "Since you just got here, let me show you how a town works.",
+ "Banca del Portafoglio: qui ricarichi la Fiducia e salvi la partita. Se perdi un duello, riparti dall'ultima Banca in cui sei entrat{o|a}.": "Portfolio Bank: this is where you refill your Confidence and save the game. If you lose a duel, you start again from the last Bank you went into.",
+ "Allo sportello della Banca segui anche il tuo conto Paper: compri, vendi e controlli il portafoglio, con denaro finto.": "At the Bank counter you also keep track of your Paper account: you buy, sell and check your portfolio, with play money.",
+ "Biblioteca: nella Sezione della Whale ci sono i libri sull'argomento del suo duello. La Bibliotecaria ti spiega le lezioni e nell'archivio ripassi gli errori.": "Library: the Whale Section has the books on the topic of her duel. The Librarian walks you through the lessons, and in the archive you review your mistakes.",
+ "Exchange: prima affronti i due allievi, che non si lasciano scavalcare, poi la Whale. Se la batti nel duello di conoscenza ricevi il suo Attestato.": "Exchange: first you face the two students, who won't let you slip past, then the Whale. Beat her in the knowledge duel and you get her Certificate.",
+ "Senza quell'Attestato la Guardia della Borsa, in fondo alla strada, non ti fa passare verso il Percorso 2.": "Without that Certificate, the Exchange Guard at the end of the road won't let you through to Trail 2.",
+ "Nelle case vivono gli abitanti: entra pure, qualcuno ha una storia da raccontarti. La stazione invece apre solo dal secondo Attestato.": "The townspeople live in the houses: go on in, someone has a story to tell you. The station, though, only opens from the second Certificate.",
+ "Io vado avanti. Studia bene e non metterci troppo!": "I'm heading on. Study hard and don't take too long!",
  "Mamma": "Mom",
  "Tuo nonno diceva sempre: \"Il mercato può restare irrazionale più a lungo di quanto tu resti solvibile\".": "Your grandpa always used to say: \"The market can stay irrational longer than you can stay solvent\".",
  "Rischio": "Risk",
@@ -705,5 +715,5 @@
  "Rivale · sfida di prova": "Rival · practice challenge",
  "{0} su {1}: uff, sai il fatto tuo...": "{0} out of {1}: ugh, you know your stuff...",
  "{0} su {1}: per essere la prima volta non è male.": "{0} out of {1}: not bad for a first time.",
- "Le spiegazioni le hai lette: la prossima volta che ci sfidiamo non sarà una prova. Ci vediamo sul Percorso 2!": "You've read the explanations: next time we face off it won't be practice. See you on Route 2!"
+ "Le spiegazioni le hai lette: la prossima volta che ci sfidiamo non sarà una prova. Ci vediamo a Ponte Cedola!": "You've read the explanations: next time we face off it won't be practice. See you in Coupon Bridge!"
 }

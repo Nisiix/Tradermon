@@ -15,7 +15,7 @@ import { track } from '../../systems/progress';
 import { questTalk } from '../quests';
 import { secretVisible, secretTalk, secretHint } from '../secrets';
 import type { WorldApi } from './common';
-import { prof, chooseCase, rival, mom } from './story';
+import { prof, chooseCase, rival, mom, LEO_TOUR_NPC, LEO_TOUR_FLAG } from './story';
 import { trainer, speculator, student, mentorBattle, guard, league, tower, hermit, legend, daily } from './duels';
 import { librarian, station, simzone, casino, archivist } from './places';
 import { T } from '../../i18n';
@@ -33,8 +33,11 @@ export function npcVisible(n: NpcDef): boolean {
     case 'guard': return n.data?.league ? S.seals < 8 : S.badges < (n.data?.badge as number);
     case 'aide': return !S.flags.starter;
     case 'rival': {
+      // Leo che ti aspetta a Ponte Cedola: solo fino alla fine del giro della città, e mai dopo il primo Attestato
+      if (n.id === LEO_TOUR_NPC) return !!S.flags.starter && S.badges === 0 && !S.flags[LEO_TOUR_FLAG];
       const k = n.data?.n as number;
-      if (k === 1) return !!S.flags.starter && !S.defeated.includes('rival_1');
+      // dopo il giro di Ponte Cedola Leo è andato avanti: non resta anche nel Laboratorio
+      if (k === 1) return !!S.flags.starter && !S.defeated.includes('rival_1') && !S.flags[LEO_TOUR_FLAG];
       if (k === 4) return S.badges >= 8 && !S.defeated.includes('rival_4');
       return !S.defeated.includes(`rival_${k}`);
     }
@@ -121,4 +124,5 @@ export type { WorldApi } from './common';
 export { retryUnlocked } from './common';
 export { allStudentsBeaten } from './duels';
 export { librarySection, travelTo, onEnterTown } from './places';
+export { leoTourPending, leoTour } from './story';
 export { momIntro } from './story';

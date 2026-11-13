@@ -168,7 +168,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 |---|---|---|
 | Professore | Prof. Bruno Saldi | Ex gestore di fondi, ironico, insegna che "la prima regola è non perdere la testa" |
 | Infermiera della Banca | Dott.ssa Ratio | Sempre uguale in ogni città (come da tradizione del genere, è "una delle sorelle Ratio") |
-| Rivale | Leo (nome scelto) | Stile opposto al profilo del giocatore; 4 incontri: Laboratorio, Percorso 2, Diversia, Via di Wall Street |
+| Rivale | Leo (nome scelto) | Stile opposto al profilo del giocatore; 4 incontri: Laboratorio, Percorso 2, Diversia, Via di Wall Street. Al primo arrivo a Ponte Cedola (prima del primo Attestato) ti viene incontro senza sfida: ha già battuto la prima Whale e spiega Banca, Biblioteca, Exchange, Guardia, case e stazione; poi va avanti (flag `leoTourT1`, anche nel Laboratorio non c'è più) |
 | Antagonisti | Gli Speculatori (capo: Max Leva) | Variante per percorso: Speculatori (Titoli), Venditori di Commissioni guidati da Carlo Provvigione (ETF), Banda del Rug Pull guidata dal Re Tappeto (Cripto), Alleanza (Misto) |
 | Whale 1 | Gaia Primo | Fondamenta: cos'è l'asset del percorso, rischio e rendimento |
 | Whale 2 | Orazio Limite | Ordini, spread, orari di mercato |

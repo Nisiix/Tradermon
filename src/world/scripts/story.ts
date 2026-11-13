@@ -12,7 +12,7 @@ import { fmtMoney, fmtPx, withUsd } from '../../systems/portfolio';
 import { DIFFICULTY, RATE } from '../../systems/balance';
 import { pickQuestions, targetDiff, storyStage } from '../../systems/quiz';
 import { trackTopics } from '../../data/quiz/build';
-import { antagonist } from '../../data/story';
+import { antagonist, mentor } from '../../data/story';
 import { DUEL, REWARD } from '../../systems/balance';
 import { ASSETS, ASSET_BY_ID, starterFor, starterOptions, SECTOR_LABEL } from '../../data/assets';
 import { metrics, tradingDaysBetween } from '../../systems/market';
@@ -204,7 +204,38 @@ async function rivalIntro(w: WorldApi) {
   await rivalDuel(1, w);
 }
 
+/** Leo ti aspetta al primo ingresso a Ponte Cedola: è già passato dall'Exchange e ti spiega a cosa servono gli edifici. Nessuna sfida, una volta sola. */
+export const LEO_TOUR_FLAG = 'leoTourT1';
+export const LEO_TOUR_NPC = 't1_leo';
+
+export function leoTourPending(mapId: string): boolean {
+  return mapId === 't1' && !!S.flags.starter && S.badges === 0 && !S.flags[LEO_TOUR_FLAG];
+}
+
+export async function leoTour(w: WorldApi) {
+  if (S.flags[LEO_TOUR_FLAG]) return;
+  await w.exclaim(LEO_TOUR_NPC);
+  await w.approach(LEO_TOUR_NPC);
+  await say([
+    T`Ehi ${S.name}! Finalmente sei arrivat{o|a} a Ponte Cedola.`,
+    T`Sono corso avanti e ho già battuto ${mentor(1, S.track).name}, la Whale dell'Exchange. Il suo Attestato ce l'ho già io!`,
+    T('Visto che sei appena arrivat{o|a}, ti spiego come funziona una città.'),
+  ], S.rival);
+  await say([
+    T('Banca del Portafoglio: qui ricarichi la Fiducia e salvi la partita. Se perdi un duello, riparti dall\'ultima Banca in cui sei entrat{o|a}.'),
+    T('Allo sportello della Banca segui anche il tuo conto Paper: compri, vendi e controlli il portafoglio, con denaro finto.'),
+    T('Biblioteca: nella Sezione della Whale ci sono i libri sull\'argomento del suo duello. La Bibliotecaria ti spiega le lezioni e nell\'archivio ripassi gli errori.'),
+    T('Exchange: prima affronti i due allievi, che non si lasciano scavalcare, poi la Whale. Se la batti nel duello di conoscenza ricevi il suo Attestato.'),
+    T('Senza quell\'Attestato la Guardia della Borsa, in fondo alla strada, non ti fa passare verso il Percorso 2.'),
+    T('Nelle case vivono gli abitanti: entra pure, qualcuno ha una storia da raccontarti. La stazione invece apre solo dal secondo Attestato.'),
+  ], S.rival);
+  await say([T('Io vado avanti. Studia bene e non metterci troppo!')], S.rival);
+  S.flags[LEO_TOUR_FLAG] = true;
+  save();
+}
+
 export async function rival(n: NpcDef, w: WorldApi) {
+  if (n.id === LEO_TOUR_NPC) return leoTour(w);
   const k = n.data?.n as number;
   const lines: Record<number, string[]> = {
     1: [T('Eccoti! Facciamo la nostra sfida di prova?')],
@@ -246,8 +277,8 @@ async function rivalTutorial(w: WorldApi) {
   reward({ defeated: 'rival_1', rep: good ? REWARD.rep.rival : 0, save: false });
   if (good) beep('win');
   await say(good
-    ? [T`${r.correct} su ${r.total}: uff, sai il fatto tuo...`, T('Ma il mercato vero è un\'altra cosa. Ci vediamo sul Percorso 2!')]
-    : [T`${r.correct} su ${r.total}: per essere la prima volta non è male.`, T('Le spiegazioni le hai lette: la prossima volta che ci sfidiamo non sarà una prova. Ci vediamo sul Percorso 2!')], S.rival);
+    ? [T`${r.correct} su ${r.total}: uff, sai il fatto tuo...`, T('Ma il mercato vero è un\'altra cosa. Ci vediamo a Ponte Cedola!')]
+    : [T`${r.correct} su ${r.total}: per essere la prima volta non è male.`, T('Le spiegazioni le hai lette: la prossima volta che ci sfidiamo non sarà una prova. Ci vediamo a Ponte Cedola!')], S.rival);
   w.refresh();
   save();
 }
