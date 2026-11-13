@@ -319,6 +319,8 @@ function buildTown(n: number) {
     signs: [{ x: 2, y: 8, text: [def.name.toUpperCase(), T`Exchange di ${def.name}: Whale n. ${n}.`] }],
     plaques: [plaque(clinic, T('BANCA'), 'clinic'), plaque(lib, T('BIBLIOTECA')), plaque(acad, T('EXCHANGE'), 'gym')],
   };
+  // Leo aspetta sulla strada principale chi arriva per la prima volta a Ponte Cedola (giro della città, nessuna sfida)
+  if (n === 1) m.npcs.push({ id: 't1_leo', x: 7, y: 9, pal: 5, dir: 2, name: T('Rivale'), kind: 'rival', data: { n: 0 } });
   if (n === 3) m.npcs.push({ id: 't3_rival', x: 15, y: 10, pal: 5, dir: 2, name: T('Rivale'), kind: 'rival', data: { n: 3 } });
   addClinic(n, clinic.dx, clinic.dy, id);
 
