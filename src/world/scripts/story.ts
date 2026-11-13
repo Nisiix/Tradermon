@@ -1,4 +1,4 @@
-// Trama principale: Professore, Valigette, Rivale, mamma.
+// Trama principale: mamma, Professore, Valigette, Rivale.
 import { type NpcDef } from '../maps';
 import type { AssetClass } from '../../types';
 import { S, save, addRep, card, classes, capital } from '../../systems/state';
@@ -24,11 +24,53 @@ import { reward, TRACK_LABEL, defeatRespawn } from './common';
 import type { WorldApi } from './common';
 import { T } from '../../i18n';
 
+/**
+ * Nozioni della mamma prima di partire: i concetti delle domande di livello 1 su rischio, azioni, ETF, cripto e
+ * classi di attivo, le stesse su cui ti interrogano Leo e gli allenatori fino a Ponte Cedola (il percorso si sceglie dopo).
+ */
+const BASICS = (): { label: string; lines: string[] }[] => [
+  { label: T('Rischio'), lines: [
+    T('Primo, il rischio. Rischio e rendimento vanno insieme: se qualcosa promette di rendere di più, di solito oscilla di più.'),
+    T('Quanto si muove su e giù un prezzo si chiama volatilità. Quanto calo riesci a reggere, con i nervi e con il portafoglio, è la tua tolleranza al rischio.'),
+    T('E se metti quasi tutto su un solo titolo o settore, basta che vada male quello: è il rischio di concentrazione.'),
+  ] },
+  { label: T('Azioni ed ETF'), lines: [
+    T('Un\'azione è un pezzetto di proprietà di un\'azienda, e il suo prezzo lo fanno domanda e offerta.'),
+    T('Il valore in borsa dell\'azienda intera è la capitalizzazione. Le aziende "growth" reinvestono gli utili per crescere in fretta.'),
+    T('Un indice è un paniere di titoli che racconta come va un mercato. Un ETF è un fondo quotato che di solito lo replica, e si scambia in orario di borsa.'),
+    T('In Europa la sigla UCITS su un fondo vuol dire che segue le regole europee di tutela per chi investe.'),
+  ] },
+  { label: T('Cripto e liquidità'), lines: [
+    T('Le cripto stanno su una blockchain, un registro condiviso da tanti nodi. Un token lì sopra rappresenta un valore o un diritto.'),
+    T('Si scambiano giorno e notte, anche nei festivi, e oscillano molto più delle grandi azioni.'),
+    T('Le grandi classi di attivo sono azioni, obbligazioni, liquidità e alternativi, come materie prime e cripto.'),
+    T('Attent{o|a} alla parola liquidità: sono i soldi pronti per spese e occasioni, che però l\'inflazione rosicchia ogni anno.'),
+    T('Ma un investimento è "liquido" anche quando lo puoi vendere in fretta senza far crollare il prezzo.'),
+  ] },
+];
+
+/** Il primo dialogo della partita: la mamma ti saluta in casa e ti lascia le nozioni per arrivare a Ponte Cedola. */
+export async function momIntro() {
+  await say([T`${S.name}, finalmente sei svegli{o|a}! Oggi parti per il tuo viaggio tra investimenti e trading.`, T('Sono così fiera di te. Prima che tu vada, ti lascio qualche nozione: ti servirà con chi ti sfiderà fino a Ponte Cedola.')], T('Mamma'));
+  const c = await choose([T('Sì, ti ascolto'), T('Le conosco già')], { prompt: T('Ti va di sentirle?'), who: T('Mamma') });
+  if (c === 0) for (const b of BASICS()) await say(b.lines, T('Mamma'));
+  else await say(T('Va bene. Se cambi idea, prima di uscire chiedimele pure.'), T('Mamma'));
+  await say([T('Qui si impara con il paper trading: operazioni simulate, senza soldi veri. Sbagliare fa parte dell\'imparare.'), T`Buon viaggio, ${S.name}! Il Professor Saldi ti aspetta al Laboratorio, qui a Borgo Semina.`, T('E ricorda: i soldi che servono per l\'affitto non si investono!')], T('Mamma'));
+  S.flags.momIntro = true;
+  save();
+}
+
 export async function mom() {
-  if (!S.flags.starter) return say([T`${S.name}, finalmente sei svegli{o|a}!`, T('Il Professor Saldi ti aspetta al Laboratorio, qui a Borgo Semina.'), T('E ricorda: i soldi che servono per l\'affitto non si investono!')], T('Zia Mara'));
+  if (!S.flags.starter) {
+    if (!S.flags.momIntro && !S.ngPlus) return momIntro();
+    const basics = BASICS();
+    const c = await choose([...basics.map((b) => b.label), T('Vado dal Professore')], { cancel: true, prompt: T('Vuoi ripassare qualcosa prima di partire?'), who: T('Mamma') });
+    if (c >= 0 && c < basics.length) return say(basics[c].lines, T('Mamma'));
+    return say(T('Il Laboratorio è l\'edificio viola. In bocca al lupo!'), T('Mamma'));
+  }
   S.stats.fiducia = 100;
   beep('heal');
-  return say([T('Riposati un po\'. Ecco, la tua Fiducia è tornata al massimo.'), T('Tuo zio diceva sempre: "Il mercato può restare irrazionale più a lungo di quanto tu resti solvibile".')], T('Zia Mara'));
+  return say([T('Riposati un po\'. Ecco, la tua Fiducia è tornata al massimo.'), T('Tuo nonno diceva sempre: "Il mercato può restare irrazionale più a lungo di quanto tu resti solvibile".')], T('Mamma'));
 }
 
 // ---------------- Prologo ----------------

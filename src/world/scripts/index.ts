@@ -120,3 +120,4 @@ export type { WorldApi } from './common';
 export { retryUnlocked } from './common';
 export { allStudentsBeaten } from './duels';
 export { librarySection, travelTo, onEnterTown } from './places';
+export { momIntro } from './story';
