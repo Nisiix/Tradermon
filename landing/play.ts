@@ -35,17 +35,28 @@ export function playInShell(href: string): boolean {
   frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#101018;';
   shell.appendChild(frame);
   document.body.appendChild(shell);
+  document.body.classList.remove('menu-open');
   // la richiesta va fatta subito, prima di qualunque attesa, altrimenti il browser non vede più il tocco
-  const req = shell.requestFullscreen ? shell.requestFullscreen({ navigationUI: 'hide' }) : shell.webkitRequestFullscreen?.();
-  Promise.resolve(req).then(async () => {
-    try { await (screen.orientation as OrientationLock).lock?.('landscape'); } catch { /* non supportato */ }
-    document.documentElement.style.overflow = 'hidden';
-    frame.addEventListener('load', () => frame.focus(), { once: true });
-    frame.src = href;
+  let req: Promise<void> | undefined;
+  try { req = shell.requestFullscreen ? shell.requestFullscreen({ navigationUI: 'hide' }) : shell.webkitRequestFullscreen?.(); } catch { req = Promise.reject(); }
+  // il gioco si carica subito: se il telefono non risponde mai alla richiesta di schermo intero o di rotazione,
+  // la cornice non resta comunque vuota e bloccata sopra la pagina
+  document.documentElement.style.overflow = 'hidden';
+  frame.addEventListener('load', () => frame.focus(), { once: true });
+  frame.src = href;
+  Promise.resolve(req).then(() => {
+    // la rotazione non si aspetta: su alcuni telefoni la promessa non si chiude mai
+    try { void (screen.orientation as OrientationLock).lock?.('landscape')?.catch(() => undefined); } catch { /* non supportato */ }
   }, () => {
     // schermo intero rifiutato: si va al gioco come una pagina normale (lì il primo tocco ci riprova)
     shell.remove();
+    document.documentElement.style.overflow = '';
     location.href = href;
   });
   return true;
+}
+
+/** true mentre il gioco è aperto nella cornice: la landing sotto smette di animarsi. */
+export function shellOpen(): boolean {
+  return !!document.querySelector('.play-shell');
 }
