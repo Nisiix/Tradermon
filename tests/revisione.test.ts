@@ -4,7 +4,7 @@ import { aggregate, sma, reading } from '../src/systems/candles';
 // candele generate: servono solo ai test (il gioco mostra soltanto barre reali di Alpaca)
 import { dayBars5m, simulatedCandles } from './helpers/candles-sim';
 import { mentorMission, processReview, type SimResult } from '../src/data/missions';
-import { targetDiff, generatedCount, pickQuestions } from '../src/systems/quiz';
+import { targetDiff, generatedCount, pickQuestions, endgameDiff, STORY_MAX } from '../src/systems/quiz';
 import { mentorTopics } from '../src/data/quiz/build';
 import { topicCards, nextStep, missionStars } from '../src/ui/student';
 import { headlines, weekSummary } from '../src/systems/gazette';
@@ -67,7 +67,8 @@ describe('Nuova Partita+, profilo e strumenti di studio', () => {
     expect(generatedCount(8)).toBe(2);
     S.ngPlus = 1;
     expect(targetDiff(0)).toBe(1.5);
-    expect(targetDiff(12)).toBe(4);
+    expect(targetDiff(12)).toBe(STORY_MAX);
+    expect(endgameDiff()).toBe(4);
     expect(generatedCount(8)).toBe(4);
     const qs = pickQuestions(mentorTopics(2, 'stocks', []), 8, { target: targetDiff(0), rng: mulberry32(5) });
     expect(qs.filter((q) => isGenerated(q.id)).length).toBeGreaterThanOrEqual(1);

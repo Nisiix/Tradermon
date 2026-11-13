@@ -199,6 +199,18 @@ export class View3D {
     this.canvas.remove(); this.fx.remove();
   }
 
+  /** Casella della mappa sotto un punto dello schermo (per il movimento a tocco): raggio dalla camera al suolo. */
+  pickTile(clientX: number, clientY: number): [number, number] | undefined {
+    const r = this.canvas.getBoundingClientRect();
+    if (!r.width || !r.height) return undefined;
+    const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    if (Math.abs(ndc.x) > 1 || Math.abs(ndc.y) > 1) return undefined;
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(ndc, this.camera);
+    const hit = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
+    return hit ? [Math.floor(hit.x), Math.floor(hit.z)] : undefined;
+  }
+
   /** Adatta i canvas al riquadro 3:2 centrato nel genitore (come Phaser.Scale.FIT). */
   resize(force = false) {
     const pw = this.parent.clientWidth || innerWidth, ph = this.parent.clientHeight || innerHeight;

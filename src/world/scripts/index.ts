@@ -39,7 +39,8 @@ export function npcVisible(n: NpcDef): boolean {
       return !S.defeated.includes(`rival_${k}`);
     }
     case 'case': return !S.flags.starter;
-    case 'league': return !S.defeated.includes(`league_${n.data?.i}`);
+    // Wall Street è l'unico posto in cui le sfide si rifanno: da Campione i Superiori tornano al loro posto
+    case 'league': return !!S.flags.champion || !S.defeated.includes(`league_${n.data?.i}`);
     case 'speculator': return !S.defeated.includes(n.id);
     case 'secret': return secretVisible(n);
     default: return true;

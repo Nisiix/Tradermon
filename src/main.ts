@@ -1,3 +1,5 @@
+// Primo import: il dizionario inglese completo, prima dei moduli che calcolano testi all'avvio.
+import './i18n/full';
 import Phaser from 'phaser';
 import '@fontsource/press-start-2p/400.css';
 import '@fontsource/pixelify-sans/400.css';

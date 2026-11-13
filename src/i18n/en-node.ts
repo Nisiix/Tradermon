@@ -1,5 +1,6 @@
 // Dizionario inglese fuori da Vite (esbuild per docs:content, tsx negli script): stessi file, compilati all'avvio.
-// Dentro Vite e Vitest '#i18n-en' è invece il modulo virtuale di vite.config.ts, già compilato in fase di build.
+// Dentro Vite e Vitest '#i18n-en' e '#i18n-en-landing' sono invece i moduli virtuali di vite.config.ts, già compilati in fase di build;
+// qui entrambi portano al dizionario intero (negli script fuori dal browser la differenza di peso non conta).
 import { hashKey } from './hash';
 import data from './en/data.json';
 import landing from './en/landing.json';

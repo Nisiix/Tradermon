@@ -11,9 +11,8 @@ export function repTier(rep = S.stats.reputazione): { index: number; name: strin
   return { index: i, name: REP_TIERS[i].name, next: REP_TIERS[i + 1]?.min };
 }
 
-/** Grado minimo per i Fascicoli riservati dell'Archivio e per le rivincite delle Whale. */
+/** Grado minimo per i Fascicoli riservati dell'Archivio. */
 export const TIER_ARCHIVE = 2; // Stimato
-export const TIER_MENTOR_REMATCH = 3; // Rinomato
 
 export const highDisc = () => S.stats.disciplina >= TRAIT_HIGH;
 export const highPat = () => S.stats.pazienza >= TRAIT_HIGH;

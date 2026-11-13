@@ -290,7 +290,6 @@
  "Completa una missione nella Macchina del Tempo": "Complete a Time Machine mission",
  "Ascolta 8 abitanti": "Listen to 8 residents",
  "Rispondi alla domanda del giorno 4 volte": "Answer the question of the day 4 times",
- "Vinci 3 rivincite": "Win 3 rematches",
  "Gioca 4 minigiochi": "Play 4 minigames",
  "Completa una storia di un abitante": "Complete a resident's story",
  "Scrivi 3 righe di Diario": "Write 3 Journal lines",
@@ -351,7 +350,6 @@
  "Rileggi 5 operazioni dopo 30 giorni": "Review 5 trades after 30 days",
  "Riflessivo": "Reflective",
  "Rivincita servita": "Rematch served",
- "Vinci 5 rivincite": "Win 5 rematches",
  "Tenace": "Tenacious",
  "Giocatore completo": "All-round player",
  "Prova tutti e 4 i minigiochi": "Try all 4 minigames",
@@ -456,5 +454,7 @@
  "Un grafico serve a decidere prima dove si esce. Mostrami un conto senza scommesse su un solo titolo e con gli stop già piazzati su Alpaca.": "A chart is for deciding in advance where you get out. Show me an account with no bets on a single stock and with the stops already placed on Alpaca.",
  "Il piano prima dell'umore": "The plan before the mood",
  "La mente fredda si vede dai fatti: un conto che somiglia al piano che ti sei dat{o|a}, e decisioni scritte con il loro motivo.": "A cool head shows in the facts: an account that looks like the plan you set yourself, and decisions written down with their reason.",
- "Tutto insieme, sul tuo conto, oggi: investito, diviso, protetto, fedele al piano.": "All together, on your account, today: invested, split, protected, true to the plan."
+ "Tutto insieme, sul tuo conto, oggi: investito, diviso, protetto, fedele al piano.": "All together, on your account, today: invested, split, protected, true to the plan.",
+ "Vinci 3 rivincite a Wall Street": "Win 3 Wall Street rematches",
+ "Vinci 5 rivincite a Wall Street": "Win 5 Wall Street rematches"
 }

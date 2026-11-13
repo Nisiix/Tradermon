@@ -33,6 +33,8 @@ export interface DuelOpts {
   fixed?: boolean;
   /** Allenamento a punteggio (Ripasso, sfide con codice): si risponde a tutte le domande e la barra del giocatore non c'è. */
   practice?: boolean;
+  /** Sfida di prova (il primo duello con Leo): come un allenamento, ma con l'avversario e la sua Convinzione. Nessuna sconfitta. */
+  tutorial?: boolean;
   /** Luogo della sfida: decide sfondo, colori e nastro (predefinito: la piazza delle quotazioni). */
   arena?: Arena;
 }
@@ -46,6 +48,7 @@ export interface DuelResult { win: boolean; correct: number; total: number; perf
 export let lastDuelTilted = false;
 
 export async function runDuel(o: DuelOpts): Promise<DuelResult> {
+  if (o.tutorial) o = { ...o, practice: true, damage: 0, fixed: true };
   const prevTrack = currentTrack();
   play('battle');
   const theme: Arena = o.arena ?? 'piazza';
@@ -67,7 +70,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       <div class="tape" aria-hidden="true"><div class="tape-in">${words}${words}</div></div>
       <div class="arena">
         <div class="side me">
-          <div class="plate me-p"><div class="nm">${esc(S.name)}</div>${S.title ? `<div class="tt">${esc(T(S.title))}</div>` : T('<div class="tt">Sfidante</div>')}${o.practice ? T('<div class="row-m"><span class="lb">Allenamento</span><b>nessun rischio</b></div>') : `<div class="row-m"><span class="lb">${risky ? T('Fiducia') : T('Tenuta')}</span><b class="fv">${lifeShown(life)}</b></div><div class="mebar">${bar(lifeShown(life))}</div><div class="small el"></div>`}</div>
+          <div class="plate me-p"><div class="nm">${esc(S.name)}</div>${S.title ? `<div class="tt">${esc(T(S.title))}</div>` : T('<div class="tt">Sfidante</div>')}${o.tutorial ? T('<div class="row-m"><span class="lb">Sfida di prova</span><b>nessun rischio</b></div>') : o.practice ? T('<div class="row-m"><span class="lb">Allenamento</span><b>nessun rischio</b></div>') : `<div class="row-m"><span class="lb">${risky ? T('Fiducia') : T('Tenuta')}</span><b class="fv">${lifeShown(life)}</b></div><div class="mebar">${bar(lifeShown(life))}</div><div class="small el"></div>`}</div>
           <div class="fig"><img class="sprite" src="${portrait(playerPal(S.avatar, S.gender))}" alt=""></div>
           <div class="desk"><i></i></div>
         </div>
@@ -131,7 +134,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       if (idx >= o.questions.length) return finish(correct >= o.need);
       const q = o.questions[idx];
       idx++;
-      $('.qn').textContent = T`Domanda ${idx}/${o.questions.length} · servono ${o.need} risposte giuste`;
+      $('.qn').textContent = o.tutorial ? T`Domanda ${idx}/${o.questions.length} · sfida di prova, nessuna penalità` : T`Domanda ${idx}/${o.questions.length} · servono ${o.need} risposte giuste`;
       $('.qt').textContent = gtext(q.q);
       $('.exp').innerHTML = '';
       const order = shuffle([0, 1, 2, 3]);
