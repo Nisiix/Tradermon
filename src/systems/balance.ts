@@ -24,14 +24,13 @@ export const FIDUCIA_PER_CORRECT = 4;
 
 export const DUEL = {
   trainer: { n: 3, need: 2, damage: 1 },
-  rematch: { n: 3, need: 2, damage: 1 },
   student: { n: 4, need: 3, damage: 1 },
-  rivalFirst: { n: 5, need: 3, damage: 1 },
+  /** Prima sfida con Leo: è il tutorial dei duelli, senza rischio e senza sconfitta (need serve solo al commento finale). */
+  rivalFirst: { n: 5, need: 3, damage: 0 },
   rival: { n: 5, need: 4, damage: 1 },
   speculator: { n: 3, need: 2, damage: 1 },
   boss: { n: 6, need: 5, damage: 1 },
   mentor: { n: 8, need: 6, damage: 1, fixed: true },
-  mentorRematch: { n: 8, need: 7, damage: 1, fixed: true },
   league: { n: 10, need: 8, damage: 1, fixed: true },
   champion: { n: 12, need: 10, damage: 1, fixed: true },
   tower: { n: 3, need: 3, damage: 1 },
@@ -43,9 +42,9 @@ export const DUEL = {
 
 export const REWARD = {
   /** Reputazione per vittoria. */
-  rep: { trainer: 20, rematch: 15, student: 25, rival: 40, speculator: 30, boss: 150, badge: 200, league: 300, legend: 250, bookSection: 10, mentorRematch: 120, temptation: 20 },
+  rep: { trainer: 20, rematch: 15, student: 25, rival: 40, speculator: 30, boss: 150, badge: 200, league: 300, legend: 250, bookSection: 10, temptation: 20 },
   /** Punti Conoscenza. */
-  xp: { badge: 100, rematch: 20, book: 5, tip: 5, hermit: 120, legend: 200, mentorRematch: 80, processStar: 15, daily: 10, dailyStreak: 5, dailyStreakMax: 50, casinoLesson: 30, archive: 50 },
+  xp: { badge: 100, rematch: 20, book: 5, tip: 5, hermit: 120, legend: 200, processStar: 15, daily: 10, dailyStreak: 5, dailyStreakMax: 50, casinoLesson: 30, archive: 50 },
 } as const;
 
 /** Gradi della Reputazione: ogni grado apre qualcosa (vedi systems/character.ts). */

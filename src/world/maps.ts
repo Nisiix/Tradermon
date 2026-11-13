@@ -198,16 +198,17 @@ function buildHomeTown() {
   t[9][w - 1] = TILE.PATH;
   const home = building(t, 3, 3, 5, TILE.ROOF);
   const lab = building(t, 13, 3, 7, TILE.ROOF_SPECIAL);
-  const clinic = building(t, 4, 11, 5, TILE.ROOF_CLINIC);
+  // Banca e casa abitata con due caselle di prato fra loro: gli edifici non si toccano mai (MIN_GAP)
+  const clinic = building(t, 3, 11, 5, TILE.ROOF_CLINIC);
   rect(t, home.dx, home.dy + 1, 1, 9 - home.dy - 1, TILE.PATH);
   rect(t, lab.dx, lab.dy + 1, 1, 9 - lab.dy - 1, TILE.PATH);
   rect(t, 15, 12, 5, 3, TILE.WATER);
   [[2, 7], [10, 6], [20, 14], [2, 15], [21, 4]].forEach(([x, y]) => (t[y][x] = TILE.FLOWERS));
-  const t0House = addHouse(t, HOUSEHOLDS[0][0], 9, 11, 4, 't0');
-  // via del borgo davanti alla Clinica e alla casa, collegata alla strada principale ai due lati
-  rect(t, 3, clinic.dy + 1, 11, 1, TILE.PATH);
-  rect(t, 3, 10, 1, clinic.dy + 1 - 10, TILE.PATH);
-  rect(t, 13, 10, 1, clinic.dy + 1 - 10, TILE.PATH);
+  const t0House = addHouse(t, HOUSEHOLDS[0][0], 10, 11, 4, 't0');
+  // via del borgo davanti alla Banca e alla casa, collegata alla strada principale ai due lati
+  rect(t, 2, clinic.dy + 1, 13, 1, TILE.PATH);
+  rect(t, 2, 10, 1, clinic.dy + 1 - 10, TILE.PATH);
+  rect(t, 14, 10, 1, clinic.dy + 1 - 10, TILE.PATH);
   t[8][11] = TILE.SIGN;
   const m: MapDef = { id: 't0', name: T('Borgo Semina'), w, h, tiles: t, interior: false, town: 0, encounterRate: 0, bg: '#6cc04a',
     npcs: [
@@ -231,7 +232,7 @@ function buildHomeTown() {
 
   const hm = interior('home', T('Casa'), 10, 8, 't0', home.dx, home.dy);
   hm.tiles[2][1] = TILE.BED; hm.tiles[3][1] = TILE.BED; hm.tiles[2][8] = TILE.PLANT; hm.tiles[2][5] = TILE.TABLE; hm.tiles[2][3] = TILE.SHELF;
-  hm.npcs.push({ id: 'mom', x: 6, y: 4, pal: 19, dir: 2, name: T('Zia Mara'), kind: 'mom' });
+  hm.npcs.push({ id: 'mom', x: 6, y: 4, pal: 26, dir: 2, name: T('Mamma'), kind: 'mom' });
   MAPS.home = hm;
 
   const lb = interior('lab', T('Laboratorio del Prof. Saldi'), 13, 10, 't0', lab.dx, lab.dy);
@@ -276,8 +277,8 @@ function buildTown(n: number) {
   rect(t, 0, 0, w, 2, TILE.TREE); rect(t, 0, h - 2, w, 2, TILE.TREE); rect(t, 0, 0, 1, h, TILE.TREE); rect(t, w - 1, 0, 1, h, TILE.TREE);
   rect(t, 1, 9, w - 2, 2, TILE.PATH);
   rect(t, 2, SOUTH_ST, w - 4, 1, TILE.PATH);
-  // due vicoli collegano la via delle case alla strada principale
-  for (const lx of [7, 18]) rect(t, lx, 11, 1, SOUTH_ST - 11, TILE.PATH);
+  // due vicoli collegano la via delle case alla strada principale, negli spazi fra un edificio e l'altro
+  for (const lx of [7, 20]) rect(t, lx, 11, 1, SOUTH_ST - 11, TILE.PATH);
   t[9][0] = TILE.PATH; t[9][w - 1] = TILE.PATH;
   const rng = mulberry32(1000 + n);
   const clinic = building(t, 3, 4, 5, TILE.ROOF_CLINIC);
@@ -287,11 +288,12 @@ function buildTown(n: number) {
   const special = def.special && def.special !== 'lab' ? building(t, 2, 12, 5, TILE.ROOF_SPECIAL) : null;
   if (special && t[special.dy + 1]) t[special.dy + 1][special.dx] = TILE.PATH;
   const id0 = `t${n}`;
-  // case abitate: slot nell'ordine dei nuclei familiari della città
-  const slots: [number, number, number][] = [[13, 12, 5], [8, 12, 4], [19, 12, 4], ...(special ? [] : [[2, 12, 5] as [number, number, number]])];
+  // case abitate: slot nell'ordine dei nuclei familiari della città, con due caselle libere fra un edificio e l'altro
+  const slots: [number, number, number][] = [[15, 12, 5], [9, 12, 4], [22, 12, 4], ...(special ? [] : [[2, 12, 5] as [number, number, number]])];
   const houseWarps = slots.map(([x, y, hw], i) => addHouse(t, HOUSEHOLDS[n]?.[i], x, y, hw, id0)).filter((x): x is Warp => !!x);
-  rect(t, 24, 13, 4, 3, TILE.PLAZA);
-  t[14][25] = TILE.WATER; t[14][26] = TILE.WATER;
+  // piazzetta con la fontana a sud della via delle case (prima stava fra le case, a ridosso dell'ultima)
+  rect(t, 14, SOUTH_ST + 1, 4, 3, TILE.PLAZA);
+  t[SOUTH_ST + 2][15] = TILE.WATER; t[SOUTH_ST + 2][16] = TILE.WATER;
   for (let i = 0; i < 8; i++) {
     const x = 1 + Math.floor(rng() * (w - 2));
     const y = 2 + Math.floor(rng() * (h - 4));

@@ -10,7 +10,7 @@ import {
 import { S, save } from '../systems/state';
 import { setVolume, beep } from '../systems/audio';
 import { setMusicVolume } from '../systems/music';
-import { homeUrl } from '../systems/home';
+import { goHome as leaveToHome } from '../systems/home';
 import * as Acc from '../systems/account';
 import { T, LANG, setLang, type Lang } from '../i18n';
 
@@ -155,7 +155,7 @@ export async function openControls() {
 }
 
 async function goHome() {
-  if (phase === 'title') { location.href = homeUrl(); return; }
+  if (phase === 'title') { leaveToHome(); return; }
   const r = await modal<'save' | 'leave'>(T('Torna alla home'), ({ body, button, close }) => {
     mark(body);
     body.innerHTML = phase === 'game'
@@ -167,5 +167,5 @@ async function goHome() {
   });
   if (!r) return;
   if (r === 'save' && !save()) { toast(T('Salvataggio non riuscito: resto qui.')); return; }
-  location.href = homeUrl();
+  leaveToHome();
 }

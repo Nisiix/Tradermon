@@ -4,7 +4,7 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 
 ## In numeri
 
-- Domande: **336** in 20 argomenti
+- Domande: **355** in 20 argomenti
 - Lezioni: **26**
 - Lezioni degli abitanti: **62** in 30 case
 - Asset didattici (di fantasia): **32**
@@ -18,11 +18,11 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 | ordini | 20 |
 | diversificazione | 18 |
 | costi | 18 |
-| bias | 20 |
+| bias | 22 |
 | gestione | 21 |
-| macro | 23 |
-| analisi | 21 |
-| regole | 21 |
+| macro | 26 |
+| analisi | 27 |
+| regole | 29 |
 | stocks_base | 14 |
 | stocks_bilanci | 15 |
 | stocks_dividendi | 14 |
@@ -64,7 +64,7 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 | Investopedia | Rebalancing | 10 | https://www.investopedia.com/terms/r/rebalancing.asp |
 | Investopedia | Earnings Per Share (EPS) | 3 | https://www.investopedia.com/terms/e/eps.asp |
 | Investopedia | Price-to-Earnings (P/E) Ratio | 9 | https://www.investopedia.com/terms/p/price-earningsratio.asp |
-| Investopedia | Debt-to-Equity (D/E) Ratio | 6 | https://www.investopedia.com/terms/d/debtequityratio.asp |
+| Investopedia | Debt-to-Equity (D/E) Ratio | 7 | https://www.investopedia.com/terms/d/debtequityratio.asp |
 | Investopedia | Tracking Error | 4 | https://www.investopedia.com/terms/t/trackingerror.asp |
 | Investopedia | Synthetic ETF | 3 | https://www.investopedia.com/terms/s/synthetic-etf.asp |
 | Investopedia | Expense Ratio | 7 | https://www.investopedia.com/terms/e/expenseratio.asp |
@@ -75,40 +75,40 @@ Documento generato dai dati del gioco (`npm run docs:content`). Ogni domanda e o
 | Investopedia | Rug Pull | 3 | https://www.investopedia.com/terms/r/rug-pull-crypto.asp |
 | Investopedia | Decentralized Finance (DeFi) | 4 | https://www.investopedia.com/terms/d/defi.asp |
 | Investopedia | Loss Aversion | 8 | https://www.investopedia.com/terms/l/lossaversion.asp |
-| Investopedia | Anchoring | 3 | https://www.investopedia.com/terms/a/anchoring.asp |
+| Investopedia | Anchoring | 4 | https://www.investopedia.com/terms/a/anchoring.asp |
 | Investopedia | Herd Instinct | 2 | https://www.investopedia.com/terms/h/herdinstinct.asp |
 | Investopedia | Fear of Missing Out (FOMO) | 3 | https://www.investopedia.com/terms/f/fear-missing-out-fomo.asp |
 | Investopedia | Overconfidence Bias | 4 | https://www.investopedia.com/terms/o/overconfidence-bias.asp |
 | Investopedia | Rule of 72 | 1 | https://www.investopedia.com/terms/r/ruleof72.asp |
-| Investopedia | Inflation | 7 | https://www.investopedia.com/terms/i/inflation.asp |
+| Investopedia | Inflation | 8 | https://www.investopedia.com/terms/i/inflation.asp |
 | Investopedia | Stop-Loss Order | 5 | https://www.investopedia.com/terms/s/stop-lossorder.asp |
 | Investopedia | Position Sizing | 6 | https://www.investopedia.com/terms/p/positionsizing.asp |
 | Investopedia | Leverage | 9 | https://www.investopedia.com/terms/l/leverage.asp |
 | Investopedia | Bond | 11 | https://www.investopedia.com/terms/b/bond.asp |
 | Investopedia | Duration | 5 | https://www.investopedia.com/terms/d/duration.asp |
 | Investopedia | Yield Curve | 3 | https://www.investopedia.com/terms/y/yieldcurve.asp |
-| Investopedia | Central Bank | 6 | https://www.investopedia.com/terms/c/centralbank.asp |
+| Investopedia | Central Bank | 7 | https://www.investopedia.com/terms/c/centralbank.asp |
 | Investopedia | Correlation | 6 | https://www.investopedia.com/terms/c/correlation.asp |
 | Investopedia | Compound Interest | 2 | https://www.investopedia.com/terms/c/compoundinterest.asp |
 | Investopedia | Dividend Reinvestment Plan (DRIP) | 3 | https://www.investopedia.com/terms/d/dividendreinvestmentplan.asp |
 | Investopedia | Payout Ratio | 4 | https://www.investopedia.com/terms/p/payoutratio.asp |
 | Investopedia | Market Capitalization | 5 | https://www.investopedia.com/terms/m/marketcapitalization.asp |
-| Investopedia | Moving Average (MA) | 2 | https://www.investopedia.com/terms/m/movingaverage.asp |
-| Investopedia | Relative Strength Index (RSI) | 1 | https://www.investopedia.com/terms/r/rsi.asp |
-| Investopedia | Fundamental Analysis | 14 | https://www.investopedia.com/terms/f/fundamentalanalysis.asp |
+| Investopedia | Moving Average (MA) | 3 | https://www.investopedia.com/terms/m/movingaverage.asp |
+| Investopedia | Relative Strength Index (RSI) | 2 | https://www.investopedia.com/terms/r/rsi.asp |
+| Investopedia | Fundamental Analysis | 17 | https://www.investopedia.com/terms/f/fundamentalanalysis.asp |
 | Investopedia | Technical Analysis | 6 | https://www.investopedia.com/terms/t/technicalanalysis.asp |
 | Investopedia | Liquidity | 4 | https://www.investopedia.com/terms/l/liquidity.asp |
 | Investopedia | Bear Market | 2 | https://www.investopedia.com/terms/b/bearmarket.asp |
-| Investopedia | Phishing | 5 | https://www.investopedia.com/terms/p/phishing.asp |
-| Investopedia | MiFID II | 4 | https://www.investopedia.com/terms/m/mifid-ii.asp |
+| Investopedia | Phishing | 6 | https://www.investopedia.com/terms/p/phishing.asp |
+| Investopedia | MiFID II | 6 | https://www.investopedia.com/terms/m/mifid-ii.asp |
 | Investopedia | Martingale System | 1 | https://www.investopedia.com/terms/m/martingalesystem.asp |
 | Investopedia | House Edge | 2 | https://www.investopedia.com/terms/h/houseedge.asp |
 | Investopedia | Paper Trade | 2 | https://www.investopedia.com/terms/p/paper-trade.asp |
 | Investopedia | Asset Allocation | 8 | https://www.investopedia.com/terms/a/assetallocation.asp |
-| Banca d'Italia | L'economia per tutti | 14 | https://economiapertutti.bancaditalia.it/ |
-| Consob | Educazione finanziaria | 16 | https://www.consob.it/web/investor-education |
-| CFA Institute | Investment Foundations | 28 | https://www.cfainstitute.org/ |
-| ESMA | Avvertenze per gli investitori | 12 | https://www.esma.europa.eu/ |
+| Banca d'Italia | L'economia per tutti | 15 | https://economiapertutti.bancaditalia.it/ |
+| Consob | Educazione finanziaria | 19 | https://www.consob.it/web/investor-education |
+| CFA Institute | Investment Foundations | 29 | https://www.cfainstitute.org/ |
+| ESMA | Avvertenze per gli investitori | 14 | https://www.esma.europa.eu/ |
 
 ## Lezioni
 

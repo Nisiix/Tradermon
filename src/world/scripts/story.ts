@@ -1,4 +1,4 @@
-// Trama principale: Professore, Valigette, Rivale, mamma.
+// Trama principale: mamma, Professore, Valigette, Rivale.
 import { type NpcDef } from '../maps';
 import type { AssetClass } from '../../types';
 import { S, save, addRep, card, classes, capital } from '../../systems/state';
@@ -24,11 +24,53 @@ import { reward, TRACK_LABEL, defeatRespawn } from './common';
 import type { WorldApi } from './common';
 import { T } from '../../i18n';
 
+/**
+ * Nozioni della mamma prima di partire: i concetti delle domande di livello 1 su rischio, azioni, ETF, cripto e
+ * classi di attivo, le stesse su cui ti interrogano Leo e gli allenatori fino a Ponte Cedola (il percorso si sceglie dopo).
+ */
+const BASICS = (): { label: string; lines: string[] }[] => [
+  { label: T('Rischio'), lines: [
+    T('Primo, il rischio. Rischio e rendimento vanno insieme: se qualcosa promette di rendere di più, di solito oscilla di più.'),
+    T('Quanto si muove su e giù un prezzo si chiama volatilità. Quanto calo riesci a reggere, con i nervi e con il portafoglio, è la tua tolleranza al rischio.'),
+    T('E se metti quasi tutto su un solo titolo o settore, basta che vada male quello: è il rischio di concentrazione.'),
+    T('Le grandi classi di attivo sono azioni, obbligazioni, liquidità e alternativi, come materie prime e cripto.'),
+    T('Attent{o|a} alla parola liquidità: sono i soldi pronti per spese e occasioni, che però l\'inflazione rosicchia ogni anno.'),
+    T('Ma un investimento è "liquido" anche quando lo puoi vendere in fretta senza far crollare il prezzo.'),
+  ] },
+  { label: T('Azioni ed ETF'), lines: [
+    T('Un\'azione è un pezzetto di proprietà di un\'azienda, e il suo prezzo lo fanno domanda e offerta.'),
+    T('Il valore in borsa dell\'azienda intera è la capitalizzazione. Le aziende "growth" reinvestono gli utili per crescere in fretta.'),
+    T('Un indice è un paniere di titoli che racconta come va un mercato. Un ETF è un fondo quotato che di solito lo replica, e si scambia in orario di borsa.'),
+    T('In Europa la sigla UCITS su un fondo vuol dire che segue le regole europee di tutela per chi investe.'),
+  ] },
+  { label: T('Cripto'), lines: [
+    T('Le cripto stanno su una blockchain, un registro condiviso da tanti nodi. Un token lì sopra rappresenta un valore o un diritto.'),
+    T('Si scambiano giorno e notte, anche nei festivi, e oscillano molto più delle grandi azioni.'),
+  ] },
+];
+
+/** Il primo dialogo della partita: la mamma ti saluta in casa e ti lascia le nozioni per arrivare a Ponte Cedola. */
+export async function momIntro() {
+  await say([T`${S.name}, finalmente sei svegli{o|a}! Oggi parti per il tuo viaggio tra investimenti e trading.`, T('Sono così fiera di te. Prima che tu vada, ti lascio qualche nozione: ti servirà con chi ti sfiderà fino a Ponte Cedola.')], T('Mamma'));
+  const c = await choose([T('Sì, ti ascolto'), T('Le conosco già')], { prompt: T('Ti va di sentirle?'), who: T('Mamma') });
+  if (c === 0) for (const b of BASICS()) await say(b.lines, T('Mamma'));
+  else await say(T('Va bene. Se cambi idea, prima di uscire chiedimele pure.'), T('Mamma'));
+  await say([T('Qui si impara con il paper trading: operazioni simulate, senza soldi veri. Sbagliare fa parte dell\'imparare.'), T`Buon viaggio, ${S.name}! Il Professor Saldi ti aspetta al Laboratorio, qui a Borgo Semina.`, T('E ricorda: i soldi che servono per l\'affitto non si investono!')], T('Mamma'));
+  S.flags.momIntro = true;
+  save();
+}
+
 export async function mom() {
-  if (!S.flags.starter) return say([T`${S.name}, finalmente sei svegli{o|a}!`, T('Il Professor Saldi ti aspetta al Laboratorio, qui a Borgo Semina.'), T('E ricorda: i soldi che servono per l\'affitto non si investono!')], T('Zia Mara'));
+  if (!S.flags.starter) {
+    if (!S.flags.momIntro && !S.ngPlus) return momIntro();
+    const basics = BASICS();
+    const c = await choose([...basics.map((b) => b.label), T('Vado dal Professore')], { cancel: true, prompt: T('Vuoi ripassare qualcosa prima di partire?'), who: T('Mamma') });
+    if (c >= 0 && c < basics.length) return say(basics[c].lines, T('Mamma'));
+    return say(T('Il Laboratorio è l\'edificio viola. In bocca al lupo!'), T('Mamma'));
+  }
   S.stats.fiducia = 100;
   beep('heal');
-  return say([T('Riposati un po\'. Ecco, la tua Fiducia è tornata al massimo.'), T('Tuo zio diceva sempre: "Il mercato può restare irrazionale più a lungo di quanto tu resti solvibile".')], T('Zia Mara'));
+  return say([T('Riposati un po\'. Ecco, la tua Fiducia è tornata al massimo.'), T('Tuo nonno diceva sempre: "Il mercato può restare irrazionale più a lungo di quanto tu resti solvibile".')], T('Mamma'));
 }
 
 // ---------------- Prologo ----------------
@@ -196,6 +238,7 @@ export async function rival(n: NpcDef, w: WorldApi) {
   if (n.id === LEO_TOUR_NPC) return leoTour(w);
   const k = n.data?.n as number;
   const lines: Record<number, string[]> = {
+    1: [T('Eccoti! Facciamo la nostra sfida di prova?')],
     2: [T`${S.name}! Ti stavo aspettando.`, T('Ho guadagnato un sacco questa settimana. E tu?'), T('Confrontiamo le nostre conoscenze... e i nostri portafogli!')],
     3: [T('Anche tu a Diversia?'), T('Qui tutti parlano di correlazioni. Io preferisco i risultati!')],
     4: [T('Sapevo che saresti arrivat{o|a} fin qui.'), T('Prima di Wall Street, un\'ultima sfida tra noi due. Niente sconti!')],
@@ -205,15 +248,37 @@ export async function rival(n: NpcDef, w: WorldApi) {
 }
 
 async function rivalDuel(k: number, w: WorldApi) {
+  if (k === 1) return rivalTutorial(w);
   const topics = trackTopics(S.track, S.mixedClasses, S.badges);
-  const P = k === 1 ? DUEL.rivalFirst : DUEL.rival;
-  const qs = pickQuestions(topics, P.n, { target: targetDiff(k === 1 ? 0 : storyStage()), preferReview: true });
+  const P = DUEL.rival;
+  const qs = pickQuestions(topics, P.n, { target: targetDiff(storyStage()), preferReview: true });
   const r = await runDuel({ foeName: S.rival, foeTitle: T('Rivale'), foePal: PAL.RIVAL, questions: qs, ...P, arena: 'tetto' });
   if (!r.win) { await say([T('Ah! Te l\'avevo detto.'), T('Ripassa un po\' e riprova.')], S.rival); return defeatRespawn(w); }
   reward({ defeated: `rival_${k}`, rep: REWARD.rep.rival, save: false });
   beep('win');
-  await say([T('Uff, sai il fatto tuo...'), k === 1 ? T('Ma il mercato vero è un\'altra cosa. Ci vediamo sul Percorso 2!') : T('Ma vediamo i portafogli!')], S.rival);
-  if (k > 1) await comparePortfolios();
+  await say([T('Uff, sai il fatto tuo...'), T('Ma vediamo i portafogli!')], S.rival);
+  await comparePortfolios();
+  w.refresh();
+  save();
+}
+
+/**
+ * Prima sfida con Leo, nel Laboratorio: è il tutorial dei duelli. Giusta o sbagliata, ogni risposta mostra la
+ * spiegazione e alla fine si prosegue comunque: niente sconfitta, niente Fiducia persa, niente ritorno in Banca.
+ */
+async function rivalTutorial(w: WorldApi) {
+  await say([T('Questa è una sfida di prova: serve a vedere come funzionano i duelli.'), T('Scegli una risposta e conferma. Giusta o sbagliata, dopo ogni risposta leggi la spiegazione: qui non perdi niente e alla fine prosegui comunque.')], T('Prof. Saldi'));
+  const P = DUEL.rivalFirst;
+  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), P.n, { target: targetDiff(0) });
+  const prevFid = S.stats.fiducia;
+  const r = await runDuel({ foeName: S.rival, foeTitle: T('Rivale · sfida di prova'), foePal: PAL.RIVAL, questions: qs, ...P, tutorial: true, arena: 'tetto' });
+  S.stats.fiducia = prevFid;
+  const good = r.correct >= P.need;
+  reward({ defeated: 'rival_1', rep: good ? REWARD.rep.rival : 0, save: false });
+  if (good) beep('win');
+  await say(good
+    ? [T`${r.correct} su ${r.total}: uff, sai il fatto tuo...`, T('Ma il mercato vero è un\'altra cosa. Ci vediamo sul Percorso 2!')]
+    : [T`${r.correct} su ${r.total}: per essere la prima volta non è male.`, T('Le spiegazioni le hai lette: la prossima volta che ci sfidiamo non sarà una prova. Ci vediamo sul Percorso 2!')], S.rival);
   w.refresh();
   save();
 }

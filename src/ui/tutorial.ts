@@ -26,7 +26,7 @@ interface Step { want: Action[]; title: string; desk: () => string; touch: strin
 const STEPS: Step[] = [
   { want: ['up', 'down', 'left', 'right'], hint: 'up', title: T('Muoversi'),
     desk: () => T`Premi ${moveKeys()}. Tieni premuto per camminare.`,
-    touch: T('Tocca la <b>croce direzionale</b> in basso a sinistra. Tieni premuto per camminare.') },
+    touch: T('Tocca la <b>croce direzionale</b> in basso a sinistra e tieni premuto per camminare, oppure tocca un punto della mappa per andarci.') },
   { want: ['a'], hint: 'a', title: T('Parlare e confermare'),
     desk: () => T`Premi ${kbd('a')} davanti a una persona o a un cartello per parlare; nei menu confermi.`,
     touch: T('Tocca <b>A</b> davanti a una persona o a un cartello per parlare; nei menu confermi.') },
@@ -45,7 +45,7 @@ const STEPS: Step[] = [
 function legend(touch: boolean, hint: Action | null): string {
   const rows: [Action[], string, string][] = touch
     ? [
-      [['up', 'down', 'left', 'right'], '<span class="lg-pad">✚</span>', T('Croce: cammini nel mondo e scorri le voci dei menu.')],
+      [['up', 'down', 'left', 'right'], '<span class="lg-pad">✚</span>', T('Croce: cammini e scorri i menu. Puoi anche toccare un punto della mappa per andarci, una persona per avvicinarti e una risposta per sceglierla.')],
       [['a'], '<span class="lg-round">A</span>', T('Parli con le persone, leggi i cartelli, confermi e fai scorrere i dialoghi.')],
       [['b'], '<span class="lg-round">B</span>', T('Chiudi una finestra, annulli una scelta, torni indietro.')],
       [['menu'], '<span class="lg-pill">MENU</span>', T('Apri il menu di gioco (Investidex, Portafoglio, Agenda, Salva, Opzioni).')],
