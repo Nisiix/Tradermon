@@ -11,6 +11,7 @@ import donazioni from './config/donazioni.json';
 import segnalazioni from './config/segnalazioni.json';
 import { T } from '../src/i18n';
 import { translateDom, wireLangSwitch } from '../src/i18n/dom';
+import { playInShell } from './play';
 
 translateDom();
 wireLangSwitch();
@@ -32,7 +33,10 @@ document.querySelectorAll('.menu a').forEach((a) => a.addEventListener('click', 
 
 // Transizione a tendine verso il gioco
 document.querySelectorAll<HTMLAnchorElement>('[data-play]').forEach((a) => a.addEventListener('click', (e) => {
-  if (reduced || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+  // telefono e tablet: il gioco parte a schermo intero e in orizzontale
+  if (playInShell(a.href)) { e.preventDefault(); return; }
+  if (reduced) return;
   e.preventDefault();
   const c = $('#curtain');
   c.classList.add('go');
