@@ -4,7 +4,7 @@ import * as A from '../systems/alpaca';
 import { S, save } from '../systems/state';
 import { BOSSES, BOSS_RULES, type BossDef, planError, planScore, outcome, quizPoints, bossWon, sellOut, planPool, endRun } from '../systems/boss';
 import { ASSET_BY_ID, unlockedAssets } from '../data/assets';
-import { pickQuestions } from '../systems/quiz';
+import { pickQuestions, endgameDiff } from '../systems/quiz';
 import { fmtPx, fmtPct, fmtMoney, fmtQty } from '../systems/portfolio';
 import * as Acc from '../systems/account';
 import * as M from '../systems/mandate';
@@ -35,7 +35,7 @@ function bossRules(): Promise<void> {
   S.flags.bossRules = true;
   save();
   return say([
-    T('Ogni Boss si affronta in due tempi: un quiz di livello esperto, poi UNA sola decisione su un grafico vero. Ingresso al prezzo del momento, uno stop, un obiettivo, quanto rischi.'),
+    T('Ogni Boss si affronta in due tempi: un quiz più difficile di quelli di Wall Street, poi UNA sola decisione su un grafico vero. Ingresso al prezzo del momento, uno stop, un obiettivo, quanto rischi.'),
     T('Il piano muove ordini veri sul conto di gioco: quando lo invii compri davvero il titolo e parte uno stop vero al prezzo che hai indicato. Quanto compri lo decide il rischio che scegli: capitale × rischio ÷ distanza dello stop. L\'acquisto deve essere eseguito subito, quindi le azioni si usano a Borsa aperta e le cripto sempre.'),
     T('Stop e obiettivo non si toccano più. Il mercato vero fa il resto, anche mentre il gioco è chiuso: torni alla scadenza e vedi com\'è andata. I tre Boss si possono sfidare insieme: ognuno ha il suo mandato.'),
     T('Se vedi che l\'obiettivo non arriva puoi decidere di vendere prima della scadenza e puntare su un altro titolo. La vendita può essere anche parziale, ma va dichiarata: scegli "vendo una parte per annullare la sfida". Decidere di vendere annulla la sfida in ogni caso: la ripeti da capo, quiz compreso, scegliendo un titolo diverso. Non conta come sconfitta.'),
@@ -76,7 +76,8 @@ async function bossFight(def: BossDef): Promise<void> {
   if (!run) {
     await say(def.intro, def.name);
     if ((await choose([T('Accetto la sfida'), T('Non ora')], { cancel: true, who: def.name })) !== 0) return;
-    const qs = pickQuestions(def.topics, BOSS_RULES.quizN, { minDiff: 3, maxDiff: 4 });
+    // fine gioco: sopra l'ultimo duello di Wall Street della stessa difficoltà, fino al livello esperto
+    const qs = pickQuestions(def.topics, BOSS_RULES.quizN, { target: endgameDiff() });
     const fid = S.stats.fiducia;
     S.stats.fiducia = 100;
     const r = await runDuel({ foeName: def.name, foeTitle: def.title, foePal: def.pal, questions: qs, need: BOSS_RULES.quizMin, damage: 0, fixed: true, arena: 'borsa' });

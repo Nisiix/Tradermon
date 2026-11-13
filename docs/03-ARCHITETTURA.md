@@ -40,13 +40,13 @@ src/
   ui/menu.ts          menu di pausa, Investidex, opzioni
   ui/setup.ts         avvertenze, questionario, conto di prova, esame, titolo
   ui/tutorial.ts      mini tutorial dei comandi (tastiera o touch)
-  ui/agenda.ts        Agenda del giorno e della settimana, storie in corso, rivincite, traguardi e oggetti
+  ui/agenda.ts        Agenda del giorno e della settimana, storie in corso, rivincite di Wall Street, traguardi e oggetti
   ui/journal.ts       Diario dell'investitore: motivo dopo ogni operazione, rilettura dopo 30 giorni
   ui/minigames.ts     i quattro minigiochi didattici con punteggio 0-100
   ui/challenge.ts     sfida della settimana: quiz con seme ISO, classifica locale, codici con controllo
   world/quests.ts     storie a tappe degli abitanti (sei), con bersagli, lezioni ed eventi
   world/decor.ts      arredo della casa di Borgo Semina in base agli oggetti sbloccati
-  systems/progress.ts eventi di gioco (track), agenda, rivincite, traguardi, titoli
+  systems/progress.ts eventi di gioco (track), agenda, traguardi, titoli
   systems/music.ts    motore chiptune e scelta del brano per mappa
   systems/            stato e salvataggi, mercato, portafoglio, quiz, audio, client Alpaca
   data/               asset di fantasia, quiz con fonti, lezioni, eventi, storia, missioni

@@ -1,4 +1,4 @@
-// Funzioni comuni agli script dei PNG: API del mondo, esito dei duelli, recupero di credito in Banca, rivincite con le domande sbagliate.
+// Funzioni comuni agli script dei PNG: API del mondo, esito dei duelli, recupero di credito in Banca, nuovi tentativi con le domande sbagliate.
 import { townOf, type NpcDef } from '../maps';
 import type { Question } from '../../types';
 import { S, save, addRep } from '../../systems/state';

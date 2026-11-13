@@ -165,6 +165,7 @@ async function rivalIntro(w: WorldApi) {
 export async function rival(n: NpcDef, w: WorldApi) {
   const k = n.data?.n as number;
   const lines: Record<number, string[]> = {
+    1: [T('Eccoti! Facciamo la nostra sfida di prova?')],
     2: [T`${S.name}! Ti stavo aspettando.`, T('Ho guadagnato un sacco questa settimana. E tu?'), T('Confrontiamo le nostre conoscenze... e i nostri portafogli!')],
     3: [T('Anche tu a Diversia?'), T('Qui tutti parlano di correlazioni. Io preferisco i risultati!')],
     4: [T('Sapevo che saresti arrivat{o|a} fin qui.'), T('Prima di Wall Street, un\'ultima sfida tra noi due. Niente sconti!')],
@@ -174,15 +175,37 @@ export async function rival(n: NpcDef, w: WorldApi) {
 }
 
 async function rivalDuel(k: number, w: WorldApi) {
+  if (k === 1) return rivalTutorial(w);
   const topics = trackTopics(S.track, S.mixedClasses, S.badges);
-  const P = k === 1 ? DUEL.rivalFirst : DUEL.rival;
-  const qs = pickQuestions(topics, P.n, { target: targetDiff(k === 1 ? 0 : storyStage()), preferReview: true });
+  const P = DUEL.rival;
+  const qs = pickQuestions(topics, P.n, { target: targetDiff(storyStage()), preferReview: true });
   const r = await runDuel({ foeName: S.rival, foeTitle: T('Rivale'), foePal: PAL.RIVAL, questions: qs, ...P, arena: 'tetto' });
   if (!r.win) { await say([T('Ah! Te l\'avevo detto.'), T('Ripassa un po\' e riprova.')], S.rival); return defeatRespawn(w); }
   reward({ defeated: `rival_${k}`, rep: REWARD.rep.rival, save: false });
   beep('win');
-  await say([T('Uff, sai il fatto tuo...'), k === 1 ? T('Ma il mercato vero è un\'altra cosa. Ci vediamo sul Percorso 2!') : T('Ma vediamo i portafogli!')], S.rival);
-  if (k > 1) await comparePortfolios();
+  await say([T('Uff, sai il fatto tuo...'), T('Ma vediamo i portafogli!')], S.rival);
+  await comparePortfolios();
+  w.refresh();
+  save();
+}
+
+/**
+ * Prima sfida con Leo, nel Laboratorio: è il tutorial dei duelli. Giusta o sbagliata, ogni risposta mostra la
+ * spiegazione e alla fine si prosegue comunque: niente sconfitta, niente Fiducia persa, niente ritorno in Banca.
+ */
+async function rivalTutorial(w: WorldApi) {
+  await say([T('Questa è una sfida di prova: serve a vedere come funzionano i duelli.'), T('Scegli una risposta e conferma. Giusta o sbagliata, dopo ogni risposta leggi la spiegazione: qui non perdi niente e alla fine prosegui comunque.')], T('Prof. Saldi'));
+  const P = DUEL.rivalFirst;
+  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), P.n, { target: targetDiff(0) });
+  const prevFid = S.stats.fiducia;
+  const r = await runDuel({ foeName: S.rival, foeTitle: T('Rivale · sfida di prova'), foePal: PAL.RIVAL, questions: qs, ...P, tutorial: true, arena: 'tetto' });
+  S.stats.fiducia = prevFid;
+  const good = r.correct >= P.need;
+  reward({ defeated: 'rival_1', rep: good ? REWARD.rep.rival : 0, save: false });
+  if (good) beep('win');
+  await say(good
+    ? [T`${r.correct} su ${r.total}: uff, sai il fatto tuo...`, T('Ma il mercato vero è un\'altra cosa. Ci vediamo sul Percorso 2!')]
+    : [T`${r.correct} su ${r.total}: per essere la prima volta non è male.`, T('Le spiegazioni le hai lette: la prossima volta che ci sfidiamo non sarà una prova. Ci vediamo sul Percorso 2!')], S.rival);
   w.refresh();
   save();
 }

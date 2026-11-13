@@ -1,4 +1,4 @@
-// Agenda (missioni del giorno e della settimana), traguardi con titoli, rivincite e contatori.
+// Agenda (missioni del giorno e della settimana), traguardi con titoli e contatori.
 // Le ricompense sono sempre punti Conoscenza, titoli e oggetti per la casa: mai Crediti.
 import { S, save, level } from './state';
 import { todayKey } from './quiz';
@@ -51,7 +51,7 @@ const WEEKLY_POOL: TaskDef[] = [
   { id: 'w_mission', ev: 'mission', need: 1, text: T('Completa una missione nella Macchina del Tempo'), xp: 100 },
   { id: 'w_tips', ev: 'tip', need: 8, text: T('Ascolta 8 abitanti'), xp: 60 },
   { id: 'w_daily', ev: 'daily_q', need: 4, text: T('Rispondi alla domanda del giorno 4 volte'), xp: 80 },
-  { id: 'w_rematch', ev: 'rematch', need: 3, text: T('Vinci 3 rivincite'), xp: 90 },
+  { id: 'w_rematch', ev: 'rematch', need: 3, text: T('Vinci 3 rivincite a Wall Street'), xp: 90 },
   { id: 'w_mini', ev: 'minigame', need: 4, text: T('Gioca 4 minigiochi'), xp: 70 },
   { id: 'w_quest', ev: 'quest', need: 1, text: T('Completa una storia di un abitante'), xp: 120 },
   { id: 'w_journal', ev: 'journal', need: 3, text: T('Scrivi 3 righe di Diario'), xp: 60 },
@@ -73,7 +73,7 @@ function seeded(str: string): () => number {
 
 function pickTasks(pool: TaskDef[], n: number, seedStr: string): AgendaTask[] {
   const rng = seeded(seedStr);
-  const avail = pool.filter((t) => !(t.ev === 'rematch' && S.badges < 1) && !(t.ev === 'mission' && S.badges < 1));
+  const avail = pool.filter((t) => !(t.ev === 'rematch' && !S.flags.champion) && !(t.ev === 'mission' && S.badges < 1));
   const out: TaskDef[] = [];
   const used = new Set<string>();
   while (out.length < n && out.length < avail.length) {
@@ -113,23 +113,6 @@ function agendaProgress(ev: GameEvent, n: number) {
   }
 }
 
-// ---------------- Rivincite ----------------
-
-const REMATCH_DAYS = 3;
-
-/** L'avversario è pronto per la rivincita? */
-export function rematchReady(id: string): boolean {
-  const d = S.rematch[id];
-  return !!d && d <= todayKey();
-}
-
-export function scheduleRematch(id: string) {
-  const d = new Date(); d.setDate(d.getDate() + REMATCH_DAYS);
-  S.rematch[id] = todayKey(d);
-}
-
-export function rematchesReady(): string[] { return Object.keys(S.rematch).filter(rematchReady); }
-
 // ---------------- Traguardi e titoli ----------------
 
 /** secret: nascosto come "???" nell'Agenda finché non viene sbloccato. */
@@ -159,7 +142,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'no_loss_sale', name: T('Mano ferma'), desc: T('Completa una missione senza vendere in perdita'), title: 'Mano ferma', check: () => !!S.flags.missionNoLossSale },
   { id: 'journal5', name: T('Diarista'), desc: T('5 righe nel Diario'), title: 'Diarista', decor: 'desk_journal', check: () => S.journal.length >= 5 },
   { id: 'journal_review', name: T('Senno di poi'), desc: T('Rileggi 5 operazioni dopo 30 giorni'), title: 'Riflessivo', check: () => c('review_journal') >= 5 },
-  { id: 'rematch5', name: T('Rivincita servita'), desc: T('Vinci 5 rivincite'), title: 'Tenace', check: () => c('rematch') >= 5 },
+  { id: 'rematch5', name: T('Rivincita servita'), desc: T('Vinci 5 rivincite a Wall Street'), title: 'Tenace', check: () => c('rematch') >= 5 },
   { id: 'mini_all', name: T('Giocatore completo'), desc: T('Prova tutti e 4 i minigiochi'), title: 'Giocoliere', decor: 'arcade', check: () => Object.keys(S.minigames).length >= 4 },
   { id: 'mini_ace', name: T('Asso dei minigiochi'), desc: T('Punteggio pieno in un minigioco'), check: () => Object.values(S.minigames).some((v) => v >= 100) },
   { id: 'quest1', name: T('Una mano agli altri'), desc: T('Completa una storia di un abitante'), title: 'Buon consigliere', check: () => c('quest') >= 1 },

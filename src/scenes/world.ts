@@ -501,12 +501,15 @@ export class WorldScene extends Phaser.Scene {
     for (const n of this.npcs) {
       if (n.def.guardY === undefined || S.y >= n.def.guardY || !this.isVisible(n) || S.defeated.includes(n.def.id)) continue;
       if (S.badges >= Number(n.def.data?.n ?? 0)) continue; // Medaglia già presa: nessun blocco
+      // ti è già venuto incontro una volta (e hai perso): niente seconda corsa, ti ferma e basta
+      if (S.flags[`met_${n.def.id}`]) { void this.runScript(async () => { await say([T('Alt! Prima di passare devi battermi.'), T('Parlami quando sei pront{o|a} a riprovare.')], n.def.name); this.bumpBack(); }); return; }
       void this.runScript(() => this.challenge(n, true));
       return;
     }
     // investitori con linea di vista
     for (const n of this.npcs) {
-      if (!n.def.sight || !this.isVisible(n) || S.defeated.includes(n.def.id)) continue;
+      // ognuno ti viene incontro una volta sola: dopo, se vuoi riprovare, sei tu a parlargli
+      if (!n.def.sight || !this.isVisible(n) || S.defeated.includes(n.def.id) || S.flags[`met_${n.def.id}`]) continue;
       const [dx, dy] = Object.values(DIRS)[n.dir];
       for (let k = 1; k <= n.def.sight; k++) {
         const tx = n.x + dx * k, ty = n.y + dy * k;
@@ -589,6 +592,7 @@ export class WorldScene extends Phaser.Scene {
       n.spr.setFrame(this.palFor(n.def) * 12 + n.dir * 3);
       await new Promise((r) => this.time.delayedCall(220, r));
     }
+    S.flags[`met_${n.def.id}`] = true;
     await this.exclaim(n.def.id);
     await this.approach(n.def.id);
     await interact(n.def, this.api());
