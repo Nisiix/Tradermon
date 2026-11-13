@@ -94,6 +94,8 @@ describe('le tre Valigette', () => {
     expect(st.cards.SPY).toBeTruthy();
     expect(Object.keys(st.cards).some((id) => id.includes('/'))).toBe(false);
     expect(old('mixed', ['stocks', 'etf']).track).toBe('listed');
+    const mx = (() => { const s = JSON.parse(JSON.stringify(newGame())) as Record<string, unknown>; s.version = 3; s.track = 'mixed'; s.mixedClasses = ['stocks', 'etf']; s.techniques = ['Visione d\'Insieme']; return migrate(s as unknown as SaveData); })();
+    expect(mx.techniques).toEqual(['Lettura del Bilancio']);
     expect(old('mixed', ['etf', 'crypto']).track).toBe('mixed');
     expect(old('mixed', ['stocks', 'etf', 'crypto']).track).toBe('mixed');
     const m = old('mixed', ['stocks', 'crypto']);

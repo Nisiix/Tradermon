@@ -119,8 +119,9 @@ const MIGRATIONS: Record<number, (s: SaveData) => void> = {
     // le classi aggiunte dal nuovo percorso entrano subito nell'Investidex, come dopo un Attestato (prima si comprano solo in Banca)
     const had: string[] = old === 'mixed' ? mixed : old === 'stocks' || old === 'etf' || old === 'crypto' ? [old] : classesOf(s.track);
     if (s.flags?.starter && s.badges >= 1) for (const a of unlockedAssets(s.track, [], s.badges)) if (!had.includes(a.cls) && !s.cards[a.id]) s.cards[a.id] = { xp: 0, gold: false, flawless: true, seen: 0 };
-    // la tecnica della quinta Whale del vecchio Sentiero degli Indici prende il nome di quella del nuovo percorso
-    if (old === 'etf') s.techniques = (s.techniques ?? []).map((t) => (t === 'Analisi del Prospetto' ? 'Lettura del Bilancio' : t === 'Prospectus Analysis' ? 'Balance Sheet Reading' : t));
+    // chi arriva ad Azioni + ETF da Indici o da un vecchio misto: la tecnica della quinta Whale prende il nome di quella del nuovo percorso
+    const renamed: Record<string, string> = { 'Analisi del Prospetto': 'Lettura del Bilancio', 'Prospectus Analysis': 'Balance Sheet Reading', 'Visione d\'Insieme': 'Lettura del Bilancio', 'Big Picture': 'Balance Sheet Reading' };
+    if (s.track === 'listed' && (old === 'etf' || old === 'mixed')) s.techniques = [...new Set((s.techniques ?? []).map((t) => renamed[t] ?? t))];
   },
 };
 
