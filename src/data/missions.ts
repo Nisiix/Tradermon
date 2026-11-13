@@ -112,7 +112,7 @@ export function mentorMission(n: number, track: Track, profile: RiskProfile): Mi
       check: (r) => ({ ok: r.monthlyBuys >= 10 && r.lossSales === 0, detail: T`Acquisti mensili: ${r.monthlyBuys} (min 10) · vendite in perdita: ${r.lossSales} (max 0)` }) };
     case 5: return pickMission(track);
     case 6: {
-      if (track === 'stocks') return {
+      if (track === 'listed') return {
         kind: 'sim', id: 'm6', title: T('Il raccolto dei dividendi'), dividends: true,
         scenario: { id: 'm6', name: T('Un anno tranquillo'), desc: '', window: { start: '2017-01-03', end: '2017-12-29' } },
         brief: T('Un anno vero di mercato tranquillo. I dividendi sono stimati dal rendimento medio di ogni titolo, pagati ogni mese e reinvestiti. Compra titoli con dividendo e tienili: le quote devono crescere almeno dell\'1,5% grazie al reinvestimento.'),
@@ -146,6 +146,13 @@ export function mentorMission(n: number, track: Track, profile: RiskProfile): Mi
 }
 
 function pickMission(track: Track): PickMission {
+  if (track !== 'listed') return pickSet(track);
+  // Azioni + ETF: due casi sui bilanci e due sui prospetti, come gli argomenti della Whale di Bilancia
+  const st = pickSet('stocks'), ef = pickSet('etf');
+  return { kind: 'pick', id: 'm5', title: T('Bilanci e prospetti'), need: 3, brief: T('Due aziende e due ETF da scegliere: leggi i numeri dei bilanci e dei prospetti prima di decidere.'), rounds: [...st.rounds.slice(0, 2), ...ef.rounds.slice(0, 2)] };
+}
+
+function pickSet(track: 'stocks' | 'etf' | 'crypto' | 'mixed'): PickMission {
   if (track === 'etf') return { kind: 'pick', id: 'm5', title: T('Il prospetto'), need: 2, brief: T('Tre ETF sembrano gemelli. Leggi i prospetti e scegli il più efficiente.'), rounds: [
     { prompt: T('Tre ETF sullo stesso indice azionario globale. Quale scegli per 20 anni di accumulo?'), options: [
       { title: T('ETF Alfa'), lines: ['TER 0,65%', T('Tracking error 0,9%'), T('Patrimonio 80 mln')], correct: false, why: T('Costi alti e replica meno fedele.') },

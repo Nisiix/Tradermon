@@ -1,4 +1,5 @@
-export type Track = 'stocks' | 'etf' | 'crypto' | 'mixed';
+/** Percorso scelto con la Valigetta: 'listed' = Azioni + ETF, 'crypto' = Cripto, 'mixed' = Azioni + ETF + Cripto. */
+export type Track = 'listed' | 'crypto' | 'mixed';
 export type AssetClass = 'stocks' | 'etf' | 'crypto';
 export type RiskProfile = 'prudente' | 'equilibrato' | 'audace';
 export type Sector =

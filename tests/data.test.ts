@@ -21,7 +21,7 @@ describe('quiz', () => {
     expect(new Set(QUESTIONS.map((q) => q.q)).size).toBe(QUESTIONS.length);
   });
   it('ogni Mentore di ogni percorso ha abbastanza domande per un duello da 8', () => {
-    const tracks: [Track, AssetClass[]][] = [['stocks', []], ['etf', []], ['crypto', []], ['mixed', ['stocks', 'etf']], ['mixed', ['etf', 'crypto']], ['mixed', ['stocks', 'etf', 'crypto']]];
+    const tracks: [Track, AssetClass[]][] = [['listed', []], ['crypto', []], ['mixed', []]];
     for (const [t, mixed] of tracks) for (let m = 1; m <= 8; m++) {
       const n = mentorTopics(m, t, mixed).reduce((s, top) => s + byTopic(top).length, 0);
       expect(n, `${t} M${m}`).toBeGreaterThanOrEqual(8);

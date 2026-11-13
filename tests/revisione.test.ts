@@ -14,7 +14,7 @@ import { isGenerated } from '../src/data/quiz/generated';
 import { mulberry32 } from '../src/systems/rng';
 
 describe('grafico a candele', () => {
-  beforeEach(() => { newGame('Test', 0, 'stocks', 'equilibrato'); });
+  beforeEach(() => { newGame(); });
 
   it('aggregare a 1 ora conserva apertura, chiusura, massimo e minimo', () => {
     const b5 = dayBars5m('Y', 1, 50, 49, 0.02, true);
@@ -40,8 +40,8 @@ describe('grafico a candele', () => {
 
 describe('missioni sui periodi reali e stelle di processo', () => {
   it('m7 richiede un minimo investito; m3 non rivela il periodo né il giorno dello shock', () => {
-    const m7 = mentorMission(7, 'stocks', 'equilibrato');
-    const m3 = mentorMission(3, 'etf', 'prudente');
+    const m7 = mentorMission(7, 'listed', 'equilibrato');
+    const m3 = mentorMission(3, 'listed', 'prudente');
     if (m7.kind !== 'sim' || m3.kind !== 'sim') throw new Error();
     const base: SimResult = { values: Array(90).fill(10000), ret: 0, vol: 0, sharpe: 0, mdd: 0, orders: 2, limitFills: 0, monthlyBuys: 0, fees: 0, contributed: 10000, lossSales: 0, sectors: 2, maxW: 0.3, investedW: 0, finalValue: 10000, startValue: 10000, dripShareGrowth: 0 };
     expect(m7.check(base).ok).toBe(false);
@@ -60,7 +60,7 @@ describe('missioni sui periodi reali e stelle di processo', () => {
 });
 
 describe('Nuova Partita+, profilo e strumenti di studio', () => {
-  beforeEach(() => { newGame('Test', 0, 'stocks', 'equilibrato'); });
+  beforeEach(() => { newGame(); });
 
   it('in Nuova Partita+ le domande sono più difficili e più spesso generate', () => {
     expect(targetDiff(0)).toBe(1);
@@ -70,7 +70,7 @@ describe('Nuova Partita+, profilo e strumenti di studio', () => {
     expect(targetDiff(12)).toBe(STORY_MAX);
     expect(endgameDiff()).toBe(4);
     expect(generatedCount(8)).toBe(4);
-    const qs = pickQuestions(mentorTopics(2, 'stocks', []), 8, { target: targetDiff(0), rng: mulberry32(5) });
+    const qs = pickQuestions(mentorTopics(2, 'listed', []), 8, { target: targetDiff(0), rng: mulberry32(5) });
     expect(qs.filter((q) => isGenerated(q.id)).length).toBeGreaterThanOrEqual(1);
     expect(qs.some((q) => q.diff === 2)).toBe(true);
   });

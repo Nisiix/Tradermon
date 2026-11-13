@@ -2,7 +2,7 @@ import type { SaveData, AssetClass, Track, RiskProfile, BiasId } from '../types'
 import { emptyMarket } from './market';
 import { newPortfolio } from './portfolio';
 import { ANSWER_SECONDS, DIFFICULTY } from './balance';
-import { ASSETS, ASSET_BY_ID } from '../data/assets';
+import { ASSETS, ASSET_BY_ID, classesOf, unlockedAssets } from '../data/assets';
 import { T } from '../i18n';
 
 export const SAVE_KEY = 'tradermon.save.v1';
@@ -16,7 +16,7 @@ export function newGame(): SaveData {
   const saveId = Math.floor(Math.random() * 36 ** 6).toString(36).padStart(6, '0');
   S = {
     version: SAVE_VERSION, createdAt: Date.now(), name: 'Alex', avatar: 0, gender: 'm', rival: 'Leo', profile: 'equilibrato', profileScore: 3,
-    goal: '', horizon: '', track: 'stocks', mixedClasses: [], map: 'home', x: 4, y: 4, facing: 'down', flags: {}, badges: 0, techniques: [],
+    goal: '', horizon: '', track: 'listed', mixedClasses: [], map: 'home', x: 4, y: 4, facing: 'down', flags: {}, badges: 0, techniques: [],
     stats: { xp: 0, fiducia: 100, disciplina: 50, pazienza: 50, reputazione: 0 }, bias: null, biasSeen: [], cards: {}, lessonsRead: [], booksRead: [], tipsHeard: [], defeated: [], visited: ['t0'],
     portfolio: newPortfolio(DIFFICULTY.investitore.capital, 0, 'equilibrato'), market: emptyMarket(), saveId, difficulty: 'investitore', seals: 0, exDone: 0, exTools: { limit: false, stop: false }, levExam: false,
     lastSeen: { t: 0, value: 0 }, boss: { run: null, beaten: [], tries: {} }, review: {}, reviewDue: {}, answered: {}, daily: { lastDate: '', streak: 0 },
@@ -65,7 +65,7 @@ export function load(): SaveData | null {
 }
 
 /** Versione corrente del formato di salvataggio: ogni cambio di struttura aggiunge un passo in MIGRATIONS. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
@@ -107,6 +107,20 @@ const MIGRATIONS: Record<number, (s: SaveData) => void> = {
     for (const id of Object.keys(s.cards ?? {})) if (!ASSET_BY_ID[id]) delete s.cards[id];
     s.legends = [];
     if (s.flags.starter) s.flags.migratedV3 = true;
+  },
+  // v3 → v4: tre Valigette. Titoli e Indici confluiscono in Azioni + ETF; il Sentiero Misto ha sempre tutte e tre le classi
+  3: (s) => {
+    const old = String(s.track);
+    const mixed = Array.isArray(s.mixedClasses) ? s.mixedClasses : [];
+    if (old === 'crypto') s.track = 'crypto';
+    else if (old === 'mixed' && (mixed.length === 0 || mixed.includes('crypto'))) s.track = 'mixed';
+    else s.track = 'listed';
+    s.mixedClasses = [];
+    // le classi aggiunte dal nuovo percorso entrano subito nell'Investidex, come dopo un Attestato (prima si comprano solo in Banca)
+    const had: string[] = old === 'mixed' ? mixed : old === 'stocks' || old === 'etf' || old === 'crypto' ? [old] : classesOf(s.track);
+    if (s.flags?.starter && s.badges >= 1) for (const a of unlockedAssets(s.track, [], s.badges)) if (!had.includes(a.cls) && !s.cards[a.id]) s.cards[a.id] = { xp: 0, gold: false, flawless: true, seen: 0 };
+    // la tecnica della quinta Whale del vecchio Sentiero degli Indici prende il nome di quella del nuovo percorso
+    if (old === 'etf') s.techniques = (s.techniques ?? []).map((t) => (t === 'Analisi del Prospetto' ? 'Lettura del Bilancio' : t === 'Prospectus Analysis' ? 'Balance Sheet Reading' : t));
   },
 };
 
@@ -193,7 +207,7 @@ export function hasTech(t: string): boolean { return S.techniques.includes(t); }
 export const TECH = { LIMIT: T('Ordine Limite'), REBAL: T('Ribilanciamento'), PAC: T('Piano di Accumulo'), STOP: T('Stop Loss'), COLD: T('Mente Fredda'), TICKER: T('Lettura del Ticker'), DRIP: T('Reinvestimento') };
 export function hasArchiveTech(): boolean { return S.badges >= 5; }
 
-export function classes(): AssetClass[] { return S.track === 'mixed' ? S.mixedClasses : [S.track as AssetClass]; }
+export function classes(): AssetClass[] { return classesOf(S.track, S.mixedClasses); }
 
 export function clampStat(k: 'disciplina' | 'pazienza', d: number) {
   S.stats[k] = Math.max(0, Math.min(100, S.stats[k] + d));

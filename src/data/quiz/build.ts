@@ -2,6 +2,7 @@ import type { Question, QuizTopic, Track, AssetClass } from '../../types';
 import * as C from './core';
 import * as TR from './tracks';
 import { T } from '../../i18n';
+import { classesOf } from '../assets';
 
 /** Riga di una domanda: [difficoltà, domanda, giusta, sbagliata×3, spiegazione, fonte, id?].
  *  L'id esplicito (9° elemento) tiene stabile il riferimento nei salvataggi anche se si riordinano o inseriscono righe;
@@ -62,13 +63,13 @@ const BASE_TOPIC: Record<AssetClass, QuizTopic> = { stocks: 'stocks_base', etf: 
 
 /** Argomenti di ciascuna Whale (1..8) in base al percorso. */
 export function mentorTopics(n: number, track: Track, mixed: AssetClass[]): QuizTopic[] {
-  const classes: AssetClass[] = track === 'mixed' ? mixed : [track];
+  const classes = classesOf(track, mixed);
   switch (n) {
-    case 1: return track === 'mixed' ? ['mixed_base', 'rischio'] : [BASE_TOPIC[track], 'rischio'];
+    case 1: return track === 'mixed' ? ['mixed_base', 'rischio'] : [...classes.map((c) => BASE_TOPIC[c]), 'rischio'];
     case 2: return ['ordini'];
     case 3: return ['diversificazione'];
     case 4: return ['costi'];
-    case 5: return track === 'mixed' ? ['mixed_allocazione'] : [A_TOPIC[track]];
+    case 5: return track === 'mixed' ? ['mixed_allocazione'] : classes.map((c) => A_TOPIC[c]);
     case 6: return classes.map((c) => B_TOPIC[c]).concat(track === 'mixed' ? classes.map((c) => A_TOPIC[c]) : []);
     case 7: return ['bias'];
     case 8: return ['gestione'];

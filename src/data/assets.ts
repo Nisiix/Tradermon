@@ -97,13 +97,19 @@ export const ASSETS: AssetDef[] = [
 
 export const ASSET_BY_ID: Record<string, AssetDef> = Object.fromEntries(ASSETS.map((a) => [a.id, a]));
 
-export function classesOf(track: Track, mixed: AssetClass[]): AssetClass[] {
-  return track === 'mixed' ? mixed : [track];
+/** Classi di attivo di ogni Valigetta. Il Sentiero Misto le ha sempre tutte e tre. */
+export const TRACK_CLASSES: Record<Track, AssetClass[]> = { listed: ['stocks', 'etf'], crypto: ['crypto'], mixed: ['stocks', 'etf', 'crypto'] };
+
+/** Classi del percorso. `mixed` resta solo per i salvataggi: se è compilato vale per il Sentiero Misto. */
+export function classesOf(track: Track, mixed: AssetClass[] = []): AssetClass[] {
+  if (track === 'mixed' && mixed.length) return mixed;
+  return TRACK_CLASSES[track] ?? TRACK_CLASSES.listed;
 }
 
 /** Titoli reali tra cui scegliere nella Valigetta, per classe (in ordine alfabetico). */
-export function starterOptions(cls: AssetClass): AssetDef[] {
-  return ASSETS.filter((a) => a.cls === cls && a.unlock === 'starter');
+export function starterOptions(cls: AssetClass | AssetClass[]): AssetDef[] {
+  const list = Array.isArray(cls) ? cls : [cls];
+  return list.flatMap((c) => ASSETS.filter((a) => a.cls === c && a.unlock === 'starter'));
 }
 
 /** Titolo iniziale predefinito di una classe (il primo della vetrina): usato solo se il giocatore non ha ancora scelto. */

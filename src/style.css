@@ -97,6 +97,8 @@ table.t th, table.t td { text-align: left; padding: 3px 6px; border-bottom: 1px 
 table.t th { font-family: var(--font); font-size: calc(var(--fs) * .95); color: var(--muted); }
 table.t td.n, table.t th.n { text-align: right; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+/* vetrina con più classi: schede più strette, così ogni classe sta su una riga */
+.cards.compact { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 6px; margin-bottom: 4px; }
 .card { border: 3px solid var(--line); border-radius: 8px; padding: 8px; background: #fff; position: relative; box-shadow: 0 2px 0 rgba(0,0,0,.2); }
 .card[onclick], .cards .card:hover { border-color: var(--accent); }
 .card.gold { background: linear-gradient(135deg, #fff6c8, #ffe27a); }

@@ -17,7 +17,7 @@ describe('profilo di rischio', () => {
     newGame();
     const timers = PROFILES.map((p) => { S.profile = p; return profileTimer(); });
     expect(new Set(timers).size).toBe(1);
-    for (const track of ['stocks', 'etf', 'crypto', 'mixed'] as Track[]) {
+    for (const track of ['listed', 'crypto', 'mixed'] as Track[]) {
       for (let m = 1; m <= 8; m++) {
         const briefs = PROFILES.map((p) => mentorMission(m, track, p).brief);
         expect(new Set(briefs).size, `missione ${m} ${track}`).toBe(1);

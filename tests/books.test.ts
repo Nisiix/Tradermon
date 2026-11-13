@@ -5,7 +5,7 @@ import { getMap } from '../src/world/maps';
 import { TILE } from '../src/art/art';
 import type { AssetClass, Track } from '../src/types';
 
-const TRACKS: [Track, AssetClass[]][] = [['stocks', []], ['etf', []], ['crypto', []], ['mixed', ['stocks', 'etf', 'crypto']], ['mixed', ['etf', 'crypto']]];
+const TRACKS: [Track, AssetClass[]][] = [['listed', []], ['crypto', []], ['mixed', []]];
 
 describe('Biblioteche: libri dei Mentori', () => {
   it('ogni argomento dei Mentori ha almeno due libri (contesto e materia)', () => {

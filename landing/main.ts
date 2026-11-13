@@ -241,10 +241,9 @@ if ('IntersectionObserver' in window) {
 // ---------------- Percorsi ----------------
 
 const TRACKS: { id: Track; name: () => string; color: string; desc: () => string }[] = [
-  { id: 'stocks', name: () => T('Sentiero dei Titoli'), color: 'blue', desc: () => T('Le azioni delle aziende: bilanci, settori, scelte.') },
-  { id: 'etf', name: () => T('Sentiero degli Indici'), color: 'green', desc: () => T('Gli ETF: panieri, costi bassi, pazienza.') },
+  { id: 'listed', name: () => T('Sentiero Azioni ed ETF'), color: 'blue', desc: () => T('Azioni ed ETF: bilanci, panieri, costi bassi e pazienza.') },
   { id: 'crypto', name: () => T('Sentiero Cripto'), color: 'orange', desc: () => T('La frontiera più rischiosa: reti, chiavi, volatilità.') },
-  { id: 'mixed', name: () => T('Sentiero Misto'), color: 'purple', desc: () => T('Due o tre classi insieme: l\'arte delle proporzioni.') },
+  { id: 'mixed', name: () => T('Sentiero Misto'), color: 'purple', desc: () => T('Azioni, ETF e cripto insieme: l\'arte delle proporzioni.') },
 ];
 // i ritratti si disegnano una volta sola: al cambio di lingua cambiano solo le scritte
 const portraits = new Map<number, string>();
@@ -275,7 +274,7 @@ const badges = $('#badges');
 function renderBadges() {
   badges.replaceChildren();
   for (let n = 1; n <= 8; n++) {
-    const m = mentor(n, 'stocks');
+    const m = mentor(n, 'listed');
     const name = n === 5 || n === 6 ? (n === 5 ? T('La Whale del percorso') : T('La Whale del Raccolto')) : T(m.name);
     const el = document.createElement('div');
     el.className = 'badge';

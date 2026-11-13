@@ -23,7 +23,7 @@ export interface WorldApi {
   town(): number;
 }
 
-export const TRACK_LABEL: Record<string, string> = { stocks: T('Sentiero dei Titoli'), etf: T('Sentiero degli Indici'), crypto: T('Sentiero Cripto'), mixed: T('Sentiero Misto') };
+export const TRACK_LABEL: Record<string, string> = { listed: T('Sentiero Azioni ed ETF'), crypto: T('Sentiero Cripto'), mixed: T('Sentiero Misto') };
 
 /** Tappa di un avversario sul Percorso r: quella in cui lo si incontra di solito (r − 1 medaglie), o più avanti se lo affronti dopo. */
 export function routeStage(n: NpcDef): number {

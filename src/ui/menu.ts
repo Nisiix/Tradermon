@@ -116,7 +116,7 @@ async function profile() {
   const r = await modal<string>(T('Profilo'), ({ body, button, close }) => {
     body.innerHTML = T`
       <div class="grid2">
-        <div><b>${esc(S.name)}</b>${S.title ? ` <span class="muted">«${esc(T(S.title))}»</span>` : ''} · ${({ stocks: T('Sentiero dei Titoli'), etf: T('Sentiero degli Indici'), crypto: T('Sentiero Cripto'), mixed: T('Sentiero Misto') } as Record<string, string>)[S.track]}${S.ngPlus ? T` · Nuova Partita+ ${S.ngPlus}` : ''}<br>
+        <div><b>${esc(S.name)}</b>${S.title ? ` <span class="muted">«${esc(T(S.title))}»</span>` : ''} · ${({ listed: T('Sentiero Azioni ed ETF'), crypto: T('Sentiero Cripto'), mixed: T('Sentiero Misto') } as Record<string, string>)[S.track]}${S.ngPlus ? T` · Nuova Partita+ ${S.ngPlus}` : ''}<br>
         Profilo dichiarato: <b>${S.profile}</b> · rivelato dalle missioni: <b>${revealedProfile() ?? '—'}</b> · Orizzonte: ${esc(S.horizon ? T(S.horizon) : '—')}<br>
         Livello di Conoscenza <b>${level()}</b> (${cur}/${need} XP)${bar((cur / need) * 100)}
         Fiducia ${S.stats.fiducia}/100 ${bar(S.stats.fiducia)}

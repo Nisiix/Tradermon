@@ -27,7 +27,7 @@ export interface Painter {
 
 export type MirrorItem =
   | { kind: 'char'; frame: number; x: number; y: number; alpha: number; lift?: number }
-  | { kind: 'tile'; frame: number; x: number; y: number; alpha: number }
+  | { kind: 'tile'; frame: number; x: number; y: number; alpha: number; lift?: number }
   | { kind: 'bubble'; x: number; y: number; scale: number }
   | { kind: 'leaf'; x: number; z: number; h: number; color: number; alpha: number }
   | { kind: 'raft'; x: number; y: number };
@@ -559,11 +559,12 @@ export class View3D {
         sh.scale.set(0.42 * (1 - 0.5 * lift), 0.26 * (1 - 0.5 * lift), 1);
         (sh.material as THREE.MeshBasicMaterial).opacity = 0.28 * it.alpha * (1 - 0.6 * lift);
       } else if (it.kind === 'tile') {
-        const m = this.pooled(this.tilePool, ti++, () => { const mm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.matProps.clone()); mm.castShadow = true; mm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: propAtlas(), alphaTest: 0.5 }); return mm; });
+        const m = this.pooled(this.tilePool, ti++, () => { const mat = this.matProps.clone(); mat.vertexColors = false; /* il piano non ha colori per vertice: senza questo esce nero */ const mm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); mm.castShadow = true; mm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: propAtlas(), alphaTest: 0.5 }); return mm; });
         const sp = propSprite(tileName(it.frame), null);
         (m.material as THREE.MeshLambertMaterial).map = propAtlas();
         this.setPlaneUv(m, propUv(sp));
-        m.position.set(it.x, 0.5, it.y - 0.4);
+        // lift: l'oggetto è appoggiato sopra un mobile (le Valigette sul tavolo del Laboratorio), non sul pavimento
+        m.position.set(it.x, 0.5 + (it.lift ?? 0), it.y - (it.lift ? 0.5 : 0.4));
         m.rotation.y = this.yaw;
       } else if (it.kind === 'bubble') {
         const m = this.pooled(this.bubblePool, bi++, () => new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.58), this.matBubble));

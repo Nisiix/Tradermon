@@ -575,7 +575,7 @@ reg('pier', (c, o) => {
   px(c, o.x + 1, o.y, 1, 16, '#5a3418'); px(c, o.x + 14, o.y, 1, 16, '#5a3418');
 });
 reg('case_blue', (c, o) => briefcase(c, o, '#3878d8'));
-reg('case_green', (c, o) => briefcase(c, o, '#38a058'));
+reg('case_purple', (c, o) => briefcase(c, o, '#8858c8'));
 reg('case_orange', (c, o) => briefcase(c, o, '#f08830'));
 
 export const TILE_ATLAS_COLS = COLS;
