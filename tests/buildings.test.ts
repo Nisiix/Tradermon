@@ -90,6 +90,31 @@ describe('edifici e strade', () => {
       }
     }
   });
+
+  it('gli edifici non sono mai attaccati: fra due edifici vicini ci sono almeno due caselle libere', () => {
+    for (const id of allMapIds()) {
+      const m = getMap(id);
+      if (m.interior) continue;
+      // un edificio = gruppo di caselle di tetto, muro, finestre e porta che si toccano
+      const seen = new Set<string>();
+      const boxes: { x0: number; y0: number; x1: number; y1: number }[] = [];
+      m.tiles.forEach((row, y) => row.forEach((t, x) => {
+        if (!BUILDING.has(t) || seen.has(`${x},${y}`)) return;
+        const cells = [...flood(m, x, y, (v) => BUILDING.has(v))];
+        cells.forEach((k) => seen.add(k));
+        const pts = cells.map((k) => k.split(',').map(Number));
+        boxes.push({ x0: Math.min(...pts.map((p) => p[0])), y0: Math.min(...pts.map((p) => p[1])), x1: Math.max(...pts.map((p) => p[0])), y1: Math.max(...pts.map((p) => p[1])) });
+        // un gruppo largo più di 8 caselle sarebbero due edifici fusi in uno
+        const b = boxes[boxes.length - 1];
+        expect(b.x1 - b.x0 + 1, `${id}: edifici attaccati in (${b.x0},${b.y0})-(${b.x1},${b.y1})`).toBeLessThanOrEqual(8);
+      }));
+      for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i], b = boxes[j];
+        const gap = Math.max(Math.max(b.x0 - a.x1, a.x0 - b.x1), Math.max(b.y0 - a.y1, a.y0 - b.y1)) - 1;
+        expect(gap, `${id}: edifici troppo vicini (${a.x0},${a.y0}) e (${b.x0},${b.y0})`).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
 });
 
 describe('salvataggi fatti prima dello spostamento degli edifici', () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getMap, allMapIds, townOf } from '../src/world/maps';
 import { hasGlyphs, plaqueSize } from '../src/art/plaque';
+import { FILES as EN_FILES } from '../src/i18n/en-node';
 import { P, TILE } from '../src/art/art';
 import { newGame } from '../src/systems/state';
 import { pickQuestions } from '../src/systems/quiz';
@@ -52,11 +53,19 @@ describe('insegne degli edifici', () => {
       }
     }
   });
-  it('ogni insegna è disegnabile ed entra nella facciata', () => {
+  it('ogni insegna è disegnabile ed entra nella facciata, in italiano e in inglese', () => {
+    const en: Record<string, string> = Object.assign({}, ...Object.values(EN_FILES));
     for (const id of allMapIds()) for (const p of getMap(id).plaques ?? []) {
-      expect(hasGlyphs(p.text), p.text).toBe(true);
-      expect(plaqueSize(p.text).w * 3, p.text).toBeLessThanOrEqual(5 * P);
+      // nei test le mappe sono in italiano: l'insegna inglese è la traduzione della stessa chiave
+      for (const text of [p.text, en[p.text]]) {
+        expect(text, `${p.text}: manca la traduzione inglese`).toBeTruthy();
+        expect(hasGlyphs(text), `${text}: lettere senza glifo`).toBe(true);
+        expect(plaqueSize(text).w * 3, text).toBeLessThanOrEqual(5 * P);
+      }
     }
+  });
+  it('il font delle insegne ha tutte le lettere dell\'alfabeto', () => {
+    expect(hasGlyphs('ABCDEFGHIJKLMNOPQRSTUVWXYZ ÀÈÌÒÙ')).toBe(true);
   });
 });
 
