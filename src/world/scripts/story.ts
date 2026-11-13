@@ -218,7 +218,7 @@ export async function leoTour(w: WorldApi) {
   await w.approach(LEO_TOUR_NPC);
   await say([
     T`Ehi ${S.name}! Finalmente sei arrivat{o|a} a Ponte Cedola.`,
-    T`Io sono qui da stamattina e ho già battuto ${mentor(1, S.track).name}, la Whale dell'Exchange. Il suo Attestato ce l'ho già io!`,
+    T`Sono corso avanti e ho già battuto ${mentor(1, S.track).name}, la Whale dell'Exchange. Il suo Attestato ce l'ho già io!`,
     T('Visto che sei appena arrivat{o|a}, ti spiego come funziona una città.'),
   ], S.rival);
   await say([
@@ -277,8 +277,8 @@ async function rivalTutorial(w: WorldApi) {
   reward({ defeated: 'rival_1', rep: good ? REWARD.rep.rival : 0, save: false });
   if (good) beep('win');
   await say(good
-    ? [T`${r.correct} su ${r.total}: uff, sai il fatto tuo...`, T('Ma il mercato vero è un\'altra cosa. Ci vediamo sul Percorso 2!')]
-    : [T`${r.correct} su ${r.total}: per essere la prima volta non è male.`, T('Le spiegazioni le hai lette: la prossima volta che ci sfidiamo non sarà una prova. Ci vediamo sul Percorso 2!')], S.rival);
+    ? [T`${r.correct} su ${r.total}: uff, sai il fatto tuo...`, T('Ma il mercato vero è un\'altra cosa. Ci vediamo a Ponte Cedola!')]
+    : [T`${r.correct} su ${r.total}: per essere la prima volta non è male.`, T('Le spiegazioni le hai lette: la prossima volta che ci sfidiamo non sarà una prova. Ci vediamo a Ponte Cedola!')], S.rival);
   w.refresh();
   save();
 }
