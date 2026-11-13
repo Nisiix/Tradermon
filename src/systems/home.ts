@@ -15,3 +15,10 @@ export function homeUrl(loc: { href: string; pathname: string } = location): str
 export function guideUrl(loc: { href: string; pathname: string } = location): string {
   return homeUrl(loc) + '#guida';
 }
+
+/** Esce verso la home. Se il gioco gira dentro la cornice a schermo intero della landing, esce la pagina intera. */
+export function goHome(): void {
+  const url = homeUrl();
+  try { if (window.top && window.top !== window) { window.top.location.href = url; return; } } catch { /* cornice di un altro sito */ }
+  location.href = url;
+}

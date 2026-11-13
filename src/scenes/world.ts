@@ -20,6 +20,7 @@ import { addPlayTime, formatPlayTime, startPlayTimeAutosave } from '../systems/p
 import { View3D, type MirrorFrame, type MirrorItem, type Painter } from '../render3d/view';
 import { tick } from '../systems/account';
 import { T } from '../i18n';
+import { findPath, stepDir, type TapPath } from '../systems/tapwalk';
 
 const DIRS: Record<string, [number, number, 0 | 1 | 2 | 3]> = { down: [0, 1, 0], up: [0, -1, 1], left: [-1, 0, 2], right: [1, 0, 3] };
 const DIR_NAME = ['down', 'up', 'left', 'right'] as const;
@@ -36,6 +37,8 @@ const TURN_MS = 85;
 /** Appena fermati, un cambio di direzione riparte subito senza la pausa di rotazione. */
 const MOMENTUM_MS = 110;
 type Dir = 'up' | 'down' | 'left' | 'right';
+/** Banconi e tavoli: si parla con chi sta dall'altra parte. */
+const COUNTERS = [TILE.COUNTER, TILE.CASE_TABLE, TILE.TABLE];
 interface Walk { fx: number; fy: number; tx: number; ty: number; di: number; t: number; chain: boolean; done: () => void }
 
 export class WorldScene extends Phaser.Scene {
@@ -74,6 +77,9 @@ export class WorldScene extends Phaser.Scene {
   view3dFx = '';
   /** Trasferimento di Capitale: altezza del volo (0 a terra, 1 in cielo) e nuvole che scorrono sullo schermo. */
   flightLift = 0; flightClouds: { x: number; y: number; w: number; s: number }[] = [];
+  /** Movimento a tocco: caselle ancora da percorrere, punto toccato e direzione verso cui girarsi all'arrivo. */
+  route?: TapPath & { goal: [number, number]; tries: number; replans: number; via?: string };
+  tapMark?: Phaser.GameObjects.Graphics;
 
   constructor() { super('world'); }
 
@@ -119,7 +125,130 @@ export class WorldScene extends Phaser.Scene {
     this.time.addEvent({ delay: 250, loop: true, callback: () => this.idleNpcs() });
     this.lastMs = performance.now();
     startPlayTimeAutosave();
+    this.initTapWalk();
   }
+
+  // ---------------- Movimento a tocco ----------------
+  // Toccando (o cliccando) la mappa il personaggio cammina fin lì; tenendo il dito premuto e spostandolo lo segue.
+  // Toccando un personaggio o un cartello ci si avvicina e ci si gira verso di lui; un altro tocco ci parla
+  // (come il pulsante A). La croce direzionale e i tasti hanno sempre la precedenza e annullano il percorso.
+
+  initTapWalk() {
+    const area = document.getElementById('game');
+    if (!area) return;
+    let pointer = -1;
+    let lastKey = '';
+    const tileAt = (e: PointerEvent): [number, number] | undefined => {
+      if (this.view3d) return this.view3d.pickTile(e.clientX, e.clientY);
+      const c = this.game.canvas, r = c.getBoundingClientRect();
+      if (!r.width || !r.height) return undefined;
+      const gx = (e.clientX - r.left) * (this.scale.width / r.width), gy = (e.clientY - r.top) * (this.scale.height / r.height);
+      if (gx < 0 || gy < 0 || gx > this.scale.width || gy > this.scale.height) return undefined;
+      const wp = this.cameras.main.getWorldPoint(gx, gy);
+      return [Math.floor(wp.x / P), Math.floor(wp.y / P)];
+    };
+    const ready = () => !!this.map && !this.busy && !uiActive() && !this.flightLift;
+    const onDown = (e: PointerEvent) => {
+      if (e.button > 0 || !ready()) return;
+      const t = tileAt(e);
+      if (!t) return;
+      e.preventDefault();
+      pointer = e.pointerId;
+      try { area.setPointerCapture(e.pointerId); } catch { /* niente */ }
+      lastKey = t.join(',');
+      this.tapTo(t[0], t[1], true);
+    };
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerId !== pointer || !ready()) return;
+      const t = tileAt(e);
+      if (!t || t.join(',') === lastKey) return;
+      lastKey = t.join(',');
+      this.tapTo(t[0], t[1], false);
+    };
+    const onUp = (e: PointerEvent) => { if (e.pointerId === pointer) pointer = -1; };
+    area.addEventListener('pointerdown', onDown);
+    area.addEventListener('pointermove', onMove);
+    area.addEventListener('pointerup', onUp);
+    area.addEventListener('pointercancel', onUp);
+    area.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.events.once('shutdown', () => {
+      area.removeEventListener('pointerdown', onDown);
+      area.removeEventListener('pointermove', onMove);
+      area.removeEventListener('pointerup', onUp);
+      area.removeEventListener('pointercancel', onUp);
+    });
+  }
+
+  /** Casella su cui si può camminare durante un percorso a tocco (le porte solo come meta, mai di passaggio). */
+  tapFree(x: number, y: number): boolean {
+    return !this.blocked(x, y, true) && !this.map.warps.some((w) => w.x === x && w.y === y);
+  }
+  tapEnter(x: number, y: number): boolean {
+    return this.map.warps.some((w) => w.x === x && w.y === y) && !this.npcAt(x, y);
+  }
+
+  /** fresh: nuovo tocco (non trascinamento). Un tocco su chi hai davanti equivale al pulsante A. */
+  tapTo(tx: number, ty: number, fresh: boolean) {
+    const [fdx, fdy] = DIRS[S.facing];
+    const counter = (x: number, y: number) => COUNTERS.includes(this.map.tiles[y]?.[x] as never);
+    // davanti, oppure dietro al bancone che hai davanti (il negoziante)
+    const front = (tx === S.x + fdx && ty === S.y + fdy) || (tx === S.x + 2 * fdx && ty === S.y + 2 * fdy && counter(S.x + fdx, S.y + fdy));
+    if (fresh && front && !this.moving && !this.walk && !this.tapFree(tx, ty) && !this.tapEnter(tx, ty)) {
+      this.route = undefined;
+      this.showTapMark();
+      return void this.interactFront();
+    }
+    if (tx === S.x && ty === S.y && !this.walk) { this.route = undefined; this.showTapMark(); return; }
+    // durante un passo il percorso parte dalla casella in cui il passo arriva
+    const fx = this.walk?.tx ?? S.x, fy = this.walk?.ty ?? S.y;
+    const path = (gx: number, gy: number) => findPath(this.map.w, this.map.h, (x, y) => this.tapFree(x, y), fx, fy, gx, gy, (x, y) => this.tapEnter(x, y));
+    let p = path(tx, ty);
+    // chi sta dietro a un bancone si raggiunge mettendosi davanti al bancone
+    if (!p) for (const [dx, dy] of Object.values(DIRS)) if (counter(tx - dx, ty - dy) && (p = path(tx - dx, ty - dy))) break;
+    if (!p) { if (fresh) { this.route = undefined; this.showTapMark(); beep('bump'); } return; }
+    if (this.walk) p.path.unshift([fx, fy]);
+    this.route = { ...p, goal: [tx, ty], tries: 0, replans: 0, via: this.map.id };
+    this.showTapMark(tx, ty);
+  }
+
+  /** Riquadro lampeggiante sulla casella toccata (solo nella resa 2D; in 2.5D si vede il personaggio partire). */
+  showTapMark(tx?: number, ty?: number) {
+    this.tapMark?.destroy(); this.tapMark = undefined;
+    if (tx === undefined || ty === undefined || this.view3d) return;
+    const g = this.add.graphics().setDepth(9);
+    const u = RS;
+    g.lineStyle(u, 0xf8d030, 1).strokeRect(tx * P + u, ty * P + u, P - 2 * u, P - 2 * u);
+    g.fillStyle(0xf8d030, 0.22).fillRect(tx * P + u, ty * P + u, P - 2 * u, P - 2 * u);
+    this.tapMark = g;
+    this.tweens.add({ targets: g, alpha: 0.35, duration: 260, yoyo: true, repeat: -1 });
+  }
+
+  /** Prossima direzione del percorso a tocco, oppure undefined (arrivati, interrotto o niente percorso). */
+  routeDir(): Dir | undefined {
+    const r = this.route;
+    if (!r) return undefined;
+    if (r.via !== this.map.id) { this.endRoute(); return undefined; }
+    while (r.path.length && r.path[0][0] === S.x && r.path[0][1] === S.y) { r.path.shift(); r.tries = 0; }
+    if (!r.path.length) {
+      if (r.face && S.facing !== r.face) this.setFacing(r.face);
+      this.endRoute();
+      return undefined;
+    }
+    const [nx, ny] = r.path[0];
+    const d = stepDir(S.x, S.y, nx, ny);
+    // fuori percorso (spinto via, una porta, un passo rifiutato più volte): si ricalcola una volta, poi ci si ferma
+    if (!d || ++r.tries > 3) {
+      if (r.replans++ < 2) {
+        const p = findPath(this.map.w, this.map.h, (x, y) => this.tapFree(x, y), S.x, S.y, r.goal[0], r.goal[1], (x, y) => this.tapEnter(x, y));
+        if (p && p.path.length) { r.path = p.path; r.face = p.face; r.tries = 1; return stepDir(S.x, S.y, p.path[0][0], p.path[0][1]); }
+      }
+      this.endRoute();
+      return undefined;
+    }
+    return d;
+  }
+
+  endRoute() { this.route = undefined; this.showTapMark(); }
 
   /** Accende o spegne la resa 2.5D secondo le Opzioni. Se il WebGL non regge, resta il 2D. */
   applyGraphics() {
@@ -362,7 +491,7 @@ export class WorldScene extends Phaser.Scene {
     if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => this.flyTo(id)));
     if (p === 'a') return void this.interactFront();
     const dir = this.nextDir();
-    if (dir) { this.idleMs = 0; this.tryMove(dir, this.time.now - this.lastStepEnd < MOMENTUM_MS); return; }
+    if (dir) { this.idleMs = 0; this.tryMove(dir, !!this.route || this.time.now - this.lastStepEnd < MOMENTUM_MS); return; }
     this.tickHodl(delta);
     void time;
   }
@@ -379,7 +508,10 @@ export class WorldScene extends Phaser.Scene {
   /** Direzione voluta: l'ultimo tasto tenuto premuto, altrimenti un tocco breve rimasto in memoria. */
   nextDir(): Dir | undefined {
     const tap = takeDirTap();
-    return (heldDir() ?? tap) as Dir | undefined;
+    const key = (heldDir() ?? tap) as Dir | undefined;
+    // croce direzionale e tasti hanno la precedenza sul percorso a tocco
+    if (key) { if (this.route) this.endRoute(); return key; }
+    return this.routeDir();
   }
 
   setFacing(d: 'up' | 'down' | 'left' | 'right') {
@@ -527,7 +659,7 @@ export class WorldScene extends Phaser.Scene {
     const fx = S.x + dx, fy = S.y + dy;
     let n = this.npcAt(fx, fy);
     // dietro al bancone
-    if (!n && [TILE.COUNTER, TILE.CASE_TABLE, TILE.TABLE].includes(this.map.tiles[fy]?.[fx] as never)) n = this.npcAt(fx + dx, fy + dy) ?? n;
+    if (!n && COUNTERS.includes(this.map.tiles[fy]?.[fx] as never)) n = this.npcAt(fx + dx, fy + dy) ?? n;
     if (n) {
       if (n.walking) return; // aspetta che finisca il passo
       if (n.spr) { n.dir = [1, 0, 3, 2][DIRS[S.facing][2]]; n.spr.setFrame(this.palFor(n.def) * 12 + n.dir * 3); }
@@ -572,6 +704,7 @@ export class WorldScene extends Phaser.Scene {
   async runScript(fn: () => Promise<void>) {
     if (this.busy) return;
     this.busy = true;
+    this.endRoute();
     clearWorld();
     try { await fn(); } catch (e) { console.error(e); toast(T('Errore: ') + (e as Error).message); }
     // dopo ogni sfida a quiz con un personaggio (vinta o persa) la partita si salva da sola
