@@ -1,4 +1,4 @@
-import type { Question, QuizTopic } from '../types';
+import type { Difficulty, Question, QuizTopic } from '../types';
 import { QUESTIONS, byTopic, trackTopics } from '../data/quiz/build';
 import { generate, templatesFor, isGenerated } from '../data/quiz/generated';
 import { ASSET_BY_ID } from '../data/assets';
@@ -7,15 +7,42 @@ import { hashString, mulberry32, shuffle } from './rng';
 
 /**
  * Difficoltà delle domande lungo la storia.
- * Livelli: 1 base, 2 intermedio, 3 avanzato, 4 esperto (Wall Street).
+ * Livelli: 1 base, 2 intermedio, 3 avanzato, 4 esperto.
  * Tappe: 0 = nessuna medaglia, 1..8 = medaglie ottenute, 9..12 = i quattro Superiori di Wall Street.
- * Ogni tappa alza la difficoltà media di un quarto di livello: da 1 (prima Whale) a 4 (fine Wall Street).
+ * Fino all'ottava Whale ogni tappa alza la media di un quarto di livello (da 1 a 3); a Wall Street di un ottavo
+ * (fino a 3,5). Sopra c'è solo il fine gioco (Boss dei Mercati, Torre, rivincite di Wall Street): vedi endgameDiff().
+ * La difficoltà scelta a inizio partita sposta tutta la curva (QUIZ_SHIFT), e la Nuova Partita+ la alza ancora.
  */
 export const MAX_DIFF = 4;
 export const STAGE_LEAGUE = 9;
+/** Tetto della storia fino al Campione: resta sempre almeno un quarto di livello sotto il fine gioco. */
+export const STORY_MAX = 3.75;
+/** Quanto il fine gioco sta sopra l'ultimo duello di Wall Street (se il livello 4 lo permette). */
+export const ENDGAME_STEP = 0.5;
+
+/**
+ * Spostamento della curva per difficoltà: chi parte da zero ha domande più semplici. Leggenda si gioca solo in
+ * Nuova Partita+, quindi è già più difficile di Stratega grazie a ngBoost().
+ */
+export const QUIZ_SHIFT: Record<Difficulty, number> = { apprendista: -0.5, investitore: -0.25, stratega: 0, leggenda: 0 };
+
+function quizShift(): number { return QUIZ_SHIFT[S?.difficulty ?? 'stratega'] ?? 0; }
+
+/** Ultima tappa della storia (quarto Superiore e Campione di Wall Street). */
+export const STAGE_TOP = STAGE_LEAGUE + 3;
 
 export function targetDiff(stage: number): number {
-  return Math.max(1, Math.min(MAX_DIFF, 1 + stage * 0.25 + ngBoost()));
+  const base = 1 + Math.min(stage, 8) * 0.25 + Math.max(0, stage - 8) * 0.125;
+  // lo spostamento della difficoltà cresce con la storia: all'inizio tutti partono dalle domande base
+  // (e i livelli bassi hanno domande a sufficienza), a Wall Street vale per intero
+  const shift = quizShift() * Math.min(1, Math.max(0, stage) / STAGE_TOP);
+  // arrotondata a un ottavo di livello: con 8 domande è il passo più piccolo che un duello riesce a rispettare
+  return Math.max(1, Math.min(STORY_MAX, Math.round((base + shift + ngBoost()) * 8) / 8));
+}
+
+/** Difficoltà del fine gioco: sopra l'ultimo duello di Wall Street della stessa partita, fino al livello esperto. */
+export function endgameDiff(): number {
+  return Math.min(MAX_DIFF, targetDiff(STAGE_TOP) + ENDGAME_STEP);
 }
 
 /** Nuova Partita+: ogni giro alza la difficoltà media di mezzo livello (le domande da esperto compaiono già dalle Whale). */

@@ -1,25 +1,25 @@
 // Duelli di conoscenza e missioni: allenatori, allievi, Whale, Wall Street, Torre, eremiti, duelli condivisi e del giorno.
 import { recordMission, mirrorEpilogue } from '../../systems/mirror';
-import { getMap, type NpcDef } from '../maps';
+import { getMap, townOf, type NpcDef } from '../maps';
 import { S, save, slots, addRep, card, learnBias, clampStat, classes, newGamePlus } from '../../systems/state';
 import { say, choose, modal } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { runSim } from '../../ui/timemachine';
 import { runPick } from '../../ui/pick';
-import { pickQuestions, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE } from '../../systems/quiz';
+import { pickQuestions, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE, endgameDiff, MAX_DIFF } from '../../systems/quiz';
 import { mentorTopics, trackTopics, LEAGUE_TOPICS } from '../../data/quiz/build';
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../../data/story';
-import { mentorBooks, TOPIC_LABEL } from '../../data/books';
+import { mentorBooks, booksFor, TOPIC_LABEL } from '../../data/books';
 import { DUEL, REWARD, TRAIT_HIGH } from '../../systems/balance';
 import { errorsAllowed, errorsLeft } from '../../systems/duelLife';
-import { repTier, mentorCharacterLine, epilogue, TIER_MENTOR_REMATCH } from '../../systems/character';
+import { mentorCharacterLine, epilogue } from '../../systems/character';
 import { mentorMission, processReview, leagueMission, LEGENDS, SANDBOX, type Mission } from '../../data/missions';
 import { unlockedAssets } from '../../data/assets';
 import { TEMPTATIONS, BIAS_INFO } from '../../data/events';
 import { PAL } from '../../art/art';
 import { beep } from '../../systems/audio';
 import { pick, shuffle, mulberry32 } from '../../systems/rng';
-import { track, rematchReady, scheduleRematch } from '../../systems/progress';
+import { track } from '../../systems/progress';
 import { jingle } from '../../systems/music';
 import { ABILITY, SWIM_BADGE, TRANSFER_BADGE } from '../travel';
 import { HERMITS } from '../maps';
@@ -36,22 +36,11 @@ import { tick } from '../../systems/account';
 import { T } from '../../i18n';
 
 export async function trainer(n: NpcDef, w: WorldApi) {
-  if (S.defeated.includes(n.id)) {
-    if (!rematchReady(n.id)) return say(pick(TRAINER_TIPS), n.name);
-    // rivincita: domande più difficili, anche quelle che hai sbagliato
-    await say([T('Rieccoti! Ho studiato dall\'ultima volta.'), T('Rivincita: stavolta le domande sono più toste!')], n.name);
-    const rq = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), DUEL.rematch.n, { preferReview: true, target: targetDiff(routeStage(n) + 2) });
-    const rr = await runDuel({ foeName: n.name, foeTitle: T('Rivincita'), foePal: n.pal, questions: rq, ...DUEL.rematch });
-    tick();
-    if (rr.win) { reward({ rep: REWARD.rep.rematch, xp: REWARD.xp.rematch, event: 'rematch' }); scheduleRematch(n.id); await say([T('Battuto di nuovo! Ci rivediamo tra qualche giorno.'), pick(TRAINER_TIPS)], n.name); }
-    else { await say(T('Stavolta ho vinto io! Torna quando vuoi.'), n.name); scheduleRematch(n.id); await defeatRespawn(w); }
-    w.refresh();
-    return;
-  }
+  // una sfida sola: battuto, l'investitore non ti viene più incontro e ti parla solo del posto in cui siete
+  if (S.defeated.includes(n.id)) return placeTalk(n.name, T('La nostra sfida l\'abbiamo già fatta.'));
   await say(n.lines ?? [T('Sfida!')], n.name);
   const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), DUEL.trainer.n, { preferReview: true, target: targetDiff(routeStage(n)) });
   const r = await runDuel({ foeName: n.name, foePal: n.pal, questions: qs, ...DUEL.trainer });
-  if (r.win) scheduleRematch(n.id);
   await afterDuel(r.win, n.id, REWARD.rep.trainer, w, n.name);
 }
 
@@ -99,7 +88,7 @@ export function allStudentsBeaten(m: number): boolean {
 
 export async function student(n: NpcDef, w: WorldApi) {
   const m = n.data?.n as number;
-  if (S.defeated.includes(n.id)) return say([T('La Whale è là in fondo. Buona fortuna!'), pick(TRAINER_TIPS)], n.name);
+  if (S.defeated.includes(n.id)) return placeTalk(n.name, S.badges >= m ? T('La nostra sfida l\'abbiamo già fatta.') : T('La nostra sfida l\'abbiamo già fatta. La Whale è là in fondo: buona fortuna!'));
   await say(T('Prima di arrivare alla Whale devi superare me!'), n.name);
   // gli allievi sono un gradino sotto la loro Whale
   const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.student.n, { target: targetDiff(m - 1) - 0.25 });
@@ -111,26 +100,13 @@ export async function student(n: NpcDef, w: WorldApi) {
 
 // ---------------- Whale ----------------
 
-/** Medaglia già vinta: dal grado "Rinomato" la Whale accetta una rivincita con domande di livello esperto. */
-async function mentorRematch(m: number, md: ReturnType<typeof mentor>) {
-  if (repTier().index < TIER_MENTOR_REMATCH) return say([T`Hai già la ${md.badge}.`, md.win, T('Quando la tua Reputazione sarà da "Rinomato" ti concederò una rivincita da esperto.')], md.name);
-  const done = !!S.flags[`m${m}_rematch`];
-  const c = await choose([T('Rivincita da esperto'), T('Un\'altra volta')], { cancel: true, prompt: done ? T('Hai già vinto la mia rivincita. Vuoi rigiocarla?') : T('Sei diventat{o|a} famos{o|a}. Accetti una rivincita con le domande più difficili?'), who: md.name });
-  if (c !== 0) return;
-  const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentorRematch.n, { target: 3.5 });
-  const prevFid = S.stats.fiducia;
-  const r = await runDuel({ foeName: md.name, foeTitle: T`Whale ${m} · rivincita`, foePal: md.palette, questions: qs, ...DUEL.mentorRematch, arena: 'sala' });
-  S.stats.fiducia = Math.max(prevFid, S.stats.fiducia);
-  if (r.win && !done) reward({ flag: `m${m}_rematch`, rep: REWARD.rep.mentorRematch, xp: REWARD.xp.mentorRematch });
-  await say(r.win ? [T('Da esperto a esperto: complimenti.'), mentorCharacterLine()] : T('Le domande da esperto non perdonano. Torna quando vuoi.'), md.name);
-}
-
 export async function mentorBattle(m: number, w: WorldApi) {
   const md = mentor(m, S.track);
   // vecchi salvataggi: il duello era già vinto ma la Medaglia arrivava solo dopo la missione
   if (S.badges === m - 1 && S.flags[`m${m}_p1`]) { await say(T('Il duello l\'avevi già vinto: l\'Attestato è tuo.'), md.name); await winBadge(m, w); }
   if (S.badges >= m) {
-    if (S.seals >= m) return mentorRematch(m, md);
+    // Medaglia completa: la Whale non si risfida, ti parla dell'argomento del suo Exchange
+    if (S.seals >= m) return placeTalk(md.name, T`Hai già la ${md.badge}, Attestato e Sigillo.`);
     return sealChallenge(m, w);
   }
   if (S.badges < m - 1) return say([T('Sei arrivat{o|a} qui troppo presto!'), T`Prima ti serve l'Attestato della Whale ${S.badges + 1}.`], md.name);
@@ -369,6 +345,8 @@ async function accountTrial(t: Trial, who: string): Promise<boolean> {
 
 export async function league(i: number, w: WorldApi) {
   const L = LEAGUE[i];
+  // dopo il titolo Wall Street resta aperta: l'unico posto in cui le sfide si rifanno
+  if (S.flags.champion && S.defeated.includes(`league_${i}`)) return leagueRematch(i, w);
   if (i > 0 && !S.defeated.includes(`league_${i - 1}`)) return say(T('Devi prima superare il Superiore precedente.'), L.name);
   await say([L.intro, i === 4 ? T('Sono il Campione. La prova finale: tutto ciò che hai imparato.') : `Sono ${L.title.toLowerCase()}.`], L.name);
   const topics = i < 4 ? LEAGUE_TOPICS[i] : trackTopics(S.track, S.mixedClasses, 8);
@@ -402,6 +380,47 @@ export async function league(i: number, w: WorldApi) {
   save();
 }
 
+/**
+ * Rivincita di Wall Street (solo da Campione): gli stessi Superiori, in ordine, con domande del fine gioco.
+ * Si rifà solo il duello: la prova pratica sul conto l'hai già superata. Ogni giro completo riparte dal primo.
+ */
+async function leagueRematch(i: number, w: WorldApi) {
+  const L = LEAGUE[i];
+  const done = Number(S.flags.wsRound ?? 0);
+  if (i > done) return say([T('Le rivincite di Wall Street si fanno in ordine, come la prima volta.'), T`Prima batti di nuovo ${done === 0 ? T('il primo Superiore') : T('il Superiore precedente')}.`], L.name);
+  if (i < done) return placeTalk(L.name, T('In questo giro mi hai già battuto. Prosegui con i Superiori successivi.'));
+  const c = await choose([T('Rivincita'), T('Un\'altra volta')], { cancel: true, prompt: i === 4 ? T('Il Campione sei tu, ma il titolo si difende. Rifacciamo la sfida finale, con domande ancora più difficili?') : T('Wall Street si può rifare quante volte vuoi. Accetti la rivincita, con domande più difficili della prima volta?'), who: L.name });
+  if (c !== 0) return;
+  const topics = i < 4 ? LEAGUE_TOPICS[i] : trackTopics(S.track, S.mixedClasses, 8);
+  const P = i === 4 ? DUEL.champion : DUEL.league;
+  const qs = pickQuestions(topics, P.n, { target: endgameDiff() });
+  const r = await runDuel({ foeName: L.name, foeTitle: T`${L.title} · rivincita`, foePal: L.palette, questions: qs, ...P, arena: 'lega' });
+  tick();
+  if (!r.win) { await say(T('Il titolo si difende ogni giorno. Ripassa e torna quando vuoi.'), L.name); return defeatRespawn(w); }
+  S.flags.wsRound = i === 4 ? 0 : done + 1;
+  reward({ rep: REWARD.rep.rematch, xp: REWARD.xp.rematch, event: 'rematch', save: false });
+  beep('win');
+  await say(i === 4 ? [T('Hai difeso il titolo. Wall Street riparte da capo quando vuoi.')] : [T('Rivincita vinta. Prosegui!')], L.name);
+  w.refresh();
+  save();
+}
+
+/** Seconda chiacchierata con chi hai già sfidato: niente duello, solo un appunto sull'argomento del posto in cui siete. */
+export function placeTalk(who: string, lead: string): Promise<void> {
+  const topics = placeTopics();
+  const pages = booksFor(topics).filter((b) => !b.id.endsWith('_ctx')).flatMap((b) => b.pages);
+  const labels = topics.map((t) => `«${TOPIC_LABEL[t]}»`).join(T(' e '));
+  return say(pages.length ? [lead, T`Da queste parti si parla di ${labels}. Te lo ripeto volentieri:`, pick(pages)] : [lead, pick(TRAINER_TIPS)], who);
+}
+
+/** Argomenti del luogo: l'Exchange o la città della Whale, il Percorso che porta alla città successiva, Wall Street. */
+function placeTopics(): Parameters<typeof booksFor>[0] {
+  const route = getMap(S.map).route;
+  const n = route ?? townOf(S.map) ?? 1;
+  if (n >= 9) return LEAGUE_TOPICS.flat();
+  return mentorTopics(Math.max(1, n), S.track, S.mixedClasses);
+}
+
 export async function tower() {
   const opts = [T('Torre delle Sfide (piani infiniti)'), ...LEGENDS.map((l) => T`Crisi leggendaria: ${l.title}${S.legends.includes(l.id) ? ' ✓' : ''}`), T`Boss dei Mercati${Acc.graduated() ? '' : T(' (dopo Wall Street)')}`, T`Nuova Partita+${Acc.graduated() ? '' : T(' (dopo Wall Street)')}`, T('Esci')];
   const c = await choose(opts, { cancel: true, prompt: T`Record personale: piano ${S.tower.best}.`, who: T('Custode della Torre') });
@@ -411,9 +430,10 @@ export async function tower() {
     const prevFid = S.stats.fiducia;
     S.stats.fiducia = 100;
     for (;;) {
-      const diff = Math.min(4, 1 + Math.floor(floor / 3));
+      // la Torre parte dal livello del fine gioco e sale di un quarto di livello ogni tre piani
+      const target = Math.min(MAX_DIFF, endgameDiff() + 0.25 * Math.floor(floor / 3));
       const pool = trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole']);
-      const qs = pickQuestions(pool, 3, { minDiff: diff, maxDiff: diff });
+      const qs = pickQuestions(pool, 3, { target });
       const r = await runDuel({ foeName: T`Piano ${floor + 1}`, foeTitle: T('Torre delle Sfide'), foePal: 13, questions: qs, ...DUEL.tower, arena: 'torre' });
       if (!r.win) break;
       floor++;
