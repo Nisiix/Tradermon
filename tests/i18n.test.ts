@@ -91,3 +91,16 @@ describe('inglese', () => {
     expect(longest / en.length).toBeLessThanOrEqual(0.33);
   });
 });
+
+describe('dizionario della landing', () => {
+  it('contiene ogni testo che la landing e la privacy passano a T(), e niente dei moduli del solo gioco', async () => {
+    const b = await import('../scripts/i18n-build');
+    const small = b.landingDictionary();
+    const files = b.moduleGraph(b.LANDING_ENTRIES);
+    expect(files.some((f) => f.endsWith('src/i18n/landing.ts'))).toBe(true);
+    const missing = files.flatMap((f) => b.tKeys(f)).filter((k) => k in EN && !(hashKey(k) in small));
+    expect(missing).toEqual([]);
+    // deve restare piccolo: è il motivo per cui esiste
+    expect(Object.keys(small).length).toBeLessThan(Object.keys(EN).length / 5);
+  });
+});

@@ -1,4 +1,7 @@
 // Landing page di Tradermon: niente Phaser, solo canvas 2D e CSS. Riusa la pixel art e i dati del gioco.
+// Primo import: il dizionario inglese della sola landing. Le costanti dei moduli del gioco (città, Whale) restano
+// chiavi italiane e si traducono qui al momento di mostrarle, così la lingua cambia sul posto senza ricaricare.
+import '../src/i18n/landing';
 import '@fontsource/press-start-2p/400.css';
 import '@fontsource/dotgothic16/latin-400.css';
 import '@fontsource/dotgothic16/latin-ext-400.css';
@@ -9,11 +12,15 @@ import { mentor, TOWNS } from '../src/data/story';
 import type { Track } from '../src/types';
 import donazioni from './config/donazioni.json';
 import segnalazioni from './config/segnalazioni.json';
-import { T } from '../src/i18n';
+import { T, keepKeys } from '../src/i18n';
 import { translateDom, wireLangSwitch } from '../src/i18n/dom';
 
+keepKeys(false);
 translateDom();
-wireLangSwitch();
+// Cambio lingua: i testi della pagina cambiano subito, le parti disegnate dal codice al fotogramma dopo
+wireLangSwitch(document, () => { for (const f of relang) f(); });
+/** Parti della pagina scritte dal codice, da riscrivere quando cambia la lingua. */
+const relang: (() => void)[] = [];
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -229,40 +236,55 @@ if ('IntersectionObserver' in window) {
 
 // ---------------- Percorsi ----------------
 
-const TRACKS: { id: Track; name: string; color: string; desc: string }[] = [
-  { id: 'stocks', name: T('Sentiero dei Titoli'), color: 'blue', desc: T('Le azioni delle aziende: bilanci, settori, scelte.') },
-  { id: 'etf', name: T('Sentiero degli Indici'), color: 'green', desc: T('Gli ETF: panieri, costi bassi, pazienza.') },
-  { id: 'crypto', name: T('Sentiero Cripto'), color: 'orange', desc: T('La frontiera più rischiosa: reti, chiavi, volatilità.') },
-  { id: 'mixed', name: T('Sentiero Misto'), color: 'purple', desc: T('Due o tre classi insieme: l\'arte delle proporzioni.') },
+const TRACKS: { id: Track; name: () => string; color: string; desc: () => string }[] = [
+  { id: 'stocks', name: () => T('Sentiero dei Titoli'), color: 'blue', desc: () => T('Le azioni delle aziende: bilanci, settori, scelte.') },
+  { id: 'etf', name: () => T('Sentiero degli Indici'), color: 'green', desc: () => T('Gli ETF: panieri, costi bassi, pazienza.') },
+  { id: 'crypto', name: () => T('Sentiero Cripto'), color: 'orange', desc: () => T('La frontiera più rischiosa: reti, chiavi, volatilità.') },
+  { id: 'mixed', name: () => T('Sentiero Misto'), color: 'purple', desc: () => T('Due o tre classi insieme: l\'arte delle proporzioni.') },
 ];
+// i ritratti si disegnano una volta sola: al cambio di lingua cambiano solo le scritte
+const portraits = new Map<number, string>();
+const face = (pal: number) => { let p = portraits.get(pal); if (!p) { p = portrait(pal); portraits.set(pal, p); } return p; };
 const cards = $('#cards');
-for (const t of TRACKS) {
-  const m5 = mentor(5, t.id);
-  const card = document.createElement('button');
-  card.type = 'button';
-  card.className = `card ${t.color}`;
-  card.setAttribute('aria-label', T`${t.name}: ${t.desc} Whale della quinta città: ${m5.name}, Tecnica ${m5.technique}.`);
-  card.innerHTML = `<span class="inner"><span class="front"><span class="case"></span><b>${t.name}</b><span>${t.desc}</span></span>`
-    + T`<span class="back"><img alt="" width="64" height="96" src="${portrait(m5.palette)}"><b>${m5.name}</b><span>Whale di ${TOWNS[5].name}</span><span class="tech">${m5.technique}</span></span></span>`;
-  card.addEventListener('click', () => card.classList.toggle('flip'));
-  cards.append(card);
+function renderCards() {
+  const flipped = [...cards.children].map((c) => c.classList.contains('flip'));
+  cards.replaceChildren();
+  TRACKS.forEach((t, i) => {
+    const m5 = mentor(5, t.id);
+    const name = t.name(), desc = t.desc(), who = T(m5.name), tech = T(m5.technique);
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = `card ${t.color}${flipped[i] ? ' flip' : ''}`;
+    card.setAttribute('aria-label', T`${name}: ${desc} Whale della quinta città: ${who}, Tecnica ${tech}.`);
+    card.innerHTML = `<span class="inner"><span class="front"><span class="case"></span><b>${name}</b><span>${desc}</span></span>`
+      + T`<span class="back"><img alt="" width="64" height="96" src="${face(m5.palette)}"><b>${who}</b><span>Whale di ${T(TOWNS[5].name)}</span><span class="tech">${tech}</span></span></span>`;
+    card.addEventListener('click', () => card.classList.toggle('flip'));
+    cards.append(card);
+  });
 }
+renderCards();
+relang.push(renderCards);
 
 // ---------------- Medaglie ----------------
 
 const badges = $('#badges');
-for (let n = 1; n <= 8; n++) {
-  const m = mentor(n, 'stocks');
-  const name = n === 5 || n === 6 ? (n === 5 ? T('La Whale del percorso') : T('La Whale del Raccolto')) : m.name;
-  const el = document.createElement('div');
-  el.className = 'badge';
-  el.innerHTML = `<span class="medal m${n}" aria-hidden="true"></span><b>${m.badge}</b><span>${TOWNS[n].name}</span><span class="small">${name}</span>`;
-  badges.append(el);
+function renderBadges() {
+  badges.replaceChildren();
+  for (let n = 1; n <= 8; n++) {
+    const m = mentor(n, 'stocks');
+    const name = n === 5 || n === 6 ? (n === 5 ? T('La Whale del percorso') : T('La Whale del Raccolto')) : T(m.name);
+    const el = document.createElement('div');
+    el.className = 'badge';
+    el.innerHTML = `<span class="medal m${n}" aria-hidden="true"></span><b>${T(m.badge)}</b><span>${T(TOWNS[n].name)}</span><span class="small">${name}</span>`;
+    badges.append(el);
+  }
+  const league = document.createElement('div');
+  league.className = 'badge league';
+  league.innerHTML = T`<span class="medal ml" aria-hidden="true"></span><b>Wall Street</b><span>la Borsa finale</span><span class="small">4 Superiori e il Campione</span>`;
+  badges.append(league);
 }
-const league = document.createElement('div');
-league.className = 'badge league';
-league.innerHTML = T`<span class="medal ml" aria-hidden="true"></span><b>Wall Street</b><span>la Borsa finale</span><span class="small">4 Superiori e il Campione</span>`;
-badges.append(league);
+renderBadges();
+relang.push(renderBadges);
 
 // ---------------- Donazioni: PayPal e crypto ----------------
 // Tutto da config/donazioni.json: link PayPal (paypal.me o paypal.com) e/o indirizzi crypto. Se manca tutto, l'invito non compare.
@@ -301,11 +323,13 @@ if (list.length) {
   list.forEach((d, i) => {
     const b = document.createElement('button');
     b.type = 'button'; b.setAttribute('role', 'tab'); b.textContent = d.rete;
-    b.addEventListener('click', () => show(i));
+    b.addEventListener('click', () => { current = i; show(i); });
     tabs.append(b);
   });
   tabs.hidden = list.length < 2;
-  const open = (e: Event) => { e.preventDefault(); show(0); box.showModal(); };
+  let current = 0;
+  const open = (e: Event) => { e.preventDefault(); current = 0; show(0); box.showModal(); };
+  relang.push(() => { if (box.open) show(current); });
   document.querySelectorAll('[data-donate]').forEach((b) => b.addEventListener('click', open));
 }
 function esc(s: string): string { return s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`); }
@@ -325,6 +349,7 @@ if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(reportTo)) {
   $('#report-close').addEventListener('click', () => box.close());
   $('#report-address').textContent = reportTo;
   form.querySelector('textarea')!.addEventListener('input', () => { err.textContent = ''; });
+  relang.push(() => { err.textContent = ''; });
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const data = new FormData(form);
@@ -372,7 +397,10 @@ function walkers() {
   };
   draw();
 }
-walkers();
+// Disegnare il foglio dei personaggi costa mezzo secondo su un telefono: si fa dopo, quando la pagina è già visibile
+// e ferma, così i testi compaiono subito.
+const later = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(() => f(), { timeout: 2500 }) : setTimeout(f, 300));
+if (document.readyState === 'complete') later(walkers); else addEventListener('load', () => later(walkers), { once: true });
 
 // La Guida si apre anche da un link diretto (#guida) arrivando dal gioco: porta il focus sulla sezione
 if (location.hash === '#guida') $('#guida').focus({ preventScroll: true });

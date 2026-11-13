@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { hashKey } from './src/i18n/hash';
+import { englishDictionary, landingDictionary } from './scripts/i18n-build';
 import { defineConfig, type Plugin } from 'vite';
 
 // Porta del server locale (API Alpaca): la stessa letta da server/index.mjs.
@@ -45,30 +45,25 @@ function pagePolicy(): Plugin {
 }
 
 /**
- * Dizionario inglese (modulo virtuale 'virtual:i18n-en', importato come '#i18n-en'): unisce src/i18n/en/*.json, scritti come
- * { "testo italiano": "English text" }, e li compila con la chiave corta hashKey(testo italiano).
+ * Dizionari inglesi come moduli virtuali: '#i18n-en' (tutto, per il gioco) e '#i18n-en-landing' (solo i testi di landing
+ * e privacy). Unicono src/i18n/en/*.json, scritti come { "testo italiano": "English text" }, con la chiave corta
+ * hashKey(testo italiano). Vedi scripts/i18n-build.ts.
  */
-export function englishDictionary(): Record<string, string> {
-  const dir = new URL('./src/i18n/en/', import.meta.url);
-  const out: Record<string, string> = {};
-  for (const f of readdirSync(dir).filter((n) => n.endsWith('.json')).sort((a, b) => Number(a === 'extra.json') - Number(b === 'extra.json') || a.localeCompare(b))) {
-    const part = JSON.parse(readFileSync(new URL(f, dir), 'utf8')) as Record<string, string>;
-    for (const [it, en] of Object.entries(part)) out[hashKey(it)] = en;
-  }
-  return out;
-}
-
 function i18nPlugin(): Plugin {
-  const id = 'virtual:i18n-en';
-  // '#i18n-en' (package.json "imports") porta qui dentro Vite e Vitest; fuori (esbuild, tsx) porta a src/i18n/en-node.ts
+  // '#i18n-en…' (package.json "imports") porta qui dentro Vite e Vitest; fuori (esbuild, tsx) porta a src/i18n/en-node.ts
+  const ids: Record<string, () => Record<string, string>> = { '#i18n-en': englishDictionary, '#i18n-en-landing': landingDictionary };
   return {
     name: 'tradermon-i18n',
-    resolveId: (s) => (s === id || s === '#i18n-en' ? '\0' + id : null),
+    // prima della risoluzione di Vite: altrimenti "imports" di package.json porta a en-node.ts, che spedisce tutti i
+    // JSON (italiano e inglese) e calcola le chiavi a ogni apertura della pagina
+    enforce: 'pre',
+    resolveId: (s) => (s in ids ? '\0virtual:' + s.slice(1) : null),
     load(s) {
-      if (s !== '\0' + id) return null;
+      const name = s.startsWith('\0virtual:') ? '#' + s.slice('\0virtual:'.length) : '';
+      if (!(name in ids)) return null;
       const dir = new URL('./src/i18n/en/', import.meta.url);
       for (const f of readdirSync(dir)) this.addWatchFile(new URL(f, dir).pathname);
-      return `export default ${JSON.stringify(englishDictionary())};`;
+      return `export default ${JSON.stringify(ids[name]())};`;
     },
   };
 }
@@ -85,6 +80,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     // index.html è la landing page; il gioco vive in gioca/index.html (Gioca a Tradermon).
     // hd2d.html è il prototipo 2.5D (Three.js): si apre da /hd2d.html, separato dal gioco
-    rollupOptions: { input: { landing: 'index.html', main: 'gioca/index.html', hd2d: 'hd2d.html', privacy: 'privacy/index.html' } },
+    rollupOptions: {
+      input: { landing: 'index.html', main: 'gioca/index.html', hd2d: 'hd2d.html', privacy: 'privacy/index.html' },
+      // ogni dizionario nel suo file: senza, Rollup può mettere quello intero del gioco nel pezzo condiviso con la landing
+      output: { manualChunks: (id) => (id === '\0virtual:i18n-en' ? 'i18n-en' : id === '\0virtual:i18n-en-landing' ? 'i18n-landing' : undefined) },
+    },
   },
 });
