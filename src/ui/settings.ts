@@ -36,7 +36,7 @@ let open = false;
 
 export function initSettings() {
   const b = el('button', 'gear-btn', '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1h2l.4 2 1.3.6 1.7-1.2 1.4 1.4-1.2 1.7.6 1.3 2 .4v2l-2 .4-.6 1.3 1.2 1.7-1.4 1.4-1.7-1.2-1.3.6L9 15H7l-.4-2-1.3-.6-1.7 1.2-1.4-1.4 1.2-1.7L2.8 9.2 1 9V7l2-.4.6-1.3-1.2-1.7 1.4-1.4 1.7 1.2 1.3-.6z M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z" fill-rule="evenodd"/></svg>');
-  const tip = () => { b.title = `Impostazioni (${keysOf('settings')[0] ?? '⚙'})`; };
+  const tip = () => { b.title = T`Impostazioni (${keysOf('settings')[0] ?? '⚙'})`; };
   tip();
   onPrefsChange(tip);
   b.setAttribute('aria-label', T('Impostazioni'));

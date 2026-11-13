@@ -10,6 +10,9 @@ import { T } from '../i18n';
 // TER sono INDICATIVI (ordini di grandezza storici, non dati in tempo reale): le schede lo dicono e
 // rimandano al documento ufficiale (KID, prospetto, bilancio) per i numeri aggiornati.
 
+/** Nome di ogni classe di asset, nella lingua scelta. */
+export const CLASS_LABEL: Record<AssetClass, string> = { stocks: T('Azioni'), etf: 'ETF', crypto: T('Cripto') };
+
 export const SECTOR_LABEL: Record<Sector, string> = {
   tech: T('Tecnologia'), finance: T('Finanza'), energy: T('Energia'), health: T('Salute'), consumer: T('Consumi'),
   utility: T('Utility'), bond: T('Obbligazioni'), gold: T('Oro'), crypto: T('Cripto'), stable: T('Stablecoin'), world: T('Globale'),

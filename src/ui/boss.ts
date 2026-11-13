@@ -146,7 +146,7 @@ async function planForm(def: BossDef): Promise<void> {
     };
     body.querySelectorAll('.st, .rk').forEach((i) => i.addEventListener('input', size));
     const load = async () => {
-      q('.px').textContent = 'Prezzo: …';
+      q('.px').textContent = T('Prezzo: …');
       try { price = (await A.latest(sel.value, cls(sel.value))).price; q('.px').textContent = T`Prezzo attuale di ${ASSET_BY_ID[sel.value].ticker}: ${fmtPx(price)} $ (l'ingresso sarà al prezzo del momento dell'invio).`; }
       catch (e) { price = 0; q('.px').textContent = T`Prezzo non disponibile: ${(e as Error).message}`; }
       size();
@@ -266,7 +266,7 @@ async function resolve(def: BossDef): Promise<void> {
   const qp = quizPoints(run.quiz, run.quizMax);
   const total = qp + p.quality + out.points;
   const won = bossWon(qp, p.quality, out.points);
-  await modal(`${def.name} · l'esito`, ({ body, button, close }) => {
+  await modal(T`${def.name} · l'esito`, ({ body, button, close }) => {
     body.innerHTML = T`<p>${out.how === 'stop' ? T('È scattato lo <b>stop</b>') : out.how === 'obiettivo' ? T('Raggiunto l\'<b>obiettivo</b>') : T('Mandato arrivato a <b>scadenza</b>')}: uscita a ${fmtPx(out.exit)} $ (${fmtPct(out.exit / p.entry - 1)}), cioè ${out.r >= 0 ? '+' : ''}${out.r.toFixed(2)} volte il rischio. Sul capitale della sfida: ${fmtPct(out.r * p.risk)}.</p>
       <table class="t"><tr><th>Energia tolta al Boss</th><th class="n">Punti</th></tr>
       <tr><td>Quiz (${run.quiz}/${run.quizMax})</td><td class="n">${qp}/${BOSS_RULES.quizMax}</td></tr>

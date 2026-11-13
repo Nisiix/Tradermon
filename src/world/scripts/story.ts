@@ -14,7 +14,7 @@ import { pickQuestions, targetDiff, storyStage } from '../../systems/quiz';
 import { trackTopics } from '../../data/quiz/build';
 import { antagonist, mentor } from '../../data/story';
 import { DUEL, REWARD } from '../../systems/balance';
-import { ASSETS, ASSET_BY_ID, starterFor, starterOptions, classesOf, SECTOR_LABEL } from '../../data/assets';
+import { ASSETS, ASSET_BY_ID, starterFor, starterOptions, classesOf, SECTOR_LABEL, CLASS_LABEL } from '../../data/assets';
 import { metrics, tradingDaysBetween } from '../../systems/market';
 import { PAL } from '../../art/art';
 import { beep } from '../../systems/audio';
@@ -100,7 +100,7 @@ async function moneyTalk() {
   ], T('Prof. Saldi'));
 }
 
-const CLASS_NAME = (c: AssetClass) => (c === 'stocks' ? T('Azioni') : c === 'etf' ? 'ETF' : T('Cripto'));
+const CLASS_NAME = (c: AssetClass) => CLASS_LABEL[c];
 
 export async function chooseCase(n: NpcDef, w: WorldApi) {
   const track = n.data?.track as Track;
@@ -115,12 +115,14 @@ export async function chooseCase(n: NpcDef, w: WorldApi) {
     crypto: T('Tecnologia, volatilità, truffe da evitare'),
     mixed: T('Tre classi insieme: proporzioni e asset allocation'),
   };
+  // il Misto non viene alleggerito: la scheda avverte, senza entrare nei dettagli, che chiede più studio degli altri
+  const effort = track === 'mixed' ? T('<tr><td>Impegno</td><td>È il percorso più impegnativo: seguire tre classi insieme richiede più studio.</td></tr>') : '';
   const ok = await modal<boolean>(n.name, ({ body, button, close }) => {
     body.innerHTML = T`<p><b>${TRACK_LABEL[track]}</b> · ${cls.map(CLASS_NAME).join(' + ')}</p>
       <p>Nella Valigetta c'è una vetrina di titoli veri tra cui scegliere il primo: ${starterOptions(cls).map((a) => `<b>${esc(a.ticker)}</b>`).join(', ')}.</p>
       <table class="t"><tr><th>Classe</th><th>Rischio</th><th>Volatilità tipica</th><th>Esempio di caduta storica</th></tr>
       ${cls.map((c) => `<tr><td><b>${CLASS_NAME(c)}</b></td><td>${'★'.repeat(info[c].stars)}${'☆'.repeat(5 - info[c].stars)}</td><td>${info[c].vol}</td><td>${info[c].dd}</td></tr>`).join('')}</table>
-      <table class="t"><tr><td>Antagonisti</td><td>${antagonist(track).team}</td></tr><tr><td>Tono della storia</td><td>${tone[track]}</td></tr></table>
+      <table class="t"><tr><td>Antagonisti</td><td>${antagonist(track).team}</td></tr><tr><td>Tono della storia</td><td>${tone[track]}</td></tr>${effort}</table>
       <p class="small muted">Il percorso non si cambia a metà partita: dopo Wall Street potrai iniziare una Nuova Partita+ in un altro percorso, ripartendo da zero.</p>`;
     button(T('Scelgo questa Valigetta'), () => close(true), 'primary');
     button(T('Ci penso ancora'), () => close(false));
@@ -191,7 +193,7 @@ async function startTrack(track: Track, w: WorldApi) {
     if (await trade(true)) { await say(T('Valigetta aperta: il tuo primo titolo vero è nel conto, o in coda per l\'apertura dei mercati.'), T('Dott.ssa Ratio')); }
     else await say(T('Nessun acquisto per ora: la Valigetta resta sigillata. La apri quando vuoi, da una Banca.'), T('Dott.ssa Ratio'));
   }
-  await say([T`Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu${keysOf('menu')[0] ? ` (tasto ${keysOf('menu')[0]})` : ''}, insieme all'Investidex e al tuo Profilo.`], T('Prof. Saldi'));
+  await say([T`Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu${keysOf('menu')[0] ? T` (tasto ${keysOf('menu')[0]})` : ''}, insieme all'Investidex e al tuo Profilo.`], T('Prof. Saldi'));
   await say([T('Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.'), T('Gli scaffali in alto a sinistra sono la Sezione della Whale: libri sull\'argomento su cui la Whale di quella città ti interrogherà nel duello.'), T('Leggili prima di sfidarla: in questo gioco si vince studiando, non indovinando.')], T('Prof. Saldi'));
   save();
   w.refresh();

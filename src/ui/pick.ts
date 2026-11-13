@@ -7,14 +7,14 @@ import { T } from '../i18n';
 export function runPick(m: PickMission): Promise<{ ok: boolean; detail: string } | null> {
   let round = 0;
   let score = 0;
-  return modal<{ ok: boolean; detail: string }>(`Missione · ${m.title}`, ({ body, foot, close, button }) => {
+  return modal<{ ok: boolean; detail: string }>(T`Missione · ${m.title}`, ({ body, foot, close, button }) => {
     const show = () => {
       foot.innerHTML = '';
       if (round >= m.rounds.length) {
         const ok = score >= m.need;
         beep(ok ? 'win' : 'lose');
         body.innerHTML = T`<h3 class="${ok ? 'good' : 'bad'}">${ok ? T('Missione superata!') : T('Missione non superata')}</h3><p>Risposte corrette: ${score}/${m.rounds.length} (servono ${m.need}).</p>`;
-        button(T('Continua'), () => close({ ok, detail: `${score}/${m.rounds.length} corrette` }), 'primary');
+        button(T('Continua'), () => close({ ok, detail: T`${score}/${m.rounds.length} corrette` }), 'primary');
         return;
       }
       const r = m.rounds[round];

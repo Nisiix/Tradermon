@@ -62,7 +62,7 @@ export function planScore(p: Pick<BossPlan, 'entry' | 'stop' | 'target' | 'risk'
   let pts = 0;
   const rrPts = rr >= 2 ? 12 : rr >= 1.5 ? 8 : rr >= 1 ? 4 : 0;
   pts += rrPts;
-  notes.push({ ok: rr >= 1.5, text: T`Rapporto rendimento/rischio ${rr.toFixed(1)} a 1${rr >= 2 ? T(': un errore costa metà di un successo.') : rr >= 1.5 ? ': accettabile.' : T(': rischi più di quanto puoi guadagnare.')}` });
+  notes.push({ ok: rr >= 1.5, text: T`Rapporto rendimento/rischio ${rr.toFixed(1)} a 1${rr >= 2 ? T(': un errore costa metà di un successo.') : rr >= 1.5 ? T(': accettabile.') : T(': rischi più di quanto puoi guadagnare.')}` });
   const riskPts = p.risk <= 0.02 ? 10 : p.risk <= 0.03 ? 6 : 2;
   pts += riskPts;
   notes.push({ ok: p.risk <= 0.02, text: T`Rischi il ${(p.risk * 100).toFixed(1)}% del capitale${p.risk <= 0.02 ? T(': dieci errori di fila non ti fermano.') : T(': troppi errori così e la sfida finisce presto.')}` });

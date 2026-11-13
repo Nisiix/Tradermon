@@ -18,7 +18,7 @@ import { DIFFICULTY } from '../systems/balance';
 import { requireAccount, apiKeysMenu, stageScreen, leverageDesk, accountAlerts, nextSealLine } from './broker';
 import { journalPrompt } from './journal';
 import { questionnaire } from './setup';
-import { mirrorReport } from '../systems/mirror';
+import { mirrorReport, profileName } from '../systems/mirror';
 import { shuffle } from '../systems/rng';
 import { onBuy, onSell } from '../systems/character';
 import { T, LOCALE } from '../i18n';
@@ -77,12 +77,12 @@ export async function openClinic(townIdx: number) {
       case T('Specchio dell\'investitore'): {
         const before = S.profile;
         await say(mirrorReport().lines, NURSE);
-        const redo = await choose([T('No, va bene così'), T('Rifaccio il questionario')], { prompt: T`Profilo dichiarato ${S.profile.toUpperCase()} (orizzonte: ${S.horizon ? T(S.horizon) : '—'}). Vuoi rifare il questionario? Le tue scelte nelle missioni restano nello Specchio.`, who: NURSE });
+        const redo = await choose([T('No, va bene così'), T('Rifaccio il questionario')], { prompt: T`Profilo dichiarato ${profileName(S.profile).toUpperCase()} (orizzonte: ${S.horizon ? T(S.horizon) : '—'}). Vuoi rifare il questionario? Le tue scelte nelle missioni restano nello Specchio.`, who: NURSE });
         if (redo !== 1) break;
         const sc = await questionnaire();
         S.profileScore = sc;
         S.profile = profileFromScore(sc);
-        await say(T`Il tuo profilo ora è: ${S.profile.toUpperCase()}. Ricorda: è uno strumento per conoscerti, non una raccomandazione.`, NURSE);
+        await say(T`Il tuo profilo ora è: ${profileName(S.profile).toUpperCase()}. Ricorda: è uno strumento per conoscerti, non una raccomandazione.`, NURSE);
         if (S.profile !== before) {
           S.portfolio.target = presetTarget(S.profile);
           toast(T('Piano del conto aggiornato in base al nuovo profilo.'));
@@ -117,7 +117,7 @@ export function checkupHtml(): string {
   return T`
     <div class="grid2">
       <div><b>Patrimonio:</b> ${fmtMoney(v)} <span class="${v >= pf.contributed ? 'good' : 'bad'}">(${fmtPct(v / pf.contributed - 1)} sul capitale)</span><br>
-      <b>Da investire:</b> ${fmtMoney(Acc.usableCash(pf))}${Acc.reserved(pf) > 0 ? T` · <b>in ordini:</b> ${fmtMoney(Acc.reserved(pf))}` : ''}${pf.loan > 0 ? ` · <b class="bad">prestito:</b> ${fmtMoney(pf.loan)}` : ''}<br>
+      <b>Da investire:</b> ${fmtMoney(Acc.usableCash(pf))}${Acc.reserved(pf) > 0 ? T` · <b>in ordini:</b> ${fmtMoney(Acc.reserved(pf))}` : ''}${pf.loan > 0 ? T` · <b class="bad">prestito:</b> ${fmtMoney(pf.loan)}` : ''}<br>
       <b>Slot:</b> ${pf.positions.length}/${slots()} · <b>Clima:</b> ${CLIMATE_LABEL[S.market.climate]} · ${clk.label}</div>
       <div><b>Salute: ${h.state}</b> (${h.score}/100)${bar(h.score)}
       <span class="small">Peso massimo ${h.maxW.toFixed(0)}% · drawdown ${h.dd.toFixed(1)}% · settori ${h.sectors}</span></div>
@@ -227,7 +227,7 @@ export async function trade(guided = false): Promise<boolean> {
           }
         }
         if (hasTech(TECH.LIMIT)) {
-          const lb = el('button', 'btn', 'Limite −3%');
+          const lb = el('button', 'btn', T('Limite −3%'));
           lb.title = T('Ordine limite reale: compra solo se il prezzo scende del 3%');
           lb.addEventListener('click', () => void run(() => Acc.buy(a.id, Number(inp.value), { type: 'limit', price: px[a.id] * 0.97 }), () => { bought = true; }));
           td.append(lb);
@@ -304,7 +304,7 @@ async function diagnose() {
   await say(d.map((x) => x.text), NURSE);
   const lessons = d.filter((x) => x.lesson).map((x) => LESSONS.find((l) => l.id === x.lesson)!).filter(Boolean);
   if (lessons.length) {
-    const c = await choose([...lessons.map((l) => `Leggi: ${l.title}`), T('No, grazie')], { cancel: true, prompt: T('Vuoi ripassare la lezione collegata?'), who: NURSE });
+    const c = await choose([...lessons.map((l) => T`Leggi: ${l.title}`), T('No, grazie')], { cancel: true, prompt: T('Vuoi ripassare la lezione collegata?'), who: NURSE });
     if (c >= 0 && c < lessons.length) await say(lessons[c].body, lessons[c].title);
   }
 }

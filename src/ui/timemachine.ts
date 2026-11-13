@@ -105,7 +105,7 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
 
   return modal<SimOutcome>(o.mission ? T`Macchina del Tempo · ${o.mission.title}` : T`Zona Simulazione · ${sc.name || assets[0].ticker}`, ({ body, foot, close, button }) => {
     body.innerHTML = T`
-      <div class="small" style="margin-bottom:6px">${esc(o.mission?.brief ?? sc.desc)}${sc.historical ? ` <span class="muted">(Riferimento: ${esc(sc.historical)})</span>` : ''}${data.anon ? T(' <span class="muted">Prezzi reali del periodo, a base 100; i nomi dei titoli sono nascosti fino alla fine.</span>') : ''}</div>
+      <div class="small" style="margin-bottom:6px">${esc(o.mission?.brief ?? sc.desc)}${sc.historical ? T` <span class="muted">(Riferimento: ${esc(sc.historical)})</span>` : ''}${data.anon ? T(' <span class="muted">Prezzi reali del periodo, a base 100; i nomi dei titoli sono nascosti fino alla fine.</span>') : ''}</div>
       <div class="tm">
         <div>
           <canvas width="640" height="220"></canvas>
@@ -252,7 +252,7 @@ function simModal(o: SimOpts, data: SimData): Promise<SimOutcome> {
         }
       }
       const n = newsMap.get(day);
-      if (n) { $('.news').textContent = `📰 Giorno ${day}: ${n}`; beep('alert'); if (speed > 1) setSpeed(1); }
+      if (n) { $('.news').textContent = T`📰 Giorno ${day}: ${n}`; beep('alert'); if (speed > 1) setSpeed(1); }
       values.push(value(book, px));
       draw();
     };

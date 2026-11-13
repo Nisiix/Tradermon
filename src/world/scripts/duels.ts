@@ -348,7 +348,7 @@ export async function league(i: number, w: WorldApi) {
   // dopo il titolo Wall Street resta aperta: l'unico posto in cui le sfide si rifanno
   if (S.flags.champion && S.defeated.includes(`league_${i}`)) return leagueRematch(i, w);
   if (i > 0 && !S.defeated.includes(`league_${i - 1}`)) return say(T('Devi prima superare il Superiore precedente.'), L.name);
-  await say([L.intro, i === 4 ? T('Sono il Campione. La prova finale: tutto ciò che hai imparato.') : `Sono ${L.title.toLowerCase()}.`], L.name);
+  await say([L.intro, i === 4 ? T('Sono il Campione. La prova finale: tutto ciò che hai imparato.') : T`Sono ${L.title.toLowerCase()}.`], L.name);
   const topics = i < 4 ? LEAGUE_TOPICS[i] : trackTopics(S.track, S.mixedClasses, 8);
   // Wall Street: dal livello 3,25 del primo Superiore al livello 4 (esperto) dell'ultimo e del Campione
   const P = i === 4 ? DUEL.champion : DUEL.league;

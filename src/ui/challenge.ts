@@ -83,7 +83,7 @@ async function enterCode(week: string) {
   if (S.challenges.some((c) => c.code.toUpperCase() === code.trim().toUpperCase())) return say(T('Questo codice è già in classifica.'), T('Operatrice'));
   S.challenges.push({ code: code.trim().toUpperCase(), score: p.score, date: new Date().toISOString().slice(0, 10), label: p.name });
   save();
-  await say(T`${p.name} entra in classifica con ${p.score} punti${p.week === week ? '' : ` (settimana ${p.week})`}.`, T('Operatrice'));
+  await say(T`${p.name} entra in classifica con ${p.score} punti${p.week === week ? '' : T` (settimana ${p.week})`}.`, T('Operatrice'));
 }
 
 function showBoard(week: string) {

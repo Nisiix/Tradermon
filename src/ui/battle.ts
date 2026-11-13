@@ -191,7 +191,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         const verdict = i < 0 ? T('<b class="bad">Tempo scaduto!</b>') : ok ? T('<b class="good">Giusto!</b>') : T`<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(gtext(q.options[q.answer]))}`;
         const hint = ok ? '' : studyHint(q);
         $('.exp').innerHTML = `<p>${verdict} ${esc(gtext(q.explain))}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
-        const cont = el('button', 'btn primary', 'Continua ▶');
+        const cont = el('button', 'btn primary', T('Continua ▶'));
         cont.style.marginTop = '6px';
         $('.exp').appendChild(cont);
         const go = () => { setHandler(null); void ask(); };

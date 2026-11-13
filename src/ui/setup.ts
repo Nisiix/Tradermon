@@ -68,7 +68,7 @@ export async function onboarding(playerName?: string): Promise<void> {
   S.gender = genders[gi];
   // il colore scelto tinge vestiti e cappellino del protagonista ovunque (mappa, sfide); anteprima dal vivo dietro il banco
   const looks = PLAYER_COLOR_LIST.map((_, i) => portrait(playerPal(i, S.gender)));
-  const av = await choose(PLAYER_COLOR_LIST.map((c) => c.name), { prompt: T('Qual è il tuo colore preferito? Vestiti e cappellino saranno di quel colore (non cambia nulla nel gioco).'), who: T('Prof. Saldi'), onMove: (i) => { img.src = looks[i]; img.alt = S.name; } });
+  const av = await choose(PLAYER_COLOR_LIST.map((c) => T(c.name)), { prompt: T('Qual è il tuo colore preferito? Vestiti e cappellino saranno di quel colore (non cambia nulla nel gioco).'), who: T('Prof. Saldi'), onMove: (i) => { img.src = looks[i]; img.alt = S.name; } });
   S.avatar = av;
   await say(T`Ti sta proprio bene, ${S.name}!`, T('Prof. Saldi'));
   img.src = portrait(PAL.PROF); img.alt = T('Prof. Saldi');
