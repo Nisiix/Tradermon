@@ -6,7 +6,7 @@ import { DIFFICULTIES } from '../src/systems/balance';
 import { mentorTopics, LEAGUE_TOPICS, byTopic, trackTopics } from '../src/data/quiz/build';
 import type { AssetClass, QuizTopic, Track } from '../src/types';
 
-const TRACKS: [Track, AssetClass[]][] = [['stocks', []], ['etf', []], ['crypto', []], ['mixed', ['stocks', 'etf']], ['mixed', ['etf', 'crypto']], ['mixed', ['stocks', 'etf', 'crypto']]];
+const TRACKS: [Track, AssetClass[]][] = [['listed', []], ['crypto', []], ['mixed', []]];
 const avg = (xs: { diff: number }[]) => xs.reduce((s, q) => s + q.diff, 0) / xs.length;
 const count = (topics: QuizTopic[], d: number) => topics.flatMap((t) => byTopic(t)).filter((q) => q.diff === d).length;
 
@@ -20,7 +20,7 @@ function storyDuels(track: Track, mixed: AssetClass[]) {
 }
 
 describe('difficoltà progressiva delle domande', () => {
-  beforeEach(() => { newGame('Test', 0, 'stocks', 'equilibrato'); S.difficulty = 'stratega'; });
+  beforeEach(() => { newGame(); S.difficulty = 'stratega'; });
 
   it('la difficoltà bersaglio sale lungo la storia: 1 alla prima Whale, 3 dopo l\'ottava, 3,5 al Campione', () => {
     expect(targetDiff(0)).toBe(1);
@@ -83,7 +83,7 @@ describe('difficoltà progressiva delle domande', () => {
   });
 
   it('la prima Whale fa solo domande base; il quiz dei Boss ha una media più alta del Campione', () => {
-    const first = pickQuestions(mentorTopics(1, 'etf', []), 8, { target: targetDiff(0) });
+    const first = pickQuestions(mentorTopics(1, 'listed', []), 8, { target: targetDiff(0) });
     expect(first.every((q) => q.diff === 1)).toBe(true);
     for (const diff of DIFFICULTIES) {
       S.difficulty = diff;

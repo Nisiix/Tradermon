@@ -58,7 +58,7 @@ function draw(cv: HTMLCanvasElement, bars: Candle[], marker?: ChartOpts['marker'
 }
 
 export function openChart(o: ChartOpts): Promise<void> {
-  return modal<void>(`Grafico · ${o.title}`, ({ body, button, close }) => {
+  return modal<void>(T`Grafico · ${o.title}`, ({ body, button, close }) => {
     let tf: Timeframe = o.tf ?? '1g';
     const cv = el('canvas') as HTMLCanvasElement;
     cv.width = 640; cv.height = 280; cv.style.width = '100%'; cv.style.maxWidth = '640px'; cv.style.imageRendering = 'auto';

@@ -7,6 +7,8 @@ import ts from 'typescript';
 import { hashKey } from '../src/i18n/hash';
 import { QUESTIONS } from '../src/data/quiz/build';
 import { FILES } from '../src/i18n/en-node';
+import { PLAYER_COLOR_LIST } from '../src/art/art';
+import { ACHIEVEMENTS } from '../src/systems/progress';
 
 const ROOT = join(__dirname, '..');
 const EN: Record<string, string> = {};
@@ -57,6 +59,16 @@ describe('inglese', () => {
   it('ogni testo del codice ha la traduzione inglese', () => {
     const missing = [...keys].filter(([k]) => !(k in EN)).map(([k, at]) => `${at}  ${k.slice(0, 80)}`);
     expect(missing).toEqual([]);
+  });
+
+  it('anche i testi passati a T() da una variabile hanno la traduzione', () => {
+    const dyn = [
+      ...PLAYER_COLOR_LIST.map((c) => c.name),
+      ...ACHIEVEMENTS.flatMap((a) => (a.title ? [a.title] : [])),
+      'Meno di 3 anni', 'Da 3 a 10 anni', 'Più di 10 anni',
+      'Rilettura: coerente', 'Rilettura: emotiva', 'Rilettura: incerta',
+    ];
+    expect(dyn.filter((k) => !(k in EN))).toEqual([]);
   });
 
   it('le traduzioni usano gli stessi segnaposto (o meno, quando l\'inglese non ne ha bisogno)', () => {

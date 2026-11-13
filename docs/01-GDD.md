@@ -58,7 +58,7 @@ L'onboarding segue la struttura classica del genere (risveglio in camera, profes
 | 7 | "Qual è il tuo orizzonte?" | Orizzonte: < 3 anni / 3-10 anni / > 10 anni | Spiegazioni personalizzate su rischio e orizzonte |
 | 8 | Presentazione del rivale: Leo, un bambino rimasto senza famiglia che il Prof ha adottato e cresciuto (il nome è fisso; i vecchi salvataggi tengono quello scelto) | — | Dialoghi del rivale |
 | 9 | Risveglio in camera: la mamma augura buon viaggio e ripassa le nozioni base delle prime sfide (rischio, azioni, ETF, cripto, liquidità; si possono saltare e ripetere per argomento: Rischio, Azioni ed ETF, Cripto), poi si va al Laboratorio | — | Tutorial di movimento |
-| 10 | **La scelta delle Valigette** | Percorso: Titoli / ETF / Cripto (oppure Misto parlando col Professore) | Tutta la storia |
+| 10 | **La scelta delle Valigette** | Percorso: Azioni + ETF / Cripto / Misto (Azioni + ETF + Cripto), sempre da una Valigetta | Tutta la storia |
 | 11 | Configurazione del Conto di Prova | Capitale virtuale, valuta mostrata, allocazione obiettivo assegnata dal questionario | Simulatore e Banca |
 | 12 | Si usano soldi veri? | Il Professore spiega che il gioco usa solo denaro finto, sul conto Paper | Tessera da Apprendista nel menu |
 | 13 | Primo duello col rivale (3 domande facili) | — | Tutorial del quiz |
@@ -88,15 +88,15 @@ Dove si vede: alla Banca la voce "Specchio dell'investitore" confronta dichiarat
 
 Nel Laboratorio ci sono tre Valigette sul tavolo, ognuna con un colore e un'etichetta:
 
-| Valigetta | Colore | Percorso | Asset Card iniziale (simulata) | Antagonisti | Lettera del Professore |
+| Valigetta | Colore | Percorso | Vetrina del primo titolo | Antagonisti | Tono della storia |
 |---|---|---|---|---|---|
-| Valigetta Blu | blu | Sentiero dei Titoli (solo azioni) | **Solaria Energia (SLR)**, settore Energia rinnovabile | Gli Speculatori (soffiate, FOMO) | "Possiedi un pezzo di un'azienda vera: impara a conoscerla." |
-| Valigetta Verde | verde | Sentiero degli Indici (solo ETF) | **Globo Mondo ETF (GLB)**, azionario globale | Il Venditore di Commissioni | "Mille aziende in una sola mossa: la pazienza è il tuo superpotere." |
-| Valigetta Arancione | arancione | Sentiero Cripto (solo cripto) | **Granito (GRN)**, cripto di riserva | Il Re dei Rug Pull | "Tecnologia nuova, rischio alto: prima la custodia, poi il resto." |
+| Valigetta Blu | blu | Sentiero Azioni ed ETF (azioni + ETF) | titoli veri di azioni ed ETF, divisi per classe | Gli Speculatori (capo: Max Leva) | Aziende e panieri: bilanci, prospetti, costi e pazienza |
+| Valigetta Arancione | arancione | Sentiero Cripto (solo cripto) | le cripto della vetrina | La Banda del Rug Pull (capo: il Re Tappeto) | Tecnologia, volatilità, truffe da evitare |
+| Valigetta Viola | viola | Sentiero Misto (azioni + ETF + cripto, sempre tutte e tre) | titoli veri delle tre classi, divisi per classe | L'Alleanza degli Speculatori | Tre classi insieme: proporzioni e asset allocation |
 
-Avvicinandosi a ogni Valigetta compare la scheda: cosa si investe, livello di rischio (1-5 stelle), volatilità storica indicativa della classe, esempio di caduta massima storica della classe, tono della storia. Si conferma con un secondo "Sì".
+Avvicinandosi a ogni Valigetta compare la scheda: le classi che contiene e, per ognuna, livello di rischio (1-5 stelle), volatilità storica indicativa ed esempio di caduta massima storica; poi antagonisti e tono della storia. Si conferma con "Scelgo questa Valigetta" e si sceglie il primo titolo nella vetrina, che mostra i titoli di tutte le classi della Valigetta.
 
-**Percorso Misto.** Parlando col Professore invece che con una Valigetta, lui propone il "Sentiero Misto": il giocatore sceglie 2 o 3 classi. Riceve la Valigetta della prima classe scelta e la Asset Card iniziale delle altre si sblocca col 1° Whale. Le Whale 5 e 6 parlano di asset allocation, l'antagonista è "l'Alleanza degli Speculatori".
+**Percorso Misto.** Si sceglie dalla Valigetta Viola, come gli altri due: il Professore presenta le tre Valigette e non propone percorsi a parte. Il Misto ha sempre tutte e tre le classi (non esistono più le combinazioni a due); le Whale 5 e 6 parlano di asset allocation, l'antagonista è "l'Alleanza degli Speculatori". Nel Sentiero Azioni ed ETF le Whale 1, 5 e 6 interrogano su entrambe le classi (basi di azioni ed ETF; bilanci e prospetti; dividendi e obbligazioni). I salvataggi dei vecchi percorsi Titoli e Indici passano ad Azioni + ETF; i vecchi misti con le cripto passano al Misto completo.
 
 Dopo la scelta il rivale prende la Valigetta "opposta" al profilo del giocatore (se il giocatore è Prudente il rivale è Audace) e lancia il primo duello.
 
@@ -169,13 +169,13 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 | Professore | Prof. Bruno Saldi | Ex gestore di fondi, ironico, insegna che "la prima regola è non perdere la testa" |
 | Infermiera della Banca | Dott.ssa Ratio | Sempre uguale in ogni città (come da tradizione del genere, è "una delle sorelle Ratio") |
 | Rivale | Leo (nome scelto) | Stile opposto al profilo del giocatore; 4 incontri: Laboratorio, Percorso 2, Diversia, Via di Wall Street. Al primo arrivo a Ponte Cedola (prima del primo Attestato) ti viene incontro senza sfida: ha già battuto la prima Whale e spiega Banca, Biblioteca, Exchange, Guardia, case e stazione; poi va avanti (flag `leoTourT1`, anche nel Laboratorio non c'è più) |
-| Antagonisti | Gli Speculatori (capo: Max Leva) | Variante per percorso: Speculatori (Titoli), Venditori di Commissioni guidati da Carlo Provvigione (ETF), Banda del Rug Pull guidata dal Re Tappeto (Cripto), Alleanza (Misto) |
+| Antagonisti | Gli Speculatori (capo: Max Leva) | Variante per percorso: Speculatori (Azioni + ETF), Banda del Rug Pull guidata dal Re Tappeto (Cripto), Alleanza (Misto) |
 | Whale 1 | Gaia Primo | Fondamenta: cos'è l'asset del percorso, rischio e rendimento |
 | Whale 2 | Orazio Limite | Ordini, spread, orari di mercato |
 | Whale 3 | Vera Varia | Diversificazione e correlazione |
 | Whale 4 | Cosimo Composto | Costi, interesse composto, piano di accumulo |
-| Whale 5 | Bianca Bilanci / Ivo Indice / Nina Nodo / Alba Allocazione | Specifico A: bilanci (Titoli), replica e TER (ETF), blockchain e custodia (Cripto), asset allocation (Misto) |
-| Whale 6 | Dario Dividendi / Olga Obbligazioni / Stella Stabile / Alba Allocazione bis → Teo Tassi | Specifico B: dividendi e valutazione, obbligazioni e tassi, stablecoin, DeFi e truffe |
+| Whale 5 | Bianca Bilanci / Nina Nodo / Alba Allocazione | Specifico A: bilanci e prospetti, replica e TER (Azioni + ETF), blockchain e custodia (Cripto), asset allocation (Misto) |
+| Whale 6 | Dario Dividendi / Stella Stabile / Teo Tassi | Specifico B: dividendi, obbligazioni e tassi (Azioni + ETF), stablecoin (Cripto), tutti gli specifici delle tre classi (Misto) |
 | Whale 7 | Serena Bias | Finanza comportamentale |
 | Whale 8 | Rocco Rischio | Gestione del rischio |
 | Superiori | Marta Macro, Tito Tecnico, Giulia Garante, Fabio Freddo | Macro; analisi tecnica e fondamentale; regole, truffe e tasse; psicologia e piano |
@@ -266,7 +266,7 @@ Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 
 | Ordine Limite | 2 | Ordini limite nella Banca e nella Macchina del Tempo | — |
 | Ribilanciamento | 3 | La Banca calcola lo scostamento dall'allocazione obiettivo; gli ordini li sceglie il giocatore | — |
 | Piano di Accumulo | 4 | Acquisti ricorrenti automatici nel simulatore | — |
-| Lettura del Bilancio (Titoli) / Analisi del Prospetto (ETF) / Custodia Sicura (Cripto) / Visione d'Insieme (Misto) | 5 | Livello 3 delle carte, domande con dati | Apre l'Archivio di Bilancia |
+| Lettura del Bilancio (Azioni + ETF) / Custodia Sicura (Cripto) / Visione d'Insieme (Misto) | 5 | Livello 3 delle carte, domande con dati | Apre l'Archivio di Bilancia |
 | Reinvestimento | 6 | Uova dei dividendi più rapide | — |
 | Mente Fredda | 7 | 50% di probabilità di resistere ai bias | Attraversa il Muro del Rumore sul P7 |
 | Stop Loss | 8 | Ordini stop nella Banca e nella Macchina del Tempo | — |
@@ -401,8 +401,8 @@ Metriche finali: rendimento totale, volatilità annualizzata, **indice di Sharpe
 | 2 | Mercato laterale con oscillazioni | 40 | Far eseguire almeno un ordine limite di acquisto |
 | 3 | Shock di settore a metà periodo | 80 | A fine periodo almeno 3 settori diversi e nessuna posizione sopra il 40% |
 | 4 | 24 mesi di accumulo | 500 | Almeno 10 acquisti mensili e costi totali sotto l'1,5% del versato |
-| 5 | Missione di analisi (non a tempo) | — | Titoli: scegliere l'azienda con i fondamentali più solidi tra 3. ETF: scegliere l'ETF più efficiente tra 3 sullo stesso indice. Cripto: riconoscere il progetto truffa tra 3. Misto: costruire un'allocazione entro il 5% dall'obiettivo |
-| 6 | Titoli: dividendi; ETF: tassi in salita; Cripto: perdita di aggancio di una stablecoin; Misto: tassi in salita | 120 | Titoli: quote aumentate del 3% grazie al reinvestimento. Altri: drawdown massimo sotto l'8% (Cripto 20%) |
+| 5 | Missione di analisi (non a tempo) | — | Azioni + ETF: due casi sui bilanci e due sui prospetti, ne servono 3 giusti su 4. Cripto: riconoscere il progetto truffa tra 3. Misto: scegliere le allocazioni coerenti con il profilo |
+| 6 | Azioni + ETF: dividendi; Cripto: perdita di aggancio di una stablecoin; Misto: tassi in salita | 120 | Azioni + ETF: quote aumentate dell'1,5% grazie al reinvestimento. Altri: drawdown massimo sotto l'8% (Cripto 20%) |
 | 7 | Mercato con bolle e notizie euforiche | 90 | Al massimo 6 ordini e valore finale ≥ 95% del capitale |
 | 8 | Crollo improvviso | 90 | Drawdown massimo ≤ 12% (≤ 20% per Cripto) |
 
@@ -487,7 +487,7 @@ Tradermon è un gioco volto solo all'apprendimento: la parte pratica usa esclusi
 ### 8.1 Regole di ogni ordine
 
 - Riepilogo prima dell'invio: simbolo, lato, importo, tipo, stima dei costi.
-- Solo le classi di asset del percorso (Titoli ed ETF: `us_equity`; Cripto: `crypto`; Misto: le classi scelte), niente vendite allo scoperto, acquisti entro la liquidità (o entro il potere d'acquisto di Alpaca quando il giocatore usa la leva del gioco), ordini in importo (notional) o quantità.
+- Solo le classi di asset del percorso (Azioni + ETF: `us_equity`; Cripto: `crypto`; Misto: entrambe), niente vendite allo scoperto, acquisti entro la liquidità (o entro il potere d'acquisto di Alpaca quando il giocatore usa la leva del gioco), ordini in importo (notional) o quantità.
 - `client_order_id` unico per idempotenza; sul server locale un registro di ogni ordine.
 
 ### 8.2 Chiavi Alpaca

@@ -63,12 +63,16 @@ export function dueReviews(): JournalEntry[] {
   return S.journal.filter((e) => !e.reviewed && (e.account === 'prova' ? S.market.day - e.day >= 30 : today - Date.parse(e.date) >= 30 * 86400000));
 }
 
+/** Esiti della rilettura: nella nota resta la frase italiana (lo Specchio dello studente la cerca così), a schermo va nella lingua scelta. */
+const REVIEW_MARKS = ['Rilettura: coerente', 'Rilettura: emotiva', 'Rilettura: incerta'];
+const noteText = (note: string) => REVIEW_MARKS.reduce((s, m) => s.split(m).join(T(m)), note);
+
 async function review(e: JournalEntry) {
   const name = ASSET_BY_ID[e.asset]?.name ?? e.asset;
   const now = e.account === 'prova' ? S.market.prices[e.asset] : undefined;
   const chg = now ? now / e.price - 1 : undefined;
   const verdict = await modal<number>(T('Col senno di poi'), ({ body, button, close }) => {
-    body.innerHTML = T`<p>${e.side === 'buy' ? T('Comprasti') : T('Vendesti')} <b>${esc(name)}</b> a ${fmtPx(e.price)} il giorno ${e.day}${e.date ? ` (${e.date})` : ''}.<br>Motivo: <i>${esc(reasonText(e))}</i>${e.note ? `<br>Nota: "${esc(e.note)}"` : ''}</p>
+    body.innerHTML = T`<p>${e.side === 'buy' ? T('Comprasti') : T('Vendesti')} <b>${esc(name)}</b> a ${fmtPx(e.price)} il giorno ${e.day}${e.date ? ` (${e.date})` : ''}.<br>Motivo: <i>${esc(reasonText(e))}</i>${e.note ? T`<br>Nota: "${esc(noteText(e.note))}"` : ''}</p>
       ${chg !== undefined ? T`<p>Oggi vale ${fmtPx(now!)} (<span class="${chg >= 0 ? 'good' : 'bad'}">${fmtPct(chg)}</span>).</p>` : T('<p class="small muted">Per i conti Alpaca controlla il prezzo attuale nell\'Osservatorio.</p>')}
       <p>Rileggendo il motivo, oggi rifaresti la stessa scelta?</p>`;
     button(T('Sì, era coerente col piano'), () => close(0), 'primary');
@@ -77,7 +81,7 @@ async function review(e: JournalEntry) {
   });
   if (verdict === undefined) return;
   e.reviewed = true;
-  e.note = (e.note ? e.note + ' · ' : '') + ['Rilettura: coerente', 'Rilettura: emotiva', 'Rilettura: incerta'][verdict];
+  e.note = (e.note ? e.note + ' · ' : '') + REVIEW_MARKS[verdict];
   track('review_journal');
   S.stats.xp += 10;
   const good = chg === undefined ? null : (e.side === 'buy') === (chg >= 0);
@@ -97,7 +101,7 @@ export async function openJournal() {
       for (const e of [...S.journal].reverse().slice(0, 40)) {
         const tr = el('tr');
         const name = ASSET_BY_ID[e.asset]?.name ?? e.asset;
-        tr.innerHTML = `<td>${e.day}<br><span class="small muted">${esc(e.date)}</span></td><td>${e.side === 'buy' ? T('Compra') : T('Vendi')} <b>${esc(name)}</b> ${fmtMoney(e.amount)}${T(' a ')}${fmtPx(e.price)}${e.account !== 'prova' ? ` <span class="small muted">${e.account}</span>` : ''}</td><td><i>${esc(reasonText(e))}</i>${e.note ? `<br><span class="small">${esc(e.note)}</span>` : ''}</td>`;
+        tr.innerHTML = `<td>${e.day}<br><span class="small muted">${esc(e.date)}</span></td><td>${e.side === 'buy' ? T('Compra') : T('Vendi')} <b>${esc(name)}</b> ${fmtMoney(e.amount)}${T(' a ')}${fmtPx(e.price)}${e.account !== 'prova' ? ` <span class="small muted">${e.account}</span>` : ''}</td><td><i>${esc(reasonText(e))}</i>${e.note ? `<br><span class="small">${esc(noteText(e.note))}</span>` : ''}</td>`;
         const td = el('td');
         if (due.includes(e)) { const b = el('button', 'btn', T('Rileggi')); b.addEventListener('click', () => close(e.id)); td.appendChild(b); }
         else if (e.reviewed) td.innerHTML = '<span class="small good">✓</span>';

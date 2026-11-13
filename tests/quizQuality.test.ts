@@ -63,7 +63,7 @@ describe('qualità delle domande: la forma non tradisce la risposta', () => {
 });
 
 describe('domande generate con numeri nuovi', () => {
-  beforeEach(() => { newGame('Test', 0, 'stocks', 'equilibrato'); });
+  beforeEach(() => { newGame(); });
 
   it('ogni modello produce domande valide e bilanciate su molti semi', () => {
     for (const t of TEMPLATES) {
@@ -87,7 +87,7 @@ describe('domande generate con numeri nuovi', () => {
   });
 
   it('un duello ha al massimo una domanda generata ogni tre, senza cambiare il mix di difficoltà', () => {
-    for (const [track, mixed] of [['stocks', []], ['etf', []], ['crypto', []], ['mixed', ['stocks', 'etf', 'crypto']]] as const) for (let m = 1; m <= 8; m++) {
+    for (const [track, mixed] of [['listed', []], ['crypto', []], ['mixed', []]] as const) for (let m = 1; m <= 8; m++) {
       const topics = mentorTopics(m, track, [...mixed]);
       const target = targetDiff(m - 1);
       const qs = pickQuestions(topics, 8, { target, rng: mulberry32(m) });

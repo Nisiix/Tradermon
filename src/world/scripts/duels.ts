@@ -301,7 +301,7 @@ export async function linkDuel() {
   let code = '';
   if (c === 0) { code = `TM-${S.track.slice(0, 1).toUpperCase()}${Math.floor(Math.random() * 1e6).toString().padStart(6, '0')}`; await say([T`Il tuo codice è ${code}. Condividilo con un amico: il quiz è uguale per tutti i percorsi.`, T('Ora gioca tu.')], T('Operatrice')); }
   else {
-    const res = await modal<string>(T('Codice sfida'), ({ body, button, close }) => { body.innerHTML = '<input class="tx c" placeholder="TM-S123456">'; button('Ok', () => close((body.querySelector('.c') as HTMLInputElement).value.trim().toUpperCase()), 'primary'); });
+    const res = await modal<string>(T('Codice sfida'), ({ body, button, close }) => { body.innerHTML = '<input class="tx c" placeholder="TM-L123456">'; button('Ok', () => close((body.querySelector('.c') as HTMLInputElement).value.trim().toUpperCase()), 'primary'); });
     if (!res) return; code = res;
   }
   const seed = Number(code.replace(/\D/g, '')) || 1;
@@ -348,7 +348,7 @@ export async function league(i: number, w: WorldApi) {
   // dopo il titolo Wall Street resta aperta: l'unico posto in cui le sfide si rifanno
   if (S.flags.champion && S.defeated.includes(`league_${i}`)) return leagueRematch(i, w);
   if (i > 0 && !S.defeated.includes(`league_${i - 1}`)) return say(T('Devi prima superare il Superiore precedente.'), L.name);
-  await say([L.intro, i === 4 ? T('Sono il Campione. La prova finale: tutto ciò che hai imparato.') : `Sono ${L.title.toLowerCase()}.`], L.name);
+  await say([L.intro, i === 4 ? T('Sono il Campione. La prova finale: tutto ciò che hai imparato.') : T`Sono ${L.title.toLowerCase()}.`], L.name);
   const topics = i < 4 ? LEAGUE_TOPICS[i] : trackTopics(S.track, S.mixedClasses, 8);
   // Wall Street: dal livello 3,25 del primo Superiore al livello 4 (esperto) dell'ultimo e del Campione
   const P = i === 4 ? DUEL.champion : DUEL.league;
@@ -459,7 +459,7 @@ export async function tower() {
   }
   if (c === LEGENDS.length + 2) { // Nuova Partita+
     if (!Acc.graduated()) return say([T('Potrai iniziare la Nuova Partita+ quando avrai vinto Wall Street.'), T('Ricomincia tutto da zero tranne i trofei, e sblocca la difficoltà Leggenda.')], T('Custode della Torre'));
-    // il percorso (anche il Sentiero Misto) si sceglie di nuovo dal Professore, come nella prima partita
+    // il percorso si sceglie di nuovo con una delle tre Valigette nel Laboratorio, come nella prima partita
     await say([
       T('La Nuova Partita+ riparte da zero: conto di gioco con capitale nuovo, Attestati, Sigilli, Prove sul conto, Esame della Leva. Anche la Torre e i Boss tornano chiusi fino alla prossima Wall Street.'),
       T('Restano con te solo i trofei: record della Torre, crisi leggendarie, Boss battuti, carte dorate, traguardi, titolo e arredi. E resta il tuo Diario.'),

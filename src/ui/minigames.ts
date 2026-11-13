@@ -3,7 +3,7 @@
 import { S, save } from '../systems/state';
 import { modal, choose, esc, el, toast, say } from './core';
 import { track } from '../systems/progress';
-import { ASSETS, SECTOR_LABEL } from '../data/assets';
+import { ASSETS, SECTOR_LABEL, CLASS_LABEL } from '../data/assets';
 import { mulberry32, shuffle } from '../systems/rng';
 import { T } from '../i18n';
 import { fmtMoney } from '../systems/portfolio';
@@ -143,7 +143,7 @@ async function basketGame() {
       body.innerHTML = T`<p class="small">Scegli <b>4</b> asset su 8 per il paniere meno concentrato: settori diversi, classi diverse, rischio medio contenuto. Selezionati: <b>${chosen.size}/4</b></p>`;
       const grid = el('div', 'cards');
       for (const a of pool) {
-        const b = el('button', 'card' + (chosen.has(a.id) ? ' gold' : ''), `<b>${esc(a.ticker)}</b> ${esc(a.name)}<br><span class="small">${SECTOR_LABEL[a.sector]} · ${a.cls} · rischio ${'★'.repeat(a.risk)}</span>`);
+        const b = el('button', 'card' + (chosen.has(a.id) ? ' gold' : ''), `<b>${esc(a.ticker)}</b> ${esc(a.name)}<br><span class="small">${SECTOR_LABEL[a.sector]} · ${CLASS_LABEL[a.cls]} · ${T('rischio')} ${'★'.repeat(a.risk)}</span>`);
         b.style.textAlign = 'left'; b.style.cursor = 'pointer'; b.style.font = 'inherit';
         b.addEventListener('click', () => { if (chosen.has(a.id)) chosen.delete(a.id); else if (chosen.size < 4) chosen.add(a.id); render(); });
         grid.appendChild(b);

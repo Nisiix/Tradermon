@@ -112,7 +112,7 @@ export function mentorMission(n: number, track: Track, profile: RiskProfile): Mi
       check: (r) => ({ ok: r.monthlyBuys >= 10 && r.lossSales === 0, detail: T`Acquisti mensili: ${r.monthlyBuys} (min 10) · vendite in perdita: ${r.lossSales} (max 0)` }) };
     case 5: return pickMission(track);
     case 6: {
-      if (track === 'stocks') return {
+      if (track === 'listed') return {
         kind: 'sim', id: 'm6', title: T('Il raccolto dei dividendi'), dividends: true,
         scenario: { id: 'm6', name: T('Un anno tranquillo'), desc: '', window: { start: '2017-01-03', end: '2017-12-29' } },
         brief: T('Un anno vero di mercato tranquillo. I dividendi sono stimati dal rendimento medio di ogni titolo, pagati ogni mese e reinvestiti. Compra titoli con dividendo e tienili: le quote devono crescere almeno dell\'1,5% grazie al reinvestimento.'),
@@ -146,14 +146,21 @@ export function mentorMission(n: number, track: Track, profile: RiskProfile): Mi
 }
 
 function pickMission(track: Track): PickMission {
+  if (track !== 'listed') return pickSet(track);
+  // Azioni + ETF: due casi sui bilanci e due sui prospetti, come gli argomenti della Whale di Bilancia
+  const st = pickSet('stocks'), ef = pickSet('etf');
+  return { kind: 'pick', id: 'm5', title: T('Bilanci e prospetti'), need: 3, brief: T('Due aziende e due ETF da scegliere: leggi i numeri dei bilanci e dei prospetti prima di decidere.'), rounds: [...st.rounds.slice(0, 2), ...ef.rounds.slice(0, 2)] };
+}
+
+function pickSet(track: 'stocks' | 'etf' | 'crypto' | 'mixed'): PickMission {
   if (track === 'etf') return { kind: 'pick', id: 'm5', title: T('Il prospetto'), need: 2, brief: T('Tre ETF sembrano gemelli. Leggi i prospetti e scegli il più efficiente.'), rounds: [
     { prompt: T('Tre ETF sullo stesso indice azionario globale. Quale scegli per 20 anni di accumulo?'), options: [
-      { title: T('ETF Alfa'), lines: ['TER 0,65%', T('Tracking error 0,9%'), T('Patrimonio 80 mln')], correct: false, why: T('Costi alti e replica meno fedele.') },
-      { title: T('ETF Beta'), lines: ['TER 0,12%', T('Tracking error 0,1%'), T('Patrimonio 6 mld')], correct: true, why: T('Costi bassi, replica fedele, grande e liquido.') },
-      { title: T('ETF Gamma'), lines: ['TER 0,20%', T('Tracking error 0,4%'), T('Patrimonio 15 mln (rischio chiusura)')], correct: false, why: T('Troppo piccolo: rischio di chiusura e spread più alti.') } ] },
+      { title: T('ETF Alfa'), lines: [T('TER 0,65%'), T('Tracking error 0,9%'), T('Patrimonio 80 mln')], correct: false, why: T('Costi alti e replica meno fedele.') },
+      { title: T('ETF Beta'), lines: [T('TER 0,12%'), T('Tracking error 0,1%'), T('Patrimonio 6 mld')], correct: true, why: T('Costi bassi, replica fedele, grande e liquido.') },
+      { title: T('ETF Gamma'), lines: [T('TER 0,20%'), T('Tracking error 0,4%'), T('Patrimonio 15 mln (rischio chiusura)')], correct: false, why: T('Troppo piccolo: rischio di chiusura e spread più alti.') } ] },
     { prompt: T('Quale ETF è davvero diversificato?'), options: [
-      { title: T('Tecno Settore'), lines: [T('Solo tecnologia'), '60 aziende'], correct: false, why: T('Un solo settore: concentrato.') },
-      { title: T('Globo Mondo'), lines: ['1.500 aziende', '23 Paesi', '11 settori'], correct: true, why: T('Diversificazione per Paese e settore.') },
+      { title: T('Tecno Settore'), lines: [T('Solo tecnologia'), T('60 aziende')], correct: false, why: T('Un solo settore: concentrato.') },
+      { title: T('Globo Mondo'), lines: [T('1.500 aziende'), T('23 Paesi'), T('11 settori')], correct: true, why: T('Diversificazione per Paese e settore.') },
       { title: T('Leva 3x Indice'), lines: [T('3 volte il rendimento giornaliero'), T('Ricalcolo quotidiano')], correct: false, why: T('Strumento a leva per esperti, non diversificazione.') } ] },
     { prompt: T('Un ETF obbligazionario per chi teme i rialzi dei tassi:'), options: [
       { title: 'Duration 2', lines: [T('Titoli di Stato a breve')], correct: true, why: T('Bassa duration = poca sensibilità ai tassi.') },
@@ -169,27 +176,27 @@ function pickMission(track: Track): PickMission {
       { title: T('Su carta, offline, in un luogo sicuro'), lines: [T('Mai digitata online')], correct: true, why: T('Offline e privata: la scelta corretta.') },
       { title: T('La invio al supporto'), lines: [T('Per sicurezza')], correct: false, why: T('Nessun supporto legittimo la chiede.') } ] },
     { prompt: T('Quale stablecoin è più solida?'), options: [
-      { title: T('Algoritmica'), lines: [T('Nessuna riserva'), 'Rendimento 20%'], correct: false, why: T('Senza riserve l\'aggancio può crollare.') },
+      { title: T('Algoritmica'), lines: [T('Nessuna riserva'), T('Rendimento 20%')], correct: false, why: T('Senza riserve l\'aggancio può crollare.') },
       { title: T('Con riserve verificate'), lines: [T('Titoli di Stato a breve'), T('Attestazioni mensili')], correct: true, why: T('Riserve trasparenti e verificate.') },
       { title: T('Anonima'), lines: [T('Emittente sconosciuto')], correct: false, why: T('Non sai chi deve rimborsarti.') } ] } ] };
   if (track === 'mixed') return { kind: 'pick', id: 'm5', title: T('Le proporzioni'), need: 2, brief: T('Scegli le allocazioni coerenti con il profilo dell\'investitore.'), rounds: [
     { prompt: T('Lucia, 30 anni, orizzonte 25 anni, tollera bene le oscillazioni:'), options: [
       { title: T('80% azioni, 15% obbligazioni, 5% liquidità'), lines: [], correct: true, why: T('Orizzonte lungo e tolleranza alta.') },
-      { title: '100% cripto', lines: [], correct: false, why: T('Nessuna diversificazione, rischio estremo.') },
+      { title: T('100% cripto'), lines: [], correct: false, why: T('Nessuna diversificazione, rischio estremo.') },
       { title: T('100% liquidità'), lines: [], correct: false, why: T('L\'inflazione eroderebbe il capitale in 25 anni.') } ] },
     { prompt: T('Marco deve comprare casa tra 2 anni:'), options: [
       { title: T('90% azioni tecnologiche'), lines: [], correct: false, why: T('Orizzonte troppo breve per tanto rischio.') },
       { title: T('20% azioni, 60% obbligazioni a breve, 20% liquidità'), lines: [], correct: true, why: T('Poco tempo, poco rischio.') },
-      { title: '50% cripto', lines: [], correct: false, why: T('Volatilità incompatibile con l\'obiettivo.') } ] },
+      { title: T('50% cripto'), lines: [], correct: false, why: T('Volatilità incompatibile con l\'obiettivo.') } ] },
     { prompt: T('Un portafoglio 60/40 è diventato 75/25 dopo un rialzo. Cosa fai?'), options: [
       { title: T('Ribilancio verso 60/40'), lines: [], correct: true, why: T('Torna al rischio scelto.') },
       { title: T('Compro altre azioni'), lines: [], correct: false, why: T('Aumenteresti ancora il rischio.') },
       { title: T('Vendo tutto'), lines: [], correct: false, why: T('Reazione eccessiva.') } ] } ] };
   return { kind: 'pick', id: 'm5', title: T('Il bilancio nascosto'), need: 2, brief: T('Leggi i numeri e scegli l\'azienda con i fondamentali più solidi.'), rounds: [
     { prompt: T('Tre aziende dello stesso settore. Quale ha i fondamentali più solidi?'), options: [
-      { title: T('Alfa Spa'), lines: ['Ricavi +8%', T('Utile netto in crescita'), 'P/E 14', T('Debito/patrimonio 0,4')], correct: true, why: T('Crescita sostenibile, prezzo ragionevole, poco debito.') },
-      { title: T('Beta Spa'), lines: ['Ricavi +40%', T('In perdita da 5 anni'), T('Debito/patrimonio 3,5')], correct: false, why: T('Cresce bruciando cassa e indebitandosi.') },
-      { title: T('Gamma Spa'), lines: ['Ricavi −10%', 'P/E 60', T('Dividendo 9% (payout 150%)')], correct: false, why: T('Dividendo insostenibile e prezzo caro.') } ] },
+      { title: T('Alfa Spa'), lines: [T('Ricavi +8%'), T('Utile netto in crescita'), 'P/E 14', T('Debito/patrimonio 0,4')], correct: true, why: T('Crescita sostenibile, prezzo ragionevole, poco debito.') },
+      { title: T('Beta Spa'), lines: [T('Ricavi +40%'), T('In perdita da 5 anni'), T('Debito/patrimonio 3,5')], correct: false, why: T('Cresce bruciando cassa e indebitandosi.') },
+      { title: T('Gamma Spa'), lines: [T('Ricavi −10%'), 'P/E 60', T('Dividendo 9% (payout 150%)')], correct: false, why: T('Dividendo insostenibile e prezzo caro.') } ] },
     { prompt: T('Il P/E di un\'azione è 40, quello medio del suo settore è 15. Cosa indica?'), options: [
       { title: T('Attese di crescita alte, o un titolo caro'), lines: [], correct: true, why: T('Paghi molti dollari per ogni dollaro di utile: serve una crescita futura che lo giustifichi.') },
       { title: T('Un titolo economico'), lines: [], correct: false, why: T('Un P/E più alto della media significa che il titolo costa di più rispetto agli utili.') },
@@ -210,9 +217,9 @@ export function leagueMission(i: number): Mission {
       brief: T('Tendenze che si invertono in fretta. Chiudi con rendimento positivo e drawdown massimo entro il 15%.'), check: (r) => ({ ok: r.ret > 0 && r.mdd <= 0.15, detail: T`Rendimento ${pct(r.ret)} (> 0) · max drawdown ${pct(r.mdd)} (max 15%)` }) };
     case 2: return { kind: 'pick', id: 'l3', title: T('Lo sportello delle offerte'), need: 3, brief: T('Giulia Garante ti mostra offerte reali e truffe. Distinguile.'), rounds: [
       { prompt: T('Quale offerta è una truffa?'), options: [
-        { title: T('Conto deposito'), lines: [T('Banca autorizzata'), 'Tasso 3%', T('Garanzia depositi fino a 100.000')], correct: false, why: T('Offerta regolare.') },
+        { title: T('Conto deposito'), lines: [T('Banca autorizzata'), T('Tasso 3%'), T('Garanzia depositi fino a 100.000')], correct: false, why: T('Offerta regolare.') },
         { title: T('"Trading robot"'), lines: [T('Guadagni del 5% al giorno'), T('Sito non autorizzato'), T('Pagamento in cripto')], correct: true, why: T('Rendimenti impossibili e operatore abusivo.') },
-        { title: T('ETF a indice'), lines: [T('KID disponibile'), 'TER 0,2%'], correct: false, why: T('Prodotto trasparente.') } ] },
+        { title: T('ETF a indice'), lines: [T('KID disponibile'), T('TER 0,2%')], correct: false, why: T('Prodotto trasparente.') } ] },
       { prompt: T('Quale messaggio è phishing?'), options: [
         { title: T('Email dal broker'), lines: [T('"Accedi qui per evitare il blocco del conto"'), T('Link a brok3r-login.xyz')], correct: true, why: T('Dominio falso e urgenza.') },
         { title: T('Estratto conto'), lines: [T('Disponibile nell\'area riservata'), T('Nessun link')], correct: false, why: T('Comunicazione regolare.') },
@@ -220,7 +227,7 @@ export function leagueMission(i: number): Mission {
       { prompt: T('Quale proposta è uno schema Ponzi?'), options: [
         { title: T('Club "Moltiplica"'), lines: [T('10% al mese costante'), T('Bonus se porti amici')], correct: true, why: T('Rendimenti costanti e reclutamento: classico Ponzi.') },
         { title: T('Fondo pensione'), lines: [T('Rendimenti variabili'), T('Vigilato')], correct: false, why: T('Prodotto regolato.') },
-        { title: T('Titolo di Stato'), lines: ['Cedola 3,5%', T('Scadenza 10 anni')], correct: false, why: T('Obbligazione pubblica.') } ] } ] };
+        { title: T('Titolo di Stato'), lines: [T('Cedola 3,5%'), T('Scadenza 10 anni')], correct: false, why: T('Obbligazione pubblica.') } ] } ] };
     case 3: return { kind: 'sim', id: 'l4', title: T('Mente fredda'),
       scenario: { id: 'l4', name: T('Notizie tentatrici'), desc: '', window: { start: '2021-01-04', end: '2021-06-30', crypto: { start: '2024-10-01', end: '2025-03-31' } }, news: [{ date: '2021-01-27', text: T('Tutti parlano di un titolo raddoppiato in un giorno grazie ai forum!') }, { date: '2021-02-02', text: T('Le mode passano: il titolo del momento si dimezza.') }, { date: '2021-05-12', text: T('Paura dell\'inflazione: giornata nera.') }, { date: '2024-11-11', text: T('Record dopo record: «stavolta è diverso», scrivono tutti.') }, { date: '2025-02-03', text: T('Panico nel fine settimana: vendite ovunque.') }] },
       brief: T('Il mercato ti provoca con mode e spaventi. Al massimo 8 ordini e Sharpe di almeno 0,2.'), check: (r) => ({ ok: r.orders >= 1 && r.orders <= 8 && r.sharpe >= 0.2, detail: T`Ordini ${r.orders} (max 8) · Sharpe ${r.sharpe.toFixed(2)} (min 0,20)` }) };
@@ -244,10 +251,10 @@ export const LEGENDS: SimMission[] = [
     scenario: { id: 'leg2020', name: '2020', desc: '', historical: T('S&P 500 feb.-mar. 2020: circa −34%'), window: { start: '2020-02-03', end: '2020-11-30' }, news: [{ date: '2020-02-24', text: T('Una pandemia blocca il mondo.') }, { date: '2020-03-23', text: T('Le banche centrali annunciano acquisti senza limiti.') }] },
     check: (r) => ({ ok: r.investedW >= 0.5 && r.ret > 0, detail: T`Investito ${pct(r.investedW)} (min 50%) · rendimento ${pct(r.ret)} (> 0)` }) },
   { kind: 'sim', id: 'leg2022r', title: T('L\'anno dei tassi (2022)'), brief: T('Azioni e obbligazioni scendono insieme: la difesa classica non basta. Chiudi con almeno l\'85% del capitale restando investito almeno al 50%.'),
-    scenario: { id: 'leg2022r', name: '2022 tassi', desc: '', historical: T('S&P 500 gen.-ott. 2022: circa −25%; obbligazioni a lunga scadenza: circa −15%'), window: { start: '2022-01-03', end: '2022-10-31' }, news: [{ date: '2022-03-16', text: T('Primo rialzo dei tassi dopo anni.') }, { date: '2022-06-15', text: T('Rialzo dello 0,75%: il più forte da decenni.') }, { date: '2022-09-13', text: T('L\'inflazione non scende: giornata nera.') }] },
+    scenario: { id: 'leg2022r', name: T('2022 tassi'), desc: '', historical: T('S&P 500 gen.-ott. 2022: circa −25%; obbligazioni a lunga scadenza: circa −15%'), window: { start: '2022-01-03', end: '2022-10-31' }, news: [{ date: '2022-03-16', text: T('Primo rialzo dei tassi dopo anni.') }, { date: '2022-06-15', text: T('Rialzo dello 0,75%: il più forte da decenni.') }, { date: '2022-09-13', text: T('L\'inflazione non scende: giornata nera.') }] },
     check: (r) => ({ ok: r.finalValue >= r.startValue * 0.85 && r.investedW >= 0.5, detail: T`Valore finale ${pct(r.finalValue / r.startValue)} (min 85%) · investito ${pct(r.investedW)} (min 50%)` }) },
   { kind: 'sim', id: 'leg2022', title: T('L\'inverno cripto (2022)'), brief: T('Le cripto perdono circa il 75% e le obbligazioni il 15%. Chiudi con almeno l\'80% del capitale.'),
-    scenario: { id: 'leg2022', name: '2022 cripto', desc: '', historical: T('Bitcoin nov. 2021 - nov. 2022: circa −77%'), window: { start: '2021-11-01', end: '2022-11-30' }, news: [{ date: '2022-05-09', text: T('Una stablecoin algoritmica crolla.') }, { date: '2022-11-08', text: T('Fallisce un grande exchange.') }] },
+    scenario: { id: 'leg2022', name: T('2022 cripto'), desc: '', historical: T('Bitcoin nov. 2021 - nov. 2022: circa −77%'), window: { start: '2021-11-01', end: '2022-11-30' }, news: [{ date: '2022-05-09', text: T('Una stablecoin algoritmica crolla.') }, { date: '2022-11-08', text: T('Fallisce un grande exchange.') }] },
     check: (r) => ({ ok: r.orders >= 1 && r.finalValue >= r.startValue * 0.8, detail: T`Valore finale ${pct(r.finalValue / r.startValue)} (min 80%)` }) },
   { kind: 'sim', id: 'leg2025', title: T('La guerra dei dazi (2025)'), brief: T('Un annuncio a sorpresa, due sedute di crollo, un rimbalzo record una settimana dopo. Resta investito almeno al 50% e chiudi con almeno il 97% del capitale.'),
     scenario: { id: 'leg2025', name: '2025', desc: '', historical: T('S&P 500 feb.-apr. 2025: circa −19%'), window: { start: '2025-02-03', end: '2025-06-30' }, news: [{ date: '2025-04-03', text: T('Dazi su quasi tutte le importazioni: l\'indice crolla.') }, { date: '2025-04-09', text: T('Dazi sospesi per novanta giorni: rimbalzo record.') }] },

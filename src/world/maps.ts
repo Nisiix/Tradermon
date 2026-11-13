@@ -240,9 +240,9 @@ function buildHomeTown() {
   rect(lb.tiles, 4, 4, 5, 1, TILE.CASE_TABLE);
   lb.npcs.push(
     { id: 'prof', x: 6, y: 3, pal: 3, dir: 0, name: T('Prof. Saldi'), kind: 'prof' },
-    { id: 'case_stocks', x: 4, y: 4, pal: 0, dir: 0, name: T('Valigetta Blu'), kind: 'case', data: { cls: 'stocks' }, hiddenSprite: true },
-    { id: 'case_etf', x: 6, y: 4, pal: 0, dir: 0, name: T('Valigetta Verde'), kind: 'case', data: { cls: 'etf' }, hiddenSprite: true },
-    { id: 'case_crypto', x: 8, y: 4, pal: 0, dir: 0, name: T('Valigetta Arancione'), kind: 'case', data: { cls: 'crypto' }, hiddenSprite: true },
+    { id: 'case_listed', x: 4, y: 4, pal: 0, dir: 0, name: T('Valigetta Blu'), kind: 'case', data: { track: 'listed' }, hiddenSprite: true },
+    { id: 'case_crypto', x: 6, y: 4, pal: 0, dir: 0, name: T('Valigetta Arancione'), kind: 'case', data: { track: 'crypto' }, hiddenSprite: true },
+    { id: 'case_mixed', x: 8, y: 4, pal: 0, dir: 0, name: T('Valigetta Viola'), kind: 'case', data: { track: 'mixed' }, hiddenSprite: true },
     { id: 'lab_rival', x: 10, y: 6, pal: 5, dir: 2, name: T('Rivale'), kind: 'rival', data: { n: 1 } },
     { id: 'lab_aide', x: 2, y: 6, pal: 23, dir: 3, name: T('Ricercatrice'), kind: 'talk', lines: [T('Il Professore ha gestito fondi per trent\'anni.'), T('Dice che il suo errore più grande è stato credersi infallibile.')] },
   );

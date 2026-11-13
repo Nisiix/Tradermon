@@ -65,6 +65,21 @@ function i18nPlugin(): Plugin {
       for (const f of readdirSync(dir)) this.addWatchFile(new URL(f, dir).pathname);
       return `export default ${JSON.stringify(ids[name]())};`;
     },
+    // Il dizionario va registrato PRIMA che partano i moduli con testi calcolati all'avvio (settori, città, Whale…).
+    // Quei moduli finiscono spesso in pezzi condivisi tra le pagine, che il browser esegue prima del corpo della
+    // pagina: se il dizionario si registrasse lì, in inglese quei testi resterebbero in italiano. Qui si controlla
+    // che ogni pagina importi il pezzo del dizionario (che si registra da solo) prima di ogni altro pezzo con codice.
+    generateBundle(_o, bundle) {
+      const onlyI18n = (file: string) => { const c = bundle[file]; return c?.type === 'chunk' && Object.keys(c.modules).every((m) => m.includes('/src/i18n/') || m.startsWith('\0')); };
+      for (const c of Object.values(bundle)) {
+        // hd2d è la pagina di prova della resa 2.5D: non registra un dizionario suo
+        if (c.type !== 'chunk' || !c.isEntry || c.name === 'hd2d') continue;
+        const dictAt = c.imports.findIndex((f) => /(^|\/)i18n-(en|landing)-/.test(f));
+        if (dictAt < 0) continue;
+        const before = c.imports.slice(0, dictAt).filter((f) => !onlyI18n(f));
+        if (before.length) this.error(`${c.fileName}: il dizionario inglese viene caricato dopo ${before.join(', ')}; i testi calcolati all'avvio resterebbero in italiano`);
+      }
+    },
   };
 }
 
@@ -83,7 +98,9 @@ export default defineConfig({
     rollupOptions: {
       input: { landing: 'index.html', main: 'gioca/index.html', hd2d: 'hd2d.html', privacy: 'privacy/index.html' },
       // ogni dizionario nel suo file: senza, Rollup può mettere quello intero del gioco nel pezzo condiviso con la landing
-      output: { manualChunks: (id) => (id === '\0virtual:i18n-en' ? 'i18n-en' : id === '\0virtual:i18n-en-landing' ? 'i18n-landing' : undefined) },
+      // insieme al dizionario va il modulo che lo registra (full.ts, landing.ts): così si registra appena il pezzo viene eseguito
+      // (T() e la scelta della lingua restano in un pezzo loro, altrimenti finirebbero dentro il dizionario del gioco e la landing lo scaricherebbe)
+      output: { manualChunks: (id) => (id === '\0virtual:i18n-en' || id.endsWith('/src/i18n/full.ts') ? 'i18n-en' : id === '\0virtual:i18n-en-landing' || id.endsWith('/src/i18n/landing.ts') ? 'i18n-landing' : id.endsWith('/src/i18n/index.ts') || id.endsWith('/src/i18n/hash.ts') ? 'i18n' : undefined) },
     },
   },
 });

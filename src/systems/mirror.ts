@@ -63,6 +63,9 @@ export function revealedProfile(obs = mirrorObs()): RiskProfile | null {
   return avg < 0.7 ? 'prudente' : avg < 1.3 ? 'equilibrato' : 'audace';
 }
 
+/** Nome del profilo nella lingua scelta: il valore salvato resta la parola italiana. */
+export const profileName = (p: RiskProfile): string => ({ prudente: T('prudente'), equilibrato: T('equilibrato'), audace: T('audace') })[p];
+
 const RANK: Record<RiskProfile, number> = { prudente: 0, equilibrato: 1, audace: 2 };
 
 /** Le frasi dello Specchio: confronto, fatti osservati, lezione. */
@@ -70,7 +73,7 @@ export function mirrorReport(declared: RiskProfile = S.profile, obs = mirrorObs(
   const revealed = revealedProfile(obs);
   if (!revealed) {
     const left = MIN_OBS - obs.length;
-    return { revealed, lines: [T`Nel questionario il tuo profilo è ${declared.toUpperCase()}.`, T`Lo Specchio ha bisogno di vederti all'opera: completa ancora ${left} ${left === 1 ? T('missione') : T('missioni')} nella Macchina del Tempo (Zona Simulazione di Diversia, o crisi leggendarie alla Torre), facendo almeno un ordine.`] };
+    return { revealed, lines: [T`Nel questionario il tuo profilo è ${profileName(declared).toUpperCase()}.`, T`Lo Specchio ha bisogno di vederti all'opera: completa ancora ${left} ${left === 1 ? T('missione') : T('missioni')} nella Macchina del Tempo (Zona Simulazione di Diversia, o crisi leggendarie alla Torre), facendo almeno un ordine.`] };
   }
   const n = obs.length;
   const avg = (f: (o: MirrorObs) => number) => obs.reduce((s, o) => s + f(o), 0) / n;
@@ -84,10 +87,10 @@ export function mirrorReport(declared: RiskProfile = S.profile, obs = mirrorObs(
 
   const gap = RANK[revealed] - RANK[declared];
   const verdict = gap === 0
-    ? [T`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}. Dire e fare coincidono.`, T('È più raro di quanto sembri. Conoscersi così bene è il primo scudo contro le decisioni prese di pancia.')]
+    ? [T`Profilo dichiarato: ${profileName(declared).toUpperCase()}. Profilo rivelato dalle tue scelte: ${profileName(revealed).toUpperCase()}. Dire e fare coincidono.`, T('È più raro di quanto sembri. Conoscersi così bene è il primo scudo contro le decisioni prese di pancia.')]
     : gap < 0
-      ? [T`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}, più prudente.`, T('Succede a molti: a mente fredda ci sentiamo coraggiosi, poi quando le perdite sono vere l\'avversione alle perdite prende il comando.'), T('Un piano scritto prima del calo, e un\'allocazione che ti fa dormire, valgono più di un profilo ambizioso.')]
-      : [T`Profilo dichiarato: ${declared.toUpperCase()}. Profilo rivelato dalle tue scelte: ${revealed.toUpperCase()}, più rischioso.`, T('Hai rischiato più di quanto dici di sopportare. Può essere fiducia in te stess{o|a}, ma anche eccesso di sicurezza.'), T('Chiediti se reggeresti gli stessi cali con soldi veri: se la risposta è no, il tuo portafoglio dovrebbe seguire il profilo dichiarato.')];
+      ? [T`Profilo dichiarato: ${profileName(declared).toUpperCase()}. Profilo rivelato dalle tue scelte: ${profileName(revealed).toUpperCase()}, più prudente.`, T('Succede a molti: a mente fredda ci sentiamo coraggiosi, poi quando le perdite sono vere l\'avversione alle perdite prende il comando.'), T('Un piano scritto prima del calo, e un\'allocazione che ti fa dormire, valgono più di un profilo ambizioso.')]
+      : [T`Profilo dichiarato: ${profileName(declared).toUpperCase()}. Profilo rivelato dalle tue scelte: ${profileName(revealed).toUpperCase()}, più rischioso.`, T('Hai rischiato più di quanto dici di sopportare. Può essere fiducia in te stess{o|a}, ma anche eccesso di sicurezza.'), T('Chiediti se reggeresti gli stessi cali con soldi veri: se la risposta è no, il tuo portafoglio dovrebbe seguire il profilo dichiarato.')];
   return { revealed, lines: [...verdict, ...facts] };
 }
 
@@ -96,6 +99,6 @@ export function mirrorEpilogue(): string | null {
   const r = revealedProfile();
   if (!r) return null;
   return r === S.profile
-    ? T`Lo Specchio dell'investitore non ha mai mentito: il tuo profilo dichiarato era ${S.profile}, e le tue scelte lo sono state fino alla fine.`
-    : T`Il tuo profilo dichiarato era ${S.profile}, ma lungo il viaggio lo Specchio ha mostrato scelte da profilo ${r}. Ora lo sai: è questo che conta.`;
+    ? T`Lo Specchio dell'investitore non ha mai mentito: il tuo profilo dichiarato era ${profileName(S.profile)}, e le tue scelte lo sono state fino alla fine.`
+    : T`Il tuo profilo dichiarato era ${profileName(S.profile)}, ma lungo il viaggio lo Specchio ha mostrato scelte da profilo ${profileName(r)}. Ora lo sai: è questo che conta.`;
 }

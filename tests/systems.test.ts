@@ -65,11 +65,11 @@ describe('mercato', () => {
       expect(Date.parse(w.start)).toBeGreaterThan(Date.parse('2016-01-01')); // lo storico gratuito di Alpaca parte dal 2016
       if (w.crypto) expect(Date.parse(w.crypto.start)).toBeGreaterThan(Date.parse('2021-01-01'));
     };
-    for (const t of ['stocks', 'etf', 'crypto', 'mixed'] as const) for (let m = 1; m <= 8; m++) check(mentorMission(m, t, 'equilibrato'));
+    for (const t of ['listed', 'crypto', 'mixed'] as const) for (let m = 1; m <= 8; m++) check(mentorMission(m, t, 'equilibrato'));
     for (let i = 0; i < 5; i++) check(leagueMission(i));
   });
   it('tutte le missioni di Mentori e Lega sono definite', () => {
-    for (const t of ['stocks', 'etf', 'crypto', 'mixed'] as const) for (let m = 1; m <= 8; m++) expect(mentorMission(m, t, 'prudente').title).toBeTruthy();
+    for (const t of ['listed', 'crypto', 'mixed'] as const) for (let m = 1; m <= 8; m++) expect(mentorMission(m, t, 'prudente').title).toBeTruthy();
     for (let i = 0; i < 5; i++) expect(leagueMission(i).title).toBeTruthy();
   });
 });

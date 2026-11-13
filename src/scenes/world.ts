@@ -287,7 +287,7 @@ export class WorldScene extends Phaser.Scene {
         const lift = c === (this.player as unknown as GO) ? this.flightLift : 0;
         items.push({ kind: 'char', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: (c.y + lift * FLIGHT_PX) / P, alpha: c.alpha, lift });
       }
-      else if (key === 'tiles' && c.type === 'Sprite' && c !== (this.grassOver as unknown as GO)) items.push({ kind: 'tile', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: c.y / P, alpha: c.alpha });
+      else if (key === 'tiles' && c.type === 'Sprite' && c !== (this.grassOver as unknown as GO)) items.push({ kind: 'tile', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: c.y / P, alpha: c.alpha, lift: this.map.tiles[Math.round(c.y / P) - 1]?.[Math.floor(c.x / P)] === TILE.CASE_TABLE ? 0.48 : 0 });
       else if (key === 'bubble') items.push({ kind: 'bubble', x: c.x / P, y: (c.y + 24 * RS) / P, scale: c.scaleX });
       else if (c.type === 'Rectangle' && c.getData && c.getData('z0') !== undefined) { const z0 = Number(c.getData('z0')); items.push({ kind: 'leaf', x: c.x / P, z: z0 / P, h: (z0 - c.y) / P + 0.15, color: c.fillColor ?? 0x88d058, alpha: c.alpha }); }
     }
@@ -392,7 +392,7 @@ export class WorldScene extends Phaser.Scene {
         continue;
       }
       if (n.def.kind === 'case') {
-        if (!n.spr) { const col = ({ stocks: 'case_blue', etf: 'case_green', crypto: 'case_orange' } as Record<string, string>)[String(n.def.data?.cls)] ?? 'case_blue'; n.spr = this.add.sprite(n.x * P + P / 2, n.y * P + P, 'tiles', tileIndex(col)).setOrigin(0.5, 1).setDepth(5); }
+        if (!n.spr) { const col = ({ listed: 'case_blue', crypto: 'case_orange', mixed: 'case_purple' } as Record<string, string>)[String(n.def.data?.track)] ?? 'case_blue'; n.spr = this.add.sprite(n.x * P + P / 2, n.y * P + P, 'tiles', tileIndex(col)).setOrigin(0.5, 1).setDepth(5); }
         continue;
       }
       if (n.def.hiddenSprite) continue;

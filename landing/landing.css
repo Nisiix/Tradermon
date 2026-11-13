@@ -70,7 +70,7 @@ body[data-sky='day'] .hero-text { background: #0c1640e6; }
 .small { font-size: 14px; color: #c8c8d0; }
 
 /* carte percorso */
-.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 280px)); justify-content: center; gap: 16px; }
 .card { perspective: 800px; background: none; border: 0; padding: 0; height: 250px; cursor: pointer; font: inherit; color: inherit; text-align: center; }
 .card .inner { position: relative; display: block; width: 100%; height: 100%; transition: transform .5s; transform-style: preserve-3d; }
 .card:hover .inner, .card:focus-visible .inner, .card.flip .inner { transform: rotateY(180deg); }
@@ -81,7 +81,6 @@ body[data-sky='day'] .hero-text { background: #0c1640e6; }
 .card .case { width: 64px; height: 44px; border: 4px solid #000; border-radius: 6px; background: currentColor; position: relative; box-shadow: inset 0 -8px 0 #0003; }
 .card .case::before { content: ''; position: absolute; left: 18px; top: -14px; width: 20px; height: 10px; border: 4px solid #000; border-bottom: 0; border-radius: 4px 4px 0 0; }
 .card.blue .front { background: #284898; color: #a8c8ff; }
-.card.green .front { background: #207840; color: #a8f0b8; }
 .card.orange .front { background: #a85010; color: #ffd0a0; }
 .card.purple .front { background: #603898; color: #e0c8ff; }
 .card .front b, .card .front span:not(.case) { color: #fff; }
@@ -192,13 +191,15 @@ kbd { display: inline-block; font: 13px var(--font); background: #fff; border: 2
   .btn { text-align: center; }
   .guide, .cols, .trio { grid-template-columns: minmax(0, 1fr); }
   .trio > div + div { border-left: 0; border-top: 3px dashed var(--panel-2); margin-top: 14px; padding-top: 14px; }
-  .cards { grid-template-columns: 1fr 1fr; }
+  .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .hero { align-items: flex-end; padding-bottom: 12svh; }
   .hero-text { margin: 0 auto; }
 }
+@media (max-width: 640px) {
+  .cards { grid-template-columns: minmax(0, 320px); gap: 16px; }
+}
 @media (max-width: 480px) {
   body { font-size: 16px; }
-  .cards { grid-template-columns: 1fr; }
   .card { height: 210px; }
   .logo { font-size: 13px; }
   .hero-text { padding: 16px; }

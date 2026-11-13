@@ -1,5 +1,5 @@
 import { g, gtext } from '../systems/gender';
-import { revealedProfile } from '../systems/mirror';
+import { revealedProfile, profileName } from '../systems/mirror';
 import { S, save, level, xpToNext, cardLevel, slots, exportSave } from '../systems/state';
 import { choose, modal, esc, say, el, toast, bar } from './core';
 import { press } from './input';
@@ -119,7 +119,7 @@ export async function openLessons(only?: QuizTopic[]) {
 async function openGazette() {
   await modal(T('Giornale dei Mercati'), ({ body, button, close }) => {
     const hs = headlines();
-    body.innerHTML = `<p class="small">${esc(weekSummary())}</p>` + (hs.length ? hs.map((h) => `<div style="margin:6px 0"><b class="${h.tone === 'su' ? 'good' : h.tone === 'giu' ? 'bad' : ''}">Giorno ${h.day} · ${esc(h.title)}</b>${h.body ? `<br><span class="small">${esc(h.body)}</span>` : ''}</div>`).join('') : T('<p class="muted">Nessuna notizia ancora.</p>'));
+    body.innerHTML = `<p class="small">${esc(weekSummary())}</p>` + (hs.length ? hs.map((h) => `<div style="margin:6px 0"><b class="${h.tone === 'su' ? 'good' : h.tone === 'giu' ? 'bad' : ''}">${T`Giorno ${h.day}`} · ${esc(h.title)}</b>${h.body ? `<br><span class="small">${esc(h.body)}</span>` : ''}</div>`).join('') : T('<p class="muted">Nessuna notizia ancora.</p>'));
     button(T('Chiudi'), () => close(), 'primary');
   }, { wide: true });
 }
@@ -130,8 +130,8 @@ async function profile() {
   const r = await modal<string>(T('Profilo'), ({ body, button, close }) => {
     body.innerHTML = T`
       <div class="grid2">
-        <div><b>${esc(S.name)}</b>${S.title ? ` <span class="muted">«${esc(T(S.title))}»</span>` : ''} · ${({ stocks: T('Sentiero dei Titoli'), etf: T('Sentiero degli Indici'), crypto: T('Sentiero Cripto'), mixed: T('Sentiero Misto') } as Record<string, string>)[S.track]}${S.ngPlus ? T` · Nuova Partita+ ${S.ngPlus}` : ''}<br>
-        Profilo dichiarato: <b>${S.profile}</b> · rivelato dalle missioni: <b>${revealedProfile() ?? '—'}</b> · Orizzonte: ${esc(S.horizon ? T(S.horizon) : '—')}<br>
+        <div><b>${esc(S.name)}</b>${S.title ? ` <span class="muted">«${esc(T(S.title))}»</span>` : ''} · ${({ listed: T('Sentiero Azioni ed ETF'), crypto: T('Sentiero Cripto'), mixed: T('Sentiero Misto') } as Record<string, string>)[S.track]}${S.ngPlus ? T` · Nuova Partita+ ${S.ngPlus}` : ''}<br>
+        Profilo dichiarato: <b>${profileName(S.profile)}</b> · rivelato dalle missioni: <b>${((r) => (r ? profileName(r) : '—'))(revealedProfile())}</b> · Orizzonte: ${esc(S.horizon ? T(S.horizon) : '—')}<br>
         Livello di Conoscenza <b>${level()}</b> (${cur}/${need} XP)${bar((cur / need) * 100)}
         Fiducia ${S.stats.fiducia}/100 ${bar(S.stats.fiducia)}
         Disciplina ${S.stats.disciplina} · Pazienza ${S.stats.pazienza} · Reputazione ${S.stats.reputazione}<br>
@@ -166,7 +166,7 @@ async function badges() {
       const m = mentor(i, S.track);
       const got = S.badges >= i;
       const seal = S.seals >= i;
-      h += `<div class="card ${got && seal ? 'gold' : got ? '' : 'locked'}"><b>${got && seal ? '🏅' : got ? '📜' : '○'} ${esc(m.badge)}</b> <span class="small">${got ? (seal ? T('Attestato e Sigillo') : T('Attestato · manca il Sigillo pratico')) : ''}</span><br><span class="small">${esc(m.name)} · ${TOWNS[i].name}</span><br><span class="small">${got ? `Tecnica: <b>${esc(m.technique)}</b>. ${esc(m.techDesc)}` : T('Non ancora ottenuto')}</span></div>`;
+      h += `<div class="card ${got && seal ? 'gold' : got ? '' : 'locked'}"><b>${got && seal ? '🏅' : got ? '📜' : '○'} ${esc(m.badge)}</b> <span class="small">${got ? (seal ? T('Attestato e Sigillo') : T('Attestato · manca il Sigillo pratico')) : ''}</span><br><span class="small">${esc(m.name)} · ${TOWNS[i].name}</span><br><span class="small">${got ? T`Tecnica: <b>${esc(m.technique)}</b>. ${esc(m.techDesc)}` : T('Non ancora ottenuto')}</span></div>`;
     }
     h += '</div>';
     const ab = [{ a: ABILITY.swim, ok: canSwim() }, { a: ABILITY.cut, ok: S.badges >= ABILITY.cut.badge }, { a: ABILITY.transfer, ok: canTransfer() }, { a: ABILITY.dark, ok: S.badges >= ABILITY.dark.badge }, { a: ABILITY.cold, ok: S.badges >= 7 }];

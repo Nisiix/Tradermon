@@ -165,7 +165,7 @@ export async function questTalk(rid: string, who: string): Promise<boolean> {
     if (!done) { await say(T('Quasi! Ripassa un po\' e torna da me.'), who); return true; }
   }
   if (!done) {
-    const hint = st.kind === 'lesson' ? ` (lezione: "${LESSONS.find((l) => l.id === st.target)?.title ?? st.target}")` : '';
+    const hint = st.kind === 'lesson' ? T` (lezione: "${LESSONS.find((l) => l.id === st.target)?.title ?? st.target}")` : '';
     await say([...st.say, T`Ci sei quasi?${hint}`].slice(0, 3), who);
     return true;
   }

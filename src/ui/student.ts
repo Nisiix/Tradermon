@@ -79,7 +79,7 @@ export async function openStudentFolder() {
         </div>
         <div>
           <h4 style="margin:4px 0">Da rafforzare</h4>
-          ${weak.length ? weak.map((k) => { const b = booksFor([k.topic]).find((x) => !x.id.endsWith('_ctx')); const t = townForTopic(k.topic); return `<div class="small"><b>${esc(TOPIC_LABEL[k.topic])}</b>${k.wrong ? ` · ${k.wrong} sbagliate` : ''}${b ? `<br><span class="muted">📖 «${esc(b.title)}»${t ? T`, Biblioteca di ${esc(t)}` : ''}</span>` : ''}</div>`; }).join('') : T('<p class="small muted">Ancora nessun duello: tutto da scoprire.</p>')}
+          ${weak.length ? weak.map((k) => { const b = booksFor([k.topic]).find((x) => !x.id.endsWith('_ctx')); const t = townForTopic(k.topic); return `<div class="small"><b>${esc(TOPIC_LABEL[k.topic])}</b>${k.wrong ? T` · ${k.wrong} sbagliate` : ''}${b ? `<br><span class="muted">📖 «${esc(b.title)}»${t ? T`, Biblioteca di ${esc(t)}` : ''}</span>` : ''}</div>`; }).join('') : T('<p class="small muted">Ancora nessun duello: tutto da scoprire.</p>')}
           <h4 style="margin:8px 0 4px">Missioni (stelle di processo)</h4>
           ${ms.map((m) => `<div class="small">${m.done ? '🏅' : '○'} ${esc(m.title)} <span class="${m.stars === 3 ? 'good' : 'muted'}">${m.sim ? '★'.repeat(m.stars) + '☆'.repeat(3 - m.stars) : T('(a scelta, senza stelle)')}</span></div>`).join('')}
           <h4 style="margin:8px 0 4px">Duelli e Diario</h4>

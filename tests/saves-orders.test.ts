@@ -163,10 +163,10 @@ describe('registro del conto di gioco', () => {
     S0.cards.AAPL = { xp: 90, gold: true } as never; S0.cards.KO = { xp: 10, gold: false } as never;
     S0.playMs = 1234;
     const id = S0.saveId;
-    newGamePlus('etf');
+    newGamePlus('crypto');
     const S1 = State.S;
     expect(S1.ngPlus).toBe(1);
-    expect(S1.track).toBe('etf');
+    expect(S1.track).toBe('crypto');
     // da zero
     expect([S1.badges, S1.seals, S1.exDone, S1.levExam]).toEqual([0, 0, 0, false]);
     expect(S1.saveId).not.toBe(id);
@@ -212,7 +212,7 @@ describe('confronto con il rivale', () => {
   it('usa gli stessi giorni reali del giocatore e lo stesso capitale di partenza', async () => {
     const { rivalSeries } = await import('../src/world/scripts/story');
     const S = newGame();
-    S.flags.starter = true; S.track = 'stocks';
+    S.flags.starter = true; S.track = 'listed';
     expect(rivalSeries('audace')).toBeNull(); // nessun prezzo scaricato
     // 60 sedute di storico di prova, in salita dell'1% al giorno, fino a venerdì 6 novembre 2026
     for (const id of ['AAPL', 'KO', 'JNJ', 'JPM', 'NEE', 'XOM', 'MSFT', 'PG', 'NVDA', 'UNH', 'V', 'DUK', 'TSLA', 'CVX']) S.market.history[id] = Array.from({ length: 60 }, (_, i) => 100 * 1.01 ** i);

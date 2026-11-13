@@ -10,6 +10,9 @@ import { T } from '../i18n';
 // TER sono INDICATIVI (ordini di grandezza storici, non dati in tempo reale): le schede lo dicono e
 // rimandano al documento ufficiale (KID, prospetto, bilancio) per i numeri aggiornati.
 
+/** Nome di ogni classe di asset, nella lingua scelta. */
+export const CLASS_LABEL: Record<AssetClass, string> = { stocks: T('Azioni'), etf: 'ETF', crypto: T('Cripto') };
+
 export const SECTOR_LABEL: Record<Sector, string> = {
   tech: T('Tecnologia'), finance: T('Finanza'), energy: T('Energia'), health: T('Salute'), consumer: T('Consumi'),
   utility: T('Utility'), bond: T('Obbligazioni'), gold: T('Oro'), crypto: T('Cripto'), stable: T('Stablecoin'), world: T('Globale'),
@@ -97,13 +100,19 @@ export const ASSETS: AssetDef[] = [
 
 export const ASSET_BY_ID: Record<string, AssetDef> = Object.fromEntries(ASSETS.map((a) => [a.id, a]));
 
-export function classesOf(track: Track, mixed: AssetClass[]): AssetClass[] {
-  return track === 'mixed' ? mixed : [track];
+/** Classi di attivo di ogni Valigetta. Il Sentiero Misto le ha sempre tutte e tre. */
+export const TRACK_CLASSES: Record<Track, AssetClass[]> = { listed: ['stocks', 'etf'], crypto: ['crypto'], mixed: ['stocks', 'etf', 'crypto'] };
+
+/** Classi del percorso. `mixed` resta solo per i salvataggi: se è compilato vale per il Sentiero Misto. */
+export function classesOf(track: Track, mixed: AssetClass[] = []): AssetClass[] {
+  if (track === 'mixed' && mixed.length) return mixed;
+  return TRACK_CLASSES[track] ?? TRACK_CLASSES.listed;
 }
 
 /** Titoli reali tra cui scegliere nella Valigetta, per classe (in ordine alfabetico). */
-export function starterOptions(cls: AssetClass): AssetDef[] {
-  return ASSETS.filter((a) => a.cls === cls && a.unlock === 'starter');
+export function starterOptions(cls: AssetClass | AssetClass[]): AssetDef[] {
+  const list = Array.isArray(cls) ? cls : [cls];
+  return list.flatMap((c) => ASSETS.filter((a) => a.cls === c && a.unlock === 'starter'));
 }
 
 /** Titolo iniziale predefinito di una classe (il primo della vetrina): usato solo se il giocatore non ha ancora scelto. */

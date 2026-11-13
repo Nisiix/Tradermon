@@ -73,7 +73,7 @@ describe('sfide ai capi palestra', () => {
   beforeEach(() => { newGame(); });
   it('il Mentore pone sempre lo stesso numero di domande', () => {
     for (let m = 1; m <= 8; m++) for (let k = 0; k < 5; k++) {
-      expect(pickQuestions(mentorTopics(m, 'stocks', []), 8, { minDiff: m >= 4 ? 2 : 1 })).toHaveLength(8);
+      expect(pickQuestions(mentorTopics(m, 'listed', []), 8, { minDiff: m >= 4 ? 2 : 1 })).toHaveLength(8);
     }
     expect(pickQuestions(['regole'], 60)).toHaveLength(60);
   });

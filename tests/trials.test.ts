@@ -7,7 +7,7 @@ const stop = (asset: string, qty: number): PendingOrder => ({ id: 's' + asset, c
 
 function setup() {
   const S = newGame();
-  S.flags.starter = 'AAPL'; S.track = 'stocks'; S.badges = 8;
+  S.flags.starter = 'AAPL'; S.track = 'listed'; S.badges = 8;
   S.market.asOf = Date.now();
   S.market.prices = { AAPL: 100, KO: 50, JNJ: 100, NVDA: 100 };
   return S;

@@ -10,16 +10,16 @@ export interface TownDef {
 }
 
 export const TOWNS: TownDef[] = [
-  { id: 't0', name: T('Borgo Semina'), mentor: 0, special: 'lab', sub: { stocks: T('dove nascono le idee'), etf: T('dove nascono i piani'), crypto: T('dove nascono i blocchi'), mixed: T('dove nasce tutto') } },
-  { id: 't1', name: T('Ponte Cedola'), mentor: 1, sub: { stocks: T('città delle botteghe'), etf: T('città dei panieri'), crypto: T('città dei nodi'), mixed: T('città dei crocevia') } },
-  { id: 't2', name: T('Porto Ordini'), mentor: 2, sub: { stocks: T('porto dei mercanti'), etf: T('porto dei convogli'), crypto: T('porto 24 ore su 24'), mixed: T('porto di tutte le rotte') } },
-  { id: 't3', name: T('Diversia'), mentor: 3, special: 'simzone', sub: { stocks: T('città dei mille settori'), etf: T('città degli indici'), crypto: T('città delle reti'), mixed: T('città dei colori') } },
-  { id: 't4', name: T('Interessa'), mentor: 4, special: 'casino', sub: { stocks: T('città della spirale'), etf: T('città dell\'accumulo'), crypto: T('città delle commissioni'), mixed: T('città del tempo') } },
-  { id: 't5', name: T('Bilancia'), mentor: 5, special: 'archive', sub: { stocks: T('città dei bilanci'), etf: T('città dei prospetti'), crypto: T('città delle chiavi'), mixed: T('città delle proporzioni') } },
-  { id: 't6', name: T('Valdividendo'), mentor: 6, sub: { stocks: T('città del raccolto'), etf: T('città delle cedole'), crypto: T('città dell\'ancora'), mixed: T('città delle stagioni') } },
-  { id: 't7', name: T('Mentelucida'), mentor: 7, sub: { stocks: T('città degli specchi'), etf: T('città della calma'), crypto: T('città senza rumore'), mixed: T('città della mente') } },
-  { id: 't8', name: T('Rocca Rischio'), mentor: 8, sub: { stocks: T('fortezza dello scudo'), etf: T('fortezza della prudenza'), crypto: T('fortezza delle mura'), mixed: T('fortezza dell\'equilibrio') } },
-  { id: 't9', name: T('Wall Street'), mentor: 9, special: 'tower', sub: { stocks: T('la piazza degli investitori'), etf: T('la piazza degli investitori'), crypto: T('la piazza degli investitori'), mixed: T('la piazza degli investitori') } },
+  { id: 't0', name: T('Borgo Semina'), mentor: 0, special: 'lab', sub: { listed: T('dove nascono le idee'), crypto: T('dove nascono i blocchi'), mixed: T('dove nasce tutto') } },
+  { id: 't1', name: T('Ponte Cedola'), mentor: 1, sub: { listed: T('città delle botteghe'), crypto: T('città dei nodi'), mixed: T('città dei crocevia') } },
+  { id: 't2', name: T('Porto Ordini'), mentor: 2, sub: { listed: T('porto dei mercanti'), crypto: T('porto 24 ore su 24'), mixed: T('porto di tutte le rotte') } },
+  { id: 't3', name: T('Diversia'), mentor: 3, special: 'simzone', sub: { listed: T('città dei mille settori'), crypto: T('città delle reti'), mixed: T('città dei colori') } },
+  { id: 't4', name: T('Interessa'), mentor: 4, special: 'casino', sub: { listed: T('città della spirale'), crypto: T('città delle commissioni'), mixed: T('città del tempo') } },
+  { id: 't5', name: T('Bilancia'), mentor: 5, special: 'archive', sub: { listed: T('città dei bilanci'), crypto: T('città delle chiavi'), mixed: T('città delle proporzioni') } },
+  { id: 't6', name: T('Valdividendo'), mentor: 6, sub: { listed: T('città del raccolto'), crypto: T('città dell\'ancora'), mixed: T('città delle stagioni') } },
+  { id: 't7', name: T('Mentelucida'), mentor: 7, sub: { listed: T('città degli specchi'), crypto: T('città senza rumore'), mixed: T('città della mente') } },
+  { id: 't8', name: T('Rocca Rischio'), mentor: 8, sub: { listed: T('fortezza dello scudo'), crypto: T('fortezza delle mura'), mixed: T('fortezza dell\'equilibrio') } },
+  { id: 't9', name: T('Wall Street'), mentor: 9, special: 'tower', sub: { listed: T('la piazza degli investitori'), crypto: T('la piazza degli investitori'), mixed: T('la piazza degli investitori') } },
 ];
 
 export interface MentorDef {
@@ -42,15 +42,13 @@ const COMMON: Record<number, Omit<MentorDef, 'name' | 'technique' | 'techDesc'> 
   8: { n: 8, name: T('Rocco Rischio'), badge: T('Attestato Scudo'), technique: T('Stop Loss'), techDesc: T('Puoi usare ordini stop veri in Banca e nella Macchina del Tempo.'), intro: T('Nessuno vince sempre. Vince chi sa quanto può perdere. Lo sai tu?'), win: T('Il tuo scudo è pronto. Wall Street ti aspetta.'), palette: 7 },
 };
 
-const M5: Record<AssetClass | 'mixed', Partial<MentorDef>> = {
-  stocks: { name: T('Bianca Bilanci'), technique: T('Lettura del Bilancio'), techDesc: T('Livello 3 delle carte. Apre l\'Archivio di Bilancia.'), intro: T('Dietro ogni azione c\'è un\'azienda, e dietro ogni azienda un bilancio.') },
-  etf: { name: T('Ivo Indice'), technique: T('Analisi del Prospetto'), techDesc: T('Livello 3 delle carte. Apre l\'Archivio di Bilancia.'), intro: T('Due ETF possono sembrare gemelli. Il prospetto dice la verità.') },
+const M5: Record<Track, Partial<MentorDef>> = {
+  listed: { name: T('Bianca Bilanci'), technique: T('Lettura del Bilancio'), techDesc: T('Livello 3 delle carte. Apre l\'Archivio di Bilancia.'), intro: T('Dietro ogni azione c\'è un bilancio, dietro ogni ETF un prospetto. Li sai leggere?') },
   crypto: { name: T('Nina Nodo'), technique: T('Custodia Sicura'), techDesc: T('Livello 3 delle carte. Apre l\'Archivio di Bilancia.'), intro: T('Le chiavi del tuo regno digitale: le sai custodire?') },
   mixed: { name: T('Alba Allocazione'), technique: T('Visione d\'Insieme'), techDesc: T('Livello 3 delle carte. Apre l\'Archivio di Bilancia.'), intro: T('Il segreto non è il singolo pezzo, ma le proporzioni.') },
 };
-const M6: Record<AssetClass | 'mixed', Partial<MentorDef>> = {
-  stocks: { name: T('Dario Dividendi'), intro: T('Seminare, aspettare, raccogliere, riseminare. Conosci il ciclo?') },
-  etf: { name: T('Olga Obbligazioni'), intro: T('Quando i tassi salgono, i prezzi scendono. Reggi l\'onda?') },
+const M6: Record<Track, Partial<MentorDef>> = {
+  listed: { name: T('Dario Dividendi'), intro: T('Dividendi e cedole si seminano, si aspettano, si raccolgono. Conosci il ciclo, anche quando i tassi salgono?') },
   crypto: { name: T('Stella Stabile'), intro: T('Non tutto ciò che si dice stabile lo è davvero.') },
   mixed: { name: T('Teo Tassi'), intro: T('Azioni, obbligazioni, cripto: ognuna ha la sua stagione.') },
 };
@@ -72,8 +70,7 @@ export const LEAGUE = [
 /** team con l'articolo ("gli Speculatori"), of con la preposizione ("degli Speculatori"), name senza articolo. */
 export function antagonist(track: Track): { team: string; of: string; name: string; boss: string } {
   switch (track) {
-    case 'stocks': return { team: T('gli Speculatori'), of: T('degli Speculatori'), name: T('Speculatori'), boss: T('Max Leva') };
-    case 'etf': return { team: T('i Venditori di Commissioni'), of: T('dei Venditori di Commissioni'), name: T('Venditori di Commissioni'), boss: T('Carlo Provvigione') };
+    case 'listed': return { team: T('gli Speculatori'), of: T('degli Speculatori'), name: T('Speculatori'), boss: T('Max Leva') };
     case 'crypto': return { team: T('la Banda del Rug Pull'), of: T('della Banda del Rug Pull'), name: T('Banda del Rug Pull'), boss: T('il Re Tappeto') };
     default: return { team: T('l\'Alleanza degli Speculatori'), of: T('dell\'Alleanza degli Speculatori'), name: T('Alleanza degli Speculatori'), boss: T('Max Leva') };
   }

@@ -16,7 +16,6 @@
  "Sbagliare è permesso": "Mistakes are allowed",
  "Un errore costa capitale di gioco, non i tuoi risparmi. È <b>solo apprendimento</b>: non è consulenza e non ti dice cosa comprare.": "A mistake costs game capital, not your savings. It's <b>just learning</b>: it isn't advice and it doesn't tell you what to buy.",
  "Scegli il percorso": "Choose your trail",
- "All'inizio il Professore ti fa scegliere una valigetta: decide su cosa si concentrano le lezioni e le Whale 5 e 6.": "At the start the Professor has you choose a briefcase: it decides what the lessons and Whales 5 and 6 focus on.",
  "Whale e Attestati": "Whales and Certificates",
  "Un Attestato per città, poi Wall Street. Come si vince ciascuno lo spiega la <a href=\"#g-medaglie\">Guida</a>.": "One Certificate per town, then Wall Street. How to win each one is explained in the <a href=\"#g-medaglie\">Guide</a>.",
  "L'essenziale per partire. Le regole complete te le spiegano i personaggi, dentro il gioco.": "The essentials to get started. The characters explain the full rules to you, inside the game.",
@@ -158,10 +157,7 @@
  "Tradermon, torna all'inizio": "Tradermon, back to the start",
  "Apri il menu": "Open the menu",
  "Tradermon, torna alla home": "Tradermon, back to home",
- "Le azioni delle aziende: bilanci, settori, scelte.": "Company shares: balance sheets, sectors, choices.",
- "Gli ETF: panieri, costi bassi, pazienza.": "ETFs: baskets, low costs, patience.",
  "La frontiera più rischiosa: reti, chiavi, volatilità.": "The riskiest frontier: networks, keys, volatility.",
- "Due o tre classi insieme: l'arte delle proporzioni.": "Two or three classes together: the art of proportions.",
  "<span class=\"back\"><img alt=\"\" width=\"64\" height=\"96\" src=\"{0}\"><b>{1}</b><span>Whale di {2}</span><span class=\"tech\">{3}</span></span></span>": "<span class=\"back\"><img alt=\"\" width=\"64\" height=\"96\" src=\"{0}\"><b>{1}</b><span>Whale of {2}</span><span class=\"tech\">{3}</span></span></span>",
  "La Whale del percorso": "Your path's Whale",
  "La Whale del Raccolto": "The Harvest Whale",
@@ -171,5 +167,8 @@
  "Copia non riuscita: seleziona l'indirizzo a mano.": "Copy failed: select the address by hand.",
  "Scrivi almeno una frase su cosa è successo.": "Write at least one sentence about what happened.",
  "Altro": "Other",
- "\n\n---\nBrowser: {0}\nSchermo: {1}×{2}\nPagina: {3}": "\n\n---\nBrowser: {0}\nScreen: {1}×{2}\nPage: {3}"
+ "\n\n---\nBrowser: {0}\nSchermo: {1}×{2}\nPagina: {3}": "\n\n---\nBrowser: {0}\nScreen: {1}×{2}\nPage: {3}",
+ "Azioni ed ETF: bilanci, panieri, costi bassi e pazienza.": "Stocks and ETFs: balance sheets, baskets, low costs and patience.",
+ "Azioni, ETF e cripto insieme: l'arte delle proporzioni.": "Stocks, ETFs and crypto together: the art of proportions.",
+ "All'inizio, nel Laboratorio del Professore, scegli una delle tre Valigette: decide quali titoli studi e compri, e su cosa ti interrogano le Whale.": "At the start, in the Professor's Lab, you choose one of three Briefcases: it decides which securities you study and buy, and what the Whales quiz you on."
 }

@@ -18,15 +18,15 @@ export const ARENA_ACCENT: Record<Arena, string> = {
 
 /** Parole del nastro scorrevole in alto: concetti del gioco, mai prezzi o titoli reali. */
 export const ARENA_TAPE: Record<Arena, string[]> = {
-  piazza: ['DOMANDA ▲', 'OFFERTA ▼', T('LIQUIDITÀ ▲'), 'SPREAD ▼', 'VOLUMI ▲', 'PREZZO ▲'],
-  aula: ['DIVERSIFICARE ▲', T('INTERESSE COMPOSTO ▲'), 'COSTI ▼', 'ORIZZONTE ▲', T('FONDO EMERGENZE ▲')],
-  sala: ['PIANO ▲', 'STOP ▲', 'RISCHIO ▼', 'DISCIPLINA ▲', 'PAZIENZA ▲', 'IMPULSO ▼'],
-  tetto: [T('RIVALITÀ ▲'), 'CONFRONTO ▲', 'FRETTA ▼', 'METODO ▲', 'COSTANZA ▲'],
-  fossa: ['LEVA ▼', 'PANICO ▼', 'VOCI ▼', 'FOMO ▼', 'PROMESSE ▼', T('SANGUE FREDDO ▲')],
-  lega: ['ESPERIENZA ▲', 'METODO ▲', 'PROCESSO ▲', 'ALLOCAZIONE ▲', 'CALMA ▲'],
-  torre: [T('PIANO SUCCESSIVO ▲'), 'RESISTENZA ▲', 'CONCENTRAZIONE ▲', 'FIDUCIA ▲'],
-  biblioteca: ['RIPASSO ▲', 'APPUNTI ▲', T('CURIOSITÀ ▲'), 'DUBBI ▼', 'STUDIO ▲'],
-  borsa: ['INGRESSO ▲', 'STOP ▲', 'OBIETTIVO ▲', 'SCADENZA ▲', 'ESITO ▲', 'PROCESSO ▲'],
+  piazza: [T('DOMANDA ▲'), T('OFFERTA ▼'), T('LIQUIDITÀ ▲'), 'SPREAD ▼', T('VOLUMI ▲'), T('PREZZO ▲')],
+  aula: [T('DIVERSIFICARE ▲'), T('INTERESSE COMPOSTO ▲'), T('COSTI ▼'), T('ORIZZONTE ▲'), T('FONDO EMERGENZE ▲')],
+  sala: [T('PIANO ▲'), 'STOP ▲', T('RISCHIO ▼'), T('DISCIPLINA ▲'), T('PAZIENZA ▲'), T('IMPULSO ▼')],
+  tetto: [T('RIVALITÀ ▲'), T('CONFRONTO ▲'), T('FRETTA ▼'), T('METODO ▲'), T('COSTANZA ▲')],
+  fossa: [T('LEVA ▼'), T('PANICO ▼'), T('VOCI ▼'), 'FOMO ▼', T('PROMESSE ▼'), T('SANGUE FREDDO ▲')],
+  lega: [T('ESPERIENZA ▲'), T('METODO ▲'), T('PROCESSO ▲'), T('ALLOCAZIONE ▲'), T('CALMA ▲')],
+  torre: [T('PIANO SUCCESSIVO ▲'), T('RESISTENZA ▲'), T('CONCENTRAZIONE ▲'), T('FIDUCIA ▲')],
+  biblioteca: [T('RIPASSO ▲'), T('APPUNTI ▲'), T('CURIOSITÀ ▲'), T('DUBBI ▼'), T('STUDIO ▲')],
+  borsa: [T('INGRESSO ▲'), 'STOP ▲', T('OBIETTIVO ▲'), T('SCADENZA ▲'), T('ESITO ▲'), T('PROCESSO ▲')],
 };
 
 type Ctx = CanvasRenderingContext2D;
