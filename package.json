@@ -35,6 +35,7 @@
     "node": ">=20"
   },
   "imports": {
-    "#i18n-en": "./src/i18n/en-node.ts"
+    "#i18n-en": "./src/i18n/en-node.ts",
+    "#i18n-en-landing": "./src/i18n/en-node.ts"
   }
 }

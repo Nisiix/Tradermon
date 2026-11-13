@@ -2,9 +2,11 @@
 // I testi sono scritti in italiano nel codice e passano da T(): T('Ciao') o T`Hai ${n} punti`.
 // In inglese T() cerca la traduzione nel dizionario (src/i18n/en/*.json, chiave = testo italiano con
 // {0}, {1}… al posto dei valori); se manca, mostra l'italiano. La scelta vale per il dispositivo
-// (localStorage, condivisa da landing e gioco) e cambiarla ricarica la pagina: molti testi sono
-// costanti calcolate all'avvio.
-import EN from '#i18n-en';
+// (localStorage, condivisa da landing e gioco).
+// Il dizionario non è importato qui: ogni pagina registra il suo con addDictionary() come primo import
+// (src/i18n/full.ts per il gioco, src/i18n/landing.ts per landing e privacy, molto più piccolo).
+// Nel gioco cambiare lingua ricarica la pagina (molti testi sono costanti calcolate all'avvio); nella landing
+// la lingua cambia sul posto con switchLang().
 import { hashKey } from './hash';
 
 export type Lang = 'en' | 'it';
@@ -22,15 +24,24 @@ function detect(): Lang {
   return 'en';
 }
 
-export const LANG: Lang = detect();
+export let LANG: Lang = detect();
 /** Formato di numeri e date della lingua scelta. */
-export const LOCALE = LANG === 'en' ? 'en-US' : 'it-IT';
+export let LOCALE = LANG === 'en' ? 'en-US' : 'it-IT';
 
-const dict = EN as Record<string, string>;
+const dict: Record<string, string> = {};
+/** Aggiunge traduzioni inglesi già compilate (chiave = hashKey del testo italiano). */
+export function addDictionary(d: Record<string, string>) { Object.assign(dict, d); }
+
+/** Finché è attivo, T() restituisce il testo italiano (la chiave): serve alla landing per tenere le chiavi delle costanti. */
+let keysOnly = false;
+export function keepKeys(on: boolean) { keysOnly = on; }
+
+/** Traduzione inglese di una chiave, se c'è (indipendente dalla lingua scelta). */
+export function lookup(key: string): string | undefined { return dict[hashKey(key)]; }
 
 /** Traduzione di una chiave (testo italiano con {0}, {1}… per i valori). */
 export function tr(key: string): string {
-  if (LANG === 'it') return key;
+  if (LANG === 'it' || keysOnly) return key;
   return dict[hashKey(key)] ?? key;
 }
 
@@ -48,12 +59,26 @@ export function T(s: string | TemplateStringsArray, ...vals: unknown[]): string 
   return put(tr(key), vals);
 }
 
+function store(l: Lang) {
+  try { localStorage.setItem(LANG_KEY, l); } catch { /* resta per questa pagina */ }
+}
+
 /** Salva la lingua scelta e ricarica la pagina (dopo aver eseguito `before`, per esempio un salvataggio). */
 export function setLang(l: Lang, before?: () => void) {
   if (l === LANG) return;
-  try { localStorage.setItem(LANG_KEY, l); } catch { /* resta per questa pagina */ }
+  store(l);
   try { before?.(); } catch { /* si ricarica comunque */ }
   location.reload();
+}
+
+/** Cambia lingua senza ricaricare (landing e privacy): chi mostra testi ascolta l'evento 'tradermon:lang'. */
+export function switchLang(l: Lang) {
+  if (l === LANG) return;
+  store(l);
+  LANG = l;
+  LOCALE = l === 'en' ? 'en-US' : 'it-IT';
+  markDocument();
+  if (typeof dispatchEvent === 'function') dispatchEvent(new CustomEvent('tradermon:lang', { detail: l }));
 }
 
 /** Applica la lingua alla pagina (attributo lang di <html>). */
