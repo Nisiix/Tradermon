@@ -22,7 +22,7 @@ import { View3D, type MirrorFrame, type MirrorItem, type Painter } from '../rend
 import { tick } from '../systems/account';
 import { T } from '../i18n';
 import { findPath, stepDir, type TapPath } from '../systems/tapwalk';
-import { no3dStored, setNo3dStored, reportProblem, noteProblem } from '../systems/bootGuard';
+import { no3dStored, setNo3dStored, reportProblem, noteProblem, fxAutoDone, setFxAutoDone } from '../systems/bootGuard';
 
 const DIRS: Record<string, [number, number, 0 | 1 | 2 | 3]> = { down: [0, 1, 0], up: [0, -1, 1], left: [-1, 0, 2], right: [1, 0, 3] };
 const DIR_NAME = ['down', 'up', 'left', 'right'] as const;
@@ -81,6 +81,8 @@ export class WorldScene extends Phaser.Scene {
   no3d = no3dStored();
   /** Controllo dello schermo nero in 2.5D: quando fare la prossima lettura, letture nere di fila, letture fatte. */
   check3d = { at: 0, black: 0, done: 0 };
+  /** Misura della fluidità con gli effetti alti: fotogrammi contati da `from` (ms); 0 = misura finita o non serve. */
+  speed3d = { from: 0, frames: 0, last: 0 };
   /** Livello degli effetti visto l'ultima volta nelle Opzioni: se il giocatore lo cambia, la 2.5D si riprova. */
   optFx = '';
   /** Trasferimento di Capitale: altezza del volo (0 a terra, 1 in cielo) e nuvole che scorrono sullo schermo. */
@@ -280,6 +282,8 @@ export class WorldScene extends Phaser.Scene {
         v.onContextLost = () => { lostTimer = window.setTimeout(() => { if (this.view3d === v) this.drop3d(new Error('WebGL context lost (2.5D)'), false); }, 3500); };
         v.onContextRestored = () => { clearTimeout(lostTimer); if (this.view3d === v) { this.view3d.destroy(); this.view3d = undefined; this.view3dFx = ''; this.applyGraphics(); } };
         this.check3d = { at: performance.now() + 2500, black: 0, done: 0 };
+        // primi secondi lasciati alla compilazione degli shader, poi si conta per 4 secondi
+        this.speed3d = { from: want === 'alti' && !fxAutoDone() ? performance.now() + 3000 : 0, frames: 0, last: 0 };
         if (this.map) { this.syncMood(); this.view3d.loadMap(this.map, this.night, this.animFrame); }
       } catch (e) { this.drop3d(e, false); return; }
     }
@@ -315,6 +319,7 @@ export class WorldScene extends Phaser.Scene {
     const due = c.done < 4 && now >= c.at;
     const skip = due && (!!f.fade && f.fade.a > 0.05 || !!this.map?.tiles.some((r) => r.includes(TILE.CAVE)));
     const lum = v.frame(f, due && !skip);
+    this.measureSpeed(now);
     if (!due) return;
     if (skip || lum < 0) { c.at = now + 1000; return; }
     c.done++; c.at = now + 1200;
@@ -327,6 +332,28 @@ export class WorldScene extends Phaser.Scene {
       toast(T('La grafica 2.5D restava nera: passo agli effetti bassi.'));
       this.applyGraphics();
     } else this.drop3d(new Error('2.5D black screen with low effects: switching to the simplified view'), true);
+  }
+
+  /**
+   * Telefono che non regge gli effetti alti (meno di 15 fotogrammi al secondo): si passa agli effetti bassi una
+   * volta sola. Se poi il giocatore rimette gli effetti alti dalle Opzioni, la scelta resta la sua.
+   */
+  measureSpeed(now: number) {
+    const sp = this.speed3d;
+    if (!sp.from || now < sp.from) return;
+    // pagina nascosta o un'attesa lunga a metà misura: non è lentezza della grafica, si ricomincia
+    if (sp.last && now - sp.last > 1000) { sp.from = now; sp.frames = 0; }
+    sp.last = now;
+    sp.frames++;
+    if (now - sp.from < 4000) return;
+    const fps = (sp.frames * 1000) / (now - sp.from);
+    sp.from = 0;
+    setFxAutoDone();
+    if (fps >= 15 || this.view3dFx !== 'alti') return;
+    noteProblem(new Error(`2.5D at ${fps.toFixed(1)} fps with high effects: switching to low effects`));
+    S.options.fx = 'bassi'; this.optFx = 'bassi'; save();
+    toast(T('La grafica andava a scatti: passo agli effetti bassi. Puoi rimettere quelli alti nelle Opzioni.'));
+    this.applyGraphics();
   }
 
   syncMood() {
