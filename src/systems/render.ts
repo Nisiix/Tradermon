@@ -21,6 +21,8 @@ export function rendererType(): number {
 
 /** Media della luminosità massima nell'area centrale del canvas (0..255), o -1 se non leggibile. */
 function centerBrightness(game: Phaser.Game): Promise<number> {
+  // in 2.5D la tela di Phaser è nascosta e non disegna (la controlla la vista 2.5D, WorldScene.render3d): niente da leggere
+  if (game.canvas.style.display === 'none') return Promise.resolve(-1);
   return new Promise((resolve) => {
     const w = game.scale.width, h = game.scale.height;
     const done = (img: unknown) => {

@@ -7,7 +7,7 @@ import '@fontsource/dotgothic16/latin-400.css';
 import '@fontsource/dotgothic16/latin-ext-400.css';
 import './landing.css';
 import qrcode from 'qrcode-generator';
-import { portrait, drawCharacters, drawTileRaw, CHAR_PER_ROW, CW, CH, RS, PAL } from '../src/art/art';
+import { portrait, drawCharactersFor, drawTileRaw, CHAR_PER_ROW, CW, CH, RS, PAL } from '../src/art/art';
 import { mentor, TOWNS } from '../src/data/story';
 import type { Track } from '../src/types';
 import donazioni from './config/donazioni.json';
@@ -15,6 +15,7 @@ import segnalazioni from './config/segnalazioni.json';
 import { T, keepKeys } from '../src/i18n';
 import { translateDom, wireLangSwitch } from '../src/i18n/dom';
 import { playInShell, shellOpen } from './play';
+import { prefetchGame } from './prefetch';
 
 keepKeys(false);
 translateDom();
@@ -71,7 +72,7 @@ const THEMES: Record<Phase, Theme> = {
 
 function hero() {
   const cv = $<HTMLCanvasElement>('#sky');
-  const c = cv.getContext('2d')!;
+  let c = cv.getContext('2d')!;
   const h = new Date().getHours();
   const phase: Phase = h >= 20 || h < 6 ? 'night' : h >= 17 || h < 8 ? 'dusk' : 'day';
   const TH = THEMES[phase];
@@ -195,6 +196,16 @@ function hero() {
 
   let start = performance.now(), last = 0, parallax = 0;
   const INTRO = 34 * 55 + 700;
+  // finita la salita delle candele il grafico non cambia più: lo si disegna una volta in un canvas a parte
+  // (la linea con il bagliore è la parte più cara da disegnare) e poi lo si copia, spostato dalla parallasse
+  let chartCache: HTMLCanvasElement | null = null;
+  const chartDone = () => {
+    if (chartCache && chartCache.width === W && chartCache.height === H) return chartCache;
+    const cc = document.createElement('canvas'); cc.width = W; cc.height = H;
+    const real = c; c = cc.getContext('2d')!; drawChart(1e9); c = real;
+    chartCache = cc;
+    return cc;
+  };
   const frame = (now: number) => {
     if (!W) return;
     const t = reduced ? 1e9 : now - start;
@@ -207,7 +218,8 @@ function hero() {
       }
       c.globalAlpha = 1;
     }
-    c.save(); c.translate(0, -parallax * 0.35 * dpr); drawChart(t); c.restore();
+    if (t > INTRO) c.drawImage(chartDone(), 0, -parallax * 0.35 * dpr);
+    else { c.save(); c.translate(0, -parallax * 0.35 * dpr); drawChart(t); c.restore(); }
     c.drawImage(front, 0, 0);
     // riflessi delle luci sull'acqua
     c.fillStyle = TH.win;
@@ -380,10 +392,13 @@ if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(reportTo)) {
 function walkers() {
   const cv = $<HTMLCanvasElement>('#walkers');
   const c = cv.getContext('2d')!;
-  const sheet = drawCharacters();
+  // solo gli otto passanti, non il foglio intero del gioco (centinaia di personaggi): su telefono è la differenza
+  // tra un attimo e diversi secondi di pagina ferma
+  const pals = [PAL.PROF, PAL.NURSE, PAL.RIVAL, 2, 3, 4, 6, 7];
+  const sheet = drawCharactersFor(pals);
   const grass = [drawTileRaw('grass0'), drawTileRaw('grass1'), drawTileRaw('grass2')];
   const FW = CW * RS, FH = CH * RS;
-  const people = [PAL.PROF, PAL.NURSE, PAL.RIVAL, 2, 3, 4, 6, 7].map((pal, i) => ({ pal, x: i * 170 + 40, v: (i % 2 ? -1 : 1) * (0.25 + (i % 3) * 0.1) }));
+  const people = pals.map((_, i) => ({ pal: i, x: i * 170 + 40, v: (i % 2 ? -1 : 1) * (0.25 + (i % 3) * 0.1) }));
   const resize = () => { cv.width = cv.clientWidth || innerWidth; cv.height = 32 * RS; };
   resize();
   addEventListener('resize', resize);
@@ -421,8 +436,7 @@ function walkers() {
   if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { seen = e.isIntersecting; restart(); }).observe(cv);
   restart();
 }
-// Disegnare il foglio dei personaggi costa mezzo secondo su un telefono: si fa dopo, quando la pagina è già visibile
-// e ferma, così i testi compaiono subito.
+// I passanti si disegnano dopo, quando la pagina è già visibile e ferma, così testi e menu rispondono subito.
 const later = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(() => f(), { timeout: 2500 }) : setTimeout(f, 300));
 if (document.readyState === 'complete') later(walkers); else addEventListener('load', () => later(walkers), { once: true });
 
@@ -430,6 +444,7 @@ if (document.readyState === 'complete') later(walkers); else addEventListener('l
 if (location.hash === '#guida') $('#guida').focus({ preventScroll: true });
 
 // Service worker condiviso con il gioco (stesso file alla radice)
+if (import.meta.env.PROD) prefetchGame();
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => undefined); });
 }

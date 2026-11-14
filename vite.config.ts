@@ -63,7 +63,8 @@ function i18nPlugin(): Plugin {
       if (!(name in ids)) return null;
       const dir = new URL('./src/i18n/en/', import.meta.url);
       for (const f of readdirSync(dir)) this.addWatchFile(new URL(f, dir).pathname);
-      return `export default ${JSON.stringify(ids[name]())};`;
+      // come stringa JSON: il browser legge JSON.parse('…') molto più in fretta di un grande oggetto scritto nel codice
+      return `export default JSON.parse(${JSON.stringify(JSON.stringify(ids[name]()))});`;
     },
     // Il dizionario va registrato PRIMA che partano i moduli con testi calcolati all'avvio (settori, città, Whale…).
     // Quei moduli finiscono spesso in pezzi condivisi tra le pagine, che il browser esegue prima del corpo della
@@ -83,9 +84,41 @@ function i18nPlugin(): Plugin {
   };
 }
 
+/**
+ * La landing scarica in anticipo, a pagina ferma, i file della prima schermata del gioco (codice d'ingresso, suoi
+ * import e fogli di stile): toccando "Gioca" il titolo parte dalla cache invece che dalla rete. L'elenco va in un
+ * <meta> della landing; landing/prefetch.ts lo legge e rinuncia con il risparmio dati o una rete lenta.
+ */
+function gamePrefetch(): Plugin {
+  return {
+    name: 'tradermon-game-prefetch',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        if (!ctx.bundle || !/(^|\/)index\.html$/.test(ctx.path) || ctx.path.includes('gioca') || ctx.path.includes('privacy')) return;
+        const b = ctx.bundle;
+        const entry = Object.values(b).find((c) => c.type === 'chunk' && c.isEntry && c.facadeModuleId?.endsWith('/gioca/index.html'));
+        if (!entry || entry.type !== 'chunk') return;
+        const files = new Set<string>();
+        const visit = (name: string) => {
+          const c = b[name];
+          if (!c || files.has(name)) return;
+          files.add(name);
+          if (c.type !== 'chunk') return;
+          for (const css of c.viteMetadata?.importedCss ?? []) files.add(css);
+          for (const i of c.imports) visit(i);
+        };
+        visit(entry.fileName);
+        return [{ tag: 'meta', attrs: { name: 'tradermon-prefetch', content: [...files].join(' ') }, injectTo: 'head' }];
+      },
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [i18nPlugin(), pagePolicy()],
+  plugins: [i18nPlugin(), pagePolicy(), gamePrefetch()],
   server: {
     port: 5173,
     proxy: { '/api': `http://127.0.0.1:${API_PORT}` },

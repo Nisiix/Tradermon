@@ -591,28 +591,82 @@ export function drawTileRaw(name: string): HTMLCanvasElement {
   return cv;
 }
 
+let tileSheet: HTMLCanvasElement | undefined;
+/** Atlante di tutti i tile alla scala di resa (disegnato una volta sola, usato da Phaser e dalla 2.5D). */
 export function drawTiles(): HTMLCanvasElement {
+  if (tileSheet) return tileSheet;
   const cv = document.createElement('canvas');
   const rows = Math.ceil(REG.length / COLS);
   cv.width = T * COLS;
   cv.height = T * rows;
   const c = cv.getContext('2d')!;
   REG.forEach((r, i) => r.draw(c, { x: (i % COLS) * T, y: Math.floor(i / COLS) * T }));
-  return upscale(cv);
+  tileSheet = upscale(cv);
+  return tileSheet;
 }
 
 /** Porta un atlante alla scala di resa (RS). Ogni tile viene smussato da solo, così i bordi tra tile non sbavano. */
 function upscale(cv: HTMLCanvasElement, cellW = T, cellH = T): HTMLCanvasElement {
-  const out = document.createElement('canvas'); out.width = cv.width * RS; out.height = cv.height * RS;
-  const oc = out.getContext('2d')!; oc.imageSmoothingEnabled = false;
-  const cell = document.createElement('canvas'); cell.width = cellW; cell.height = cellH;
-  const cc = cell.getContext('2d')!;
-  for (let y = 0; y < cv.height; y += cellH) for (let x = 0; x < cv.width; x += cellW) {
-    cc.clearRect(0, 0, cellW, cellH); cc.drawImage(cv, x, y, cellW, cellH, 0, 0, cellW, cellH);
-    const big = RS === 3 ? scale3x(cell) : RS === 2 ? scale2x(cell) : cell;
-    oc.drawImage(big, 0, 0, big.width, big.height, x * RS, y * RS, cellW * RS, cellH * RS);
+  if (RS !== 3) {
+    const out = document.createElement('canvas'); out.width = cv.width * RS; out.height = cv.height * RS;
+    const oc = out.getContext('2d')!; oc.imageSmoothingEnabled = false;
+    const cell = document.createElement('canvas'); cell.width = cellW; cell.height = cellH;
+    const cc = cell.getContext('2d')!;
+    for (let y = 0; y < cv.height; y += cellH) for (let x = 0; x < cv.width; x += cellW) {
+      cc.clearRect(0, 0, cellW, cellH); cc.drawImage(cv, x, y, cellW, cellH, 0, 0, cellW, cellH);
+      const big = RS === 2 ? scale2x(cell) : cell;
+      oc.drawImage(big, 0, 0, big.width, big.height, x * RS, y * RS, cellW * RS, cellH * RS);
+    }
+    return out;
   }
+  // un'unica lettura e un'unica scrittura dei pixel: su telefono ogni lettura di un canvas costa molto
+  // (prima si leggeva e riscriveva ogni cella da sola, migliaia di volte per il foglio dei personaggi)
+  const w = cv.width, h = cv.height;
+  const src = new Uint32Array(cv.getContext('2d')!.getImageData(0, 0, w, h).data.buffer);
+  return pixelsToCanvas(scale3xPixels(src, w, h, cellW, cellH), w * 3, h * 3);
+}
+
+function pixelsToCanvas(px: Uint32Array, w: number, h: number): HTMLCanvasElement {
+  const out = document.createElement('canvas'); out.width = w; out.height = h;
+  out.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(px.buffer as ArrayBuffer, px.byteOffset, w * h * 4), w, h), 0, 0);
   return out;
+}
+
+/**
+ * Scale3x (variante di EPX) su pixel grezzi (un intero a 32 bit per pixel). L'immagine è divisa in celle
+ * cellW×cellH e ogni cella è smussata da sola: ai bordi della cella il pixel vicino è quello del bordo stesso.
+ */
+export function scale3xPixels(s: Uint32Array, w: number, h: number, cellW = w, cellH = h): Uint32Array {
+  const W3 = w * 3;
+  const d = new Uint32Array(W3 * h * 3);
+  for (let y = 0; y < h; y++) {
+    const cy0 = y - (y % cellH), cy1 = Math.min(h, cy0 + cellH) - 1;
+    const ru = (y > cy0 ? y - 1 : y) * w, rm = y * w, rd = (y < cy1 ? y + 1 : y) * w;
+    const o0 = 3 * y * W3, o1 = o0 + W3, o2 = o1 + W3;
+    for (let x = 0; x < w; x++) {
+      const cx0 = x - (x % cellW), cx1 = Math.min(w, cx0 + cellW) - 1;
+      const xl = x > cx0 ? x - 1 : x, xr = x < cx1 ? x + 1 : x;
+      const A = s[ru + xl], B = s[ru + x], C = s[ru + xr];
+      const D = s[rm + xl], E = s[rm + x], F = s[rm + xr];
+      const G = s[rd + xl], H = s[rd + x], I = s[rd + xr];
+      let e0 = E, e1 = E, e2 = E, e3 = E, e5 = E, e6 = E, e7 = E, e8 = E;
+      if (B !== H && D !== F) {
+        e0 = D === B ? D : E;
+        e1 = (D === B && E !== C) || (B === F && E !== A) ? B : E;
+        e2 = B === F ? F : E;
+        e3 = (D === B && E !== G) || (D === H && E !== A) ? D : E;
+        e5 = (B === F && E !== I) || (H === F && E !== C) ? F : E;
+        e6 = D === H ? D : E;
+        e7 = (D === H && E !== I) || (H === F && E !== G) ? H : E;
+        e8 = H === F ? F : E;
+      }
+      const X = 3 * x;
+      d[o0 + X] = e0; d[o0 + X + 1] = e1; d[o0 + X + 2] = e2;
+      d[o1 + X] = e3; d[o1 + X + 1] = E; d[o1 + X + 2] = e5;
+      d[o2 + X] = e6; d[o2 + X + 1] = e7; d[o2 + X + 2] = e8;
+    }
+  }
+  return d;
 }
 
 const PATHLIKE = new Set<number>([TILE.PATH, TILE.PLAZA, TILE.STATION, TILE.SIGN, TILE.DOOR, TILE.GATE, TILE.CAVE_MOUTH, TILE.PIER]);
@@ -921,48 +975,97 @@ export function lookPoolOf(pal: number): LookPool | undefined { return POOL_ORDE
 /** Palette per riga nel foglio 'chars' (12 fotogrammi ciascuna): il foglio resta sotto i 4096 px anche su mobile. */
 export const CHAR_PER_ROW = 6;
 
-export function drawCharacters(): HTMLCanvasElement {
-  const cv = document.createElement('canvas');
-  cv.width = CW * 12 * CHAR_PER_ROW;
-  cv.height = CH * Math.ceil(CHAR_PALETTES.length / CHAR_PER_ROW);
-  const c = cv.getContext('2d')!;
+/**
+ * Pixel grezzi con la stessa interfaccia minima di un contesto 2D (fillStyle + fillRect), per disegnare i personaggi
+ * senza migliaia di chiamate al canvas: su un telefono ogni fillRect su un canvas accelerato costa caro.
+ */
+class PixelPainter {
+  readonly px: Uint32Array;
+  private color = 0;
+  private static cache = new Map<string, number>();
+  constructor(readonly w: number, readonly h: number) { this.px = new Uint32Array(w * h); }
+  set fillStyle(css: string) {
+    let v = PixelPainter.cache.get(css);
+    if (v === undefined) {
+      // '#rrggbb' (tutte le tinte dei personaggi); byte in memoria R, G, B, A come in ImageData
+      const n = parseInt(css.slice(1, 7), 16);
+      const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      v = LITTLE_ENDIAN ? ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0 : ((r << 24) | (g << 16) | (b << 8) | 255) >>> 0;
+      PixelPainter.cache.set(css, v);
+    }
+    this.color = v;
+  }
+  fillRect(x: number, y: number, w: number, h: number) {
+    for (let yy = Math.max(0, y); yy < Math.min(this.h, y + h); yy++) for (let xx = Math.max(0, x); xx < Math.min(this.w, x + w); xx++) this.px[yy * this.w + xx] = this.color;
+  }
+}
+const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
+
+let charSheet: HTMLCanvasElement | undefined;
+/**
+ * Pixel del foglio di tutti i personaggi già alla scala di resa (RS = 3). Calcolo puro, senza canvas: può girare
+ * in un worker (systems/prewarm.ts) mentre il giocatore è sul titolo, così all'avvio del mondo il foglio è pronto.
+ */
+export function characterSheetPixels(): { px: Uint32Array; w: number; h: number } {
+  const w = CW * 12 * CHAR_PER_ROW, h = CH * Math.ceil(CHAR_PALETTES.length / CHAR_PER_ROW);
+  const pp = new PixelPainter(w, h);
+  const c = pp as unknown as Ctx;
   CHAR_PALETTES.forEach((p, i) => {
     const ox = (i % CHAR_PER_ROW) * 12 * CW, oy = Math.floor(i / CHAR_PER_ROW) * CH;
     for (let dir = 0; dir < 4; dir++) for (let f = 0; f < 3; f++) drawChar(c, ox + (dir * 3 + f) * CW, oy, p, dir, f);
   });
-  return upscale(cv, CW, CH);
+  return RS === 3 ? { px: scale3xPixels(pp.px, w, h, CW, CH), w: w * 3, h: h * 3 } : { px: pp.px, w, h };
+}
+/** Usa i pixel del foglio calcolati altrove (dal worker). Ignorati se il foglio c'è già o le misure non tornano. */
+export function adoptCharacterPixels(px: Uint32Array, w: number, h: number): boolean {
+  if (charSheet || RS !== 3) return false;
+  const W = CW * 12 * CHAR_PER_ROW * 3, H = CH * Math.ceil(CHAR_PALETTES.length / CHAR_PER_ROW) * 3;
+  if (w !== W || h !== H || px.length !== W * H) return false;
+  charPixels = px;
+  charSheet = pixelsToCanvas(px, w, h);
+  return true;
+}
+/** Il foglio dei personaggi è già pronto (non costa più niente chiederlo). */
+export function charactersReady(): boolean { return !!charSheet; }
+/** Foglio di tutti i personaggi alla scala di resa. Si disegna una volta sola: le palette non cambiano durante il gioco. */
+export function drawCharacters(): HTMLCanvasElement {
+  if (charSheet) return charSheet;
+  const s = characterSheetPixels();
+  if (RS === 3) { charPixels = s.px; charSheet = pixelsToCanvas(s.px, s.w, s.h); }
+  else charSheet = upscale(pixelsToCanvas(s.px, s.w, s.h), CW, CH);
+  return charSheet;
+}
+let charPixels: Uint32Array | undefined;
+/**
+ * Pixel RGBA del foglio dei personaggi (come getImageData().data), senza rileggerli dal canvas: su telefono
+ * rileggere un canvas grande blocca la pagina per molto tempo.
+ */
+export function characterPixels(): Uint8ClampedArray {
+  const cv = drawCharacters();
+  if (!charPixels) charPixels = new Uint32Array(cv.getContext('2d')!.getImageData(0, 0, cv.width, cv.height).data.buffer);
+  return new Uint8ClampedArray(charPixels.buffer as ArrayBuffer, charPixels.byteOffset, charPixels.length * 4);
+}
+
+/**
+ * Foglio piccolo con solo alcuni personaggi (per la landing): stessa disposizione di drawCharacters
+ * (12 fotogrammi per palette, CHAR_PER_ROW palette per riga) ma solo con le palette richieste, nell'ordine dato.
+ */
+export function drawCharactersFor(pals: number[]): HTMLCanvasElement {
+  const w = CW * 12 * CHAR_PER_ROW, h = CH * Math.ceil(pals.length / CHAR_PER_ROW);
+  const pp = new PixelPainter(w, h);
+  pals.forEach((pal, i) => {
+    const p = CHAR_PALETTES[pal % CHAR_PALETTES.length];
+    const ox = (i % CHAR_PER_ROW) * 12 * CW, oy = Math.floor(i / CHAR_PER_ROW) * CH;
+    for (let dir = 0; dir < 4; dir++) for (let f = 0; f < 3; f++) drawChar(pp as unknown as Ctx, ox + (dir * 3 + f) * CW, oy, p, dir, f);
+  });
+  return RS === 3 ? pixelsToCanvas(scale3xPixels(pp.px, w, h, CW, CH), w * 3, h * 3) : upscale(pixelsToCanvas(pp.px, w, h), CW, CH);
 }
 
 /** Scale3x: triplica la risoluzione smussando le diagonali senza sfocare (variante dell'algoritmo EPX). */
 export function scale3x(src: HTMLCanvasElement): HTMLCanvasElement {
   const w = src.width, h = src.height;
-  const s = src.getContext('2d')!.getImageData(0, 0, w, h).data;
-  const out = document.createElement('canvas'); out.width = w * 3; out.height = h * 3;
-  const oc = out.getContext('2d')!; const im = oc.createImageData(w * 3, h * 3); const d = im.data;
-  const px32 = (x: number, y: number) => { x = Math.max(0, Math.min(w - 1, x)); y = Math.max(0, Math.min(h - 1, y)); const i = (y * w + x) * 4; return (s[i] << 24 | s[i + 1] << 16 | s[i + 2] << 8 | s[i + 3]) >>> 0; };
-  const put = (x: number, y: number, v: number) => { const i = (y * w * 3 + x) * 4; d[i] = v >>> 24; d[i + 1] = (v >>> 16) & 255; d[i + 2] = (v >>> 8) & 255; d[i + 3] = v & 255; };
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const A = px32(x - 1, y - 1), B = px32(x, y - 1), C = px32(x + 1, y - 1);
-    const D = px32(x - 1, y), E = px32(x, y), F = px32(x + 1, y);
-    const G = px32(x - 1, y + 1), H = px32(x, y + 1), I = px32(x + 1, y + 1);
-    let e0 = E, e1 = E, e2 = E, e3 = E, e5 = E, e6 = E, e7 = E, e8 = E;
-    if (B !== H && D !== F) {
-      e0 = D === B ? D : E;
-      e1 = (D === B && E !== C) || (B === F && E !== A) ? B : E;
-      e2 = B === F ? F : E;
-      e3 = (D === B && E !== G) || (D === H && E !== A) ? D : E;
-      e5 = (B === F && E !== I) || (H === F && E !== C) ? F : E;
-      e6 = D === H ? D : E;
-      e7 = (D === H && E !== I) || (H === F && E !== G) ? H : E;
-      e8 = H === F ? F : E;
-    }
-    const X = 3 * x, Y = 3 * y;
-    put(X, Y, e0); put(X + 1, Y, e1); put(X + 2, Y, e2);
-    put(X, Y + 1, e3); put(X + 1, Y + 1, E); put(X + 2, Y + 1, e5);
-    put(X, Y + 2, e6); put(X + 1, Y + 2, e7); put(X + 2, Y + 2, e8);
-  }
-  oc.putImageData(im, 0, 0);
-  return out;
+  const px = new Uint32Array(src.getContext('2d')!.getImageData(0, 0, w, h).data.buffer);
+  return pixelsToCanvas(scale3xPixels(px, w, h), w * 3, h * 3);
 }
 
 /** Scale2x (EPX): raddoppia la risoluzione arrotondando le diagonali, per sprite di sfida più definiti. */

@@ -12,10 +12,12 @@
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="icon" href="../icons/icon-192.png">
   <link rel="apple-touch-icon" href="../icons/icon-192.png">
-  <!-- guardiano dell'avvio: "Caricamento…" e, se il gioco non parte, un messaggio con il motivo (public/boot.js) -->
-  <script src="../boot.js"></script>
+  <link rel="preload" href="../fonts/press-start-2p.woff2" as="font" type="font/woff2" crossorigin>
 </head>
-<body>
+<body style="margin:0;background:#101018">
+  <!-- guardiano dell'avvio: schermata di caricamento subito (qui, perché il corpo della pagina esiste già) e, se il
+       gioco non parte, un messaggio con il motivo (public/boot.js) -->
+  <script src="../boot.js"></script>
   <div id="app">
     <div id="game"></div>
     <div id="ui"><div id="stage"></div></div>
