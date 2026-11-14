@@ -632,7 +632,7 @@ function buildSeaAndCaves() {
   // (vedi world/caves.ts). I test di tests/reach.test.ts e tests/caves.test.ts ne controllano la struttura.
   const cy = TOWN_H - 3; // bocca delle grotte in città: al limite sud, collegata alla via delle case
 
-  // --- Grotta delle Perle: sul Percorso 8, oltre uno stagno (zattera + Lanterna). Tre ostriche da aprire in ordine ---
+  // --- Grotta delle Perle: sul Percorso 8, oltre uno stagno (barchetta + Lanterna). Tre ostriche da aprire in ordine ---
   const pearl = cave('cave_pearl', CAVES.pearl.name, 15, 13, 'pearl', [[3, 6, 9, 5], [7, 11, 1, 2], [5, 2, 5, 1], [12, 8, 1, 1]]);
   rect(pearl.tiles, 5, 3, 5, 3, TILE.WATER); // laghetto interno: l'ostrica più vicina alla luce sta oltre l'acqua
   pearl.warps.push({ x: 7, y: 12, to: 'r8', tx: PEARL_MOUTH.x, ty: PEARL_MOUTH.y + 1, dir: 0 });

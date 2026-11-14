@@ -89,7 +89,7 @@ export const RELICS: Relic[] = [
     hint: T('Un ordine nascosto è al livello inferiore, nella Camera del Registro: la chiude un Masso delle Commissioni.') },
   { id: 'pearl_1', cave: 'pearl', sprite: 'relic_pearl', name: T('Perla del Prezzo'),
     text: [T('La prima perla. Il prezzo è ciò che paghi, il valore è ciò che ottieni: possono restare lontani a lungo.')],
-    hint: T('La prima ostrica è sulla sporgenza oltre il laghetto, a nord: ci arrivi con la zattera.') },
+    hint: T('La prima ostrica è sulla sporgenza oltre il laghetto, a nord: ci arrivi in barchetta.') },
   { id: 'pearl_2', cave: 'pearl', sprite: 'relic_pearl', name: T('Perla del Margine'),
     text: [T('La seconda perla. Si compra solo quando il prezzo sta ben sotto il valore stimato: quel margine ti protegge dagli errori di stima.')],
     hint: T('La seconda ostrica è giù, sul Fondale, nella sala in fondo alla scala.') },

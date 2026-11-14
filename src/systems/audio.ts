@@ -28,7 +28,7 @@ function tone(freq: number, dur: number, type: OscillatorType = 'square', delay 
   o.stop(t0 + dur + 0.02);
 }
 
-export type Sfx = 'tick' | 'ok' | 'bad' | 'win' | 'lose' | 'bump' | 'door' | 'alert' | 'heal' | 'badge' | 'coin';
+export type Sfx = 'tick' | 'ok' | 'bad' | 'win' | 'lose' | 'bump' | 'door' | 'alert' | 'heal' | 'badge' | 'coin' | 'splash';
 
 export function beep(s: Sfx) {
   switch (s) {
@@ -36,6 +36,7 @@ export function beep(s: Sfx) {
     case 'ok': tone(660, 0.06); tone(990, 0.08, 'square', 0.06); break;
     case 'bad': tone(220, 0.15, 'sawtooth'); break;
     case 'bump': tone(110, 0.06, 'square', 0, 0.04); break;
+    case 'splash': tone(520, 0.05, 'triangle', 0, 0.04); tone(330, 0.09, 'triangle', 0.04, 0.035); break;
     case 'door': tone(330, 0.05); tone(440, 0.05, 'square', 0.05); break;
     case 'alert': tone(1200, 0.08); tone(1200, 0.08, 'square', 0.12); break;
     case 'coin': tone(988, 0.05); tone(1319, 0.12, 'square', 0.05); break;

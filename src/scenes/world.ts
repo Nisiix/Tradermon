@@ -3,6 +3,7 @@ import { track } from '../systems/progress';
 import { decorateHome } from '../world/decor';
 import Phaser from 'phaser';
 import { drawPlaque } from '../art/plaque';
+import { drawBoatPart, boatMotion, boatStern, type BoatDir } from '../art/boat';
 import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal, drawSpotBubble } from '../art/art';
 import { getMap, safeSpot, type MapDef, type NpcDef } from '../world/maps';
 import { interact, npcVisible, onEnterTown, travelTo, librarySection, momIntro, leoTourPending, leoTour, trapFall, readSign, relicTaken, doorNotice, type WorldApi } from '../world/scripts';
@@ -84,7 +85,8 @@ export class WorldScene extends Phaser.Scene {
   /** Tempo passato immobili davanti alla pietra delle Mani di Diamante (rituale segreto). */
   idleMs = 0;
   playerShadow?: Phaser.GameObjects.Image;
-  raft?: Phaser.GameObjects.Graphics;
+  /** Barchetta del Flusso di Liquidità: metà dietro e metà davanti al personaggio, direzione disegnata, a bordo o no. */
+  boat?: { back: Phaser.GameObjects.Graphics; front: Phaser.GameObjects.Graphics; dir: number; on: boolean; wake: number; ring: number };
   grassOver?: Phaser.GameObjects.Sprite;
   /** Resa 2.5D (Opzioni → Grafica): rispecchia questa scena in un diorama Three.js; la logica resta qui. */
   view3d?: View3D;
@@ -357,13 +359,14 @@ export class WorldScene extends Phaser.Scene {
       const key = c.texture?.key;
       if (key === 'chars') {
         const lift = c === (this.player as unknown as GO) ? this.flightLift : 0;
-        items.push({ kind: 'char', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: (c.y + lift * FLIGHT_PX) / P, alpha: c.alpha, lift });
+        const float = c === (this.player as unknown as GO) && this.boat?.on ? this.boatMotionNow().bob : undefined;
+        items.push({ kind: 'char', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: (c.y + lift * FLIGHT_PX) / P, alpha: c.alpha, lift, float });
       }
       else if (key === 'tiles' && c.type === 'Sprite' && c !== (this.grassOver as unknown as GO)) items.push({ kind: 'tile', frame: Number(c.frame?.name ?? 0), x: c.x / P, y: c.y / P, alpha: c.alpha, lift: this.map.tiles[Math.round(c.y / P) - 1]?.[Math.floor(c.x / P)] === TILE.CASE_TABLE ? 0.48 : 0 });
       else if (key === 'bubble') items.push({ kind: 'bubble', x: c.x / P, y: (c.y + 24 * RS) / P, scale: c.scaleX });
       else if (c.type === 'Rectangle' && c.getData && c.getData('z0') !== undefined) { const z0 = Number(c.getData('z0')); items.push({ kind: 'leaf', x: c.x / P, z: z0 / P, h: (z0 - c.y) / P + 0.15, color: c.fillColor ?? 0x88d058, alpha: c.alpha }); }
     }
-    if (this.raft?.visible) items.push({ kind: 'raft', x: this.player.x / P, y: this.player.y / P });
+    if (this.boat?.on) { const m = this.boatMotionNow(); items.push({ kind: 'raft', x: this.player.x / P, y: (this.player.y + this.flightLift * FLIGHT_PX) / P, dir: this.boatDir(), moving: !!this.walk, ...m }); }
     type Fx = { isRunning?: boolean; isComplete?: boolean; alpha?: number; red?: number; green?: number; blue?: number };
     const fe = (cam as unknown as { fadeEffect?: Fx }).fadeEffect, fl = (cam as unknown as { flashEffect?: Fx }).flashEffect, sh = (cam as unknown as { shakeEffect?: Fx }).shakeEffect;
     return {
@@ -430,7 +433,7 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(this.map.interior ? '#1b1b24' : '#2e7d32');
     this.player = this.add.sprite(x * P + P / 2, y * P + P, 'chars', playerPal(S.avatar, S.gender) * 12 + dir * 3).setOrigin(0.5, 1).setDepth(10 + y);
     this.playerShadow = this.add.image(x * P + P / 2, y * P + P - RS, 'shadow').setDepth(4);
-    this.raft = undefined;
+    this.boat = undefined;
     this.placeRaft(this.onWater(x, y));
     this.grassOver = undefined;
     const now = this.time.now;
@@ -571,6 +574,7 @@ export class WorldScene extends Phaser.Scene {
     this.updateWeather(delta);
     if (this.flightLift > 0 || this.flightClouds.length) this.renderFlight();
     this.caveLight(delta);
+    this.boatTick(delta);
     if (this.view3d) {
       // un errore qui fermerebbe tutto il gioco (Phaser smette di chiamare i fotogrammi): si resta sulla vista semplificata
       try { this.render3d(); } catch (e) { this.drop3d(e, false); }
@@ -688,23 +692,84 @@ export class WorldScene extends Phaser.Scene {
 
   onWater(x: number, y: number) { return this.map.tiles[y]?.[x] === TILE.WATER; }
 
-  /** Zattera del Flusso di Liquidità sotto i piedi del giocatore quando è sull'acqua (al posto dell'ombra). */
+  /** Barchetta del Flusso di Liquidità sotto il personaggio quando è sull'acqua (al posto dell'ombra). */
   placeRaft(water: boolean) {
     const px = this.player.x, py = this.player.y;
     this.playerShadow?.setPosition(px, py - RS).setVisible(!water);
-    if (!water) { this.raft?.setVisible(false); return; }
-    if (!this.raft) {
-      const g = this.add.graphics();
-      const u = RS;
-      g.fillStyle(0x5a3418, 1).fillRect(-8 * u, -6 * u, 16 * u, 7 * u);
-      g.fillStyle(0xb07838, 1).fillRect(-7 * u, -6 * u, 14 * u, 6 * u);
-      g.fillStyle(0x8a5828, 1);
-      for (let i = -5; i <= 5; i += 3) g.fillRect(i * u, -6 * u, u, 6 * u);
-      g.fillStyle(0xd8a860, 1).fillRect(-7 * u, -6 * u, 14 * u, u);
-      g.fillStyle(0xe8f4ff, 0.8).fillRect(-9 * u, 0, 3 * u, u).fillRect(6 * u, 0, 3 * u, u);
-      this.raft = g;
+    if (!water) {
+      if (this.boat?.on) {
+        this.boat.on = false;
+        this.boat.back.setVisible(false); this.boat.front.setVisible(false);
+        this.player.setOrigin(0.5, 1);
+        if (this.walk) this.splash(px, py);
+      }
+      return;
     }
-    this.raft.setPosition(px, py).setDepth(this.player.depth - 0.5).setVisible(true);
+    if (!this.boat) this.boat = { back: this.add.graphics(), front: this.add.graphics(), dir: -1, on: false, wake: 0, ring: 600 };
+    if (!this.boat.on) {
+      this.boat.on = true;
+      this.boat.back.setVisible(true); this.boat.front.setVisible(true);
+      if (this.walk) this.splash(px, py);
+    }
+    this.layoutBoat();
+  }
+
+  boatDir(): BoatDir { return Math.max(0, DIR_NAME.indexOf(S.facing)) as BoatDir; }
+  boatMotionNow() { return boatMotion(this.time.now, !!this.walk); }
+
+  /** Barca e personaggio galleggiano insieme: la barca si gira con il personaggio, beccheggia e rolla. */
+  layoutBoat() {
+    const b = this.boat;
+    if (!b?.on) return;
+    const dir = this.boatDir();
+    if (dir !== b.dir) { drawBoatPart(b.back, 'back', dir, RS); drawBoatPart(b.front, 'front', dir, RS); b.dir = dir; }
+    const m = this.boatMotionNow();
+    const side = dir === 2 || dir === 3;
+    const dy = Math.round(m.bob * RS * 1.2);
+    const px = this.player.x, py = this.player.y + this.flightLift * FLIGHT_PX;
+    const rot = side ? (dir === 2 ? -1 : 1) * m.pitch * -0.6 + m.roll * 0.4 : 0;
+    b.back.setPosition(px, py + dy).setRotation(rot).setDepth(this.player.depth - 0.5);
+    b.front.setPosition(px, py + dy).setRotation(rot).setDepth(this.player.depth + 0.5);
+    // il personaggio scende e sale con la barca (l'origine dello sprite si sposta, la posizione logica no)
+    this.player.setOrigin(0.5, 1 - dy / this.player.height);
+  }
+
+  /** A ogni fotogramma: moto della barca, scia quando avanza, cerchi sull'acqua quando è ferma (solo vista 2D). */
+  boatTick(delta: number) {
+    const b = this.boat;
+    if (!b?.on) return;
+    this.layoutBoat();
+    if (this.view3d || this.flightLift > 0) return; // in 2.5D la scia la disegna il diorama
+    const dir = this.boatDir();
+    const px = this.player.x, py = this.player.y;
+    if (this.walk) {
+      b.wake -= delta;
+      if (b.wake <= 0) {
+        b.wake = 110;
+        const [sx, sy] = boatStern(dir);
+        const side = dir === 2 || dir === 3;
+        const f = this.add.ellipse(px + sx * RS + (Math.random() - 0.5) * 3 * RS, py + sy * RS + (side ? 0 : 0) + (Math.random() - 0.5) * 2 * RS, (side ? 5 : 4) * RS, 2 * RS, 0xe8f4ff, 0.75).setDepth(this.player.depth - 0.6);
+        this.tweens.add({ targets: f, scaleX: 2.2, scaleY: 1.6, alpha: 0, duration: 700, ease: 'Quad.easeOut', onComplete: () => f.destroy() });
+      }
+    } else {
+      b.ring -= delta;
+      if (b.ring <= 0) {
+        b.ring = 1400;
+        const r = this.add.ellipse(px, py + RS, 20 * RS, 6 * RS).setStrokeStyle(RS, 0xe8f4ff, 0.55).setDepth(this.player.depth - 0.6);
+        this.tweens.add({ targets: r, scaleX: 1.5, scaleY: 1.5, alpha: 0, duration: 1300, ease: 'Sine.easeOut', onComplete: () => r.destroy() });
+      }
+    }
+  }
+
+  /** Spruzzi quando si sale o si scende dalla barchetta. */
+  splash(px: number, py: number) {
+    beep('splash');
+    if (this.view3d) return;
+    for (let i = 0; i < 7; i++) {
+      const d = this.add.rectangle(px + (i - 3) * 2.5 * RS, py, RS, RS, 0xe8f4ff, 0.9).setDepth(this.player.depth + 0.6);
+      const h = (6 + Math.random() * 6) * RS;
+      this.tweens.add({ targets: d, y: py - h, duration: 180, ease: 'Quad.easeOut', yoyo: true, onComplete: () => d.destroy() });
+    }
   }
 
   /** Avanza il passo; a fine casella, se una direzione è ancora premuta, riparte subito con il tempo avanzato. */
@@ -728,7 +793,7 @@ export class WorldScene extends Phaser.Scene {
   afterStep() {
     if (this.onWater(S.x, S.y) && !S.flags.raftTip) {
       S.flags.raftTip = true;
-      toast(T('Flusso di Liquidità: la zattera ti porta sull\'acqua. Cerca le Isole della Liquidità sui Percorsi 3, 5 e 7!'));
+      toast(T('Flusso di Liquidità: la barchetta ti porta sull\'acqua. Cerca le Isole della Liquidità sui Percorsi 3, 5 e 7!'));
     }
     // allievi dell'Exchange: chi prova a superarli alle spalle viene fermato
     for (const n of this.npcs) {
