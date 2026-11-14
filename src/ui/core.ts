@@ -73,7 +73,7 @@ export function say(lines: string | string[], who?: string): Promise<void> {
 
 // ---------------- Menu di scelta ----------------
 
-export interface ChooseOpts { cancel?: boolean; title?: string; disabled?: boolean[]; pos?: 'right' | 'center'; prompt?: string; who?: string; onMove?: (i: number) => void }
+export interface ChooseOpts { cancel?: boolean; title?: string; disabled?: boolean[]; pos?: 'right' | 'center'; prompt?: string; /** voce evidenziata all'apertura */ start?: number; who?: string; onMove?: (i: number) => void }
 
 export async function choose(options: string[], opts: ChooseOpts = {}): Promise<number> {
   let promptBox: HTMLElement | null = null;
@@ -102,7 +102,7 @@ export async function choose(options: string[], opts: ChooseOpts = {}): Promise<
       m.style.bottom = `${bottom}px`;
       m.style.maxHeight = `calc(100% - ${bottom + 8}px)`;
     }
-    let sel = 0;
+    let sel = Math.max(0, Math.min(options.length - 1, opts.start ?? 0));
     const render = () => { items.forEach((it, i) => it.classList.toggle('sel', i === sel)); opts.onMove?.(sel); };
     const done = (v: number) => { popHandler(h); m.remove(); promptBox?.remove(); resolve(v); };
     const pick = () => { if (opts.disabled?.[sel]) { beep('bad'); return; } beep('ok'); done(sel); };

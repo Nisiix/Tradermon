@@ -15,7 +15,7 @@ import { titleScreen, onboarding } from './ui/setup';
 import { mentorMission, leagueMission } from './data/missions';
 import { play, unlock } from './systems/music';
 import { refreshAgenda } from './systems/progress';
-import { applyOptions } from './ui/menu';
+import { applyOptions } from './ui/settings';
 import { controlsTutorial, controlsSeen } from './ui/tutorial';
 import { initSettings, setPhase } from './ui/settings';
 import { safariNoticeOnce } from './ui/storageNotice';
