@@ -1,0 +1,59 @@
+<template>
+  <style>
+    @font-face { font-family: 'Press Start 2P'; src: url('assets/fonts/press-start-2p-latin-400-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'DotGothic16'; src: url('assets/fonts/dotgothic16-latin-400-normal.woff2') format('woff2'); }
+    #root { position: absolute; inset: 0; }
+    .lb { position: absolute; left: 200px; bottom: 120px; }
+    .lb-box { background: #f8f8f0; color: #383840; border: 6px solid #404858; border-radius: 14px; padding: 22px 34px 24px;
+      box-shadow: inset 0 0 0 4px #f8f8f0, inset 0 0 0 7px #7890c0, 8px 8px 0 #000; }
+    .lb-kick { font: 28px 'Press Start 2P', monospace; color: #d03838; margin-bottom: 14px; }
+    .lb-place { font: 30px/1.3 'Press Start 2P', monospace; color: #383840; }
+    .lb-sub { font: 38px/1.3 'DotGothic16', monospace; color: #383840; margin-top: 10px; }
+  </style>
+  <div id="root" data-composition-id="labels" data-width="1920" data-height="1080">
+    <div id="lb1" class="clip lb" data-start="1.35" data-duration="1.6" data-track-index="0">
+      <div class="lb-box" id="lb1-box"><div class="lb-kick">01/08</div><div class="lb-place">Borgo Semina · Laboratorio</div><div class="lb-sub">Scegli la tua Valigetta</div></div>
+    </div>
+    <div id="lb2" class="clip lb" data-start="3.15" data-duration="1.8" data-track-index="1">
+      <div class="lb-box" id="lb2-box"><div class="lb-kick">02/08</div><div class="lb-place">Percorso 1</div><div class="lb-sub">Sfida gli investitori lungo la strada</div></div>
+    </div>
+    <div id="lb3" class="clip lb" data-start="5.15" data-duration="1.8" data-track-index="0">
+      <div class="lb-box" id="lb3-box"><div class="lb-kick">03/08</div><div class="lb-place">Ponte Cedola · Exchange</div><div class="lb-sub">Batti la Whale, vinci l'Attestato</div></div>
+    </div>
+    <div id="lb4" class="clip lb" data-start="7.15" data-duration="1.8" data-track-index="1">
+      <div class="lb-box" id="lb4-box"><div class="lb-kick">04/08</div><div class="lb-place">Mare della Liquidità</div><div class="lb-sub">Isole, fari e relitti</div></div>
+    </div>
+    <div id="lb5" class="clip lb" data-start="9.15" data-duration="1.8" data-track-index="0">
+      <div class="lb-box" id="lb5-box"><div class="lb-kick">05/08</div><div class="lb-place">Diversia · Zona Simulazione</div><div class="lb-sub">La Macchina del Tempo</div></div>
+    </div>
+    <div id="lb6" class="clip lb" data-start="11.15" data-duration="1.8" data-track-index="1">
+      <div class="lb-box" id="lb6-box"><div class="lb-kick">06/08</div><div class="lb-place">Interessa · Casinò</div><div class="lb-sub">Impara a riconoscere l'azzardo</div></div>
+    </div>
+    <div id="lb7" class="clip lb" data-start="13.15" data-duration="1.8" data-track-index="0">
+      <div class="lb-box" id="lb7-box"><div class="lb-kick">07/08</div><div class="lb-place">Miniera dei Lingotti</div><div class="lb-sub">Grotte buie: serve la Lanterna</div></div>
+    </div>
+    <div id="lb8" class="clip lb" data-start="15.15" data-duration="1.4" data-track-index="1">
+      <div class="lb-box" id="lb8-box"><div class="lb-kick">08/08</div><div class="lb-place">Wall Street</div><div class="lb-sub">Otto Sigilli per entrare</div></div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo('#lb1-box', { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'expo.out' }, 1.35);
+    tl.fromTo('#lb1-box', { x: 0, opacity: 1 }, { x: -80, opacity: 0, duration: 0.2, ease: 'power3.in', immediateRender: false }, 2.73);
+    tl.fromTo('#lb2-box', { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'expo.out' }, 3.15);
+    tl.fromTo('#lb2-box', { x: 0, opacity: 1 }, { x: -80, opacity: 0, duration: 0.2, ease: 'power3.in', immediateRender: false }, 4.73);
+    tl.fromTo('#lb3-box', { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'expo.out' }, 5.15);
+    tl.fromTo('#lb3-box', { x: 0, opacity: 1 }, { x: -80, opacity: 0, duration: 0.2, ease: 'power3.in', immediateRender: false }, 6.73);
+    tl.fromTo('#lb4-box', { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'expo.out' }, 7.15);
+    tl.fromTo('#lb4-box', { x: 0, opacity: 1 }, { x: -80, opacity: 0, duration: 0.2, ease: 'power3.in', immediateRender: false }, 8.73);
+    tl.fromTo('#lb5-box', { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'expo.out' }, 9.15);
+    tl.fromTo('#lb5-box', { x: 0, opacity: 1 }, { x: -80, opacity: 0, duration: 0.2, ease: 'power3.in', immediateRender: false }, 10.73);
+    tl.fromTo('#lb6-box', { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'expo.out' }, 11.15);
+    tl.fromTo('#lb6-box', { x: 0, opacity: 1 }, { x: -80, opacity: 0, duration: 0.2, ease: 'power3.in', immediateRender: false }, 12.73);
+    tl.fromTo('#lb7-box', { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'expo.out' }, 13.15);
+    tl.fromTo('#lb7-box', { x: 0, opacity: 1 }, { x: -80, opacity: 0, duration: 0.2, ease: 'power3.in', immediateRender: false }, 14.73);
+    tl.fromTo('#lb8-box', { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: 'expo.out' }, 15.15);
+    tl.fromTo('#lb8-box', { x: 0, opacity: 1 }, { x: -80, opacity: 0, duration: 0.2, ease: 'power3.in', immediateRender: false }, 16.33);
+    window.__timelines['labels'] = tl;
+  </script>
+</template>

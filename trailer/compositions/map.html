@@ -1,0 +1,84 @@
+<template>
+  <style>
+    @font-face { font-family: 'Press Start 2P'; src: url('assets/fonts/press-start-2p-latin-400-normal.woff2') format('woff2'); }
+    @font-face { font-family: 'DotGothic16'; src: url('assets/fonts/dotgothic16-latin-400-normal.woff2') format('woff2'); }
+    #root { position: absolute; inset: 0; }
+    #map-ground { position: absolute; inset: 0; background: #1b1b24; }
+    #map-wrap { position: absolute; left: 352px; top: 24px; width: 1216px; height: 900px; border: 8px solid #000; border-radius: 14px;
+      box-shadow: inset 0 0 0 6px #f8f8f0, inset 0 0 0 11px #7890c0, 10px 10px 0 #000; overflow: hidden; background: #2f6fc0; }
+    #map-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #map-svg .rg-name { font: 3px 'DotGothic16', monospace; fill: #102040; text-anchor: middle; paint-order: stroke; stroke: #f8f8f8; stroke-width: .9px; }
+    #map-svg .rg-route { font: bold 2.4px 'DotGothic16', monospace; fill: #604820; text-anchor: middle; }
+    #map-title { position: absolute; left: 0; right: 0; top: 936px; text-align: center; }
+    #map-title-word { font: 56px 'Press Start 2P', monospace; color: #f8d860; text-shadow: 5px 5px 0 #a04820, 10px 10px 0 #000; letter-spacing: 4px; }
+    #map-title-tag { margin-top: 20px; font: 28px 'Press Start 2P', monospace; color: #48e070; text-shadow: 3px 3px 0 #000; }
+    #map-fly-label { position: absolute; left: 0; right: 0; top: 958px; text-align: center; font: 34px 'DotGothic16', monospace; color: #f8f8f0; text-shadow: 3px 3px 0 #000; }
+  </style>
+  <div id="root" data-composition-id="map" data-width="1920" data-height="1080">
+    <div id="map-ground"></div>
+    <div id="map-wrap">
+      <svg viewBox="0 0 100 74" id="map-svg" data-layout-ignore>
+    <defs><linearGradient id="rgSea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f9fe0"></stop><stop offset="1" stop-color="#2f6fc0"></stop></linearGradient>
+    <pattern id="rgWave" width="6" height="4" patternUnits="userSpaceOnUse"><path d="M0 2 q1.5 -1.4 3 0 t3 0" fill="none" stroke="#8cc8f8" stroke-width=".35" opacity=".7"></path></pattern></defs>
+    <rect width="100" height="74" fill="url(#rgSea)"></rect><rect width="100" height="74" fill="url(#rgWave)"></rect>
+    <path d="M3 6 Q20 1 45 5 Q70 2 92 8 Q99 18 97 34 Q99 50 90 58 Q60 61 35 59 Q12 61 4 55 Q0 40 4 28 Q1 16 3 6Z" fill="#7cc65a" stroke="#3f7f2a" stroke-width=".8"></path>
+    <path d="M30 30 Q50 26 70 32 Q82 36 84 42 Q60 40 40 41 Q25 40 22 35Z" fill="#5fae45" opacity=".55"></path><line x1="45" y1="47" x2="45" y2="61" stroke="#d8f0ff" stroke-width="1" stroke-dasharray="1.2 1.2"></line><g><ellipse cx="37" cy="64" rx="3" ry="1.7999999999999998" fill="#e6cf94" stroke="#86683c" stroke-width=".4"></ellipse><ellipse cx="54" cy="63" rx="2.6" ry="1.56" fill="#e6cf94" stroke="#86683c" stroke-width=".4"></ellipse><ellipse cx="45" cy="68" rx="3.4" ry="2.04" fill="#e6cf94" stroke="#86683c" stroke-width=".4"></ellipse>
+      <text x="45" y="71.5" class="rg-name">Mare della Liquidità</text></g><g><path d="M79 24 Q72.5 15.5 70 21" fill="none" stroke="#5a4636" stroke-width="1.3" stroke-dasharray="2 1.2"></path><circle cx="79" cy="24" r="1.3" fill="#2a2018"></circle></g><g><path d="M60.5 18 Q57.75 23.5 51 15" fill="none" stroke="#5a4636" stroke-width="1.3" stroke-dasharray="2 1.2"></path><circle cx="60.5" cy="18" r="1.3" fill="#2a2018"></circle></g><line x1="10" y1="47" x2="28" y2="52" stroke="#e8d8a0" stroke-width="2.2" stroke-linecap="round"></line><text x="19" y="50.5" class="rg-route">1</text><line x1="28" y1="52" x2="45" y2="44" stroke="#e8d8a0" stroke-width="2.2" stroke-linecap="round"></line><text x="36.5" y="49" class="rg-route">2</text><line x1="45" y1="44" x2="62" y2="51" stroke="#e8d8a0" stroke-width="2.2" stroke-linecap="round"></line><g><ellipse cx="55.78449883152577" cy="41.951931409151705" rx="4" ry="2.5" fill="#3a8ad8" stroke="#2060a8" stroke-width=".4"></ellipse><ellipse cx="55.78449883152577" cy="41.7519314091517" rx="1.6" ry="1" fill="#6cc04a"></ellipse></g><text x="53.5" y="48.5" class="rg-route">3</text><line x1="62" y1="51" x2="80" y2="45" stroke="#e8d8a0" stroke-width="2.2" stroke-linecap="round"></line><text x="71" y="49" class="rg-route">4</text><line x1="80" y1="45" x2="88" y2="27" stroke="#e8d8a0" stroke-width="2.2" stroke-linecap="round"></line><g><ellipse cx="89.48286929172154" cy="38.436830796320685" rx="4" ry="2.5" fill="#3a8ad8" stroke="#2060a8" stroke-width=".4"></ellipse><ellipse cx="89.48286929172154" cy="38.23683079632068" rx="1.6" ry="1" fill="#6cc04a"></ellipse></g><text x="84" y="37" class="rg-route">5</text><line x1="88" y1="27" x2="70" y2="21" stroke="#e8d8a0" stroke-width="2.2" stroke-linecap="round"></line><text x="79" y="25" class="rg-route">6</text><line x1="70" y1="21" x2="51" y2="15" stroke="#e8d8a0" stroke-width="2.2" stroke-linecap="round"></line><g><ellipse cx="58.69321179237742" cy="23.72149599080485" rx="4" ry="2.5" fill="#3a8ad8" stroke="#2060a8" stroke-width=".4"></ellipse><ellipse cx="58.69321179237742" cy="23.52149599080485" rx="1.6" ry="1" fill="#6cc04a"></ellipse></g><path d="M57.5 15 l1 -1.6 l1 1.6 l1 -1.6 l1 1.6 l1 -1.6 l1 1.6" fill="none" stroke="#e04848" stroke-width=".7"></path><text x="60.5" y="19" class="rg-route">7</text><line x1="51" y1="15" x2="32" y2="21" stroke="#e8d8a0" stroke-width="2.2" stroke-linecap="round"></line><text x="41.5" y="19" class="rg-route">8</text><line x1="32" y1="21" x2="13" y2="12" stroke="#e8d8a0" stroke-width="2.2" stroke-linecap="round"></line><text x="22.5" y="17.5" class="rg-route">9</text><g><rect x="7.4" y="44.4" width="5.2" height="5.2" rx="1" fill="#f8f8f8" stroke="#203050" stroke-width=".7"></rect><text x="10" y="53.6" class="rg-name">Borgo Semina</text></g><g><rect x="25.4" y="49.4" width="5.2" height="5.2" rx="1" fill="#f0c040" stroke="#203050" stroke-width=".7"></rect><text x="28" y="58.6" class="rg-name">Ponte Cedola</text></g><g><rect x="42.4" y="41.4" width="5.2" height="5.2" rx="1" fill="#f0c040" stroke="#203050" stroke-width=".7"></rect><text x="45" y="40.4" class="rg-name">Porto Ordini</text></g><g><rect x="59.4" y="48.4" width="5.2" height="5.2" rx="1" fill="#f0c040" stroke="#203050" stroke-width=".7"></rect><text x="62" y="57.6" class="rg-name">Diversia</text></g><g><rect x="77.4" y="42.4" width="5.2" height="5.2" rx="1" fill="#f0c040" stroke="#203050" stroke-width=".7"></rect><text x="80" y="41.4" class="rg-name">Interessa</text></g><g><rect x="85.4" y="24.4" width="5.2" height="5.2" rx="1" fill="#f0c040" stroke="#203050" stroke-width=".7"></rect><text x="88" y="33.6" class="rg-name">Bilancia</text></g><g><rect x="67.4" y="18.4" width="5.2" height="5.2" rx="1" fill="#f0c040" stroke="#203050" stroke-width=".7"></rect><text x="70" y="27.6" class="rg-name">Valdividendo</text></g><g><rect x="48.4" y="12.4" width="5.2" height="5.2" rx="1" fill="#f0c040" stroke="#203050" stroke-width=".7"></rect><text x="51" y="11.4" class="rg-name">Mentelucida</text></g><g><rect x="29.4" y="18.4" width="5.2" height="5.2" rx="1" fill="#f0c040" stroke="#203050" stroke-width=".7"></rect><text x="32" y="27.6" class="rg-name">Rocca Rischio</text></g><g><rect x="10.4" y="9.4" width="5.2" height="5.2" rx="1" fill="#c050c0" stroke="#203050" stroke-width=".7"></rect><text x="13" y="8.4" class="rg-name">Wall Street</text></g>
+        <path id="map-trail" d="M10 47 L19 49.5 L28 52 L45 65 L62 51 L80 45 L79 24 L13 12" fill="none" stroke="#f8d860" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" pathLength="100" stroke-dasharray="100 120" stroke-dashoffset="110" />
+        <path id="map-flight" d="M13 12 Q-2 32 10 47" fill="none" stroke="#ffffff" stroke-width=".9" stroke-dasharray="1.6 1.2" opacity="0" />
+        <g id="map-marker" transform="translate(10 47)">
+          <circle r="3.8" fill="none" stroke="#e03030" stroke-width=".9" />
+          <path d="M0 -3.6 l-1.9 -3.1 h3.8z" fill="#e03030" stroke="#701010" stroke-width=".3" />
+        </g>
+      </svg>
+    </div>
+    <div id="map-title">
+      <div id="map-title-word">TRADERMON</div>
+      <div id="map-title-tag">IL VIAGGIO DELL'INVESTITORE</div>
+    </div>
+    <div id="map-fly-label">Trasferimento di Capitale: si torna a Borgo Semina</div>
+  </div>
+  <script>
+    const STOPS = [[10, 47], [19, 49.5], [28, 52], [45, 65], [62, 51], [80, 45], [79, 24], [13, 12]];
+    const tl = gsap.timeline({ paused: true });
+    // inizio: mappa intera con il titolo, che lascia la scena
+    tl.fromTo('#map-title', { opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power2.in' }, 0.6);
+    tl.fromTo('#map-fly-label', { opacity: 0 }, { opacity: 0, duration: 0.01 }, 0);
+    // la mappa si stringe nell'angolo e scopre il gioco
+    tl.fromTo('#map-ground', { opacity: 1 }, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, 0.9);
+    tl.fromTo('#map-wrap', { x: 0, y: 0, scale: 1 }, { x: 644, y: -244, scale: 0.3618, duration: 0.6, ease: 'power2.inOut' }, 0.9);
+    // a ogni tappa il segnaposto avanza e la scia dorata si allunga
+    const CUTS = [3.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0];
+    const LEN = [0];
+    for (let i = 1; i < STOPS.length; i++) LEN.push(LEN[i - 1] + Math.hypot(STOPS[i][0] - STOPS[i - 1][0], STOPS[i][1] - STOPS[i - 1][1]));
+    const TOT = LEN[LEN.length - 1];
+    const OFF = (l) => (l === 0 ? 110 : 100 - 100 * l / TOT);
+    CUTS.forEach((t, i) => {
+      const [x0, y0] = STOPS[i], [x1, y1] = STOPS[i + 1];
+      tl.fromTo('#map-marker', { attr: { transform: `translate(${x0} ${y0})` } }, { attr: { transform: `translate(${x1} ${y1})` }, duration: 0.5, ease: 'power2.inOut', immediateRender: false }, t - 0.1);
+      tl.fromTo('#map-trail', { attr: { 'stroke-dashoffset': OFF(LEN[i]) } }, { attr: { 'stroke-dashoffset': OFF(LEN[i + 1]) }, duration: 0.5, ease: 'power2.inOut', immediateRender: false }, t - 0.1);
+    });
+    // fine: la mappa torna a tutto schermo
+    tl.fromTo('#map-ground', { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power2.inOut', immediateRender: false }, 16.6);
+    tl.fromTo('#map-wrap', { x: 644, y: -244, scale: 0.3618 }, { x: 0, y: 0, scale: 1, duration: 0.6, ease: 'power2.inOut', immediateRender: false }, 16.6);
+    // Trasferimento di Capitale: volo da Wall Street a Borgo Semina, così il video ricomincia uguale
+    tl.fromTo('#map-flight', { opacity: 0 }, { opacity: 1, duration: 0.2, immediateRender: false }, 17.4);
+    tl.fromTo('#map-fly-label', { opacity: 0, filter: 'blur(8px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.18, ease: 'power4.out', immediateRender: false }, 17.4);
+    tl.fromTo('#map-trail', { opacity: 1 }, { opacity: 0, duration: 0.4, ease: 'power2.in', immediateRender: false }, 17.5);
+    // volo lungo la curva tratteggiata, a piccoli tratti (ogni tratto è un tween che si può cercare avanti e indietro)
+    const q = (t) => { const u = 1 - t; return [u * u * 13 + 2 * u * t * -2 + t * t * 10, u * u * 12 + 2 * u * t * 32 + t * t * 47]; };
+    const ease = gsap.parseEase('power2.inOut');
+    const N = 12;
+    for (let k = 0; k < N; k++) {
+      const [ax, ay] = q(ease(k / N)), [bx, by] = q(ease((k + 1) / N));
+      tl.fromTo('#map-marker', { attr: { transform: `translate(${ax} ${ay})` } }, { attr: { transform: `translate(${bx} ${by})` }, duration: 1.1 / N, ease: 'none', immediateRender: false }, 17.6 + k * 1.1 / N);
+    }
+    tl.fromTo('#map-fly-label', { opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(8px)', duration: 0.18, ease: 'power2.in', immediateRender: false }, 18.6);
+    tl.fromTo('#map-flight', { opacity: 1 }, { opacity: 0, duration: 0.3, immediateRender: false }, 18.75);
+    tl.fromTo('#map-trail', { attr: { 'stroke-dashoffset': 0 } }, { attr: { 'stroke-dashoffset': 110 }, duration: 0.01, immediateRender: false }, 18.8);
+    tl.fromTo('#map-trail', { opacity: 0 }, { opacity: 1, duration: 0.01, immediateRender: false }, 18.82);
+    tl.fromTo('#map-title', { opacity: 0, filter: 'blur(8px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.2, ease: 'power4.out', immediateRender: false }, 18.9);
+    tl.to({}, { duration: 0.01 }, 19.99);
+    window.__timelines['map'] = tl;
+  </script>
+</template>

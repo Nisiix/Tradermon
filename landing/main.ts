@@ -426,6 +426,25 @@ function walkers() {
 const later = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(() => f(), { timeout: 2500 }) : setTimeout(f, 300));
 if (document.readyState === 'complete') later(walkers); else addEventListener('load', () => later(walkers), { once: true });
 
+// ---------------- Trailer ----------------
+// Gira in loop, senza audio, solo mentre si vede (e non sotto il gioco aperto nella cornice).
+// Con "riduci movimento" non parte da solo: resta fermo sulla copertina con i comandi per avviarlo.
+{
+  const v = $<HTMLVideoElement>('#trailer-video');
+  if (v) {
+    if (reduced) { v.autoplay = false; v.removeAttribute('autoplay'); v.pause(); v.controls = true; }
+    else {
+      let seen = !('IntersectionObserver' in window);
+      const sync = () => { if (seen && document.visibilityState === 'visible' && !shellOpen()) void v.play().catch(() => undefined); else v.pause(); };
+      document.addEventListener('visibilitychange', sync);
+      addEventListener('tradermon:shell-closed', sync);
+      document.querySelectorAll('[data-play]').forEach((a) => a.addEventListener('click', () => v.pause()));
+      if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { seen = e.isIntersecting; sync(); }).observe(v);
+      sync();
+    }
+  }
+}
+
 // La Guida si apre anche da un link diretto (#guida) arrivando dal gioco: porta il focus sulla sezione
 if (location.hash === '#guida') $('#guida').focus({ preventScroll: true });
 

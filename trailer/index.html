@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #1b1b24; }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+      .shot { position: absolute; inset: 0; }
+      .shot video { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+      #dip { position: absolute; inset: 0; background: #000; opacity: 0; z-index: 20; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="20" data-width="1920" data-height="1080">
+      <div class="shot" id="w1" style="z-index:1"><video id="v1" class="clip" src="assets/clips/lab.mp4" data-start="1.0" data-duration="2.2" data-track-index="2" muted playsinline></video></div>
+      <div class="shot" id="w2" style="z-index:2"><video id="v2" class="clip" src="assets/clips/r1.mp4" data-start="3.0" data-duration="2.2" data-track-index="3" muted playsinline></video></div>
+      <div class="shot" id="w3" style="z-index:3"><video id="v3" class="clip" src="assets/clips/academy.mp4" data-start="5.0" data-duration="2.2" data-track-index="2" muted playsinline></video></div>
+      <div class="shot" id="w4" style="z-index:4"><video id="v4" class="clip" src="assets/clips/sea.mp4" data-start="7.0" data-duration="2.2" data-track-index="3" muted playsinline></video></div>
+      <div class="shot" id="w5" style="z-index:5"><video id="v5" class="clip" src="assets/clips/simzone.mp4" data-start="9.0" data-duration="2.2" data-track-index="2" muted playsinline></video></div>
+      <div class="shot" id="w6" style="z-index:6"><video id="v6" class="clip" src="assets/clips/casino.mp4" data-start="11.0" data-duration="2.2" data-track-index="3" muted playsinline></video></div>
+      <div class="shot" id="w7" style="z-index:7"><video id="v7" class="clip" src="assets/clips/cave.mp4" data-start="13.0" data-duration="2.2" data-track-index="2" muted playsinline></video></div>
+      <div class="shot" id="w8" style="z-index:8"><video id="v8" class="clip" src="assets/clips/wall.mp4" data-start="15.0" data-duration="2.2" data-track-index="3" muted playsinline></video></div>
+      <div id="dip"></div>
+      <div id="labels" data-composition-id="labels" data-composition-src="compositions/labels.html" data-start="0" data-duration="20" data-track-index="10" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:30"></div>
+      <div id="map" data-composition-id="map" data-composition-src="compositions/map.html" data-start="0" data-duration="20" data-track-index="11" data-track-kind="graphics" data-width="1920" data-height="1080" style="z-index:40"></div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo('#w2', { clipPath: 'inset(0% 0% 0% 100%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.2, ease: 'power3.out' }, 3.0);
+      tl.fromTo('#dip', { opacity: 0 }, { opacity: 0.45, duration: 0.1, ease: 'none', immediateRender: false }, 4.90);
+      tl.fromTo('#dip', { opacity: 0.45 }, { opacity: 0, duration: 0.01, immediateRender: false }, 5.00);
+      tl.fromTo('#w4', { clipPath: 'inset(0% 0% 0% 100%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.2, ease: 'power3.out' }, 7.0);
+      tl.fromTo('#dip', { opacity: 0 }, { opacity: 0.45, duration: 0.1, ease: 'none', immediateRender: false }, 8.90);
+      tl.fromTo('#dip', { opacity: 0.45 }, { opacity: 0, duration: 0.01, immediateRender: false }, 9.00);
+      tl.fromTo('#w6', { clipPath: 'circle(0% at 50% 55%)' }, { clipPath: 'circle(80% at 50% 55%)', duration: 0.2, ease: 'power3.in' }, 11.0);
+      tl.fromTo('#w7', { clipPath: 'circle(0% at 50% 55%)' }, { clipPath: 'circle(80% at 50% 55%)', duration: 0.2, ease: 'power3.in' }, 13.0);
+      tl.fromTo('#w8', { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.2, ease: 'power3.out' }, 15.0);
+      tl.to({}, { duration: 0.01 }, 19.99);
+      window.__timelines['main'] = tl;
+    </script>
+  </body>
+</html>

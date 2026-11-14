@@ -8,6 +8,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.pathname.startsWith('/api') || url.origin !== location.origin) return;
+  // video del trailer: il browser lo chiede a pezzi (Range) e una risposta parziale non si può mettere in cache
+  if (e.request.headers.has('range') || url.pathname.endsWith('.mp4')) return;
   const page = url.pathname.includes('/gioca/') ? './gioca/' : './';
   e.respondWith(
     fetch(e.request).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return r; })

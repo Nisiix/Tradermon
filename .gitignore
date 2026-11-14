@@ -9,3 +9,8 @@ scripts/.cr.mjs
 
 # piano degli easter egg (contiene le soluzioni): solo in locale
 docs/04-EASTER-EGG.md
+
+# trailer: spezzoni catturati e file di lavoro di HyperFrames (si rifanno con trailer/cattura.cjs)
+trailer/assets/clips/
+trailer/.hyperframes/
+trailer/out.mp4
