@@ -23,3 +23,8 @@ export function no3dStored(): boolean {
 export function setNo3dStored(on: boolean) {
   try { if (on) localStorage.setItem(NO3D, '1'); else localStorage.removeItem(NO3D); } catch { /* niente */ }
 }
+
+const FX_AUTO = 'tradermon.fxAuto';
+/** La fluidità con gli effetti alti è già stata misurata su questo dispositivo (si misura una volta sola). */
+export function fxAutoDone(): boolean { try { return localStorage.getItem(FX_AUTO) === '1'; } catch { return true; } }
+export function setFxAutoDone() { try { localStorage.setItem(FX_AUTO, '1'); } catch { /* niente */ } }

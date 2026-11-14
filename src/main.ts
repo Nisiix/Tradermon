@@ -1,13 +1,12 @@
 // Primo import: il dizionario inglese completo, prima dei moduli che calcolano testi all'avvio.
 import './i18n/full';
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import '@fontsource/press-start-2p/400.css';
 import '@fontsource/pixelify-sans/400.css';
 import '@fontsource/pixelify-sans/600.css';
 import '@fontsource/dotgothic16/latin-400.css';
 import '@fontsource/dotgothic16/latin-ext-400.css';
 import './style.css';
-import { WorldScene } from './scenes/world';
 import { RS } from './art/art';
 import { initUI, el, toast, modal, esc, confirm } from './ui/core';
 import { initInput, initTouch } from './ui/input';
@@ -22,7 +21,6 @@ import { safariNoticeOnce } from './ui/storageNotice';
 import { leaveIfMoved, receiveTransfer } from './systems/transfer';
 import { newGame, load, hasSave, importSave } from './systems/state';
 import { initMobile } from './ui/mobile';
-import { rendererType, guardRendering } from './systems/render';
 import { cloudEnabled, currentPlayer } from './systems/cloud';
 import { syncAtBoot, startCloudSync, cloudPlayer } from './systems/sync';
 import { accountScreen, legacyPrompt } from './ui/account';
@@ -46,6 +44,21 @@ function pickFile(): Promise<string | null> {
   });
 }
 
+/**
+ * Motore del mondo (Phaser, la scena della mappa e la resa 2.5D con Three.js): è la parte più pesante del gioco.
+ * Si scarica a parte, mentre il giocatore è ancora sul titolo, così la prima schermata arriva prima sul telefono.
+ */
+type Engine = { PhaserLib: typeof Phaser; WorldScene: typeof import('./scenes/world').WorldScene; render: typeof import('./systems/render') };
+let engine: Promise<Engine> | undefined;
+function loadEngine(): Promise<Engine> {
+  engine ??= Promise.all([import('phaser'), import('./scenes/world'), import('./systems/render')]).then(([ph, w, render]) => ({
+    PhaserLib: ((ph as unknown as { default?: typeof Phaser }).default ?? ph) as typeof Phaser, WorldScene: w.WorldScene, render,
+  }));
+  // se lo scaricamento fallisce (rete caduta) si riprova alla richiesta successiva
+  engine.catch(() => { engine = undefined; });
+  return engine;
+}
+
 async function boot() {
   if (await leaveIfMoved()) return; // vecchio indirizzo: porta i dati al nuovo
   initUI();
@@ -66,6 +79,9 @@ async function boot() {
   initSettings();
   unlock();
   play('title');
+  // il motore si prepara in sottofondo appena la pagina è ferma
+  const idle = (f: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(f, { timeout: 1500 }) : setTimeout(f, 300));
+  idle(() => { void loadEngine().catch(() => undefined); });
   // Giocatore (nome univoco + password) prima di tutto, tutorial compreso: la partita vive su Supabase.
   if (cloudEnabled()) {
     const player = (await busy(T('Controllo l\'accesso'), currentPlayer())) ?? (await accountScreen());
@@ -94,7 +110,15 @@ async function boot() {
   refreshAgenda();
   if (!controlsSeen()) await controlsTutorial();
   await safariNoticeOnce();
-  const game = new Phaser.Game({
+  let eng: Engine;
+  for (;;) {
+    try { eng = await busy(T('Preparo il mondo'), loadEngine()); break; } catch (e) {
+      console.error(e);
+      if (!(await confirm(T('Non riesco a scaricare il resto del gioco. Controlla la connessione e riprova.')))) location.reload();
+    }
+  }
+  const { PhaserLib, WorldScene, render: { rendererType, guardRendering } } = eng;
+  const game = new PhaserLib.Game({
     // WebGL se possibile; Canvas 2D se su questo dispositivo WebGL ha già dato schermo nero
     type: rendererType(),
     parent: 'game',
@@ -106,7 +130,7 @@ async function boot() {
     antialias: true,
     roundPixels: true,
     backgroundColor: '#101018',
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scale: { mode: PhaserLib.Scale.FIT, autoCenter: PhaserLib.Scale.CENTER_BOTH },
     // sotto i 5 fps Phaser conterebbe 16 ms a fotogramma (timer e dissolvenze rallentano): accetta fino a 500 ms
     // e, dopo un cambio di scheda, torna al tempo reale dopo 20 fotogrammi invece di 120;
     // così su un dispositivo lento la resa 2.5D va a scatti ma il gioco scorre a tempo reale
@@ -114,7 +138,7 @@ async function boot() {
     scene: [WorldScene],
   });
   (window as unknown as { __game: Phaser.Game }).__game = game;
-  game.events.once(Phaser.Core.Events.READY, () => {
+  game.events.once(PhaserLib.Core.Events.READY, () => {
     guardRendering(game, 'world');
     // il mercato vero si è mosso mentre il gioco era chiuso: allinea il conto e racconta che cosa è cambiato
     void whileAway().catch(() => undefined);
