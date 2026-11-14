@@ -15,7 +15,7 @@ const CLIPS = {
   lab: ['lab', 6, 8, 'up', 'ArrowUp:22,none:44'], // Borgo Semina, Laboratorio delle Valigette
   r1: ['r1', 3, 7, 'right', 'ArrowRight:66'], // Percorso 1
   academy: ['academy_1', 6, 11, 'up', 'ArrowUp:40,none:26'], // Exchange di Ponte Cedola
-  sea: ['sea', 14, 10, 'right', 'ArrowRight:66'], // Mare della Liquidità, in barchetta
+  sea: ['sea', 14, 10, 'right', 'ArrowRight:42,ArrowDown:24'], // Mare della Liquidità, in barchetta
   simzone: ['simzone', 5, 7, 'up', 'ArrowUp:20,none:46'], // Diversia, Zona Simulazione
   casino: ['casino', 5, 7, 'up', 'ArrowUp:25,none:41'], // Interessa, Casinò dello Speculatore
   cave: ['cave_gold', 4, 8, 'right', 'ArrowRight:66'], // Miniera dei Lingotti, con la Lanterna
@@ -27,6 +27,8 @@ const OUT = path.join(__dirname, 'assets', 'clips');
 async function capture(name, [map, x, y, facing, keys]) {
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const p = await b.newPage({ viewport: { width: 1620, height: 1080 }, locale: 'it-IT' });
+  // sempre di giorno, a qualunque ora si catturi (di notte il gioco si fa buio): orario fisso, solo per Date
+  await p.clock.setFixedTime(new Date(process.env.TRAILER_TIME || '2026-11-12T14:00:00'));
   await p.goto(URL);
   await p.waitForTimeout(2000);
   await p.evaluate(async ([map, x, y, facing]) => {
