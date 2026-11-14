@@ -40,13 +40,17 @@ export interface MirrorFrame {
   flash?: { r: number; g: number; b: number; a: number };
   tint: { color: number; alpha: number };
   items: MirrorItem[];
+  /** Grotte: centro (in caselle) e raggio della luce della Lanterna. Fuori dal cerchio resta il buio. */
+  light?: { x: number; y: number; r: number };
 }
 
-export interface Mood { night: boolean; climate: string; interior: boolean; dark?: boolean }
+/** cave: grotta illuminata dalla Lanterna, con il colore dei suoi cristalli (vedi world/caves.ts). */
+export interface Mood { night: boolean; climate: string; interior: boolean; dark?: boolean; cave?: { glow: number } }
 export type FxLevel = 'alti' | 'bassi';
 
 const VW = 240 * RS, VH = 160 * RS; // vista logica (come la camera Phaser)
 const SKIRT = 6;
+const CRYSTALS = new Set<number>([TILE.CRYSTAL_GOLD, TILE.CRYSTAL_DARK, TILE.CRYSTAL_SEA]);
 const FOV = 36, TILT = 0.98, DIST = 14.2;
 
 function hexToCss(c: number, a: number) { return `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${a})`; }
@@ -78,6 +82,12 @@ export class View3D {
   private hemi: THREE.HemisphereLight;
   private sun: THREE.DirectionalLight;
   private lamps: THREE.PointLight[] = [];
+  /** Luce calda della Lanterna, accesa solo nelle grotte: segue il giocatore. */
+  private lantern: THREE.PointLight;
+  /** Cristalli luminosi della grotta caricata (centro della casella). */
+  private crystals: [number, number][] = [];
+  /** Tela di servizio per il buio delle grotte: un velo scuro con i fori di luce. */
+  private darkCv?: HTMLCanvasElement;
   private windows: [number, number][] = [];
   private animated: { x: number; y: number; v0: number }[] = [];
   private groundUv?: THREE.BufferAttribute;
@@ -165,6 +175,7 @@ export class View3D {
     const sc = this.sun.shadow.camera; sc.left = -13; sc.right = 13; sc.top = 11; sc.bottom = -11; sc.near = 1; sc.far = 60;
     this.scene.add(this.hemi, this.sun, this.sun.target);
     for (let i = 0; i < 8; i++) { const l = new THREE.PointLight(0xffd080, 0, 5.5, 1.5); l.visible = false; this.lamps.push(l); this.scene.add(l); }
+    this.lantern = new THREE.PointLight(0xffd9a0, 0, 8, 1.3); this.lantern.visible = false; this.scene.add(this.lantern);
     // post-produzione
     this.composer = new EffectComposer(this.renderer, { multisampling: 0, frameBufferType: THREE.HalfFloatType });
     this.composer.addPass(new RenderPass(this.scene, this.camera));
@@ -262,10 +273,16 @@ export class View3D {
     this.staticGroup.clear();
     this.animated = []; this.windows = [];
     const W = map.w, H = map.h, tiles = map.tiles;
+    this.crystals = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (CRYSTALS.has(tiles[y][x])) this.crystals.push([x + 0.5, y + 0.5]);
     const vis = visualTiles(tiles, frame, night);
     const ground = new GeoBuilder(), solid = new GeoBuilder(), props = new GeoBuilder(), sides = new GeoBuilder();
     const at = (x: number, y: number) => (x < 0 || y < 0 || x >= W || y >= H ? -1 : tiles[y][x]);
     const cave = tiles.some((r) => r.includes(TILE.CAVE));
+    // Roccia delle grotte: alta dove fa da fondale, bassa a gradini dove sta a sud di un pavimento. Così la parete non
+    // copre chi cammina (o un reperto) nella fila subito dietro, vista dalla camera.
+    const caveOpen = (x: number, y: number) => { const n = at(x, y); return n !== -1 && n !== TILE.ROCK && n !== TILE.CAVE_MOUTH; };
+    const caveRockH = (x: number, y: number) => (caveOpen(x, y - 1) ? 0.4 : caveOpen(x, y - 2) ? 1.0 : 1.6);
     const uvq = (u: [number, number, number, number]) => [[u[0], u[1]], [u[2], u[1]], [u[2], u[3]], [u[0], u[3]]];
     const groundQuad = (x: number, y: number, idx: number, h = 0) => {
       const v0 = ground.uv.length / 2;
@@ -347,8 +364,13 @@ export class View3D {
         case 'block': {
           groundQuad(x, y, r.ground ? tileIndex(r.ground) : defaultGround(t));
           const same = (n: number) => n === t || (t === TILE.ROCK && n === TILE.CAVE_MOUTH) || (t === TILE.CAVE_MOUTH && n === TILE.ROCK);
-          const h = t === TILE.ROCK && cave ? 1.6 : r.h;
-          block(x, y, h, vi, r.front ? vi : null, this.avgColor(vname, 0.9), { l: same(at(sx - 1, sy)), r: same(at(sx + 1, sy)), b: same(at(sx, sy - 1)), f: same(at(sx, sy + 1)) });
+          if (t === TILE.ROCK && cave) {
+            // una faccia si salta solo se il blocco vicino è alto almeno quanto questo
+            const h = caveRockH(sx, sy), hid = (nx: number, ny: number) => at(nx, ny) === TILE.ROCK && caveRockH(nx, ny) >= h;
+            block(x, y, h, vi, vi, this.avgColor(vname, 0.9), { l: hid(sx - 1, sy), r: hid(sx + 1, sy), b: hid(sx, sy - 1), f: hid(sx, sy + 1) });
+            break;
+          }
+          block(x, y, r.h, vi, r.front ? vi : null, this.avgColor(vname, 0.9), { l: same(at(sx - 1, sy)), r: same(at(sx + 1, sy)), b: same(at(sx, sy - 1)), f: same(at(sx, sy + 1)) });
           break;
         }
         case 'house': {
@@ -481,11 +503,15 @@ export class View3D {
   }
 
   private applyMood() {
-    const { night, climate, interior, dark } = this.mood;
-    const bg = interior ? new THREE.Color(dark ? 0x05040a : 0x12121c) : night ? new THREE.Color(0x0b1230) : climate === 'orso' || climate === 'tempesta' ? new THREE.Color(0x6d7890) : new THREE.Color(0x9fc8ff);
+    const { night, climate, interior, dark, cave } = this.mood;
+    const bg = interior ? new THREE.Color(dark || cave ? 0x05040a : 0x12121c) : night ? new THREE.Color(0x0b1230) : climate === 'orso' || climate === 'tempesta' ? new THREE.Color(0x6d7890) : new THREE.Color(0x9fc8ff);
     this.scene.background = bg;
     this.scene.fog = interior ? null : new THREE.Fog(bg, night ? 12 : 16, night ? 30 : 42);
-    if (interior) {
+    if (cave && !dark) {
+      // grotta con la Lanterna: poca luce d'ambiente, il resto lo fanno la Lanterna e i cristalli
+      this.hemi.color.set(0xc8c0e0); this.hemi.groundColor.set(0x3a3028); this.hemi.intensity = 0.55;
+      this.sun.color.set(0xd8d0f0); this.sun.intensity = 0.3;
+    } else if (interior) {
       this.hemi.color.set(0xe8e4ff); this.hemi.groundColor.set(0x4a4038); this.hemi.intensity = dark ? 0.25 : 1.05;
       this.sun.color.set(0xfff4e0); this.sun.intensity = dark ? 0.2 : 0.9;
     } else if (night) {
@@ -499,6 +525,60 @@ export class View3D {
       this.sun.color.set(climate === 'toro' ? 0xfff0c0 : 0xfff2d0); this.sun.intensity = climate === 'toro' ? 1.55 : 1.4;
     }
     for (const l of this.lamps) { l.visible = false; l.intensity = 0; }
+    this.lantern.visible = false; this.lantern.intensity = 0;
+  }
+
+  /** Punto dello schermo (in pixel della tela 2D) di un punto del suolo, più i raggi dell'ellisse di una luce di raggio r. */
+  private project(x: number, z: number, r: number): { px: number; py: number; rx: number; ry: number } {
+    const p = (vx: number, vz: number) => { const v = new THREE.Vector3(vx, 0.25, vz).project(this.camera); return [(v.x + 1) / 2 * VW, (1 - v.y) / 2 * VH]; };
+    const [px, py] = p(x, z), [ex] = p(x + r, z), [, ey] = p(x, z + r);
+    return { px, py, rx: Math.abs(ex - px), ry: Math.abs(ey - py) };
+  }
+
+  /** Buio delle grotte: un velo quasi nero con un foro morbido intorno alla Lanterna e uno più piccolo su ogni cristallo. */
+  private paintDark(light: { x: number; y: number; r: number }, glow: number, cx: number, cz: number) {
+    const dk = this.darkCv ?? (this.darkCv = document.createElement('canvas'));
+    if (dk.width !== VW) { dk.width = VW; dk.height = VH; }
+    const d = dk.getContext('2d')!;
+    d.globalCompositeOperation = 'source-over';
+    d.clearRect(0, 0, VW, VH);
+    d.fillStyle = 'rgba(4,3,9,0.95)';
+    d.fillRect(0, 0, VW, VH);
+    d.globalCompositeOperation = 'destination-out';
+    const hole = (x: number, z: number, r: number, strength: number, core: number) => {
+      const e = this.project(x, z, r);
+      if (e.rx < 1 || e.ry < 1) return e;
+      d.save(); d.translate(e.px, e.py); d.scale(1, e.ry / e.rx);
+      const g = d.createRadialGradient(0, 0, 0, 0, 0, e.rx);
+      g.addColorStop(0, `rgba(0,0,0,${strength})`); g.addColorStop(core, `rgba(0,0,0,${strength})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+      d.fillStyle = g; d.beginPath(); d.arc(0, 0, e.rx, 0, Math.PI * 2); d.fill();
+      d.restore();
+      return e;
+    };
+    // la fiamma tremola appena: il raggio respira di un paio di centesimi
+    const t = performance.now() / 1000;
+    const r = light.r * (1 + 0.018 * Math.sin(t * 5.1) + 0.012 * Math.sin(t * 8.3 + 1));
+    hole(light.x, light.y, r + 0.9, 1, 0.55);
+    const near = this.crystals.filter((c) => Math.abs(c[0] - cx) < 13 && Math.abs(c[1] - cz) < 10);
+    const pulse = 0.82 + 0.1 * Math.sin(t * 1.7);
+    for (const c of near) hole(c[0], c[1], 1.7, 0.72 * pulse, 0.15);
+    const c2 = this.ctx;
+    c2.drawImage(dk, 0, 0);
+    // alone colorato dei cristalli e tinta calda della Lanterna, sopra il velo
+    c2.save();
+    c2.globalCompositeOperation = 'lighter';
+    const halo = (x: number, z: number, rr: number, color: number, a: number) => {
+      const e = this.project(x, z, rr);
+      if (e.rx < 1 || e.ry < 1) return;
+      c2.save(); c2.translate(e.px, e.py); c2.scale(1, e.ry / e.rx);
+      const g = c2.createRadialGradient(0, 0, 0, 0, 0, e.rx);
+      g.addColorStop(0, hexToCss(color, a)); g.addColorStop(1, hexToCss(color, 0));
+      c2.fillStyle = g; c2.beginPath(); c2.arc(0, 0, e.rx, 0, Math.PI * 2); c2.fill();
+      c2.restore();
+    };
+    for (const c of near) halo(c[0], c[1], 1.5, glow, 0.16 * pulse);
+    halo(light.x, light.y, r * 0.8, 0xffc070, 0.07);
+    c2.restore();
   }
 
   // ---------------- rispecchiamento del fotogramma ----------------
@@ -534,7 +614,15 @@ export class View3D {
     // lampade alle finestre di notte: le 8 più vicine
     if (this.mood.night && !this.mood.interior && this.windows.length) {
       const near = this.windows.map((w) => ({ w, d: (w[0] - cx) ** 2 + (w[1] - cz) ** 2 })).sort((a, b) => a.d - b.d).slice(0, this.lamps.length);
-      this.lamps.forEach((l, i) => { const n = near[i]; if (!n) { l.visible = false; return; } l.visible = true; l.intensity = 2.4; l.position.set(n.w[0], 0.9, n.w[1]); });
+      this.lamps.forEach((l, i) => { const n = near[i]; if (!n) { l.visible = false; return; } l.visible = true; l.intensity = 2.4; l.color.setHex(0xffd080); l.distance = 5.5; l.position.set(n.w[0], 0.9, n.w[1]); });
+    }
+    // grotte: la Lanterna segue il giocatore e i cristalli più vicini tingono la roccia del loro colore
+    const cave = this.mood.cave;
+    if (cave && f.light && !this.mood.dark) {
+      this.lantern.visible = true; this.lantern.intensity = 2.6; this.lantern.distance = f.light.r * 2.2;
+      this.lantern.position.set(f.light.x, 1.15, f.light.y);
+      const near = this.crystals.map((w) => ({ w, d: (w[0] - cx) ** 2 + (w[1] - cz) ** 2 })).sort((a, b) => a.d - b.d).slice(0, this.lamps.length);
+      this.lamps.forEach((l, i) => { const n = near[i]; if (!n) { l.visible = false; return; } l.visible = true; l.intensity = 1.5; l.color.setHex(cave.glow); l.distance = 3.6; l.position.set(n.w[0], 0.7, n.w[1] + 0.2); });
     }
     // oggetti dinamici
     let ci = 0, ti = 0, bi = 0, li = 0, si = 0;
@@ -553,15 +641,17 @@ export class View3D {
         m.position.set(it.x, lift * 2.6, it.y - 0.38 - lift * 0.3);
         m.rotation.y = this.yaw;
         m.rotation.x = -ACTOR_LEAN;
-        for (const mat of m.material as THREE.MeshLambertMaterial[]) mat.opacity = it.alpha;
+        // l'opacità vale anche per il ritaglio della sagoma: così un personaggio in penombra si intravede, invece di sparire sotto la soglia
+        for (const mat of m.material as THREE.MeshLambertMaterial[]) { mat.opacity = it.alpha; if (mat.alphaTest > 0) mat.alphaTest = Math.max(0.02, 0.5 * it.alpha); }
         const sh = this.pooled(this.shadowPool, si++, () => { const mm = new THREE.Mesh(new THREE.CircleGeometry(0.5, 20), this.matShadow); mm.rotation.x = -Math.PI / 2; mm.scale.set(0.42, 0.26, 1); return mm; });
         sh.position.set(it.x, 0.012, it.y - 0.45);
         sh.scale.set(0.42 * (1 - 0.5 * lift), 0.26 * (1 - 0.5 * lift), 1);
         (sh.material as THREE.MeshBasicMaterial).opacity = 0.28 * it.alpha * (1 - 0.6 * lift);
       } else if (it.kind === 'tile') {
-        const m = this.pooled(this.tilePool, ti++, () => { const mat = this.matProps.clone(); mat.vertexColors = false; /* il piano non ha colori per vertice: senza questo esce nero */ const mm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); mm.castShadow = true; mm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: propAtlas(), alphaTest: 0.5 }); return mm; });
+        const m = this.pooled(this.tilePool, ti++, () => { const mat = this.matProps.clone(); mat.vertexColors = false; mat.transparent = true; /* il piano non ha colori per vertice: senza questo esce nero */ const mm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); mm.castShadow = true; mm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: propAtlas(), alphaTest: 0.5 }); return mm; });
         const sp = propSprite(tileName(it.frame), null);
-        (m.material as THREE.MeshLambertMaterial).map = propAtlas();
+        const tm = m.material as THREE.MeshLambertMaterial;
+        tm.map = propAtlas(); tm.opacity = it.alpha; tm.alphaTest = Math.max(0.02, 0.5 * it.alpha);
         this.setPlaneUv(m, propUv(sp));
         // lift: l'oggetto è appoggiato sopra un mobile (le Valigette sul tavolo del Laboratorio), non sul pavimento
         m.position.set(it.x, 0.5 + (it.lift ?? 0), it.y - (it.lift ? 0.5 : 0.4));
@@ -590,6 +680,7 @@ export class View3D {
     this.composer.render();
     // livello 2D sopra la scena: tinta del clima, lampo e dissolvenza (il meteo è già stato disegnato dal painter)
     const c = this.ctx;
+    if (cave && f.light && !this.mood.dark) this.paintDark(f.light, cave.glow, cx, cz);
     if (f.tint.alpha > 0) { c.fillStyle = hexToCss(f.tint.color, f.tint.alpha); c.fillRect(0, 0, VW, VH); }
     if (f.flash && f.flash.a > 0) { c.fillStyle = `rgba(${f.flash.r},${f.flash.g},${f.flash.b},${f.flash.a})`; c.fillRect(0, 0, VW, VH); }
     if (f.fade && f.fade.a > 0) { c.fillStyle = `rgba(${f.fade.r},${f.fade.g},${f.fade.b},${f.fade.a})`; c.fillRect(0, 0, VW, VH); }

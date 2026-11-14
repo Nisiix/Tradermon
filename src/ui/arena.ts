@@ -8,12 +8,12 @@ import { getStage, el } from './core';
 import { beep } from '../systems/audio';
 import { T } from '../i18n';
 
-export type Arena = 'piazza' | 'aula' | 'sala' | 'tetto' | 'fossa' | 'lega' | 'torre' | 'biblioteca' | 'borsa';
+export type Arena = 'piazza' | 'aula' | 'sala' | 'tetto' | 'fossa' | 'lega' | 'torre' | 'biblioteca' | 'borsa' | 'grotta';
 
 /** Colore d'accento di ogni luogo: tinge la transizione, la targhetta dello sfidante e il nastro. */
 export const ARENA_ACCENT: Record<Arena, string> = {
   piazza: '#3fa7d6', aula: '#6fbf73', sala: '#d6a64a', tetto: '#f08a4b',
-  fossa: '#e04848', lega: '#e6c35a', torre: '#9a8cf6', biblioteca: '#d09050', borsa: '#4fd6c8',
+  fossa: '#e04848', lega: '#e6c35a', torre: '#9a8cf6', biblioteca: '#d09050', borsa: '#4fd6c8', grotta: '#f0b050',
 };
 
 /** Parole del nastro scorrevole in alto: concetti del gioco, mai prezzi o titoli reali. */
@@ -27,6 +27,7 @@ export const ARENA_TAPE: Record<Arena, string[]> = {
   torre: [T('PIANO SUCCESSIVO ▲'), T('RESISTENZA ▲'), T('CONCENTRAZIONE ▲'), T('FIDUCIA ▲')],
   biblioteca: [T('RIPASSO ▲'), T('APPUNTI ▲'), T('CURIOSITÀ ▲'), T('DUBBI ▼'), T('STUDIO ▲')],
   borsa: [T('INGRESSO ▲'), 'STOP ▲', T('OBIETTIVO ▲'), T('SCADENZA ▲'), T('ESITO ▲'), T('PROCESSO ▲')],
+  grotta: [T('LANTERNA ▲'), T('PROMESSE ▼'), T('VALORE ▲'), T('RUMORE ▼'), T('PAZIENZA ▲'), T('TRASPARENZA ▲')],
 };
 
 type Ctx = CanvasRenderingContext2D;
@@ -210,6 +211,27 @@ const PAINT: Record<Arena, (c: Ctx, W: number, H: number, rnd: () => number) => 
     }
     for (const lx of [W * 0.25, W * 0.75]) { c.fillStyle = 'rgba(255,214,140,.14)'; c.beginPath(); c.arc(lx, 12, 46, 0, Math.PI * 2); c.fill(); R(c, lx - 6, 6, 12, 6, '#f6d88a'); }
     floor(c, hz, W, H, '#7a5232', '#6c4628');
+  },
+  // Grotta: roccia a strati, stalattiti, cristalli che brillano e l'alone caldo della Lanterna
+  grotta(c, W, H, rnd) {
+    const hz = H * 0.64;
+    bands(c, 0, hz, W, ['#0d0a10', '#141018', '#1b1620', '#231c28']);
+    for (let k = 0; k < 26; k++) R(c, rnd() * W, rnd() * hz, 2 + rnd() * 5, 1, 'rgba(120,104,96,.16)');
+    for (let x = -4; x < W; x += 8 + Math.floor(rnd() * 15)) {
+      const h = 8 + rnd() * 32, w = 5 + rnd() * 7;
+      c.fillStyle = '#08060a'; c.beginPath(); c.moveTo(x, 0); c.lineTo(x + w, 0); c.lineTo(x + w / 2, h); c.fill();
+    }
+    const glow = ['255,200,96', '180,140,255', '124,232,224'];
+    for (let k = 0; k < 9; k++) {
+      const x = 12 + rnd() * (W - 24), y = hz - 3 - rnd() * 22, col = glow[k % 3], s = 3 + Math.floor(rnd() * 4);
+      c.fillStyle = `rgba(${col},.10)`; c.beginPath(); c.arc(x, y - s, s * 4, 0, Math.PI * 2); c.fill();
+      c.fillStyle = `rgba(${col},.9)`; c.beginPath(); c.moveTo(x - s / 2, y); c.lineTo(x, y - s * 2.2); c.lineTo(x + s / 2, y); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(Math.round(x), Math.round(y - s * 1.6), 1, Math.max(1, s - 2));
+    }
+    // alone della Lanterna, al centro della scena
+    for (const [r, a] of [[92, 0.05], [64, 0.07], [38, 0.09]] as const) { c.fillStyle = `rgba(255,214,140,${a})`; c.beginPath(); c.arc(W / 2, hz + 6, r, 0, Math.PI * 2); c.fill(); }
+    R(c, 0, hz - 5, W, 5, '#0a080c');
+    floor(c, hz, W, H, '#3a3038', '#302830', 'rgba(240,176,80,.10)');
   },
 };
 

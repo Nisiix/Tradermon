@@ -6,14 +6,15 @@ import { SOLID, TILE } from '../src/art/art';
  * con passaggi, guardie, acqua (Medaglia 3), Massi delle Commissioni (4), grotte buie e Archivio (5),
  * Muro del Rumore (7). Serve a scoprire scorciatoie che saltano un'Accademia e vicoli senza ritorno.
  */
-const VANISH = new Set(['rival', 'speculator', 'league', 'aide', 'case']);
+// i reperti delle grotte si raccolgono e spariscono; le ostriche restano al loro posto e bloccano
+const VANISH = new Set(['rival', 'speculator', 'league', 'aide', 'case', 'relic']);
 export type St = string;
 export const key = (m: string, x: number, y: number): St => `${m}:${x},${y}`;
 
 function blockers(m: MapDef, b: number): Set<string> {
   const s = new Set<string>();
   for (const n of m.npcs) {
-    if (n.hiddenSprite || VANISH.has(n.kind)) continue;
+    if ((n.hiddenSprite && n.kind !== 'oyster') || VANISH.has(n.kind)) continue;
     if (n.kind === 'guard' && b >= (n.data?.badge as number)) continue;
     s.add(`${n.x},${n.y}`);
   }

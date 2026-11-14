@@ -15,14 +15,20 @@ export const TILE = {
   TROPHY_S: 32, TROPHY_G: 33, TROPHY_L: 34, POSTER: 35, CALENDAR: 36, DESK: 37, ARCADE: 38, FRAME: 39, GLOBE: 40, PAINTING: 41, RADIO: 42, AQUARIUM: 43,
   // mare, spiagge e grotte
   SAND: 44, ROCK: 45, CAVE: 46, CAVE_MOUTH: 47, BOULDER: 48, PIER: 49, LADDER: 50,
+  // cristalli luminosi delle grotte (ambra nella Miniera, viola nel Dark Pool, acquamarina nella Grotta delle Perle)
+  CRYSTAL_GOLD: 51, CRYSTAL_DARK: 52, CRYSTAL_SEA: 53,
+  // arredi dei reperti delle grotte
+  INGOT: 54, PEARL: 55, LANTERN: 56,
+  // incisione sulla roccia: il "cartello" delle grotte
+  TABLET: 57,
 } as const;
-export const TILE_COUNT = 51;
+export const TILE_COUNT = 58;
 /** Nome del tile di arredo per ogni oggetto sbloccabile. */
-export const DECOR_TILE: Record<string, number> = { plant: TILE.PLANT, shelf: TILE.SHELF, trophy_silver: TILE.TROPHY_S, trophy_gold: TILE.TROPHY_G, trophy_league: TILE.TROPHY_L, poster: TILE.POSTER, calendar: TILE.CALENDAR, desk: TILE.DESK, arcade: TILE.ARCADE, frame: TILE.FRAME, globe: TILE.GLOBE, painting: TILE.PAINTING, radio: TILE.RADIO, aquarium: TILE.AQUARIUM };
+export const DECOR_TILE: Record<string, number> = { plant: TILE.PLANT, shelf: TILE.SHELF, trophy_silver: TILE.TROPHY_S, trophy_gold: TILE.TROPHY_G, trophy_league: TILE.TROPHY_L, poster: TILE.POSTER, calendar: TILE.CALENDAR, desk: TILE.DESK, arcade: TILE.ARCADE, frame: TILE.FRAME, globe: TILE.GLOBE, painting: TILE.PAINTING, radio: TILE.RADIO, aquarium: TILE.AQUARIUM, ingot: TILE.INGOT, pearl: TILE.PEARL, lantern: TILE.LANTERN };
 /** Arredi da parete (sostituiscono un pezzo di muro interno) e da pavimento. */
 export const WALL_DECOR = new Set<number>([TILE.POSTER, TILE.CALENDAR, TILE.FRAME, TILE.PAINTING]);
 
-export const SOLID = new Set<number>([TILE.TREE, TILE.WATER, TILE.FENCE, TILE.SIGN, TILE.ROOF, TILE.WALL, TILE.WINDOW, TILE.IWALL, TILE.COUNTER, TILE.SHELF, TILE.TABLE, TILE.PC, TILE.GATE, TILE.NOISE, TILE.ROOF_CLINIC, TILE.ROOF_ACADEMY, TILE.ROOF_SPECIAL, TILE.ROULETTE, TILE.CASE_TABLE, TILE.STATION, TILE.BED, TILE.PLANT, TILE.TROPHY_S, TILE.TROPHY_G, TILE.TROPHY_L, TILE.POSTER, TILE.CALENDAR, TILE.DESK, TILE.ARCADE, TILE.FRAME, TILE.GLOBE, TILE.PAINTING, TILE.RADIO, TILE.AQUARIUM, TILE.ROCK, TILE.BOULDER]);
+export const SOLID = new Set<number>([TILE.TREE, TILE.WATER, TILE.FENCE, TILE.SIGN, TILE.ROOF, TILE.WALL, TILE.WINDOW, TILE.IWALL, TILE.COUNTER, TILE.SHELF, TILE.TABLE, TILE.PC, TILE.GATE, TILE.NOISE, TILE.ROOF_CLINIC, TILE.ROOF_ACADEMY, TILE.ROOF_SPECIAL, TILE.ROULETTE, TILE.CASE_TABLE, TILE.STATION, TILE.BED, TILE.PLANT, TILE.TROPHY_S, TILE.TROPHY_G, TILE.TROPHY_L, TILE.POSTER, TILE.CALENDAR, TILE.DESK, TILE.ARCADE, TILE.FRAME, TILE.GLOBE, TILE.PAINTING, TILE.RADIO, TILE.AQUARIUM, TILE.ROCK, TILE.BOULDER, TILE.CRYSTAL_GOLD, TILE.CRYSTAL_DARK, TILE.CRYSTAL_SEA, TILE.INGOT, TILE.PEARL, TILE.LANTERN, TILE.TABLET]);
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -541,11 +547,53 @@ function rockFace(c: Ctx, o: { x: number; y: number }, dark: boolean) {
 }
 reg('rock', (c, o) => rockFace(c, o, false));
 reg('rock_cave', (c, o) => rockFace(c, o, true));
-reg('cave', (c, o) => {
+/** Pavimento di grotta: lo stesso disegno fa da base ai cristalli, così la resa 2.5D ne ricava la sagoma. */
+function caveFloor(c: Ctx, o: { x: number; y: number }) {
   px(c, o.x, o.y, 16, 16, '#6a5c50');
-  const r = prng(77 + o.x + o.y * 3);
+  const r = prng(77);
   for (let i = 0; i < 12; i++) { const x = Math.floor(r() * 15), y = Math.floor(r() * 15); px(c, o.x + x, o.y + y, 2, 1, i % 2 ? '#5a4c42' : '#7c6e60'); }
   px(c, o.x + 3, o.y + 11, 1, 1, '#f0d070');
+}
+reg('cave', (c, o) => caveFloor(c, o));
+// cristalli luminosi: tre punte su un piede di roccia; nel secondo fotogramma brillano
+const CRYSTAL_COLS: Record<string, [string, string, string, string]> = {
+  gold: ['#fff4c0', '#ffd058', '#e09020', '#8a5410'],
+  dark: ['#f0e0ff', '#c098ff', '#8858d8', '#48287c'],
+  sea: ['#e8fffc', '#88f0e4', '#38b8b0', '#186868'],
+};
+for (const [kind, [ll, l, m, d]] of Object.entries(CRYSTAL_COLS)) for (let f = 0; f < 2; f++) reg(`crystal_${kind}${f}`, (c, o) => {
+  caveFloor(c, o);
+  px(c, o.x + 3, o.y + 12, 10, 2, '#3a322c'); px(c, o.x + 4, o.y + 11, 8, 1, '#3a322c');
+  const shard = (x: number, top: number, w: number) => {
+    px(c, o.x + x, o.y + top + 1, w, 12 - top - 1, d); px(c, o.x + x + 1, o.y + top, w - 2, 12 - top, d);
+    px(c, o.x + x + 1, o.y + top + 1, w - 2, 11 - top - 1, m); px(c, o.x + x + 1, o.y + top + 1, 1, 11 - top - 2, l);
+    px(c, o.x + x + 1, o.y + top + 1, 1, 2, ll);
+  };
+  shard(2, 6, 4); shard(10, 5, 4); shard(5, 1, 5);
+  px(c, o.x + 7, o.y + 3, 1, 5, l);
+  if (f) { px(c, o.x + 7, o.y + 2, 1, 3, '#ffffff'); px(c, o.x + 6, o.y + 3, 3, 1, '#ffffff'); px(c, o.x + 11, o.y + 6, 1, 1, '#ffffff'); px(c, o.x + 3, o.y + 8, 1, 1, '#ffffff'); }
+  else { px(c, o.x + 12, o.y + 7, 1, 1, ll); px(c, o.x + 6, o.y + 5, 1, 1, '#ffffff'); }
+});
+// incisione: una lastra di pietra chiara con righe scolpite, in piedi sul pavimento della grotta
+reg('tablet', (c, o) => {
+  caveFloor(c, o);
+  px(c, o.x + 2, o.y + 2, 12, 12, '#2c2620'); px(c, o.x + 3, o.y + 1, 10, 1, '#2c2620');
+  px(c, o.x + 3, o.y + 2, 10, 11, '#b0a490'); px(c, o.x + 3, o.y + 2, 10, 1, '#d8ccb4'); px(c, o.x + 3, o.y + 3, 1, 9, '#c8bca4'); px(c, o.x + 12, o.y + 3, 1, 10, '#8a7e6c');
+  for (const [y, w] of [[4, 7], [6, 8], [8, 5], [10, 7]]) px(c, o.x + 4, o.y + y, w, 1, '#5a4e40');
+  px(c, o.x + 3, o.y + 13, 10, 1, '#6a5e50');
+});
+// acqua di grotta: la stessa dell'esterno, ma con la riva di roccia al posto dell'erba
+for (let f = 0; f < 2; f++) for (let m = 0; m < 16; m++) reg(`cwater${f}_${m}`, (c, o) => {
+  px(c, o.x, o.y, 16, 16, '#2c6a9c');
+  const rw = prng(300 + m);
+  for (let i = 0; i < 6; i++) { const x = Math.floor(rw() * 14), y = Math.floor(rw() * 15); px(c, o.x + x, o.y + y, 2, 1, '#22547e'); }
+  const sh = f ? 3 : 0;
+  px(c, o.x + 1 + sh, o.y + 3, 5, 1, '#58a8c8'); px(c, o.x + 2 + sh, o.y + 2, 3, 1, '#a8f0e8');
+  px(c, o.x + 9 - sh, o.y + 10, 5, 1, '#58a8c8'); px(c, o.x + 10 - sh, o.y + 9, 2, 1, '#a8f0e8');
+  if (m & 1) { px(c, o.x, o.y, 16, 2, '#3a322c'); px(c, o.x, o.y + 2, 16, 1, '#88d8d8'); }
+  if (m & 4) { px(c, o.x, o.y + 14, 16, 2, '#3a322c'); px(c, o.x, o.y + 13, 16, 1, '#1c4468'); }
+  if (m & 8) { px(c, o.x, o.y, 2, 16, '#3a322c'); px(c, o.x + 2, o.y, 1, 16, '#88d8d8'); }
+  if (m & 2) { px(c, o.x + 14, o.y, 2, 16, '#3a322c'); px(c, o.x + 13, o.y, 1, 16, '#1c4468'); }
 });
 reg('cave_mouth', (c, o) => {
   rockFace(c, o, false);
@@ -577,6 +625,68 @@ reg('pier', (c, o) => {
 reg('case_blue', (c, o) => briefcase(c, o, '#3878d8'));
 reg('case_purple', (c, o) => briefcase(c, o, '#8858c8'));
 reg('case_orange', (c, o) => briefcase(c, o, '#f08830'));
+// ---- reperti delle grotte (su fondo trasparente, come le Valigette) ----
+reg('relic_ingot', (c, o) => {
+  c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(o.x + 2, o.y + 13, 12, 1);
+  px(c, o.x + 2, o.y + 8, 12, 5, '#8a5410'); px(c, o.x + 4, o.y + 6, 8, 2, '#8a5410');
+  px(c, o.x + 3, o.y + 9, 10, 3, '#e8a820'); px(c, o.x + 5, o.y + 7, 6, 2, '#ffd858');
+  px(c, o.x + 5, o.y + 7, 6, 1, '#fff4c0'); px(c, o.x + 3, o.y + 9, 10, 1, '#ffd858'); px(c, o.x + 3, o.y + 11, 10, 1, '#b87810');
+  px(c, o.x + 7, o.y + 10, 2, 1, '#8a5410'); px(c, o.x + 12, o.y + 5, 1, 1, '#ffffff'); px(c, o.x + 11, o.y + 6, 3, 1, '#fff4c0'); px(c, o.x + 12, o.y + 7, 1, 1, '#fff4c0');
+});
+reg('relic_order', (c, o) => {
+  // un ordine di borsa arrotolato, con il sigillo viola del Dark Pool
+  c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(o.x + 3, o.y + 13, 11, 1);
+  px(c, o.x + 3, o.y + 4, 10, 9, '#4a3a6c'); px(c, o.x + 4, o.y + 5, 8, 7, '#efe6d0');
+  px(c, o.x + 4, o.y + 5, 8, 1, '#fffaf0'); px(c, o.x + 4, o.y + 11, 8, 1, '#c8bca0');
+  px(c, o.x + 5, o.y + 7, 5, 1, '#6a5c7c'); px(c, o.x + 5, o.y + 9, 3, 1, '#6a5c7c');
+  px(c, o.x + 9, o.y + 8, 3, 3, '#8858d8'); px(c, o.x + 10, o.y + 9, 1, 1, '#f0e0ff');
+  px(c, o.x + 2, o.y + 4, 1, 9, '#2c2044'); px(c, o.x + 13, o.y + 4, 1, 9, '#2c2044');
+});
+reg('relic_pearl', (c, o) => {
+  c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(o.x + 4, o.y + 13, 8, 1);
+  px(c, o.x + 5, o.y + 6, 6, 7, '#7c8ca8'); px(c, o.x + 4, o.y + 7, 8, 5, '#7c8ca8');
+  px(c, o.x + 5, o.y + 7, 6, 5, '#e8eef8'); px(c, o.x + 6, o.y + 6, 4, 1, '#e8eef8'); px(c, o.x + 6, o.y + 12, 4, 1, '#b8c4dc');
+  px(c, o.x + 9, o.y + 10, 2, 2, '#c8d4ea'); px(c, o.x + 6, o.y + 8, 2, 2, '#ffffff'); px(c, o.x + 9, o.y + 8, 1, 1, '#ffd0e8');
+});
+for (const open of [false, true]) reg(open ? 'oyster_open' : 'oyster', (c, o) => {
+  c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(o.x + 2, o.y + 14, 12, 1);
+  px(c, o.x + 2, o.y + 10, 12, 4, '#4a4458'); px(c, o.x + 3, o.y + 9, 10, 1, '#4a4458');
+  px(c, o.x + 3, o.y + 10, 10, 3, '#8a84a0'); px(c, o.x + 3, o.y + 10, 10, 1, '#b8b0cc');
+  for (let x = 4; x < 13; x += 3) px(c, o.x + x, o.y + 11, 1, 2, '#6a6480');
+  if (open) {
+    px(c, o.x + 3, o.y + 2, 10, 7, '#4a4458'); px(c, o.x + 4, o.y + 3, 8, 6, '#e8c8d8'); px(c, o.x + 4, o.y + 3, 8, 1, '#fff0f6');
+    px(c, o.x + 5, o.y + 8, 6, 2, '#f8e0ea');
+  } else {
+    px(c, o.x + 2, o.y + 6, 12, 4, '#4a4458'); px(c, o.x + 4, o.y + 5, 8, 1, '#4a4458');
+    px(c, o.x + 3, o.y + 7, 10, 2, '#9a94b0'); px(c, o.x + 4, o.y + 6, 8, 1, '#c8c0dc');
+    for (let x = 4; x < 13; x += 3) px(c, o.x + x, o.y + 7, 1, 2, '#6a6480');
+  }
+});
+// ---- arredi dei reperti (sul pavimento di casa) ----
+function plinth(c: Ctx, o: { x: number; y: number }) {
+  floorBase(c, o);
+  c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(o.x + 3, o.y + 14, 11, 2);
+  px(c, o.x + 3, o.y + 9, 10, 6, C.woodO); px(c, o.x + 4, o.y + 10, 8, 4, C.wood); px(c, o.x + 4, o.y + 10, 8, 1, C.woodLL); px(c, o.x + 4, o.y + 13, 8, 1, C.woodD);
+  px(c, o.x + 2, o.y + 8, 12, 1, C.woodO);
+}
+reg('ingot', (c, o) => {
+  plinth(c, o);
+  px(c, o.x + 3, o.y + 4, 10, 4, '#8a5410'); px(c, o.x + 5, o.y + 2, 6, 2, '#8a5410');
+  px(c, o.x + 4, o.y + 5, 8, 3, '#e8a820'); px(c, o.x + 6, o.y + 3, 4, 2, '#ffd858'); px(c, o.x + 6, o.y + 3, 4, 1, '#fff4c0'); px(c, o.x + 4, o.y + 5, 8, 1, '#ffd858');
+});
+reg('pearl', (c, o) => {
+  plinth(c, o);
+  px(c, o.x + 3, o.y + 5, 10, 3, '#4a4458'); px(c, o.x + 4, o.y + 6, 8, 2, '#f8e0ea');
+  px(c, o.x + 6, o.y + 2, 4, 5, '#7c8ca8'); px(c, o.x + 6, o.y + 3, 4, 3, '#e8eef8'); px(c, o.x + 7, o.y + 2, 2, 1, '#e8eef8'); px(c, o.x + 7, o.y + 3, 1, 1, '#ffffff');
+});
+reg('lantern', (c, o) => {
+  floorBase(c, o);
+  c.fillStyle = 'rgba(255,208,96,.28)'; c.fillRect(o.x + 2, o.y + 12, 12, 3);
+  px(c, o.x + 6, o.y + 1, 4, 1, '#3a3028'); px(c, o.x + 5, o.y + 2, 6, 1, '#3a3028'); px(c, o.x + 7, o.y + 0, 2, 1, '#3a3028');
+  px(c, o.x + 4, o.y + 3, 8, 9, '#3a3028'); px(c, o.x + 5, o.y + 4, 6, 7, '#ffd058'); px(c, o.x + 6, o.y + 5, 4, 5, '#fff4c0'); px(c, o.x + 7, o.y + 6, 2, 3, '#ffffff');
+  px(c, o.x + 7, o.y + 4, 2, 7, '#e09020'); px(c, o.x + 7, o.y + 6, 2, 3, '#fff4c0');
+  px(c, o.x + 3, o.y + 12, 10, 2, '#3a3028'); px(c, o.x + 4, o.y + 12, 8, 1, '#6a5848');
+});
 
 export const TILE_ATLAS_COLS = COLS;
 export function tileIndex(name: string): number { return IDX[name]; }
@@ -625,7 +735,7 @@ function casts(t: number) { return CASTERS.has(t); }
 function hash(x: number, y: number) { return ((x * 73856093) ^ (y * 19349663)) >>> 0; }
 
 /** Converte la mappa logica nei tile visivi (bordi automatici, varianti e fotogramma di animazione). */
-const DECOR_NAME: Record<number, string> = { [TILE.TROPHY_S]: 'trophy_silver', [TILE.TROPHY_G]: 'trophy_gold', [TILE.TROPHY_L]: 'trophy_league', [TILE.POSTER]: 'poster', [TILE.CALENDAR]: 'calendar', [TILE.DESK]: 'desk', [TILE.ARCADE]: 'arcade', [TILE.FRAME]: 'frame', [TILE.GLOBE]: 'globe', [TILE.PAINTING]: 'painting', [TILE.RADIO]: 'radio', [TILE.AQUARIUM]: 'aquarium' };
+const DECOR_NAME: Record<number, string> = { [TILE.TROPHY_S]: 'trophy_silver', [TILE.TROPHY_G]: 'trophy_gold', [TILE.TROPHY_L]: 'trophy_league', [TILE.POSTER]: 'poster', [TILE.CALENDAR]: 'calendar', [TILE.DESK]: 'desk', [TILE.ARCADE]: 'arcade', [TILE.FRAME]: 'frame', [TILE.GLOBE]: 'globe', [TILE.PAINTING]: 'painting', [TILE.RADIO]: 'radio', [TILE.AQUARIUM]: 'aquarium', [TILE.INGOT]: 'ingot', [TILE.PEARL]: 'pearl', [TILE.LANTERN]: 'lantern' };
 
 export function visualTiles(tiles: number[][], frame = 0, night = false): number[][] {
   const h = tiles.length, w = tiles[0].length;
@@ -647,7 +757,7 @@ export function visualTiles(tiles: number[][], frame = 0, night = false): number
       }
       case TILE.PLAZA: return IDX.plaza;
       case TILE.TREE: return IDX[`tree${hv % 2}`];
-      case TILE.WATER: return IDX[`water${frame}_${mask(x, y, (n) => n === TILE.WATER)}`];
+      case TILE.WATER: return IDX[`${cave ? 'cwater' : 'water'}${frame}_${mask(x, y, (n) => n === TILE.WATER)}`];
       case TILE.FENCE: return IDX.fence;
       case TILE.SIGN: return IDX.sign;
       case TILE.ROOF: case TILE.ROOF_CLINIC: case TILE.ROOF_ACADEMY: case TILE.ROOF_SPECIAL:
@@ -681,13 +791,17 @@ export function visualTiles(tiles: number[][], frame = 0, night = false): number
       case TILE.BOULDER: return IDX[cave ? 'boulder_cave' : 'boulder'];
       case TILE.PIER: return IDX.pier;
       case TILE.LADDER: return IDX.ladder;
+      case TILE.TABLET: return IDX.tablet;
+      case TILE.CRYSTAL_GOLD: return IDX[`crystal_gold${frame}`];
+      case TILE.CRYSTAL_DARK: return IDX[`crystal_dark${frame}`];
+      case TILE.CRYSTAL_SEA: return IDX[`crystal_sea${frame}`];
       default: return DECOR_NAME[t] ? IDX[DECOR_NAME[t]] : IDX.grass0;
     }
   }));
 }
 
 /** Tile che cambiano tra i fotogrammi dell'animazione. */
-export const ANIMATED = new Set<number>([TILE.WATER, TILE.FLOWERS, TILE.NOISE]);
+export const ANIMATED = new Set<number>([TILE.WATER, TILE.FLOWERS, TILE.NOISE, TILE.CRYSTAL_GOLD, TILE.CRYSTAL_DARK, TILE.CRYSTAL_SEA]);
 
 
 // ---------------- Sprite dei personaggi (16×24, quattro direzioni, tre fotogrammi) ----------------

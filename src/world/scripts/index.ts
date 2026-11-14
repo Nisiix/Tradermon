@@ -18,6 +18,7 @@ import type { WorldApi } from './common';
 import { prof, chooseCase, rival, mom, LEO_TOUR_NPC, LEO_TOUR_FLAG } from './story';
 import { trainer, speculator, student, mentorBattle, guard, league, tower, hermit, legend, daily } from './duels';
 import { librarian, station, simzone, casino, archivist } from './places';
+import { caveGuide, relic, oyster, relicTaken } from './caves';
 import { T } from '../../i18n';
 
 /** NPC visibile? (es. guardie sparite dopo la Medaglia, avversari già battuti) */
@@ -46,6 +47,8 @@ export function npcVisible(n: NpcDef): boolean {
     case 'league': return !!S.flags.champion || !S.defeated.includes(`league_${n.data?.i}`);
     case 'speculator': return !S.defeated.includes(n.id);
     case 'secret': return secretVisible(n);
+    // i reperti delle grotte spariscono quando li raccogli; le ostriche restano (aperte)
+    case 'relic': return !relicTaken(String(n.data?.relic ?? ''));
     default: return true;
   }
 }
@@ -75,7 +78,11 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
     case 'league': return league(n.data?.i as number, w);
     case 'towerop': return tower();
     case 'legend': return legend();
-    case 'hermit': return hermit(n);
+    // il Pescatore di Perle è insieme eremita e guida della sua grotta
+    case 'hermit': return n.data?.key === 'perle' ? caveGuide(n) : hermit(n);
+    case 'caveguide': return caveGuide(n);
+    case 'relic': return relic(n, w);
+    case 'oyster': return oyster(n, w);
     case 'secret': return secretTalk(n);
     case 'sage': return say([pick(TRAINER_TIPS), T`Il tuo livello di Conoscenza è ${level()}. Continua così!`], n.name);
   }
@@ -123,6 +130,7 @@ export { hasTech, TECH };
 export type { WorldApi } from './common';
 export { retryUnlocked } from './common';
 export { allStudentsBeaten } from './duels';
-export { librarySection, travelTo, onEnterTown } from './places';
+export { librarySection, travelTo, onEnterTown, doorNotice } from './places';
 export { leoTourPending, leoTour } from './story';
+export { trapFall, readSign, relicTaken } from './caves';
 export { momIntro } from './story';

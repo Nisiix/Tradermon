@@ -49,6 +49,13 @@ const R: Record<number, Repr> = {
   [TILE.TROPHY_L]: { kind: 'upright', depth: 0.22, base: 'floor', ground: 'floor' },
   [TILE.GLOBE]: { kind: 'upright', depth: 0.3, base: 'floor', ground: 'floor' },
   [TILE.RADIO]: { kind: 'upright', depth: 0.3, base: 'floor', ground: 'floor' },
+  [TILE.INGOT]: { kind: 'upright', depth: 0.3, base: 'floor', ground: 'floor' },
+  [TILE.PEARL]: { kind: 'upright', depth: 0.3, base: 'floor', ground: 'floor' },
+  [TILE.LANTERN]: { kind: 'upright', depth: 0.3, base: 'floor', ground: 'floor' },
+  [TILE.TABLET]: { kind: 'upright', depth: 0.2, base: 'cave', ground: 'cave' },
+  [TILE.CRYSTAL_GOLD]: { kind: 'upright', depth: 0.34, base: 'cave', ground: 'cave' },
+  [TILE.CRYSTAL_DARK]: { kind: 'upright', depth: 0.34, base: 'cave', ground: 'cave' },
+  [TILE.CRYSTAL_SEA]: { kind: 'upright', depth: 0.34, base: 'cave', ground: 'cave' },
 };
 
 export function reprOf(t: number): Repr { return R[t] ?? { kind: 'ground' }; }

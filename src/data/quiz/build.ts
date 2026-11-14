@@ -1,6 +1,7 @@
 import type { Question, QuizTopic, Track, AssetClass } from '../../types';
 import * as C from './core';
 import * as TR from './tracks';
+import { GROTTE } from './caves';
 import { T } from '../../i18n';
 import { classesOf } from '../assets';
 
@@ -43,6 +44,7 @@ const TABLE: Record<QuizTopic, QRow[]> = {
   crypto_stable: TR.CRYPTO_STABLE,
   mixed_base: TR.MIXED_BASE,
   mixed_allocazione: TR.MIXED_ALLOCAZIONE,
+  grotte: GROTTE,
 };
 
 export const QUESTIONS: Question[] = (Object.keys(TABLE) as QuizTopic[]).flatMap((t) => build(t, TABLE[t]));
@@ -55,6 +57,15 @@ if (Object.keys(BY_ID).length !== QUESTIONS.length) {
 
 export function byTopic(topic: QuizTopic): Question[] {
   return QUESTIONS.filter((q) => q.topic === topic);
+}
+
+/** Argomento riservato alle grotte: non entra mai nei duelli del resto del mondo, nemmeno come riempitivo. */
+export const CAVE_TOPIC: QuizTopic = 'grotte';
+/** Domande che qualsiasi duello può usare come riempitivo quando i suoi argomenti non bastano. */
+export const OPEN_QUESTIONS: Question[] = QUESTIONS.filter((q) => q.topic !== CAVE_TOPIC);
+/** Domande di una grotta: prefisso 'oro', 'ombra' o 'perle' (vedi CAVES in world/caves.ts). */
+export function caveQuestions(prefix: string): Question[] {
+  return QUESTIONS.filter((q) => q.topic === CAVE_TOPIC && q.id.startsWith(`grotte_${prefix}_`));
 }
 
 const A_TOPIC: Record<AssetClass, QuizTopic> = { stocks: 'stocks_bilanci', etf: 'etf_replica', crypto: 'crypto_custodia' };

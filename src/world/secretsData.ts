@@ -15,7 +15,7 @@ export const LEDGER_PAGES: LedgerPage[] = [
     text: [T('"Ho perso più denaro cercando di recuperare una perdita che con la perdita stessa.'), T('Dopo un brutto colpo chiudo il terminale e vado a camminare. Il mercato domani c\'è ancora."')] },
   { id: 'p3', map: 'r8', x: 40, y: 1, roman: 'III', clue: T('tra i fiori dell\'angolo nord-est del Percorso 8'),
     text: [T('"Prima di ogni acquisto scrivevo qui perché compravo e quando avrei venduto.'), T('Se non ci stava in due righe, non compravo. Quasi sempre avevo ragione a non farlo."')] },
-  { id: 'p4', map: 'cave_gold', x: 11, y: 2, roman: 'IV', clue: T('in fondo alla prima galleria della Miniera dei Lingotti, dove la vena finisce'),
+  { id: 'p4', map: 'cave_gold_b1', x: 17, y: 12, roman: 'IV', clue: T('nella Camera dei Costi Tagliati, al livello inferiore della Miniera dei Lingotti, dietro un Masso delle Commissioni'),
     text: [T('"Il rendimento lo decide il mercato. Costi, tasse e rotazione li decido io.'), T('Ho sempre cominciato da ciò che potevo controllare: è l\'unico guadagno garantito."')] },
   { id: 'p5', map: 'sea', x: 4, y: 6, roman: 'V', clue: T('dietro al Faro del Mare della Liquidità, dove la Guardiana non guarda mai'),
     text: [T('"Chiavi che non custodisci, monete che non sono tue.'), T('Ho visto piattaforme sparire in una notte con i depositi di tutti. Tieni fuori dagli exchange ciò che non ti serve per operare."')] },
@@ -58,7 +58,7 @@ export type SecretKind = 'pages' | 'tape' | 'whale' | 'hodl' | 'rumors';
 export const SECRET_HINTS: Record<string, { about: SecretKind; line: string }> = {
   t5_npc1: { about: 'pages', line: T('Ultimamente trovo fogli di un vecchio libro contabile portati dal vento. Chissà da dove arrivano... di certo non dalle strade battute.') },
   t6_npc2: { about: 'pages', line: T('Mio nonno diceva che i tesori veri stanno negli angoli dove nessuno si ferma. Lui si fermava sempre a guardare per terra.') },
-  cave_gold_s: { about: 'pages', line: T('Una volta, laggiù in fondo dove la vena si esaurisce, ho visto un foglio di carta. Che ci faceva della carta in miniera?') },
+  cave_gold_s: { about: 'pages', line: T('Una volta, giù al livello inferiore, nella camera chiusa dal masso, ho visto un foglio di carta. Che ci faceva della carta in miniera?') },
   sea_sailor: { about: 'pages', line: T('La Guardiana del Faro guarda sempre il mare. Mai quello che le sta alle spalle.') },
   t5_npc2: { about: 'tape', line: T('Nella nostra Biblioteca c\'è un libro che nessuno legge nel verso giusto. La Bibliotecaria fa finta di niente.') },
   sea_wreck: { about: 'whale', line: T('I pescatori giurano che, nei giorni in cui la Borsa riposa, qualcosa di enorme si avvicina a quest\'isola.') },

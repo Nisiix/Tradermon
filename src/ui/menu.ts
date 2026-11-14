@@ -105,7 +105,8 @@ export async function openInvestidex() {
 }
 
 export async function openLessons(only?: QuizTopic[]) {
-  const topics = only ?? trackTopics(S.track, S.mixedClasses, S.badges).concat(S.badges >= 8 ? ['macro', 'analisi', 'regole'] : []);
+  // le lezioni su regole e truffe ci sono dall'inizio (ne chiedono gli speculatori); macroeconomia e analisi con gli otto Attestati
+  const topics = only ?? [...new Set<QuizTopic>([...trackTopics(S.track, S.mixedClasses, S.badges), 'regole', ...(S.badges >= 8 ? (['macro', 'analisi'] as QuizTopic[]) : [])])];
   const ls = lessonsFor(topics);
   for (;;) {
     const c = await choose([...ls.map((l) => `${S.lessonsRead.includes(l.id) ? '✓ ' : '• '}${l.title}`), T('Fine')], { cancel: true, title: T('LEZIONI') });

@@ -6,6 +6,8 @@ import { mentorTopics } from './build';
 import { TOWNS } from '../story';
 import { sourceLabel } from '../sources';
 import { S } from '../../systems/state';
+import { CAVES } from '../../world/caves';
+import { BOOK_BY_ID } from '../books';
 import { T } from '../../i18n';
 
 /** Città della Sezione della Whale che tratta l'argomento (1..8), oppure undefined per gli argomenti di Wall Street. */
@@ -15,6 +17,12 @@ export function townForTopic(topic: QuizTopic): string | undefined {
 }
 
 export function studyHint(q: Question): string {
+  // domande delle grotte: il libro è il taccuino della guida all'ingresso, non uno scaffale della Biblioteca
+  if (q.topic === 'grotte') {
+    const cave = Object.values(CAVES).find((c) => q.id.startsWith(`grotte_${c.quiz}_`));
+    const book = cave && BOOK_BY_ID[cave.book];
+    return book && cave ? T`📖 Rileggi «${book.title}»: te lo presta la guida all'ingresso della ${cave.name}.` : '';
+  }
   const book = booksFor([q.topic]).find((b) => !b.id.endsWith('_ctx'));
   if (book) {
     const town = townForTopic(q.topic);

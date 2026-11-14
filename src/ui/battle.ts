@@ -134,7 +134,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       if (idx >= o.questions.length) return finish(correct >= o.need);
       const q = o.questions[idx];
       idx++;
-      $('.qn').textContent = o.tutorial ? T`Domanda ${idx}/${o.questions.length} · sfida di prova, nessuna penalità` : T`Domanda ${idx}/${o.questions.length} · servono ${o.need} risposte giuste`;
+      $('.qn').textContent = o.tutorial ? T`Domanda ${idx}/${o.questions.length} · sfida di prova, nessuna penalità` : o.need === 1 ? T`Domanda ${idx}/${o.questions.length} · serve una risposta giusta` : T`Domanda ${idx}/${o.questions.length} · servono ${o.need} risposte giuste`;
       $('.qt').textContent = gtext(q.q);
       $('.exp').innerHTML = '';
       const order = shuffle([0, 1, 2, 3]);

@@ -5,7 +5,9 @@ import Phaser from 'phaser';
 import { drawPlaque } from '../art/plaque';
 import { P, RS, scale3x, TILE, SOLID, drawTiles, drawCharacters, TILE_COUNT, CW, CH, visualTiles, ANIMATED, tileIndex, playerPal, drawSpotBubble } from '../art/art';
 import { getMap, safeSpot, type MapDef, type NpcDef } from '../world/maps';
-import { interact, npcVisible, onEnterTown, travelTo, librarySection, momIntro, leoTourPending, leoTour, type WorldApi } from '../world/scripts';
+import { interact, npcVisible, onEnterTown, travelTo, librarySection, momIntro, leoTourPending, leoTour, trapFall, readSign, relicTaken, doorNotice, type WorldApi } from '../world/scripts';
+import { CAVES, RELIC_BY_ID, oysterRelic, relicsFound, relicsOf } from '../world/caves';
+import { GOLD_ENTRY, type Warp } from '../world/maps';
 import { S, save, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc, choose } from '../ui/core';
@@ -26,7 +28,8 @@ import { findPath, stepDir, type TapPath } from '../systems/tapwalk';
 const DIRS: Record<string, [number, number, 0 | 1 | 2 | 3]> = { down: [0, 1, 0], up: [0, -1, 1], left: [-1, 0, 2], right: [1, 0, 3] };
 const DIR_NAME = ['down', 'up', 'left', 'right'] as const;
 
-interface NpcSprite { def: NpcDef; spr?: Phaser.GameObjects.Sprite; shadow?: Phaser.GameObjects.Image; x: number; y: number; dir: number; hx: number; hy: number; nextIdle: number; walking?: boolean; foot: number }
+/** seen: sfidante di una grotta che ti ha notato (da quel momento si vede anche al buio). */
+interface NpcSprite { def: NpcDef; spr?: Phaser.GameObjects.Sprite; shadow?: Phaser.GameObjects.Image; x: number; y: number; dir: number; hx: number; hy: number; nextIdle: number; walking?: boolean; foot: number; seen?: boolean }
 
 /** Personaggi che passeggiano o si guardano intorno quando il giocatore non interagisce. */
 const WANDER_KINDS = new Set(['talk', 'resident', 'student', 'daily']);
@@ -40,6 +43,15 @@ const MOMENTUM_MS = 110;
 type Dir = 'up' | 'down' | 'left' | 'right';
 /** Banconi e tavoli: si parla con chi sta dall'altra parte. */
 const COUNTERS = [TILE.COUNTER, TILE.CASE_TABLE, TILE.TABLE];
+/** Personaggi disegnati con un tile invece che con una figura: reperti e ostriche delle grotte. */
+const TILE_KINDS = new Set(['relic', 'oyster']);
+/** Quanto si intravede, dentro il cerchio della Lanterna, ciò che il buio del Dark Pool nasconde. */
+const SHADOW_ALPHA = 0.2;
+const CRYSTAL_LINE: Record<number, string> = {
+  [TILE.CRYSTAL_GOLD]: T('Un cristallo ambrato. Brilla come l\'oro, ma è quarzo: non tutto ciò che luccica ha valore.'),
+  [TILE.CRYSTAL_DARK]: T('Un cristallo viola. Fa luce quanto basta per vedere dove sei, non chi hai intorno.'),
+  [TILE.CRYSTAL_SEA]: T('Un cristallo color acqua. Brilla uguale da secoli: il valore non ha fretta.'),
+};
 interface Walk { fx: number; fy: number; tx: number; ty: number; di: number; t: number; chain: boolean; done: () => void }
 
 export class WorldScene extends Phaser.Scene {
@@ -272,7 +284,8 @@ export class WorldScene extends Phaser.Scene {
 
   syncMood() {
     const clk = marketClock();
-    this.view3d?.setMood({ night: clk.night, climate: S.market.climate, interior: this.map.interior, dark: this.map.tiles.some((r) => r.includes(TILE.CAVE)) && !canSeeDark() });
+    const cave = this.map.cave ? CAVES[this.map.cave] : undefined;
+    this.view3d?.setMood({ night: clk.night, climate: S.market.climate, interior: this.map.interior, dark: this.map.tiles.some((r) => r.includes(TILE.CAVE)) && !canSeeDark(), cave: cave ? { glow: cave.glow } : undefined });
   }
 
   /** Stato del fotogramma per la resa 2.5D: camera, dissolvenze, tinta e tutti gli sprite della scena. */
@@ -302,6 +315,7 @@ export class WorldScene extends Phaser.Scene {
       // in 2.5D la notte è già fatta di luci e ombre: la tinta 2D resta leggera
       tint: { color: this.overlay.fillColor, alpha: this.overlay.fillAlpha * 0.35 },
       items,
+      light: this.map.cave ? { x: this.player.x / P, y: this.player.y / P - 0.5, r: CAVES[this.map.cave].light } : undefined,
     };
   }
 
@@ -332,6 +346,8 @@ export class WorldScene extends Phaser.Scene {
       const open = new Set(m.warps.filter((w) => w.lock === 'secret').map((w) => `${w.x},${w.y}`));
       this.map = { ...m, tiles: m.tiles.map((r, yy) => r.map((t, xx) => (open.has(`${xx},${yy}`) ? TILE.FLOOR : t))) };
     }
+    // ingresso da cui sei entrat{o|a} in una grotta: è lì che riportano le gallerie che girano su sé stesse
+    if (this.map.cave && !getMap(S.map)?.cave) S.flags.caveEntry = `${x},${y}`;
     S.map = id; S.x = x; S.y = y; S.facing = DIR_NAME[dir];
     this.idleMs = 0;
     // l'ultima Banca in cui sei entrato è quella in cui rinasci dopo una sconfitta
@@ -372,6 +388,7 @@ export class WorldScene extends Phaser.Scene {
     // prima mattina della partita: la mamma ti viene incontro e ti saluta prima che tu esca di casa
     if (id === 'home' && !S.flags.starter && !S.flags.momIntro && !S.ngPlus) this.startMomIntro();
     if (id === 'sea') S.flags.seaVisited = true;
+    if (this.map.cave && !S.flags.caveTip) { S.flags.caveTip = true; toast(T('Lanterna accesa: vedi solo ciò che hai vicino. All\'ingresso c\'è una guida che ti spiega la grotta.')); }
     setMood(S.market.climate);
     play(trackForMap(id, this.map.interior, marketClock().night));
     if (/^h\d+_/.test(id) && !S.flags[`visited_${id}`]) { S.flags[`visited_${id}`] = true; track('house_unique'); }
@@ -395,11 +412,19 @@ export class WorldScene extends Phaser.Scene {
         if (!n.spr) { const col = ({ listed: 'case_blue', crypto: 'case_orange', mixed: 'case_purple' } as Record<string, string>)[String(n.def.data?.track)] ?? 'case_blue'; n.spr = this.add.sprite(n.x * P + P / 2, n.y * P + P, 'tiles', tileIndex(col)).setOrigin(0.5, 1).setDepth(5); }
         continue;
       }
+      if (TILE_KINDS.has(n.def.kind)) {
+        const name = n.def.kind === 'relic' ? RELIC_BY_ID[String(n.def.data?.relic)]?.sprite ?? 'relic_ingot' : relicTaken(oysterRelic(Number(n.def.data?.n ?? 1))) ? 'oyster_open' : 'oyster';
+        if (!n.spr) n.spr = this.add.sprite(n.x * P + P / 2, n.y * P + P, 'tiles', tileIndex(name)).setOrigin(0.5, 1).setDepth(5).setAlpha(0);
+        else n.spr.setFrame(tileIndex(name));
+        continue;
+      }
       if (n.def.hiddenSprite) continue;
       if (!n.spr) {
         n.spr = this.add.sprite(n.x * P + P / 2, n.y * P + P, 'chars', this.palFor(n.def) * 12 + n.dir * 3).setOrigin(0.5, 1).setDepth(10 + n.y);
         n.shadow = this.add.image(n.x * P + P / 2, n.y * P + P - RS, 'shadow').setDepth(4);
-        if (animate) { n.spr.setAlpha(0); n.shadow.setAlpha(0); this.tweens.add({ targets: [n.spr, n.shadow], alpha: 1, duration: 300 }); }
+        // nelle grotte è la Lanterna a decidere chi si vede (caveLight)
+        if (this.map.cave) { n.spr.setAlpha(0); n.shadow.setAlpha(0); }
+        else if (animate) { n.spr.setAlpha(0); n.shadow.setAlpha(0); this.tweens.add({ targets: [n.spr, n.shadow], alpha: 1, duration: 300 }); }
       }
     }
   }
@@ -486,6 +511,7 @@ export class WorldScene extends Phaser.Scene {
     this.lastMs = now;
     this.updateWeather(delta);
     if (this.flightLift > 0 || this.flightClouds.length) this.renderFlight();
+    this.caveLight(delta);
     this.view3d?.frame(this.mirror());
     // tempo reale (non quello "addolcito" da Phaser, che sui fotogrammi lenti conta 16 ms): così il passo dura
     // lo stesso anche quando la resa 2.5D va sotto i 5 fps
@@ -554,11 +580,17 @@ export class WorldScene extends Phaser.Scene {
       if (warp.lock === 'secret' && !S.flags[SECRET_FLAGS.tapeOpen]) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'swim' && !canSwim()) { if (!turned || continuing) this.bump(di); return; }
       if (warp.lock === 'dark' && !canSeeDark()) { void this.runScript(() => say([T('È buio pesto: non si vede nemmeno dove mettere i piedi.'), T`Senza la ${ABILITY.dark.name} (Attestato ${ABILITY.dark.badge}) è meglio non entrare.`])); return; }
+      // chi entra in un Exchange senza aver aperto i suoi libri legge prima l'avviso sulla porta (una volta sola)
+      const notice = doorNotice(warp.to);
+      if (notice) { void this.runScript(() => say(notice, T('Avviso'))); return; }
+      // galleria che gira su sé stessa: dissolvenza più lunga, ritorno all'ingresso da cui sei entrat{o|a}, poi la lezione
+      const [tx, ty] = warp.trap ? this.trapExit(warp) : [warp.tx, warp.ty];
+      const out = warp.trap ? 520 : 220;
       this.walkTo(nx, ny, di, () => {
         beep('door');
         this.moving = true;
-        this.cameras.main.fadeOut(220, 0, 0, 0);
-        this.time.delayedCall(240, () => { this.loadMap(warp.to, warp.tx, warp.ty, warp.dir ?? (di as 0 | 1 | 2 | 3)); this.cameras.main.fadeIn(260, 0, 0, 0); this.moving = false; save(); this.arrivalScene(); });
+        this.cameras.main.fadeOut(out, 0, 0, 0);
+        this.time.delayedCall(out + 20, () => { this.loadMap(warp.to, tx, ty, warp.dir ?? (di as 0 | 1 | 2 | 3)); this.cameras.main.fadeIn(260, 0, 0, 0); this.moving = false; save(); if (warp.trap) this.whenFree(() => trapFall(warp.trap!)); else this.arrivalScene(); });
       });
       return;
     }
@@ -643,6 +675,16 @@ export class WorldScene extends Phaser.Scene {
       void this.runScript(() => this.challenge(n, true));
       return;
     }
+    // Galleria del Dark Pool: gli sfidanti nascosti dal buio ti notano da vicino, in qualsiasi direzione
+    const cave = this.map.cave ? CAVES[this.map.cave] : undefined;
+    if (cave && cave.reveal < cave.light) {
+      for (const n of this.npcs) {
+        if (n.def.kind !== 'trainer' || !this.isVisible(n) || S.defeated.includes(n.def.id)) continue;
+        if (Math.max(Math.abs(n.x - S.x), Math.abs(n.y - S.y)) > 2 || !this.clearLine(n.x, n.y, S.x, S.y)) continue;
+        void this.runScript(() => this.challenge(n, true));
+        return;
+      }
+    }
     // investitori con linea di vista
     for (const n of this.npcs) {
       // chi ti ha già battuto non ti sfida più; se hai perso, la sfida riparte da capo come la prima volta
@@ -669,13 +711,13 @@ export class WorldScene extends Phaser.Scene {
     if (!n && COUNTERS.includes(this.map.tiles[fy]?.[fx] as never)) n = this.npcAt(fx + dx, fy + dy) ?? n;
     if (n) {
       if (n.walking) return; // aspetta che finisca il passo
-      if (n.spr) { n.dir = [1, 0, 3, 2][DIRS[S.facing][2]]; n.spr.setFrame(this.palFor(n.def) * 12 + n.dir * 3); }
+      if (n.spr && n.spr.texture.key === 'chars') { n.dir = [1, 0, 3, 2][DIRS[S.facing][2]]; n.spr.setFrame(this.palFor(n.def) * 12 + n.dir * 3); }
       n.nextIdle = this.time.now + 4000;
       void this.runScript(() => interact(n!.def, this.api()));
       return;
     }
     const sign = this.map.signs.find((s) => s.x === fx && s.y === fy);
-    if (sign) return void this.runScript(() => say(sign.text));
+    if (sign) return void this.runScript(() => readSign(this.map.id, sign));
     const t = this.map.tiles[fy]?.[fx];
     const page = hiddenPage(S.map, fx, fy);
     if (page) return void this.runScript(() => findPage(page));
@@ -691,6 +733,8 @@ export class WorldScene extends Phaser.Scene {
     if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? T('Il rumore delle notizie non ti tocca più: puoi attraversare.') : [T('Un muro di notizie urlate, grafici impazziti e "consigli" dai social.'), T('Serve una mente fredda per attraversarlo (Whale 7).')]));
     if (t === TILE.STATION) { const st = this.npcs.find((x) => x.def.kind === 'station'); if (st) void this.runScript(() => interact(st.def, this.api())); }
     if (t === TILE.BOULDER) return void this.runScript(() => this.breakBoulder(fx, fy));
+    if (t === TILE.LADDER) return void this.runScript(() => say(T('Una scala a pioli tra i due livelli della grotta. Cammina verso di lei per usarla.')));
+    if (t !== undefined && CRYSTAL_LINE[t]) return void this.runScript(() => say(CRYSTAL_LINE[t]));
     if (t === TILE.CAVE_MOUTH) return void this.runScript(() => say(T('L\'ingresso di una grotta. Cammina verso di lui per entrare.')));
     if (t === TILE.WATER) return void this.runScript(() => say(canSwim() ? [T('L\'acqua scorre tranquilla. Con il Flusso di Liquidità puoi attraversarla: cammina verso di lei.')] : [T('L\'acqua scorre tranquilla. Come la liquidità: utile, ma col tempo l\'inflazione la erode.'), T('Con il Flusso di Liquidità (Attestato 3) potresti attraversarla.')]));
   }
@@ -715,6 +759,70 @@ export class WorldScene extends Phaser.Scene {
       if ((this.busy || this.moving || uiActive()) && tries < 40) return this.startMomIntro(tries + 1);
       void this.runScript(async () => { await this.approach('mom'); await momIntro(); });
     }, tries ? 250 : 600);
+  }
+
+  /** Nessuna roccia (o altro ostacolo fisso) tra due caselle: campiona il segmento che le unisce. */
+  clearLine(ax: number, ay: number, bx: number, by: number): boolean {
+    const steps = Math.max(Math.abs(bx - ax), Math.abs(by - ay)) * 2;
+    for (let i = 1; i < steps; i++) {
+      const x = Math.round(ax + ((bx - ax) * i) / steps), y = Math.round(ay + ((by - ay) * i) / steps);
+      if ((x === ax && y === ay) || (x === bx && y === by)) continue;
+      if (SOLID.has(this.map.tiles[y]?.[x] ?? TILE.ROCK)) return false;
+    }
+    return true;
+  }
+
+  /** Dove riporta una galleria che gira su sé stessa: l'ingresso da cui sei entrat{o|a} nella miniera, se è noto. */
+  trapExit(warp: Warp): [number, number] {
+    const [ex, ey] = String(S.flags.caveEntry ?? '').split(',').map(Number);
+    const known = Object.values(GOLD_ENTRY).some((e) => e.x === ex && e.y === ey);
+    return known ? [ex, ey] : [warp.tx, warp.ty];
+  }
+
+  /** Esegue uno script appena la scena è libera (dopo una dissolvenza, senza finestre aperte né passi in corso). */
+  whenFree(fn: () => Promise<void>, tries = 0) {
+    this.time.delayedCall(tries ? 120 : 320, () => {
+      if (this.busy || this.walk || this.moving || uiActive()) { if (tries < 40) this.whenFree(fn, tries + 1); return; }
+      void this.runScript(fn);
+    });
+  }
+
+  /**
+   * Luce della Lanterna nelle grotte: personaggi e reperti si vedono solo dentro il cerchio di luce, e compaiono
+   * sfumando. Nel Dark Pool sfidanti non ancora battuti e ordini nascosti restano ombre appena visibili finché non
+   * sono a un passo (CAVES.dp.reveal). Il buio vero lo disegna la resa 2.5D (View3D.paintDark) o, senza, paintCaveDark.
+   */
+  caveLight(delta: number) {
+    const cave = this.map.cave ? CAVES[this.map.cave] : undefined;
+    if (!cave) return;
+    const px = this.player.x / P, py = this.player.y / P;
+    const k = Math.min(1, delta / 120);
+    for (const n of this.npcs) {
+      if (!n.spr) continue;
+      const d = Math.hypot(n.spr.x / P - px, n.spr.y / P - py);
+      const fade = (r: number) => Math.max(0, Math.min(1, (r + 0.7 - d) / 0.9));
+      const hidden = cave.reveal < cave.light && !n.seen && (n.def.kind === 'relic' || (n.def.kind === 'trainer' && !S.defeated.includes(n.def.id)));
+      const a = hidden ? Math.max(fade(cave.reveal), SHADOW_ALPHA * fade(cave.light)) : fade(cave.light);
+      const now = n.spr.alpha + (a - n.spr.alpha) * k;
+      n.spr.setAlpha(Math.abs(now - a) < 0.01 ? a : now);
+      n.shadow?.setAlpha(n.spr.alpha);
+    }
+  }
+
+  /** Buio della grotta nella vista d'emergenza (senza 2.5D): le caselle fuori dal cerchio di luce si scuriscono a gradini. */
+  paintCaveDark(g: Painter) {
+    const cave = this.map.cave ? CAVES[this.map.cave] : undefined;
+    if (!cave) return;
+    const cam = this.cameras.main;
+    const px = this.player.x / P, py = this.player.y / P - 0.5;
+    const x0 = Math.floor(cam.scrollX / P), y0 = Math.floor(cam.scrollY / P);
+    for (let ty = y0; ty <= y0 + Math.ceil(cam.height / P); ty++) for (let tx = x0; tx <= x0 + Math.ceil(cam.width / P); tx++) {
+      const d = Math.hypot(tx + 0.5 - px, ty + 0.5 - py);
+      const a = Math.max(0, Math.min(0.94, (d - cave.light + 0.6) * 0.75));
+      if (a <= 0) continue;
+      g.fillStyle(0x04030a, a);
+      g.fillRect(tx * P - cam.scrollX, ty * P - cam.scrollY, P, P);
+    }
   }
 
   async runScript(fn: () => Promise<void>) {
@@ -744,6 +852,7 @@ export class WorldScene extends Phaser.Scene {
 
   /** Sfida di un allenatore che ti nota: (se serve) si gira verso di te, "$", ti viene incontro e parte il duello a quiz. */
   async challenge(n: NpcSprite, turn: boolean) {
+    n.seen = true;
     if (turn && n.spr) {
       const dx = S.x - n.x, dy = S.y - n.y;
       n.dir = Math.abs(dy) >= Math.abs(dx) ? (dy > 0 ? 0 : 1) : (dx < 0 ? 2 : 3);
@@ -853,6 +962,7 @@ export class WorldScene extends Phaser.Scene {
     }
     const g: Painter = this.view3d ? this.view3d.painter : this.weather;
     g.clear();
+    if (!this.view3d) this.paintCaveDark(g);
     if (!kind) return;
     const dt = Math.min(50, delta) / 16.7;
     const climate = S.market.climate;
@@ -926,7 +1036,8 @@ export class WorldScene extends Phaser.Scene {
     }
     this.hud.innerHTML = T`<span class="pill playtime" title="Tempo di gioco totale">Tempo <b>${formatPlayTime(S.playMs)}</b></span>
       <span class="pill">${clk.open ? '<i class="dot on"></i>' : '<i class="dot"></i>'}${clk.label} · ${CLIMATE_LABEL[S.market.climate]}</span>
-      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Attestati <b>${S.badges}</b>${S.badges ? T` · Sigilli <b>${S.seals}</b>` : ''}</span>`;
+      <span class="pill">Fiducia <b>${S.stats.fiducia}</b> · Attestati <b>${S.badges}</b>${S.badges ? T` · Sigilli <b>${S.seals}</b>` : ''}</span>`
+      + (this.map.cave ? T`<span class="pill">Reperti <b>${relicsFound(S.flags, this.map.cave)}/${relicsOf(this.map.cave).length}</b></span>` : '');
     if (force) this.applyTint();
   }
 

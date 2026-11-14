@@ -58,7 +58,7 @@ describe('indizi dei personaggi secondari', () => {
   it('ogni indizio è legato a un personaggio che esiste e parla, e ogni segreto ha almeno un indizio', async () => {
     const { SECRET_HINTS } = await import('../src/world/secretsData');
     const { allMapIds } = await import('../src/world/maps');
-    const talkers = new Set(allMapIds().flatMap((id) => getMap(id).npcs.filter((n) => n.kind === 'talk').map((n) => n.id)));
+    const talkers = new Set(allMapIds().flatMap((id) => getMap(id).npcs.filter((n) => n.kind === 'talk' || n.kind === 'caveguide').map((n) => n.id)));
     for (const id of Object.keys(SECRET_HINTS)) expect(talkers.has(id), id).toBe(true);
     const about = new Set(Object.values(SECRET_HINTS).map((h) => h.about));
     for (const k of ['pages', 'tape', 'whale', 'hodl', 'rumors']) expect(about.has(k as never), k).toBe(true);

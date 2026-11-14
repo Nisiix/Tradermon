@@ -10,7 +10,7 @@ import { hasPrices } from '../../systems/realdata';
 import { caseOpen, releasedFrac } from '../../systems/account';
 import { fmtMoney, fmtPx, withUsd } from '../../systems/portfolio';
 import { DIFFICULTY, RATE } from '../../systems/balance';
-import { pickQuestions, targetDiff, storyStage } from '../../systems/quiz';
+import { pickQuestions, targetDiff, storyStage, studiedTopics } from '../../systems/quiz';
 import { trackTopics } from '../../data/quiz/build';
 import { antagonist, mentor } from '../../data/story';
 import { DUEL, REWARD } from '../../systems/balance';
@@ -262,7 +262,7 @@ export async function rival(n: NpcDef, w: WorldApi) {
 
 async function rivalDuel(k: number, w: WorldApi) {
   if (k === 1) return rivalTutorial(w);
-  const topics = trackTopics(S.track, S.mixedClasses, S.badges);
+  const topics = studiedTopics();
   const P = DUEL.rival;
   const qs = pickQuestions(topics, P.n, { target: targetDiff(storyStage()), preferReview: true });
   const r = await runDuel({ foeName: S.rival, foeTitle: T('Rivale'), foePal: PAL.RIVAL, questions: qs, ...P, arena: 'tetto' });

@@ -6,7 +6,7 @@ import type { MapDef } from './maps';
 
 /** Posti liberi in casa: prima i muri per quadri e bacheche, poi il pavimento lungo le pareti. */
 const WALL_SPOTS: [number, number][] = [[2, 1], [4, 1], [6, 1], [7, 1], [8, 1], [1, 1]];
-const FLOOR_SPOTS: [number, number][] = [[8, 3], [1, 5], [8, 5], [2, 2], [4, 5], [1, 6], [8, 6], [7, 2]];
+const FLOOR_SPOTS: [number, number][] = [[8, 3], [1, 5], [8, 5], [2, 2], [4, 5], [1, 6], [8, 6], [7, 2], [6, 2], [4, 2], [1, 4], [8, 4], [2, 6], [7, 6], [3, 6]];
 
 /** Restituisce una copia della mappa di casa con gli arredi sbloccati. L'originale non viene toccato. */
 export function decorateHome(m: MapDef): MapDef {

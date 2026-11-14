@@ -6,10 +6,10 @@ import { say, choose, modal } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { runSim } from '../../ui/timemachine';
 import { runPick } from '../../ui/pick';
-import { pickQuestions, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE, endgameDiff, MAX_DIFF } from '../../systems/quiz';
+import { pickQuestions, pickCaveQuestions, studiedTopics, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE, endgameDiff, MAX_DIFF } from '../../systems/quiz';
 import { mentorTopics, trackTopics, LEAGUE_TOPICS } from '../../data/quiz/build';
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../../data/story';
-import { mentorBooks, booksFor, TOPIC_LABEL } from '../../data/books';
+import { mentorBooks, booksFor, TOPIC_LABEL, BOOK_BY_ID } from '../../data/books';
 import { DUEL, REWARD, TRAIT_HIGH } from '../../systems/balance';
 import { errorsAllowed, errorsLeft } from '../../systems/duelLife';
 import { mentorCharacterLine, epilogue } from '../../systems/character';
@@ -20,6 +20,7 @@ import { PAL } from '../../art/art';
 import { beep } from '../../systems/audio';
 import { pick, shuffle, mulberry32 } from '../../systems/rng';
 import { track } from '../../systems/progress';
+import { LESSONS } from '../../data/lessons';
 import { jingle } from '../../systems/music';
 import { ABILITY, SWIM_BADGE, TRANSFER_BADGE } from '../travel';
 import { HERMITS } from '../maps';
@@ -33,15 +34,38 @@ import { bossMenu } from '../../ui/boss';
 import { trade } from '../../ui/clinic';
 import { STAGE_TOOL } from '../../systems/balance';
 import { tick } from '../../systems/account';
+import { CAVES, CAVE_TIPS, caveOf } from '../caves';
+import type { Arena } from '../../ui/arena';
+import type { Question, QuizTopic } from '../../types';
 import { T } from '../../i18n';
 
 export async function trainer(n: NpcDef, w: WorldApi) {
   // una sfida sola: battuto, l'investitore non ti viene più incontro e ti parla solo del posto in cui siete
   if (S.defeated.includes(n.id)) return placeTalk(n.name, T('La nostra sfida l\'abbiamo già fatta.'));
   await say(n.lines ?? [T('Sfida!')], n.name);
-  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), DUEL.trainer.n, { preferReview: true, target: targetDiff(routeStage(n)) });
-  const r = await runDuel({ foeName: n.name, foePal: n.pal, questions: qs, ...DUEL.trainer });
-  await afterDuel(r.win, n.id, REWARD.rep.trainer, w, n.name);
+  // lungo la strada si chiede solo ciò che è già stato spiegato: Whale battute e argomenti già aperti in Biblioteca
+  const topics = studiedTopics();
+  const target = targetDiff(routeStage(n));
+  // in grotta gli sfidanti chiedono le cose della grotta, e prima di tutto quelle che non hai ancora visto
+  const cave = caveOf(S.map);
+  // sfidanti della grotta ancora da battere (questo compreso): le domande mai viste si dividono tra loro
+  const left = cave ? CAVES[cave].maps.flatMap((m) => getMap(m).npcs).filter((x) => x.kind === 'trainer' && !S.defeated.includes(x.id)).length : 1;
+  const qs = cave ? pickCaveQuestions(CAVES[cave].quiz, DUEL.trainer.n, target, topics, Math.random, left) : pickQuestions(topics, DUEL.trainer.n, { preferReview: true, target });
+  const r = await runDuel({ foeName: n.name, foeTitle: cave ? CAVES[cave].name : undefined, foePal: n.pal, questions: qs, ...DUEL.trainer, ...(cave ? { arena: 'grotta' as const } : {}) });
+  await afterDuel(r.win, n.id, REWARD.rep.trainer, w, n.name, cave ? pick(CAVE_TIPS[cave]) : undefined);
+}
+
+/**
+ * Dopo il primo incontro con uno speculatore il gioco spiega come si riconosce una truffa: le due lezioni su regole e
+ * truffe vengono lette lì, una volta sola. Da quel momento gli speculatori possono interrogare anche su quelle.
+ */
+async function scamLesson() {
+  const ls = LESSONS.filter((l) => l.topic === 'regole' && !S.lessonsRead.includes(l.id));
+  if (!ls.length || S.flags.scamLesson) return;
+  S.flags.scamLesson = true;
+  await say([T('Da questo incontro impari qualcosa che vale più di un guadagno facile: come si riconosce una truffa.'), ...ls.flatMap((l) => l.body), T('Le ritrovi tra le Lezioni di ogni Biblioteca, e nello scaffale «Regole e truffe» ci sono i libri per approfondire.')], T('Narratore'));
+  for (const l of ls) { S.lessonsRead.push(l.id); S.stats.xp += 5; }
+  track('lesson');
 }
 
 export async function speculator(n: NpcDef, w: WorldApi) {
@@ -50,7 +74,10 @@ export async function speculator(n: NpcDef, w: WorldApi) {
     await say([T`Così sei tu che ostacoli ${ant.team}!`, T`Io sono ${ant.boss}. Ti offro un affare: unisciti a noi e guadagnerai senza studiare.`], ant.boss);
     const c = await choose([T('Mai!'), T('Dimmi di più...')], { prompt: T('Cosa rispondi?') });
     if (c === 1) { clampStat('disciplina', -10); await say(T('Ah ah! Ti piacerebbe, eh? Ma prima dovrai battermi.'), ant.boss); }
-    const qs = pickQuestions(['regole', 'gestione', 'bias'], DUEL.boss.n, { target: targetDiff(routeStage(n) + 1) });
+    await scamLesson();
+    // la gestione del rischio è della Whale successiva: entra solo se è già stata aperta in Biblioteca
+    const studied = studiedTopics();
+    const qs = pickQuestions((['regole', 'gestione', 'bias'] as QuizTopic[]).filter((t) => studied.includes(t)), DUEL.boss.n, { target: targetDiff(routeStage(n) + 1) });
     const r = await runDuel({ foeName: ant.boss, foeTitle: T`Capo ${ant.of}`, foePal: PAL.SPEC, questions: qs, ...DUEL.boss, arena: 'fossa' });
     if (r.win) {
       reward({ defeated: n.id, rep: REWARD.rep.boss }); clampStat('disciplina', 10);
@@ -75,8 +102,9 @@ export async function speculator(n: NpcDef, w: WorldApi) {
     learnBias(t.bias);
     await say([t.accept, T`Nella realtà avresti potuto perdere circa il ${Math.round(t.loss * 100)}% della liquidità. Questa trappola si chiama ${BIAS_INFO[t.bias].name}: ${BIAS_INFO[t.bias].effect}`], T('Narratore'));
   }
+  await scamLesson();
   if (c !== 2) await say(T('Grr! Allora vediamo se sai anche rispondere!'), T('Speculatore'));
-  const qs = pickQuestions(['regole', ...trackTopics(S.track, S.mixedClasses, S.badges)], DUEL.speculator.n, { target: targetDiff(routeStage(n)) });
+  const qs = pickQuestions(studiedTopics(), DUEL.speculator.n, { target: targetDiff(routeStage(n)) });
   const r = await runDuel({ foeName: T('Speculatore'), foeTitle: ant.name, foePal: PAL.SPEC, questions: qs, ...DUEL.speculator, arena: 'fossa' });
   await afterDuel(r.win, n.id, REWARD.rep.speculator, w, T('Speculatore'));
 }
@@ -244,10 +272,10 @@ async function winBadge(m: number, w: WorldApi) {
   if (m === 2) extra.push(T('Con l\'abbonamento al treno puoi viaggiare tra le città visitate dalle stazioni.'));
   if (m === 5) extra.push(T('L\'Archivio di Bilancia ora è aperto. E in Banca puoi sostenere l\'Esame della Leva: per ora vale solo nei replay.'));
   if (m === SWIM_BADGE) extra.push(T`Nuova abilità: ${ABILITY.swim.name}. Cammina verso l'acqua e la attraverserai su una zattera. Sui Percorsi 3, 5 e 7 ci sono isole da raggiungere.`);
-  if (m === ABILITY.cut.badge) extra.push(T`Nuova abilità: ${ABILITY.cut.name}. Ora puoi frantumare i Massi delle Commissioni: più avanti, sul Percorso 7, uno chiude la Galleria del Dark Pool.`);
-  if (m === ABILITY.dark.badge) extra.push(T`Nuova abilità: ${ABILITY.dark.name}. Le grotte buie non ti fermano più: la prima è la Miniera dei Lingotti, a metà del Percorso 6.`);
+  if (m === ABILITY.cut.badge) extra.push(T`Nuova abilità: ${ABILITY.cut.name}. Ora puoi frantumare i Massi delle Commissioni: il primo è sul Percorso 5, davanti al Cippo dei Costi. Più avanti ne troverai altri, anche in fondo alle grotte.`);
+  if (m === ABILITY.dark.badge) extra.push(T`Nuova abilità: ${ABILITY.dark.name}. Le grotte buie non ti fermano più: la prima è la Miniera dei Lingotti, a metà del Percorso 6. All'ingresso di ogni grotta c'è una guida: fatti spiegare la grotta e leggi il suo taccuino prima di addentrarti.`);
   if (m === TRANSFER_BADGE) extra.push(T`Nuova abilità: ${ABILITY.transfer.name}. Apri il menu, scegli "Mappa della Regione" e trasferisciti in una città già visitata.`);
-  if (m === 8) extra.push(T('Wall Street è oltre il Percorso 9. La Guardia ti fa passare solo se hai tutti e otto i Sigilli pratici. Con l\'ottavo Attestato, se hai superato l\'Esame della Leva, la leva si apre anche sul conto di gioco.'));
+  if (m === 8) extra.push(T('Wall Street è oltre il Percorso 9. La Guardia ti fa passare solo se hai tutti e otto i Sigilli pratici. Con l\'ottavo Attestato, se hai superato l\'Esame della Leva, la leva si apre anche sul conto di gioco.'), T('I Superiori di Wall Street interrogano su macroeconomia, analisi e regole: da oggi in ogni Biblioteca trovi la Sezione di Wall Street, con i libri su cui prepararti.'));
   if (extra.length) await say(extra, T('Prof. Saldi (messaggio)'));
   w.refresh();
   save();
@@ -407,6 +435,9 @@ async function leagueRematch(i: number, w: WorldApi) {
 
 /** Seconda chiacchierata con chi hai già sfidato: niente duello, solo un appunto sull'argomento del posto in cui siete. */
 export function placeTalk(who: string, lead: string): Promise<void> {
+  // in grotta: un appunto dal taccuino della guida, cioè gli argomenti delle domande di quella grotta
+  const cave = caveOf(S.map);
+  if (cave) return say([lead, T('Qui sotto si impara una cosa alla volta. Questa te la ripeto volentieri:'), pick(BOOK_BY_ID[CAVES[cave].book].pages)], who);
   const topics = placeTopics();
   const pages = booksFor(topics).filter((b) => !b.id.endsWith('_ctx')).flatMap((b) => b.pages);
   const labels = topics.map((t) => `«${TOPIC_LABEL[t]}»`).join(T(' e '));
@@ -476,7 +507,7 @@ export async function tower() {
   }
 }
 
-const HERMIT_LINES: Record<string, { intro: string[]; win: string; again: string }> = {
+export const HERMIT_LINES: Record<string, { intro: string[]; win: string; again: string }> = {
   r3: { intro: [T('Sei arrivat{o|a} fin qui sull\'acqua? Allora la liquidità la sai usare.'), T('Io compro e tengo per decenni. Vediamo se reggi le mie domande.')], win: T('Hai la pazienza del cassettista. Tieni questo studio extra, ti servirà.'), again: T('Chi investe per decenni non ha bisogno di guardare il prezzo ogni giorno. Funziona anche con le isole.') },
   r5: { intro: [T('Un prezzo diverso per la stessa cosa in due posti? Mi sveglio per questo.'), T('Ma le occasioni vere sono rare e veloci. Rispondi in fretta e bene!')], win: T('Preciso come un arbitraggio. Ti lascio i miei appunti.'), again: T('Quando un guadagno sembra senza rischio, cerca il rischio che non vedi.') },
   r7: { intro: [T('Custodisco le riserve: la liquidità che non si tocca quando il mercato urla.'), T('Solo chi ha mente fredda e liquidità arriva fin qui. Dimostralo.')], win: T('Riserve al sicuro, mente lucida. Sei pront{o|a} per Wall Street.'), again: T('Un fondo di emergenza vale più di qualsiasi previsione.') },
@@ -492,11 +523,17 @@ export async function hermit(n: NpcDef) {
   if (!h) return say('...', who);
   if (S.flags[`islet_${key}`]) return say(h.again, who);
   await say(h.intro, who);
-  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, Math.max(3, S.badges)), 5, { target: targetDiff(Math.max(3, storyStage()) + 2) });
+  const qs = pickQuestions(studiedTopics(), 5, { target: targetDiff(Math.max(3, storyStage()) + 2) });
+  return hermitDuel(key, who, n.pal, qs);
+}
+
+/** Il duello di un eremita (isole, Faro, Grotta delle Perle): quattro giuste su cinque, senza rischiare la Fiducia, una volta sola. */
+export async function hermitDuel(key: string, who: string, pal: number, qs: Question[], arena?: Arena) {
+  const h = HERMIT_LINES[key];
   const prevFid = S.stats.fiducia;
-  const res = await runDuel({ foeName: who, foePal: n.pal, questions: qs, need: 4, damage: 0 });
+  const res = await runDuel({ foeName: who, foePal: pal, questions: qs, need: 4, damage: 0, ...(arena ? { arena } : {}) });
   S.stats.fiducia = prevFid;
-  if (!res.win) return say(T('Non ancora. Torna quando vuoi: l\'isola non si muove.'), who);
+  if (!res.win) return say(arena === 'grotta' ? T('Non ancora. Torna quando vuoi: la grotta non si muove.') : T('Non ancora. Torna quando vuoi: l\'isola non si muove.'), who);
   S.flags[`islet_${key}`] = true;
   reward({ xp: REWARD.xp.hermit, save: false });
   Object.keys(S.cards).forEach((id) => (card(id).xp += 20));
@@ -508,7 +545,8 @@ export async function hermit(n: NpcDef) {
 export async function legend() {
   if (S.flags.legendMet) return say(T('La mente fredda vede ciò che il rumore nasconde. Torna quando vuoi.'), T('Investitrice Leggendaria'));
   await say([T('Hai attraversato il Muro del Rumore. Pochi ci riescono.'), T('Ti faccio cinque domande difficili. Se rispondi bene, ti lascio un dono di conoscenza.')], T('Investitrice Leggendaria'));
-  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole']), 5, { target: targetDiff(STAGE_LEAGUE + 1) });
+  // difficili, ma solo su ciò che il gioco ha già spiegato: Wall Street entra nel mazzo quando la sua sezione è stata aperta
+  const qs = pickQuestions(studiedTopics(), 5, { target: targetDiff(STAGE_LEAGUE + 1) });
   const prevFid = S.stats.fiducia;
   const r = await runDuel({ foeName: T('Investitrice Leggendaria'), foePal: 14, questions: qs, need: 4, damage: 0, arena: 'lega' });
   S.stats.fiducia = prevFid;
