@@ -285,9 +285,26 @@ button, input, select, textarea { font-variant-ligatures: none; font-feature-set
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 2px solid var(--panel-2); }
 .set-row:last-child { border-bottom: 0; }
 .set-row p { margin: 2px 0 0; }
-.vol-ctl { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.vol-ctl input[type=range] { flex: 1; min-width: 80px; accent-color: var(--accent); }
-.vol-ctl .vmin, .vol-ctl .vplus { width: 40px; padding-left: 0; padding-right: 0; }
+/* Opzioni: sezioni con righe "testo a sinistra, comando a destra", uguali in ogni schermata */
+.opt-panel { padding-top: 4px; }
+.set-sec { margin: 0 0 10px; }
+.set-sec h4 { margin: 10px 0 2px; padding: 3px 8px; border-radius: 4px; background: var(--panel-2); font-size: calc(var(--fs) * .95); }
+.set-sec:first-child h4 { margin-top: 0; }
+.set-sec .set-row:last-child { border-bottom: 0; }
+.set-txt { flex: 1 1 14em; min-width: 0; }
+.set-ctl { flex: 0 0 auto; display: flex; justify-content: flex-end; }
+.set-row.off .set-txt { opacity: .55; }
+.set-row.off .set-ctl { opacity: .45; }
+.set-note { margin: 0 0 8px; }
+@media (max-height: 540px) { .set-row { padding: 4px 0; } .set-sec { margin-bottom: 6px; } .set-sec h4 { margin-top: 6px; } }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.seg .btn { padding: 6px 9px 5px; }
+.stepper { display: inline-flex; align-items: center; gap: 6px; }
+.stepper .dn, .stepper .up { width: 40px; padding-left: 0; padding-right: 0; }
+.stepper .val { min-width: 4.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.set-ctl input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); }
+.settings-wrap .foot .btn:not(.primary):first-child { margin-right: auto; }
+@media (max-width: 640px) { .set-row { flex-wrap: wrap; } .set-ctl { flex: 1 1 100%; } }
 .touch-modes { display: flex; flex-wrap: wrap; gap: 8px; }
 .keys-t td { vertical-align: middle; padding: 5px 4px; border-bottom: 1px solid var(--panel-2); }
 .keys-t .kcell { white-space: nowrap; text-align: right; }

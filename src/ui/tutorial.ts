@@ -36,10 +36,13 @@ const STEPS: Step[] = [
   { want: ['menu'], hint: 'menu', title: T('Aprire il menu'),
     desk: () => T`Premi ${kbd('menu')} per aprire il menu di gioco.`,
     touch: T('Tocca <b>MENU</b> per aprire il menu di gioco.') },
-  { want: ['settings'], hint: 'settings', title: T('Impostazioni'),
-    desk: () => T`Premi ${kbd('settings')} (oppure clicca ⚙ in alto a destra) per aprire le impostazioni. Premilo di nuovo per chiuderle.`,
-    touch: T('Tocca l\'icona <b>⚙</b> in alto a destra per aprire le impostazioni. Chiudile con ✕.') },
+  { want: ['settings'], hint: 'settings', title: T('Opzioni'),
+    desk: () => T`Premi ${kbd('settings')} (oppure clicca ⚙ in alto a destra) per aprire le Opzioni. Premilo di nuovo per chiuderle.`,
+    touch: T('Tocca l\'icona <b>⚙</b> in alto a destra per aprire le Opzioni. Chiudile con ✕.') },
 ];
+
+/** Le voci del menu di gioco, come in MENU_USE (systems/controls.ts). */
+const menuUse = () => T('Apri il menu di gioco: Investidex, Portafoglio, Agenda, Diario, Profilo, Mappa, Chiavi API, Opzioni, Salva ed Esci dal gioco.');
 
 /** Legenda: a cosa serve ciascun tasto (tastiera) o pulsante (touch). */
 function legend(touch: boolean, hint: Action | null): string {
@@ -48,16 +51,16 @@ function legend(touch: boolean, hint: Action | null): string {
       [['up', 'down', 'left', 'right'], '<span class="lg-pad">✚</span>', T('Croce: cammini e scorri i menu. Puoi anche toccare un punto della mappa per andarci, una persona per avvicinarti e una risposta per sceglierla.')],
       [['a'], '<span class="lg-round">A</span>', T('Parli con le persone, leggi i cartelli, confermi e fai scorrere i dialoghi.')],
       [['b'], '<span class="lg-round">B</span>', T('Chiudi una finestra, annulli una scelta, torni indietro.')],
-      [['menu'], '<span class="lg-pill">MENU</span>', T('Apri il menu di gioco (Investidex, Portafoglio, Agenda, Salva, Opzioni).')],
-      [['settings'], '<span class="lg-pill">⚙</span>', T('In alto a destra: apre le Opzioni (lingua, comandi e modalità touch, volume, schermo intero).')],
+      [['menu'], '<span class="lg-pill">MENU</span>', menuUse()],
+      [['settings'], '<span class="lg-pill">⚙</span>', T('In alto a destra: apri e chiudi le Opzioni (lingua, audio, schermo e testo, comandi, partita e giocatore).')],
     ]
     : [
       [['up', 'down', 'left', 'right'], moveKeys(), T('Cammini nel mondo; nei menu e nelle finestre sposti la selezione.')],
       [['a'], kbd('a'), T('Parli con chi hai davanti, leggi i cartelli, confermi e fai scorrere i dialoghi.')],
       [['b'], kbd('b'), T('Chiudi la finestra aperta, annulli una scelta, torni indietro.')],
-      [['menu'], kbd('menu'), T('Apri il menu di gioco (Investidex, Portafoglio, Agenda, Diario, Mappa, Opzioni, Salva).')],
+      [['menu'], kbd('menu'), menuUse()],
       [['map'], kbd('map'), T('Apri subito la Mappa della Regione.')],
-      [['settings'], kbd('settings'), T('Apri e chiudi le Opzioni ⚙, anche nel mondo (o clicca l\'icona in alto a destra): lingua, comandi, volume, schermo intero.')],
+      [['settings'], kbd('settings'), T('Apri e chiudi le Opzioni ⚙, anche nel mondo (o clicca l\'icona in alto a destra): lingua, audio, schermo e testo, comandi, partita e giocatore.')],
     ];
   return `<div class="tut-legend"><div class="lg-title">${touch ? T('Cosa fa ogni pulsante') : T('Cosa fa ogni tasto')}</div>${rows.map(([ks, keys, use]) =>
     `<div class="lg-row${hint && ks.includes(hint) ? ' on' : ''}"><span class="lg-keys">${keys}</span><span class="lg-use">${use}</span></div>`).join('')}</div>`;
@@ -149,7 +152,7 @@ function keyboard(hint: Action): string {
   const group = (a: Action, cap: string) => `<div class="kgrp ${on(a)}"><div>${keysOf(a).map((x) => `<span class="kb ${on(a)}">${esc(x)}</span>`).join('') || '<span class="kb">—</span>'}</div><small>${cap}</small></div>`;
   return T`<div class="kbd-map">
     <div class="kgrp ${on('up')}"><div class="arrows"><span class="kb ${on('up')}">${first('up')}</span><div><span class="kb ${on('left')}">${first('left')}</span><span class="kb ${on('down')}">${first('down')}</span><span class="kb ${on('right')}">${first('right')}</span></div></div><small>Muoversi</small></div>
-    <div class="keys">${group('a', T('Conferma'))}${group('b', T('Indietro'))}${group('menu', T('Menu'))}${group('settings', T('Impostazioni'))}</div>
+    <div class="keys">${group('a', T('Conferma'))}${group('b', T('Indietro'))}${group('menu', T('Menu'))}${group('settings', T('Opzioni'))}</div>
   </div>`;
 }
 
