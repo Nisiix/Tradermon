@@ -75,7 +75,7 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
           <div class="desk"><i></i></div>
         </div>
         <div class="side foe">
-          <div class="plate foe-p"><div class="nm">${esc(o.foeName)}</div><div class="tt">${esc(o.foeTitle ?? T('Avversario'))}</div><div class="row-m"><span class="lb">Convinzione</span><b class="cv">100</b></div><div class="foebar">${bar(100)}</div></div>
+          <div class="plate foe-p"><div class="nm">${esc(o.foeName)}</div><div class="tt">${esc(o.foeTitle ?? T('Avversario'))}</div><div class="row-m"><span class="lb">${T('Convinzione')}</span><b class="cv">100</b></div><div class="foebar">${bar(100)}</div></div>
           <div class="fig"><img class="sprite" src="${portrait(o.foePal)}" alt=""></div>
           <div class="desk"><i></i></div>
         </div>
