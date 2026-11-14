@@ -9,6 +9,7 @@ function el(tag: string) {
     tagName: tag.toUpperCase(), children: [], style: {}, className: '',
     appendChild(c: unknown) { this.children.push(c); return c; },
     addEventListener() { /* niente */ },
+    setAttribute() { /* niente */ },
     remove() { (e as { removed?: boolean }).removed = true; },
   };
   return e;
@@ -70,6 +71,20 @@ describe('Gioca dal menu su telefono', () => {
     expect((shell as { removed?: boolean }).removed).toBe(true);
     expect(shellOpen()).toBe(false);
     expect((globalThis as unknown as { location: { href: string } }).location.href).toBe('https://example.test/gioca/');
+  });
+
+  it('il gesto "indietro" chiude la cornice invece di lasciarla ferma sopra la pagina', async () => {
+    fullscreen = () => Promise.resolve();
+    const handlers: Record<string, () => void> = {};
+    const pushed: unknown[] = [];
+    vi.stubGlobal('addEventListener', (t: string, f: () => void) => { handlers[t] = f; });
+    vi.stubGlobal('history', { state: null, pushState: (s: unknown) => { pushed.push(s); }, back: () => undefined });
+    const { playInShell, shellOpen } = await import('../landing/play');
+    playInShell('https://example.test/gioca/');
+    expect(pushed).toHaveLength(1);
+    expect(shellOpen()).toBe(true);
+    handlers.popstate();
+    expect(shellOpen()).toBe(false);
   });
 });
 

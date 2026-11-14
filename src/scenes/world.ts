@@ -24,6 +24,7 @@ import { View3D, type MirrorFrame, type MirrorItem, type Painter } from '../rend
 import { tick } from '../systems/account';
 import { T } from '../i18n';
 import { findPath, stepDir, type TapPath } from '../systems/tapwalk';
+import { no3dStored, setNo3dStored, reportProblem, noteProblem } from '../systems/bootGuard';
 
 const DIRS: Record<string, [number, number, 0 | 1 | 2 | 3]> = { down: [0, 1, 0], up: [0, -1, 1], left: [-1, 0, 2], right: [1, 0, 3] };
 const DIR_NAME = ['down', 'up', 'left', 'right'] as const;
@@ -89,7 +90,11 @@ export class WorldScene extends Phaser.Scene {
   view3d?: View3D;
   view3dFx = '';
   /** Il WebGL della resa 2.5D non è partito su questo dispositivo: non si riprova fino al prossimo avvio. */
-  no3d = false;
+  no3d = no3dStored();
+  /** Controllo dello schermo nero in 2.5D: quando fare la prossima lettura, letture nere di fila, letture fatte. */
+  check3d = { at: 0, black: 0, done: 0 };
+  /** Livello degli effetti visto l'ultima volta nelle Opzioni: se il giocatore lo cambia, la 2.5D si riprova. */
+  optFx = '';
   /** Trasferimento di Capitale: altezza del volo (0 a terra, 1 in cielo) e nuvole che scorrono sullo schermo. */
   flightLift = 0; flightClouds: { x: number; y: number; w: number; s: number }[] = [];
   /** Movimento a tocco: caselle ancora da percorrere, punto toccato e direzione verso cui girarsi all'arrivo. */
@@ -128,7 +133,13 @@ export class WorldScene extends Phaser.Scene {
       cm.colorMatrix.saturate(0.12).contrast(0.05);
     } catch { /* renderer Canvas: nessun filtro */ }
     this.applyGraphics();
-    window.addEventListener('tradermon:options', () => { this.applyGraphics(); if (this.player?.active) this.setFacing(S.facing); });
+    this.optFx = S.options.fx;
+    window.addEventListener('tradermon:options', () => {
+      // cambiare gli effetti dalle Opzioni è una scelta esplicita: si riprova la 2.5D anche se prima era stata spenta
+      if (S.options.fx !== this.optFx) { this.optFx = S.options.fx; if (this.no3d) { this.no3d = false; setNo3dStored(false); } }
+      this.applyGraphics();
+      if (this.player?.active) this.setFacing(S.facing);
+    });
     // un salvataggio fatto prima di uno spostamento degli edifici può trovarsi in un muro: si riparte dalla casella libera più vicina
     const startMap = getMap(S.map);
     if (startMap) [S.x, S.y] = safeSpot(startMap, S.x, S.y);
@@ -274,12 +285,60 @@ export class WorldScene extends Phaser.Scene {
     this.view3dFx = want;
     if (want) {
       try {
-        this.view3d = new View3D(document.getElementById('game')!, want as 'alti' | 'bassi');
+        const v = new View3D(document.getElementById('game')!, want as 'alti' | 'bassi');
+        this.view3d = v;
+        let lostTimer = 0;
+        // contesto perso: se torna si ricrea la vista; se non torna entro qualche secondo si resta sulla vista semplificata
+        v.onContextLost = () => { lostTimer = window.setTimeout(() => { if (this.view3d === v) this.drop3d(new Error('WebGL context lost (2.5D)'), false); }, 3500); };
+        v.onContextRestored = () => { clearTimeout(lostTimer); if (this.view3d === v) { this.view3d.destroy(); this.view3d = undefined; this.view3dFx = ''; this.applyGraphics(); } };
+        this.check3d = { at: performance.now() + 2500, black: 0, done: 0 };
         if (this.map) { this.syncMood(); this.view3d.loadMap(this.map, this.night, this.animFrame); }
-      } catch (e) { console.error(e); this.view3d = undefined; this.view3dFx = ''; this.no3d = true; toast(T('Questo dispositivo non regge la grafica completa: il gioco usa una vista semplificata.')); }
+      } catch (e) { this.drop3d(e, false); return; }
     }
     this.game.canvas.style.display = this.view3d ? 'none' : '';
     if (!this.view3d) this.scale.refresh();
+  }
+
+  /**
+   * La resa 2.5D non funziona su questo dispositivo: si passa alla vista semplificata di Phaser (che ha la sua
+   * protezione dallo schermo nero, systems/render.ts). `remember`: vale anche ai prossimi avvii.
+   */
+  drop3d(e: unknown, remember: boolean) {
+    // il gioco continua con la vista semplificata: la striscia d'errore serve solo per un'eccezione vera
+    if (e instanceof Error && /black screen|context lost/.test(e.message)) noteProblem(e); else reportProblem(e);
+    try { this.view3d?.destroy(); } catch { /* già rotta */ }
+    this.view3d = undefined; this.view3dFx = ''; this.no3d = true;
+    if (remember) setNo3dStored(true);
+    this.game.canvas.style.display = '';
+    this.scale.refresh();
+    toast(T('Questo dispositivo non regge la grafica completa: il gioco usa una vista semplificata.'));
+  }
+
+  /**
+   * Schermo nero in 2.5D (GPU che non disegna gli effetti): dopo l'avvio si leggono alcuni punti dello schermo.
+   * Se restano neri, prima si abbassano gli effetti, poi si passa alla vista semplificata.
+   * Le letture si saltano durante le dissolvenze e nelle grotte buie, che sono nere davvero.
+   */
+  render3d() {
+    const v = this.view3d!;
+    const now = performance.now();
+    const f = this.mirror();
+    const c = this.check3d;
+    const due = c.done < 4 && now >= c.at;
+    const skip = due && (!!f.fade && f.fade.a > 0.05 || !!this.map?.tiles.some((r) => r.includes(TILE.CAVE)));
+    const lum = v.frame(f, due && !skip);
+    if (!due) return;
+    if (skip || lum < 0) { c.at = now + 1000; return; }
+    c.done++; c.at = now + 1200;
+    c.black = lum <= 12 ? c.black + 1 : 0;
+    if (c.black < 2) { if (lum > 12) c.done = 4; return; }
+    c.done = 4;
+    if (this.view3dFx === 'alti') {
+      noteProblem(new Error('2.5D black screen with high effects: switching to low effects'));
+      S.options.fx = 'bassi'; this.optFx = 'bassi'; save();
+      toast(T('La grafica 2.5D restava nera: passo agli effetti bassi.'));
+      this.applyGraphics();
+    } else this.drop3d(new Error('2.5D black screen with low effects: switching to the simplified view'), true);
   }
 
   syncMood() {
@@ -512,7 +571,10 @@ export class WorldScene extends Phaser.Scene {
     this.updateWeather(delta);
     if (this.flightLift > 0 || this.flightClouds.length) this.renderFlight();
     this.caveLight(delta);
-    this.view3d?.frame(this.mirror());
+    if (this.view3d) {
+      // un errore qui fermerebbe tutto il gioco (Phaser smette di chiamare i fotogrammi): si resta sulla vista semplificata
+      try { this.render3d(); } catch (e) { this.drop3d(e, false); }
+    }
     // tempo reale (non quello "addolcito" da Phaser, che sui fotogrammi lenti conta 16 ms): così il passo dura
     // lo stesso anche quando la resa 2.5D va sotto i 5 fps
     if (this.walk) { this.idleMs = 0; return void this.advanceWalk(Math.min(this.game.loop.rawDelta || delta, 100)); }

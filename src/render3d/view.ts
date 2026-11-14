@@ -53,6 +53,11 @@ const SKIRT = 6;
 const CRYSTALS = new Set<number>([TILE.CRYSTAL_GOLD, TILE.CRYSTAL_DARK, TILE.CRYSTAL_SEA]);
 const FOV = 36, TILT = 0.98, DIST = 14.2;
 
+/** La GPU sa disegnare in texture a mezza precisione (WebGL2 lo richiede con un'estensione). */
+function floatTargets(r: THREE.WebGLRenderer): boolean {
+  try { return r.extensions.has('EXT_color_buffer_half_float') || r.extensions.has('EXT_color_buffer_float'); } catch { return false; }
+}
+
 function hexToCss(c: number, a: number) { return `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${a})`; }
 
 export class View3D {
@@ -109,6 +114,11 @@ export class View3D {
   private fxLevel: FxLevel;
   /** Modelli esterni (public/assets3d/manifest.json): se presenti sostituiscono gli oggetti generati. */
   private manifest: AssetManifest | null = null;
+  /** Contesto WebGL perso (telefono a corto di memoria, app in secondo piano): niente disegno finché non torna. */
+  lost = false;
+  /** Avvisi per la scena: contesto perso e ritrovato. */
+  onContextLost?: () => void;
+  onContextRestored?: () => void;
 
   constructor(private parent: HTMLElement, fx: FxLevel = 'alti') {
     this.fxLevel = fx;
@@ -128,6 +138,8 @@ export class View3D {
       lineBetween: (x1, y1, x2, y2) => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); },
     };
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false, powerPreference: 'high-performance', stencil: false, depth: true });
+    this.canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.lost = true; this.onContextLost?.(); });
+    this.canvas.addEventListener('webglcontextrestored', () => { this.lost = false; this.onContextRestored?.(); });
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -177,7 +189,8 @@ export class View3D {
     for (let i = 0; i < 8; i++) { const l = new THREE.PointLight(0xffd080, 0, 5.5, 1.5); l.visible = false; this.lamps.push(l); this.scene.add(l); }
     this.lantern = new THREE.PointLight(0xffd9a0, 0, 8, 1.3); this.lantern.visible = false; this.scene.add(this.lantern);
     // post-produzione
-    this.composer = new EffectComposer(this.renderer, { multisampling: 0, frameBufferType: THREE.HalfFloatType });
+    // buffer a mezza precisione solo se la GPU sa disegnarci dentro: altrimenti la post-produzione resta nera
+    this.composer = new EffectComposer(this.renderer, { multisampling: 0, frameBufferType: floatTargets(this.renderer) ? THREE.HalfFloatType : THREE.UnsignedByteType });
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     const bloom = new BloomEffect({ luminanceThreshold: 0.72, luminanceSmoothing: 0.25, intensity: 0.55, mipmapBlur: true, radius: 0.55 });
     const vignette = new VignetteEffect({ offset: 0.22, darkness: 0.42 });
@@ -205,8 +218,11 @@ export class View3D {
   destroy() {
     this.disposed = true;
     this.staticGroup.clear();
+    this.onContextLost = this.onContextRestored = undefined;
     this.composer.dispose();
     this.renderer.dispose();
+    // il contesto WebGL va liberato davvero: i browser ne tengono pochi e, oltre il limite, tolgono il più vecchio (quello di Phaser)
+    try { this.renderer.forceContextLoss(); } catch { /* già perso */ }
     this.canvas.remove(); this.fx.remove();
   }
 
@@ -596,8 +612,12 @@ export class View3D {
     a.setXY(0, u0, v1); a.setXY(1, u1, v1); a.setXY(2, u0, v0); a.setXY(3, u1, v0); a.needsUpdate = true;
   }
 
-  frame(f: MirrorFrame) {
-    if (this.disposed) return;
+  /**
+   * Disegna un fotogramma. Con `sample` restituisce anche la luminosità massima (0..255) di alcuni punti dello
+   * schermo appena disegnato, per accorgersi di una resa tutta nera; altrimenti -1.
+   */
+  frame(f: MirrorFrame, sample = false): number {
+    if (this.disposed || this.lost) return -1;
     this.resize();
     // camera: inclinata come su DS, segue il centro della vista 2D (così limiti e inquadrature restano quelli del gioco)
     let cx = f.cx, cz = f.cy, yaw = 0, tilt = TILT, dist = DIST;
@@ -678,12 +698,31 @@ export class View3D {
     for (let i = li; i < this.leafPool.length; i++) this.leafPool[i].visible = false;
     this.raft.visible = raft;
     this.composer.render();
+    const lum = sample ? this.brightness() : -1;
     // livello 2D sopra la scena: tinta del clima, lampo e dissolvenza (il meteo è già stato disegnato dal painter)
     const c = this.ctx;
     if (cave && f.light && !this.mood.dark) this.paintDark(f.light, cave.glow, cx, cz);
     if (f.tint.alpha > 0) { c.fillStyle = hexToCss(f.tint.color, f.tint.alpha); c.fillRect(0, 0, VW, VH); }
     if (f.flash && f.flash.a > 0) { c.fillStyle = `rgba(${f.flash.r},${f.flash.g},${f.flash.b},${f.flash.a})`; c.fillRect(0, 0, VW, VH); }
     if (f.fade && f.fade.a > 0) { c.fillStyle = `rgba(${f.fade.r},${f.fade.g},${f.fade.b},${f.fade.a})`; c.fillRect(0, 0, VW, VH); }
+    return lum;
+  }
+
+  /** Luminosità massima di una griglia di punti dello schermo, letta subito dopo il disegno (poi il buffer si svuota). */
+  private brightness(): number {
+    try {
+      const gl = this.renderer.getContext();
+      this.renderer.setRenderTarget(null);
+      // errori rimasti da prima (non nostri): si svuotano, così sotto si controllano solo quelli della lettura
+      for (let i = 0; i < 8 && gl.getError() !== gl.NO_ERROR; i++) { /* svuota */ }
+      const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight, px = new Uint8Array(4);
+      let max = 0;
+      for (let i = 1; i <= 4; i++) for (let j = 1; j <= 3; j++) {
+        gl.readPixels(Math.floor((w * i) / 5), Math.floor((h * j) / 4), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        max = Math.max(max, px[0], px[1], px[2]);
+      }
+      return gl.getError() === gl.NO_ERROR ? max : -1;
+    } catch { return -1; }
   }
 
   get info() { return { tilt: this.tiltNow, dist: this.distNow, yaw: this.yaw }; }
