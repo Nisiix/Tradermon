@@ -23,5 +23,6 @@
  "Un Masso delle Commissioni blocca il passaggio. Vuoi usare {0}?": "A Fee Boulder blocks the way. Do you want to use {0}?",
  "Costi tagliati: il masso si sbriciola e il passaggio è libero!": "Costs cut: the boulder crumbles and the way is clear!",
  "Errore: ": "Error: ",
- "<span class=\"pill playtime\" title=\"Tempo di gioco totale\">Tempo <b>{0}</b></span>\n      <span class=\"pill\">{1}{2} · {3}</span>\n      <span class=\"pill\">Fiducia <b>{4}</b> · Attestati <b>{5}</b>{6}</span>": "<span class=\"pill playtime\" title=\"Total play time\">Time <b>{0}</b></span>\n      <span class=\"pill\">{1}{2} · {3}</span>\n      <span class=\"pill\">Confidence <b>{4}</b> · Certificates <b>{5}</b>{6}</span>"
+ "<span class=\"pill playtime\" title=\"Tempo di gioco totale\">Tempo <b>{0}</b></span>\n      <span class=\"pill\">{1}{2} · {3}</span>\n      <span class=\"pill\">Fiducia <b>{4}</b> · Attestati <b>{5}</b>{6}</span>": "<span class=\"pill playtime\" title=\"Total play time\">Time <b>{0}</b></span>\n      <span class=\"pill\">{1}{2} · {3}</span>\n      <span class=\"pill\">Confidence <b>{4}</b> · Certificates <b>{5}</b>{6}</span>",
+ "La grafica 2.5D restava nera: passo agli effetti bassi.": "The 2.5D graphics stayed black: switching to low effects."
 }

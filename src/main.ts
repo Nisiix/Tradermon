@@ -29,6 +29,7 @@ import { accountScreen, legacyPrompt } from './ui/account';
 import { busy, pauseBusy } from './ui/loading';
 import { whileAway } from './ui/broker';
 import { translateDom } from './i18n/dom';
+import { bootReady } from './systems/bootGuard';
 
 translateDom();
 
@@ -49,6 +50,7 @@ async function boot() {
   if (await leaveIfMoved()) return; // vecchio indirizzo: porta i dati al nuovo
   initUI();
   initMobile();
+  bootReady(); // via "Caricamento…" del guardiano dell'avvio (public/boot.js)
   const moved = await receiveTransfer((local, inc) => new Promise((ok) => {
     let answer = false;
     void modal(T('Salvataggio trovato'), ({ body, button, close }) => {

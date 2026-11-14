@@ -235,6 +235,7 @@ function hero() {
   addEventListener('resize', () => { clearTimeout(rt); rt = window.setTimeout(() => { build(); frame(performance.now()); }, 120); });
   addEventListener('scroll', () => { parallax = Math.min(scrollY, innerHeight); }, { passive: true });
   document.addEventListener('visibilitychange', restart);
+  addEventListener('tradermon:shell-closed', restart);
   if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { const was = heroVisible; heroVisible = e.isIntersecting; if (!was && heroVisible) restart(); }).observe(cv);
 }
 hero();
@@ -416,6 +417,7 @@ function walkers() {
   const restart = () => { if (!running && active()) { running = true; requestAnimationFrame(loop); } };
   draw();
   document.addEventListener('visibilitychange', restart);
+  addEventListener('tradermon:shell-closed', restart);
   if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { seen = e.isIntersecting; restart(); }).observe(cv);
   restart();
 }
