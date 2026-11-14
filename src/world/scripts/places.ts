@@ -4,10 +4,10 @@ import type { AssetClass, AssetDef, QuizTopic, Sector } from '../../types';
 import { S, addRep, card, level } from '../../systems/state';
 import { say, choose, modal, toast, esc } from '../../ui/core';
 import { runSim } from '../../ui/timemachine';
-import { openInvestidex, openLessons } from '../../ui/menu';
+import { openLessons } from '../../ui/menu';
 import { mentorTopics } from '../../data/quiz/build';
-import { mentor, TOWNS } from '../../data/story';
-import { mentorBooks, booksFor, TOPIC_LABEL, type Book } from '../../data/books';
+import { TOWNS } from '../../data/story';
+import { booksFor, TOPIC_LABEL, type Book } from '../../data/books';
 import { REP_TIERS, REWARD } from '../../systems/balance';
 import { repTier, TIER_ARCHIVE } from '../../systems/character';
 import type { Section } from '../maps';
@@ -19,7 +19,7 @@ import { track } from '../../systems/progress';
 import { topicOpened } from '../../systems/quiz';
 import { playMinigame } from '../../ui/minigames';
 import { reward, type WorldApi } from './common';
-import { linkDuel, reviewDuel, missionDesk } from './duels';
+import { linkDuel, missionDesk } from './duels';
 import { tick } from '../../systems/account';
 import { T } from '../../i18n';
 
@@ -27,75 +27,104 @@ export async function librarian(n: NpcDef) {
   const town = Number(n.data?.town ?? 0);
   if (town && !S.flags[`lib_intro_${town}`]) {
     S.flags[`lib_intro_${town}`] = true;
-    const md = mentor(town, S.track);
-    await say([T('Benvenut{o|a} in Biblioteca! Qui si studia prima di sfidare la Whale.'), T`Gli scaffali in alto a sinistra sono la Sezione della Whale: i libri su ${mentorTopics(town, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}, l'argomento del duello con ${md.name}.`, T('A destra le lezioni generali; in basso l\'archivio delle domande sbagliate e l\'Investidex. Avvicinati a uno scaffale e premi il tasto di conferma.')], T('Bibliotecaria'));
+    await say([
+      T('Benvenut{o|a} in Biblioteca! Qui si studia: ogni libro spiega un piccolo argomento, in poche pagine.'),
+      T`In alto a sinistra ci sono i temi di ${TOWNS[town]?.name ?? T('questa città')}: ${cityTopics(town).map((t) => `«${TOPIC_LABEL[t]}»`).join(T(' e '))}. Sono gli argomenti di cui si discute qui, dentro e fuori dall'Exchange.`,
+      T('A destra i temi delle città che hai già attraversato: lungo i Percorsi tornano spesso. In basso le regole contro le truffe e, a destra, macroeconomia e analisi.'),
+      T('Avvicinati a uno scaffale e premi il tasto di conferma.'),
+    ], T('Bibliotecaria'));
   }
-  const common = commonShelves();
-  const opts = [T('Sezione della Whale (libri)'), ...common.map((x) => x.label), T('Lezioni'), T('Ripasso (domande in scadenza)'), T('Minigiochi didattici'), 'Investidex', T('Niente, grazie')];
-  const c = await choose(opts, { cancel: true, prompt: T('Benvenut{o|a} in Biblioteca! Cosa vuoi fare?'), who: T('Bibliotecaria') });
-  if (c === 0) return mentorShelf(town);
-  if (c > 0 && c <= common.length) return common[c - 1].open();
-  const k = c - common.length;
-  if (k === 1) return openLessons();
-  if (k === 2) return reviewDuel();
-  if (k === 3) return playMinigame(T('Bibliotecaria'));
-  if (k === 4) return openInvestidex();
+  const shelves = librarySections(town);
+  const opts = [...shelves.map((x) => x.label), T('Lezioni'), T('Niente, grazie')];
+  const c = await choose(opts, { cancel: true, prompt: T('Benvenut{o|a} in Biblioteca! Quale scaffale vuoi consultare?'), who: T('Bibliotecaria') });
+  if (c >= 0 && c < shelves.length) return shelves[c].open();
+  if (c === shelves.length) return openLessons();
 }
 
-/**
- * Scaffali comuni a tutte le Biblioteche, senza una Whale di riferimento: «Regole e truffe» è sempre aperto (ne
- * chiedono gli speculatori fin dal primo Percorso), la Sezione di Wall Street si apre con gli otto Attestati.
- */
-function commonShelves(): { label: string; open: () => Promise<void> }[] {
-  const out = [{ label: T('Regole e truffe (libri)'), open: () => bookShelf(T('REGOLE E TRUFFE'), booksFor(['regole']), ['regole']) }];
-  if (S.badges >= 8) out.unshift({ label: T('Sezione di Wall Street (libri)'), open: () => bookShelf(T`SEZIONE DI WALL STREET · ${TOPIC_LABEL.macro}, ${TOPIC_LABEL.analisi}`, booksFor(['macro', 'analisi']), ['macro', 'analisi']) });
+/** Temi della città n: quelli dell'Exchange e della sua Whale, gli stessi degli sfidanti incontrati fin lì. */
+function cityTopics(n: number): QuizTopic[] {
+  return n ? mentorTopics(n, S.track, S.mixedClasses) : [];
+}
+
+/** Temi delle città prima della n, senza ripetere quelli della città: lungo i Percorsi si ripassa anche questo. */
+function pastTopics(n: number): { topic: QuizTopic; town: number }[] {
+  const own = cityTopics(n), out: { topic: QuizTopic; town: number }[] = [];
+  for (let i = 1; i < n; i++) for (const t of cityTopics(i)) if (!own.includes(t) && !out.some((x) => x.topic === t)) out.push({ topic: t, town: i });
   return out;
 }
 
-/** Uno scaffale di libri: si sceglie un volume, lo si legge e la prima lettura dà Conoscenza. In fondo, le lezioni sugli stessi temi. */
-async function bookShelf(title: string, books: Book[], topics: QuizTopic[], allRead?: () => Promise<void>) {
+const readCount = (t: QuizTopic) => { const bs = booksFor([t]); return `${bs.filter((b) => S.booksRead.includes(b.id)).length}/${bs.length}`; };
+
+/** Gli scaffali della Biblioteca della città n, nello stesso ordine in cui stanno nella stanza. */
+function librarySections(n: number): { kind: Section['kind']; label: string; open: () => Promise<void> }[] {
+  return [
+    { kind: 'city', label: T`Temi di ${TOWNS[n]?.name ?? T('questa città')}`, open: () => cityShelf(n) },
+    { kind: 'past', label: T('Città già attraversate'), open: () => pastShelf(n) },
+    { kind: 'rules', label: T('Regole e truffe'), open: () => topicShelf('regole') },
+    { kind: 'economy', label: T('Economia e analisi'), open: () => pickTopic(T('ECONOMIA E ANALISI'), ['macro', 'analisi'].map((t) => ({ topic: t as QuizTopic }))) },
+  ];
+}
+
+/** Se lo scaffale ha più temi si sceglie il tema, poi il piccolo argomento. */
+async function pickTopic(title: string, topics: { topic: QuizTopic; town?: number }[], allRead?: () => Promise<void>) {
+  if (topics.length === 1) return topicShelf(topics[0].topic, allRead);
+  for (;;) {
+    const label = (x: { topic: QuizTopic; town?: number }) => `${TOPIC_LABEL[x.topic]}${x.town ? ` · ${TOWNS[x.town]?.name ?? ''}` : ''} (${readCount(x.topic)})`;
+    const c = await choose([...topics.map(label), T('Rimetto a posto')], { cancel: true, title });
+    if (c < 0 || c === topics.length) return;
+    await topicShelf(topics[c].topic, allRead);
+  }
+}
+
+/** Un ripiano: i piccoli argomenti di un tema. Si sceglie un libro, lo si legge, la prima lettura dà Conoscenza. In fondo, le lezioni sullo stesso tema. */
+async function topicShelf(topic: QuizTopic, allRead?: () => Promise<void>) {
+  const books = booksFor([topic]);
   for (;;) {
     const read = (b: Book) => S.booksRead.includes(b.id);
-    const c = await choose([...books.map((b) => `${read(b) ? '✓ ' : '• '}${b.title}`), T('Lezioni su questi temi'), T('Rimetto a posto')], { cancel: true, title });
+    const c = await choose([...books.map((b) => `${read(b) ? '✓ ' : '• '}${b.title}`), T('Lezioni su questo tema'), T('Rimetto a posto')], { cancel: true, title: TOPIC_LABEL[topic].toUpperCase() });
     if (c < 0 || c === books.length + 1) return;
-    if (c === books.length) { await openLessons(topics); continue; }
+    if (c === books.length) { await openLessons([topic]); continue; }
     const b = books[c];
     await say(b.pages, b.title);
     if (!read(b)) {
       S.booksRead.push(b.id); reward({ xp: REWARD.xp.book, event: 'lesson', save: false });
-      if (books.every(read)) await allRead?.();
+      await allRead?.();
     }
   }
 }
 
-/** Scaffale della Sezione della Whale: guida alla sfida, libri di contesto e di materia, con le lezioni sugli stessi temi. */
-async function mentorShelf(n: number) {
-  if (!n) return say(T('Questa Biblioteca non ha una Whale di riferimento.'), T('Bibliotecaria'));
-  const md = mentor(n, S.track);
-  const topics = mentorTopics(n, S.track, S.mixedClasses);
-  return bookShelf(T`SEZIONE DELLA WHALE · ${topics.map((t) => TOPIC_LABEL[t]).join(', ')}`, mentorBooks(n, S.track, S.mixedClasses), topics, async () => {
-    // il premio per la sezione completa si prende una volta sola, anche se in seguito arrivano volumi nuovi
-    if (S.flags[`shelf_${n}`]) return;
+/** Scaffale dei temi della città: chi ne legge tutti i libri guadagna Reputazione, una volta sola. */
+async function cityShelf(n: number) {
+  if (!n) return say(T('Questa Biblioteca non ha temi di una città.'), T('Bibliotecaria'));
+  const topics = cityTopics(n);
+  return pickTopic(T`TEMI DI ${(TOWNS[n]?.name ?? '').toUpperCase()}`, topics.map((topic) => ({ topic })), async () => {
+    if (S.flags[`shelf_${n}`] || !booksFor(topics).every((b) => S.booksRead.includes(b.id))) return;
     S.flags[`shelf_${n}`] = true;
     reward({ rep: REWARD.rep.bookSection, save: false });
-    await say([T`Hai letto tutta la sezione di ${md.name}. Reputazione +10.`, T('Ora sai cosa ti aspetta nel duello: in bocca al lupo!')], T('Bibliotecaria'));
+    await say(T`Hai letto tutti i libri sui temi di ${TOWNS[n]?.name ?? T('questa città')}. Reputazione +10.`, T('Bibliotecaria'));
   });
 }
 
+async function pastShelf(n: number) {
+  const past = pastTopics(n);
+  if (!past.length) return say([T('Qui finiscono i temi delle città che hai già attraversato.'), T('Questa è la prima città del viaggio: lo scaffale si riempirà strada facendo.')], T('Bibliotecaria'));
+  return pickTopic(T('CITTÀ GIÀ ATTRAVERSATE'), past);
+}
+
 /**
- * Avviso sulla porta di un Exchange (o di Wall Street) per chi sta per entrare senza aver mai aperto i libri su cui
- * verrà interrogato: dice che cosa si chiede lì dentro e dove lo si studia. Compare una volta sola e non blocca:
- * al passo successivo si entra. Restituisce le righe da mostrare, oppure null se non c'è nulla da dire.
+ * Avviso sulla porta di un Exchange (o di Wall Street) per chi sta per entrare senza aver mai aperto i libri dei suoi
+ * temi: dice di che cosa si discute lì dentro e dove lo si studia. Compare una volta sola e non blocca: al passo
+ * successivo si entra. Restituisce le righe da mostrare, oppure null se non c'è nulla da dire.
  */
 export function doorNotice(to: string): string[] | null {
   const m = Number(/^academy_(\d+)$/.exec(to)?.[1] ?? 0);
   if (m) {
-    const topics = mentorTopics(m, S.track, S.mixedClasses);
-    if (S.badges !== m - 1 || S.flags[`doorNotice_${m}`] || S.booksRead.includes(`b_guide_${m}`) || topics.some(topicOpened)) return null;
+    const topics = cityTopics(m);
+    if (S.badges !== m - 1 || S.flags[`doorNotice_${m}`] || topics.some(topicOpened)) return null;
     S.flags[`doorNotice_${m}`] = true;
     return [
-      T`Sulla porta dell'Exchange c'è un avviso: «Qui si interroga su ${topics.map((t) => TOPIC_LABEL[t]).join(', ')}. Allievi e Whale non fanno sconti: chi sbaglia perde Fiducia.»`,
-      T`«I libri su questi temi sono nella Sezione della Whale, alla Biblioteca di ${TOWNS[m]?.name ?? T('questa città')}. Chi li ha letti entra preparato.»`,
+      T`Sulla porta dell'Exchange c'è un avviso: «Qui si discute di ${topics.map((t) => TOPIC_LABEL[t]).join(', ')}. Allievi e Whale non fanno sconti: chi sbaglia perde Fiducia.»`,
+      T`«I libri su questi temi sono nella Biblioteca di ${TOWNS[m]?.name ?? T('questa città')}, sullo scaffale in alto a sinistra. Chi li ha letti entra preparato.»`,
       T('Quei libri non li hai ancora aperti. La porta non è chiusa: decidi tu quando entrare.'),
     ];
   }
@@ -103,8 +132,8 @@ export function doorNotice(to: string): string[] | null {
     if (S.badges < 8 || S.flags.doorNotice_league || topicOpened('macro') || topicOpened('analisi')) return null;
     S.flags.doorNotice_league = true;
     return [
-      T`Sulla porta di Wall Street c'è un avviso: «I Superiori interrogano su ${TOPIC_LABEL.macro}, ${TOPIC_LABEL.analisi} e ${TOPIC_LABEL.regole}, poi su tutto ciò che hai studiato finora.»`,
-      T('«I libri su questi temi sono nella Sezione di Wall Street e nello scaffale Regole e truffe, in ogni Biblioteca.»'),
+      T`Sulla porta di Wall Street c'è un avviso: «Qui si discute di ${TOPIC_LABEL.macro}, ${TOPIC_LABEL.analisi} e ${TOPIC_LABEL.regole}, poi di tutto ciò che hai studiato finora.»`,
+      T('«I libri su questi temi sono negli scaffali Economia e analisi e Regole e truffe, in ogni Biblioteca.»'),
       T('Quei libri non li hai ancora aperti. La porta non è chiusa: decidi tu quando entrare.'),
     ];
   }
@@ -113,19 +142,7 @@ export function doorNotice(to: string): string[] | null {
 
 /** Interazione con uno scaffale della Biblioteca (vedi Section in maps.ts). */
 export async function librarySection(sec: Section, town: number) {
-  switch (sec.kind) {
-    case 'mentor': return mentorShelf(town);
-    case 'general': {
-      await say(T`${sec.label}: i volumi di tutte le Whale incontrate finora, e gli scaffali comuni a ogni Biblioteca.`);
-      const common = commonShelves();
-      const c = await choose([T('Lezioni'), ...common.map((x) => x.label), T('Niente, grazie')], { cancel: true });
-      if (c === 0) return openLessons();
-      if (c > 0 && c <= common.length) return common[c - 1].open();
-      return;
-    }
-    case 'review': return reviewDuel();
-    case 'index': await say(T`${sec.label}: le schede delle Asset Card che hai raccolto.`); return openInvestidex();
-  }
+  return librarySections(town).find((x) => x.kind === sec.kind)?.open();
 }
 
 export async function station(w: WorldApi) {

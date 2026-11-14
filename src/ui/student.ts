@@ -49,17 +49,17 @@ export function missionStars(): { id: string; title: string; stars: number; done
 
 export function nextStep(cards: TopicCard[]): string {
   const due = cards.reduce((s, c) => s + c.due, 0);
-  if (due >= 3) return T`Hai ${due} domande in scadenza: un ripasso nell'Exchange o la domanda del giorno le rimettono in ordine.`;
+  if (due >= 3) return T`Hai ${due} domande in scadenza: il ripasso della Professoressa del giorno, alla Banca, le rimette in ordine.`;
   const w = weakest(cards)[0];
   if (w && w.known / w.total < 0.5) {
     if (w.topic === 'grotte') return T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: rileggi i taccuini delle guide, all'ingresso delle grotte.`;
-    const book = booksFor([w.topic]).find((b) => !b.id.endsWith('_ctx'));
+    const book = booksFor([w.topic])[0];
     const town = townForTopic(w.topic);
     return book ? T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: rileggi «${book.title}»${town ? T` nella Biblioteca di ${town}` : ''}, poi sfida gli allievi.` : T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: le Lezioni in Biblioteca lo coprono.`;
   }
   const ms = missionStars().find((m) => m.sim && m.done && m.stars < 3);
   if (ms) return T`La missione «${ms.title}» ha ${ms.stars}/3 stelle di processo: puoi ripeterla dalla Whale per migliorarle.`;
-  if (S.badges < 8) return T`Prossima Whale: ${mentor(S.badges + 1, S.track).name}. Prima passa dalla Sezione della Whale in Biblioteca.`;
+  if (S.badges < 8) return T`Prossima Whale: ${mentor(S.badges + 1, S.track).name}. Prima leggi i libri sui temi della sua città, in Biblioteca.`;
   return T('Percorso completo: Wall Street e la Torre delle Sfide ti aspettano. Rileggi il Diario per allenare il senno di poi.');
 }
 
@@ -82,7 +82,7 @@ export async function openStudentFolder() {
         </div>
         <div>
           <h4 style="margin:4px 0">Da rafforzare</h4>
-          ${weak.length ? weak.map((k) => { const b = k.topic === 'grotte' ? undefined : booksFor([k.topic]).find((x) => !x.id.endsWith('_ctx')); const t = townForTopic(k.topic); return `<div class="small"><b>${esc(TOPIC_LABEL[k.topic])}</b>${k.wrong ? T` · ${k.wrong} sbagliate` : ''}${k.topic === 'grotte' ? T`<br><span class="muted">📖 Taccuini delle guide, all'ingresso delle grotte</span>` : ''}${b ? `<br><span class="muted">📖 «${esc(b.title)}»${t ? T`, Biblioteca di ${esc(t)}` : ''}</span>` : ''}</div>`; }).join('') : T('<p class="small muted">Ancora nessun duello: tutto da scoprire.</p>')}
+          ${weak.length ? weak.map((k) => { const b = k.topic === 'grotte' ? undefined : booksFor([k.topic])[0]; const t = townForTopic(k.topic); return `<div class="small"><b>${esc(TOPIC_LABEL[k.topic])}</b>${k.wrong ? T` · ${k.wrong} sbagliate` : ''}${k.topic === 'grotte' ? T`<br><span class="muted">📖 Taccuini delle guide, all'ingresso delle grotte</span>` : ''}${b ? `<br><span class="muted">📖 «${esc(b.title)}»${t ? T`, Biblioteca di ${esc(t)}` : ''}</span>` : ''}</div>`; }).join('') : T('<p class="small muted">Ancora nessun duello: tutto da scoprire.</p>')}
           <h4 style="margin:8px 0 4px">Missioni (stelle di processo)</h4>
           ${ms.map((m) => `<div class="small">${m.done ? '🏅' : '○'} ${esc(m.title)} <span class="${m.stars === 3 ? 'good' : 'muted'}">${m.sim ? '★'.repeat(m.stars) + '☆'.repeat(3 - m.stars) : T('(a scelta, senza stelle)')}</span></div>`).join('')}
           <h4 style="margin:8px 0 4px">Duelli e Diario</h4>

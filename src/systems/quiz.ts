@@ -52,7 +52,7 @@ export function ngBoost(): number {
   return 0.5 * Math.min(2, S?.ngPlus ?? 0);
 }
 
-/** Argomenti di Wall Street: non hanno una Whale, i loro libri stanno negli scaffali comuni di ogni Biblioteca. */
+/** Argomenti di Wall Street: non hanno una Whale, i loro libri stanno negli scaffali comuni di ogni Biblioteca (Regole e truffe, Economia e analisi). */
 export const WALL_STREET_TOPICS: QuizTopic[] = ['macro', 'analisi', 'regole'];
 
 /** Il giocatore ha già aperto l'argomento: ha letto almeno una sua lezione o un suo libro. */
@@ -184,7 +184,7 @@ function pickByTarget(topics: QuizTopic[], n: number, target: number, rng: () =>
  * Domande di una grotta (sfidanti, ostriche, eremita): per ogni livello chiesto da `target` si prendono prima le
  * domande della grotta che il giocatore non ha mai visto; finite quelle, domande mai viste degli argomenti del suo
  * percorso (`fallback`); solo dopo si ripetono quelle viste meno spesso. Niente domande generate e niente ripasso:
- * in grotta si trovano cose nuove, e ciò che si sbaglia torna poi nel Ripasso della Biblioteca.
+ * in grotta si trovano cose nuove, e ciò che si sbaglia torna poi nel Ripasso (alla Banca, dalla Professoressa del giorno).
  * `duelsLeft`: quanti duelli della grotta restano da fare, questo compreso. Le domande mai viste di un livello vengono
  * divise tra i duelli rimasti, così l'ultimo sfidante non resta con le sole domande più difficili.
  */

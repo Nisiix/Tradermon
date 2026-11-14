@@ -194,7 +194,7 @@ async function startTrack(track: Track, w: WorldApi) {
     else await say(T('Nessun acquisto per ora: la Valigetta resta sigillata. La apri quando vuoi, da una Banca.'), T('Dott.ssa Ratio'));
   }
   await say([T`Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu${keysOf('menu')[0] ? T` (tasto ${keysOf('menu')[0]})` : ''}, insieme all'Investidex e al tuo Profilo.`], T('Prof. Saldi'));
-  await say([T('Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.'), T('Gli scaffali in alto a sinistra sono la Sezione della Whale: libri sull\'argomento su cui la Whale di quella città ti interrogherà nel duello.'), T('Leggili prima di sfidarla: in questo gioco si vince studiando, non indovinando.')], T('Prof. Saldi'));
+  await say([T('Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.'), T('Ogni libro spiega un piccolo argomento. In alto a sinistra trovi i temi della città, a destra quelli delle città che hai già attraversato.'), T('Leggili prima di entrare nell\'Exchange: in questo gioco si vince studiando, non indovinando.')], T('Prof. Saldi'));
   save();
   w.refresh();
   await wait(200);
@@ -237,7 +237,7 @@ export async function leoTour(w: WorldApi) {
   await say([
     T('Banca del Portafoglio: qui ricarichi la Fiducia e salvi la partita. Se perdi un duello, riparti dall\'ultima Banca in cui sei entrat{o|a}.'),
     T('Allo sportello della Banca segui anche il tuo conto Paper: compri, vendi e controlli il portafoglio, con denaro finto.'),
-    T('Biblioteca: nella Sezione della Whale ci sono i libri sull\'argomento del suo duello. La Bibliotecaria ti spiega le lezioni e nell\'archivio ripassi gli errori.'),
+    T('Biblioteca: solo libri, un piccolo argomento ciascuno, sui temi della città e di quelle già attraversate. Il ripasso degli errori lo fai alla Banca, con la Professoressa del giorno.'),
     T('Exchange: prima affronti i due allievi, che non si lasciano scavalcare, poi la Whale. Se la batti nel duello di conoscenza ricevi il suo Attestato.'),
     T('Senza quell\'Attestato la Guardia della Borsa, in fondo alla strada, non ti fa passare verso il Percorso 2.'),
     T('Nelle case vivono gli abitanti: entra pure, qualcuno ha una storia da raccontarti. La stazione invece apre solo dal secondo Attestato.'),

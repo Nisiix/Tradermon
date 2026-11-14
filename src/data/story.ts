@@ -95,7 +95,7 @@ export const TRAINER_LINES = [
 
 export const TRAINER_TIPS = [
   T('Consiglio: leggi sempre le spiegazioni, anche delle risposte giuste.'),
-  T('Alla Biblioteca puoi ripassare le domande che hai sbagliato.'),
+  T('Alla Banca la Professoressa del giorno ti fa ripassare le domande che hai sbagliato.'),
   T('Le Zone di Mercato pescano prima le domande che sbagli più spesso.'),
   T('In Banca la Dott.ssa Ratio smonta i bias con una riflessione: non servono scorciatoie.'),
   T('Il rendimento senza rischio non esiste. Diffida di chi lo promette.'),

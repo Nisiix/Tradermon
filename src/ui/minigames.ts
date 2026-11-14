@@ -27,7 +27,7 @@ function finish(id: GameId, score: number) {
   return say([T`Punteggio: ${score}/100${score > prev ? (prev ? T(' · nuovo record!') : '') : T` (record ${prev})`}.`, T`+${Math.round(score / 10) + 5} Conoscenza.`], T('Minigioco'));
 }
 
-/** Menu dei minigiochi, offerto dalla Bibliotecaria e dall'Operatrice. */
+/** Menu dei minigiochi, offerto dalla Professoressa del giorno (alla Banca) e dall'Operatrice. */
 export async function playMinigame(who: string) {
   const c = await choose([...MINIGAMES.map((m) => `${m.name}${S.minigames[m.id] !== undefined ? ` (record ${S.minigames[m.id]})` : ''}`), T('Annulla')], { cancel: true, prompt: T('Quale minigioco? Sono brevi e non toccano il conto.'), who });
   if (c < 0 || c >= MINIGAMES.length) return;
