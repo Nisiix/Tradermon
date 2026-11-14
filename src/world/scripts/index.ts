@@ -16,7 +16,7 @@ import { questTalk } from '../quests';
 import { secretVisible, secretTalk, secretHint } from '../secrets';
 import type { WorldApi } from './common';
 import { prof, chooseCase, rival, mom, LEO_TOUR_NPC, LEO_TOUR_FLAG } from './story';
-import { trainer, speculator, student, mentorBattle, guard, league, tower, hermit, legend, daily } from './duels';
+import { trainer, speculator, student, mentorBattle, guard, league, tower, hermit, legend, dailyDesk } from './duels';
 import { librarian, station, simzone, casino, archivist } from './places';
 import { caveGuide, relic, oyster, relicTaken } from './caves';
 import { T } from '../../i18n';
@@ -70,7 +70,7 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
     case 'nurse': return openClinic(w.town());
     case 'pc': return openInvestidex();
     case 'librarian': return librarian(n);
-    case 'daily': return daily();
+    case 'daily': return dailyDesk();
     case 'station': return station(w);
     case 'simop': return simzone();
     case 'croupier': return casino();

@@ -791,7 +791,7 @@ export class WorldScene extends Phaser.Scene {
     }
     const sec = this.map.sections?.find((sc) => fy === sc.y && fx >= sc.x && fx < sc.x + sc.w);
     if (t === TILE.SHELF && sec) return void this.runScript(() => librarySection(sec, Number(/^library_(\d+)$/.exec(this.map.id)?.[1] ?? 0)));
-    if (t === TILE.SHELF) return void this.runScript(() => say(T('Scaffali pieni di libri di economia. Le lezioni si leggono parlando con la Bibliotecaria.')));
+    if (t === TILE.SHELF) return void this.runScript(() => say(T('Scaffali pieni di libri di economia. I temi della città sono sugli scaffali vicino alla Bibliotecaria.')));
     if (t === TILE.NOISE) return void this.runScript(() => say(hasTech(TECH.COLD) ? T('Il rumore delle notizie non ti tocca più: puoi attraversare.') : [T('Un muro di notizie urlate, grafici impazziti e "consigli" dai social.'), T('Serve una mente fredda per attraversarlo (Whale 7).')]));
     if (t === TILE.STATION) { const st = this.npcs.find((x) => x.def.kind === 'station'); if (st) void this.runScript(() => interact(st.def, this.api())); }
     if (t === TILE.BOULDER) return void this.runScript(() => this.breakBoulder(fx, fy));

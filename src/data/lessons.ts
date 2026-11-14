@@ -11,7 +11,7 @@ export const LESSONS: Lesson[] = [
   L('l_rischio_2', 'rischio', T('Volatilità, drawdown e Sharpe'), 'ip_sharpe',
     T('La volatilità misura quanto un prezzo oscilla. Il massimo drawdown è la caduta peggiore da un massimo a un minimo successivo.'),
     T('Le perdite sono asimmetriche: dopo un −50% serve un +100% per tornare in pari.'),
-    T('L\'indice di Sharpe divide il rendimento per la volatilità: premia chi guadagna con meno scossoni. In Tradermon Wall Street si vince con lo Sharpe, non con il rendimento puro.')),
+    T('L\'indice di Sharpe divide il rendimento per la volatilità: premia chi guadagna con meno scossoni.')),
   L('l_ordini_1', 'ordini', T('Tipi di ordine'), 'ig_order_types',
     T('Ordine a mercato: eseguito subito al miglior prezzo disponibile. Veloce, ma il prezzo finale non è garantito.'),
     T('Ordine limite: compri (o vendi) solo a un prezzo uguale o migliore di quello indicato. Controlli il prezzo, ma potresti non essere eseguito.'),

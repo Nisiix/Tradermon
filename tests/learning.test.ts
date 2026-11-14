@@ -66,11 +66,11 @@ describe('ogni argomento è spiegato prima di essere chiesto', () => {
     for (const b of BOOKS) for (const p of b.pages) expect(p.length, `${b.id}: ${p.slice(0, 40)}`).toBeLessThanOrEqual(400);
   });
 
-  it('la sezione di ogni Whale contiene i libri di approfondimento dei suoi argomenti', () => {
+  it('lo scaffale dei temi di ogni città divide ogni tema in almeno quattro piccoli argomenti', () => {
     for (const tr of TRACKS) for (let m = 1; m <= 8; m++) {
       start(tr, m - 1);
       const books = mentorBooks(m, S.track, S.mixedClasses);
-      for (const t of mentorTopics(m, S.track, S.mixedClasses)) expect(books.filter((b) => b.topic === t && b.id !== `b_guide_${m}`).length, `${tr} Whale ${m} ${t}`).toBeGreaterThanOrEqual(2);
+      for (const t of mentorTopics(m, S.track, S.mixedClasses)) expect(books.filter((b) => b.topic === t).length, `${tr} città ${m} ${t}`).toBeGreaterThanOrEqual(4);
     }
   });
 });
@@ -99,7 +99,7 @@ describe('fuori dagli Exchange si chiede solo ciò che è stato studiato', () =>
     expect(studiedTopics()).not.toContain('regole');
     S.lessonsRead.push('l_regole_1');
     expect(studiedTopics()).toContain('regole');
-    S.booksRead.push('b_macro_1');
+    S.booksRead.push('b_m_pil');
     expect(studiedTopics()).not.toContain('macro');
     S.badges = 8;
     expect(studiedTopics()).toContain('macro');
@@ -161,7 +161,7 @@ describe('avviso sulla porta per chi non ha ancora studiato', () => {
     expect(first?.join(' ')).toContain('Ordini di borsa');
     expect(doorNotice('academy_2')).toBeNull();
     start('listed', 1);
-    S.booksRead.push('b_ordini_1');
+    S.booksRead.push('b_o_tipi');
     expect(doorNotice('academy_2')).toBeNull();
     // l'Exchange di una Whale già battuta, o non ancora raggiungibile, non avvisa
     start('listed', 3);
@@ -174,7 +174,7 @@ describe('avviso sulla porta per chi non ha ancora studiato', () => {
     expect(doorNotice('league')?.join(' ')).toContain('Macroeconomia');
     expect(doorNotice('league')).toBeNull();
     start('listed', 8);
-    S.booksRead.push('b_analisi_1');
+    S.booksRead.push('b_a_multipli');
     expect(doorNotice('league')).toBeNull();
   });
 });

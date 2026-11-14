@@ -35,7 +35,7 @@ export interface Warp { x: number; y: number; to: string; tx: number; ty: number
 /** xp: la prima lettura dà un po' di Conoscenza (incisioni delle grotte, Cippo dei Costi). */
 export interface Sign { x: number; y: number; text: string[]; xp?: boolean }
 /** Scaffali "parlanti" della Biblioteca: il gruppo di celle (x..x+w-1, y) apre una sezione. */
-export interface Section { x: number; y: number; w: number; kind: 'mentor' | 'general' | 'review' | 'index'; label: string }
+export interface Section { x: number; y: number; w: number; kind: 'city' | 'past' | 'rules' | 'economy'; label: string }
 /** Insegna sul muro frontale di un edificio pubblico: centrata sulla porta (x), appesa al bordo tra tetto e muro (y = riga del muro). */
 export interface Plaque { x: number; y: number; text: string; kind: 'clinic' | 'gym' | 'public' }
 
@@ -50,7 +50,7 @@ export interface MapDef {
   signs: Sign[];
   /** Insegne degli edifici speciali (le case normali non ne hanno). */
   plaques?: Plaque[];
-  /** Sezioni della Biblioteca (scaffali che aprono libri, lezioni, ripasso, Investidex). */
+  /** Scaffali della Biblioteca: ognuno raccoglie i libri di uno o più temi, un piccolo argomento per libro. */
   sections?: Section[];
   interior: boolean;
   town?: number;
@@ -222,7 +222,7 @@ function buildHomeTown() {
       { id: 't0_aide', x: w - 2, y: 9, pal: 22, dir: 2, name: T('Assistente'), kind: 'aide' },
       { id: 't0_kid', x: 12, y: 10, pal: 21, dir: 0, name: T('Bambina'), kind: 'talk', lines: [T('Il mio papà dice che i soldi sotto il materasso perdono valore. Si chiama inflazione!')] },
       { id: 't0_old', x: 17, y: 10, pal: 19, dir: 1, name: T('Nonno Elio'), kind: 'talk', lines: [T('Ai miei tempi si diceva: "Non mettere tutte le uova nello stesso paniere".'), T('Vale ancora oggi, sai?')] },
-      { id: 't0_student', x: 21, y: 12, pal: 23, dir: 3, name: T('Studentessa'), kind: 'talk', lines: [T('Torno ora dalla Biblioteca di Ponte Cedola: ogni città dalla prossima ne ha una.'), T('Gli scaffali in alto a sinistra sono la Sezione della Whale: ci sono i libri sull\'argomento del suo duello.'), T('Li ho letti tutti prima della sfida e ho risposto a quasi ogni domanda!')] },
+      { id: 't0_student', x: 21, y: 12, pal: 23, dir: 3, name: T('Studentessa'), kind: 'talk', lines: [T('Torno ora dalla Biblioteca di Ponte Cedola: ogni città dalla prossima ne ha una.'), T('Ogni libro spiega un piccolo argomento: in alto a sinistra ci sono i temi della città, a destra quelli delle città già attraversate.'), T('Li ho letti tutti prima di entrare nell\'Exchange: le risposte le sapevo, non le indovinavo!')] },
     ],
     warps: [
       { x: home.dx, y: home.dy, to: 'home', tx: 4, ty: 6, dir: 1 },
@@ -266,6 +266,8 @@ function addClinic(n: number, dx: number, dy: number, back: string) {
   c.npcs.push(
     { id: `nurse_${n}`, x: 5, y: 2, pal: 4, dir: 0, name: T('Dott.ssa Ratio'), kind: 'nurse' },
     { id: `pc_${n}`, x: 9, y: 2, pal: 0, dir: 0, name: T('Terminale'), kind: 'pc', hiddenSprite: true },
+    // la Professoressa del giorno allena: domanda del giorno, ripasso delle domande in scadenza, minigiochi
+    { id: `daily_${n}`, x: 2, y: 6, pal: 18, dir: 3, name: T('Professoressa del giorno'), kind: 'daily' },
   );
   c.warps[0].tx = dx; c.warps[0].ty = dy + 1;
   MAPS[c.id] = c;
@@ -335,19 +337,18 @@ function buildTown(n: number) {
 
   const lb = interior(`library_${n}`, T`Biblioteca di ${def.name}`, 11, 9, id, lib.dx, lib.dy);
   rect(lb.tiles, 1, 2, 4, 1, TILE.SHELF); rect(lb.tiles, 6, 2, 4, 1, TILE.SHELF); rect(lb.tiles, 1, 4, 3, 1, TILE.SHELF); rect(lb.tiles, 7, 4, 3, 1, TILE.SHELF);
-  // sezioni: a sinistra i libri della Whale della città (l'argomento del suo duello), a destra le lezioni generali,
-  // in basso il ripasso degli errori e l'Investidex
-  lb.tiles[1][2] = TILE.POSTER; lb.tiles[1][7] = TILE.FRAME; // manifesto sopra la Sezione della Whale, quadro sopra quella generale
+  // solo libri, un piccolo argomento per libro: in alto a sinistra i temi della città (Exchange, Whale e sfidanti fin
+  // qui), a destra quelli delle città già attraversate, che tornano lungo i Percorsi; in basso le regole contro le
+  // truffe e, a destra, macroeconomia e analisi. Niente sfide qui dentro: il ripasso e la domanda del giorno stanno
+  // alla Banca del Portafoglio.
+  lb.tiles[1][2] = TILE.POSTER; lb.tiles[1][7] = TILE.FRAME;
   lb.sections = [
-    { x: 1, y: 2, w: 4, kind: 'mentor', label: T`Sezione della Whale n. ${n}` },
-    { x: 6, y: 2, w: 4, kind: 'general', label: T('Sezione generale: lezioni') },
-    { x: 1, y: 4, w: 3, kind: 'review', label: T('Archivio del ripasso') },
-    { x: 7, y: 4, w: 3, kind: 'index', label: 'Investidex' },
+    { x: 1, y: 2, w: 4, kind: 'city', label: T`Temi di ${def.name}` },
+    { x: 6, y: 2, w: 4, kind: 'past', label: T('Città già attraversate') },
+    { x: 1, y: 4, w: 3, kind: 'rules', label: T('Regole e truffe') },
+    { x: 7, y: 4, w: 3, kind: 'economy', label: T('Economia e analisi') },
   ];
-  lb.npcs.push(
-    { id: `lib_${n}`, x: 5, y: 3, pal: 23, dir: 0, name: T('Bibliotecaria'), kind: 'librarian', data: { town: n } },
-    { id: `daily_${n}`, x: 2, y: 6, pal: 18, dir: 3, name: T('Professoressa del giorno'), kind: 'daily' },
-  );
+  lb.npcs.push({ id: `lib_${n}`, x: 5, y: 3, pal: 23, dir: 0, name: T('Bibliotecaria'), kind: 'librarian', data: { town: n } });
   MAPS[lb.id] = lb;
 
   const ac = interior(`academy_${n}`, T`Exchange di ${def.name}`, 13, 13, id, acad.dx, acad.dy);
@@ -398,7 +399,7 @@ const TOWN_TALK = [
   T('Lo sapevi? Dopo un −50% serve un +100% per tornare in pari!'),
   T('Mio nonno ha fatto un piano di accumulo per 30 anni. Dice che il segreto è stato non guardare troppo spesso.'),
   T('Le Guardie della Borsa ti lasciano passare con l\'Attestato della Whale della città: lo vinci nel duello.'),
-  T('In Biblioteca il ripasso ti ripropone le domande al momento giusto. Io ci passo ogni giorno!'),
+  T('Alla Banca la Professoressa del giorno ti ripropone le domande al momento giusto. Io ci passo ogni giorno!'),
   T('Le cripto non dormono mai: sono aperte anche la domenica!'),
   T('Un signore elegante mi ha offerto il 20% al mese. Gli ho detto di no. Ho fatto bene, vero?'),
   T('Il treno collega le città visitate dal secondo Attestato. Dal quarto ti trasferisci ovunque dalla Mappa della Regione!'),

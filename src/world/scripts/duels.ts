@@ -38,6 +38,7 @@ import { CAVES, CAVE_TIPS, caveOf } from '../caves';
 import type { Arena } from '../../ui/arena';
 import type { Question, QuizTopic } from '../../types';
 import { T } from '../../i18n';
+import { playMinigame } from '../../ui/minigames';
 
 export async function trainer(n: NpcDef, w: WorldApi) {
   // una sfida sola: battuto, l'investitore non ti viene più incontro e ti parla solo del posto in cui siete
@@ -143,9 +144,9 @@ export async function mentorBattle(m: number, w: WorldApi) {
   await say([md.intro, ...(m > 1 || S.flags.medalRule ? [] : [T('Da me si guadagnano due cose. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada verso la città successiva.'), T('Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che ti ho appena insegnato. Puoi viaggiare con i soli Attestati, ma entri a Wall Street solo se hai tutti e otto i Sigilli.')])], md.name);
   S.flags.medalRule = true;
   const unread = mentorBooks(m, S.track, S.mixedClasses).filter((b) => !S.booksRead.includes(b.id)).length;
-  if (unread) await say([T`Un consiglio da Whale: nella Biblioteca di ${TOWNS[m]?.name ?? T('questa città')} c'è la mia sezione, con i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(' e ')}.`, T('Le domande del duello vengono da lì.')], md.name);
-  // dopo una sconfitta si torna solo dopo aver studiato: un libro della sezione o un ripasso in Biblioteca
-  if (!retryUnlocked(`m${m}`)) return say([T('Sei tornat{o|a} presto. Prima di riprovare, studia.'), T`Leggi un libro della mia sezione nella Biblioteca di ${TOWNS[m]?.name ?? T('questa città')}, oppure fai il Ripasso: le domande che hai sbagliato sono lì ad aspettarti.`], md.name);
+  if (unread) await say([T`Un consiglio da Whale: nella Biblioteca di ${TOWNS[m]?.name ?? T('questa città')} ci sono i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(T(' e '))}, un piccolo argomento per libro.`, T('Chi li ha letti sa di che cosa parliamo qui dentro.')], md.name);
+  // dopo una sconfitta si torna solo dopo aver studiato: un libro o una lezione, oppure un ripasso alla Banca
+  if (!retryUnlocked(`m${m}`)) return say([T('Sei tornat{o|a} presto. Prima di riprovare, studia.'), T`Leggi un libro sui temi di ${TOWNS[m]?.name ?? T('questa città')} nella sua Biblioteca, oppure fai il Ripasso con la Professoressa del giorno, alla Banca: le domande che hai sbagliato sono lì ad aspettarti.`], md.name);
   {
     const conc = errorsAllowed(DUEL.mentor.n, DUEL.mentor.need), left = errorsLeft(S.stats.fiducia, 0, DUEL.mentor.n, DUEL.mentor.need);
     if (left < conc) await say([T`La tua Fiducia è a ${S.stats.fiducia}: ti basta per ${left === 1 ? T('un solo errore') : left === 0 ? T('nessun errore') : `${left} errori`} invece dei ${conc} concessi. Se arriva a zero durante il duello vai in tilt.`, T('In Banca puoi ricaricare il credito di Fiducia prima di iniziare.')], md.name);
@@ -298,13 +299,21 @@ function nextReviewLine(): string {
 
 export async function reviewDuel() {
   const q = reviewQueue();
-  if (!q.length) return say([T('Oggi non hai domande in scadenza. Ottimo lavoro!'), nextReviewLine()], T('Bibliotecaria'));
+  if (!q.length) return say([T('Oggi non hai domande in scadenza. Ottimo lavoro!'), nextReviewLine()], T('Professoressa del giorno'));
   const qs = shuffle(q.slice(0, 12)).slice(0, DUEL.review.n);
   const prevFid = S.stats.fiducia;
-  await runDuel({ foeName: T('Ripasso'), foeTitle: T('Biblioteca'), foePal: PAL.LIB, questions: qs, need: qs.length, damage: 0, practice: true, arena: 'biblioteca' });
+  await runDuel({ foeName: T('Ripasso'), foeTitle: T('Professoressa del giorno'), foePal: 18, questions: qs, need: qs.length, damage: 0, practice: true, arena: 'biblioteca' });
   S.stats.fiducia = prevFid;
   track('review');
-  return say([T('Ogni domanda giusta torna più avanti: dopo 1, 3, 7 e poi 21 giorni. Quelle sbagliate tornano subito.'), T('Rivedere al momento giusto è il modo migliore per ricordare.')], T('Bibliotecaria'));
+  return say([T('Ogni domanda giusta torna più avanti: dopo 1, 3, 7 e poi 21 giorni. Quelle sbagliate tornano subito.'), T('Rivedere al momento giusto è il modo migliore per ricordare.')], T('Professoressa del giorno'));
+}
+
+/** La Professoressa del giorno, alla Banca del Portafoglio: gli allenamenti fuori dagli Exchange (in Biblioteca si studia e basta). */
+export async function dailyDesk() {
+  const c = await choose([T('Domanda del giorno'), T('Ripasso (domande in scadenza)'), T('Minigiochi didattici'), T('Niente, grazie')], { cancel: true, prompt: T('Qui ci si allena: la domanda del giorno, il ripasso delle domande in scadenza e i minigiochi. Che cosa scegli?'), who: T('Professoressa del giorno') });
+  if (c === 0) return daily();
+  if (c === 1) return reviewDuel();
+  if (c === 2) return playMinigame(T('Professoressa del giorno'));
 }
 
 export async function daily() {
@@ -381,7 +390,7 @@ export async function league(i: number, w: WorldApi) {
   // Wall Street: dal livello 3,25 del primo Superiore al livello 4 (esperto) dell'ultimo e del Campione
   const P = i === 4 ? DUEL.champion : DUEL.league;
   if (!S.flags[`league_${i}_p1`]) {
-    if (!retryUnlocked(`league_${i}`)) return say([T('Prima di riprovare, ripassa.'), T('Fai il Ripasso in Biblioteca o leggi una lezione: le domande che hai sbagliato torneranno.')], L.name);
+    if (!retryUnlocked(`league_${i}`)) return say([T('Prima di riprovare, ripassa.'), T('Fai il Ripasso alla Banca o leggi un libro in Biblioteca: le domande che hai sbagliato torneranno.')], L.name);
     const qs = withPreviousMistakes(`league_${i}`, pickQuestions(topics, P.n, { target: targetDiff(STAGE_LEAGUE + Math.min(i, 3)) }));
     const r = await runDuel({ foeName: L.name, foeTitle: L.title, foePal: L.palette, questions: qs, ...P, arena: 'lega' });
     if (!r.win) { lockRetry(`league_${i}`, r.wrong); await say(T('Non sei ancora pront{o|a}. Torna dopo aver ripassato.'), L.name); return defeatRespawn(w); }
