@@ -43,6 +43,32 @@ type Dir = 'up' | 'down' | 'left' | 'right';
 const COUNTERS = [TILE.COUNTER, TILE.CASE_TABLE, TILE.TABLE];
 interface Walk { fx: number; fy: number; tx: number; ty: number; di: number; t: number; chain: boolean; done: () => void }
 
+/**
+ * Vista 2.5D preparata da main.ts prima di avviare Phaser, a passi con la schermata di caricamento davanti:
+ * creazione (contesto WebGL, texture, post-produzione) e poi un primo fotogramma sulla mappa di partenza, che
+ * compila gli shader. La scena la adotta in applyGraphics() invece di crearne una nuova.
+ */
+let readyView: { view: View3D; fx: 'alti' | 'bassi' } | undefined;
+/** Crea la vista 2.5D per gli effetti scelti; false se la 2.5D è spenta su questo dispositivo o non parte. */
+export function prepareView(): boolean {
+  if (readyView) return true;
+  if (no3dStored()) return false;
+  const fx = S.options.fx === 'bassi' ? 'bassi' : 'alti';
+  try { readyView = { view: new View3D(document.getElementById('game')!, fx), fx }; return true; } catch (e) { noteProblem(e); return false; }
+}
+/** Primo fotogramma della vista preparata sulla mappa di partenza (compila gli shader che servono lì). */
+export function warmView() {
+  const r = readyView;
+  const map = getMap(S.map);
+  if (!r || !map) return;
+  try {
+    const clk = marketClock();
+    r.view.setMood({ night: clk.night, climate: S.market.climate, interior: map.interior, dark: map.tiles.some((row) => row.includes(TILE.CAVE)) && !canSeeDark() });
+    r.view.loadMap(map, clk.night, 0);
+    r.view.frame({ cx: S.x + 0.5, cy: S.y + 0.5, shake: false, tint: { color: 0, alpha: 0 }, items: [{ kind: 'char', frame: 0, x: S.x + 0.5, y: S.y + 1, alpha: 1 }] });
+  } catch (e) { noteProblem(e); try { r.view.destroy(); } catch { /* già rotta */ } readyView = undefined; }
+}
+
 export class WorldScene extends Phaser.Scene {
   map!: MapDef;
   layer?: Phaser.Tilemaps.TilemapLayer | Phaser.Tilemaps.TilemapGPULayer;
@@ -275,7 +301,10 @@ export class WorldScene extends Phaser.Scene {
     this.view3dFx = want;
     if (want) {
       try {
-        const v = new View3D(document.getElementById('game')!, want as 'alti' | 'bassi');
+        // la vista preparata prima dell'avvio (prepareView), se è per gli stessi effetti
+        const pre = readyView; readyView = undefined;
+        if (pre && pre.fx !== want) pre.view.destroy();
+        const v = pre && pre.fx === want ? pre.view : new View3D(document.getElementById('game')!, want as 'alti' | 'bassi');
         this.view3d = v;
         let lostTimer = 0;
         // contesto perso: se torna si ricrea la vista; se non torna entro qualche secondo si resta sulla vista semplificata

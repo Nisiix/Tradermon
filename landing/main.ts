@@ -15,6 +15,7 @@ import segnalazioni from './config/segnalazioni.json';
 import { T, keepKeys } from '../src/i18n';
 import { translateDom, wireLangSwitch } from '../src/i18n/dom';
 import { playInShell, shellOpen } from './play';
+import { prefetchGame } from './prefetch';
 
 keepKeys(false);
 translateDom();
@@ -443,6 +444,7 @@ if (document.readyState === 'complete') later(walkers); else addEventListener('l
 if (location.hash === '#guida') $('#guida').focus({ preventScroll: true });
 
 // Service worker condiviso con il gioco (stesso file alla radice)
+if (import.meta.env.PROD) prefetchGame();
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => undefined); });
 }

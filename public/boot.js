@@ -95,16 +95,97 @@
     location.reload();
   }
 
-  // "Caricamento…" mentre arriva il codice del gioco
+  // Schermata di caricamento a tema, dal primo istante: il grafico a candele cresce con l'avanzamento (una candela per
+  // tratto di strada), la candela in formazione pulsa e la barra dorata avanza da sola verso il prossimo traguardo.
+  // Le animazioni usano solo transform e opacity: le muove il compositore del browser anche mentre il gioco è
+  // impegnato a preparare la grafica (sul telefono il codice blocca la pagina per qualche secondo alla volta).
+  var CANDLES = [[3, 5, 2, 6], [5, 4, 3, 6], [4, 7, 4, 8], [7, 6, 5, 8], [6, 9, 5, 10], [9, 8, 7, 10], [8, 11, 8, 12], [11, 12, 10, 12]];
+  var css = '@font-face{font-family:"Press Start 2P";src:url(../fonts/press-start-2p.woff2) format("woff2");font-display:swap;unicode-range:U+0000-00FF}' +
+    '#boot-wait{position:fixed;inset:0;z-index:96;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(8px,3vh,18px);' +
+    'padding:16px;background:#101018;color:#c8d0e0;cursor:progress;transition:opacity .22s ease-out}' +
+    '#boot-wait.out{opacity:0;pointer-events:none}' +
+    '#boot-wait .bw-mark{margin:0;font:clamp(15px,3.6vmin,26px)/1 "Press Start 2P",monospace;letter-spacing:.08em;color:#f8d860;text-shadow:3px 3px 0 #6a4a08}' +
+    '#boot-wait .bw-chart{position:relative;width:min(340px,72vw);height:min(150px,30vh);border:3px solid #404858;border-radius:4px;overflow:hidden;' +
+    'background:#182438;box-shadow:inset 0 0 0 2px #2c3c58,inset 0 6px 0 rgba(0,0,0,.25)}' +
+    '#boot-wait .bw-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(120,144,192,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(120,144,192,.12) 1px,transparent 1px);background-size:100% 25%,12.5% 100%}' +
+    '#boot-wait .bw-c{position:absolute;top:8%;bottom:8%;width:7%;opacity:0;transform:translateY(6px);transition:opacity .18s steps(2),transform .18s steps(2)}' +
+    '#boot-wait .bw-c.on{opacity:1;transform:none}' +
+    '#boot-wait .bw-c.now{opacity:1;transform:none}' +
+    '#boot-wait .bw-c i,#boot-wait .bw-c b{position:absolute;display:block}' +
+    '#boot-wait .bw-c i{left:calc(50% - 1px);width:2px;background:var(--cd)}' +
+    '#boot-wait .bw-c b{left:0;right:0;background:var(--c);box-shadow:inset -2px -2px 0 var(--cd),inset 2px 2px 0 rgba(255,255,255,.35);transform-origin:50% 100%}' +
+    '#boot-wait .bw-c.now b{animation:bw-form 1.1s steps(4) infinite alternate}' +
+    '#boot-wait .bw-c.now i{opacity:.5}' +
+    '@keyframes bw-form{from{transform:scaleY(.25)}to{transform:scaleY(1)}}' +
+    '#boot-wait .bw-track{width:min(340px,72vw);height:6px;background:#242c40;border-radius:3px;overflow:hidden}' +
+    '#boot-wait .bw-fill{height:100%;background:#f8d860;transform-origin:0 50%;transform:scaleX(0);transition:transform .3s ease-out}' +
+    '#boot-wait .bw-label{margin:0;min-height:1.5em;font:14px/1.5 system-ui,sans-serif;text-align:center;max-width:30em}' +
+    '@media (max-height:360px){#boot-wait .bw-chart{height:26vh}#boot-wait .bw-label{font-size:13px}}' +
+    '@media (prefers-reduced-motion:reduce){#boot-wait .bw-c.now b{animation:none}#boot-wait .bw-fill{transition:none}}';
   var wait = document.createElement('div');
   wait.id = 'boot-wait';
   wait.setAttribute('role', 'status');
-  wait.style.cssText = 'position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:#101018;color:#f8d860;font:14px/1.5 monospace;text-align:center;padding:16px;pointer-events:none;';
-  wait.textContent = TX.loading;
+  wait.setAttribute('aria-live', 'polite');
+  var mark = document.createElement('p'); mark.className = 'bw-mark'; mark.textContent = 'TRADERMON'; mark.setAttribute('aria-hidden', 'true');
+  var chartEl = document.createElement('div'); chartEl.className = 'bw-chart'; chartEl.setAttribute('aria-hidden', 'true');
+  chartEl.innerHTML = '<div class="bw-grid"></div>';
+  var candles = [];
+  CANDLES.forEach(function (k, i) {
+    var o = k[0], c = k[1], lo = k[2], hi = k[3], up = c >= o, b0 = Math.min(o, c), b1 = Math.max(o, c);
+    var pc = function (n) { return (n / 12 * 100) + '%'; };
+    var el = document.createElement('div');
+    el.className = 'bw-c';
+    el.style.left = (5 + i * 11.6) + '%';
+    el.style.setProperty('--c', up ? '#48e070' : '#f05858');
+    el.style.setProperty('--cd', up ? '#208840' : '#a02828');
+    el.innerHTML = '<i style="bottom:' + pc(lo) + ';top:calc(100% - ' + pc(hi) + ')"></i><b style="bottom:' + pc(b0) + ';top:calc(100% - ' + pc(b1) + ')"></b>';
+    chartEl.appendChild(el);
+    candles.push(el);
+  });
+  var track = document.createElement('div'); track.className = 'bw-track'; track.setAttribute('aria-hidden', 'true');
+  var fill = document.createElement('div'); fill.className = 'bw-fill'; track.appendChild(fill);
+  var label = document.createElement('p'); label.className = 'bw-label'; label.textContent = TX.loading;
+  wait.appendChild(mark); wait.appendChild(chartEl); wait.appendChild(track); wait.appendChild(label);
+  // nessun tocco deve arrivare al gioco sotto mentre si carica
+  ['click', 'pointerdown', 'touchstart'].forEach(function (ev) { wait.addEventListener(ev, function (e) { e.stopPropagation(); e.preventDefault(); }, { passive: false }); });
+  var shown = false, progress = 0, creepTimer = 0, hideTimer = 0;
+
+  /** Porta l'avanzamento a `p` (0..1), poi lo fa scivolare da solo verso `to` in `ms` (attesa lunga senza notizie). */
+  function setProgress(p, to, ms) {
+    progress = Math.max(0, Math.min(1, p));
+    clearTimeout(creepTimer);
+    fill.style.transition = 'transform .3s ease-out';
+    fill.style.transform = 'scaleX(' + progress + ')';
+    var n = Math.min(CANDLES.length, Math.floor(progress * CANDLES.length + 0.0001));
+    candles.forEach(function (c, i) { c.className = 'bw-c' + (i < n ? ' on' : i === n ? ' now' : ''); });
+    if (to && to > progress && ms) {
+      // la transizione lunga gira sul compositore: la barra avanza anche se la pagina è bloccata dal lavoro del gioco
+      creepTimer = setTimeout(function () {
+        fill.style.transition = 'transform ' + (ms / 1000) + 's cubic-bezier(.2,.6,.35,1)';
+        fill.style.transform = 'scaleX(' + to + ')';
+      }, 320);
+    }
+  }
+  function showWait(text) {
+    clearTimeout(hideTimer);
+    if (text) label.textContent = text;
+    wait.classList.remove('out');
+    if (!wait.parentNode && document.body) document.body.appendChild(wait);
+    shown = true;
+  }
+  function hideWait() {
+    if (!shown) return;
+    shown = false;
+    clearTimeout(creepTimer);
+    wait.classList.add('out');
+    hideTimer = setTimeout(function () { if (!shown && wait.parentNode) wait.parentNode.removeChild(wait); }, 260);
+  }
+  setProgress(0.04, 0.4, 6000);
 
   function panel(title) {
     if (ready || box) return;
     if (wait.parentNode) wait.parentNode.removeChild(wait);
+    shown = false;
     box = document.createElement('div');
     box.id = 'boot-fail';
     box.setAttribute('role', 'alert');
@@ -154,21 +235,41 @@
   window.addEventListener('unhandledrejection', function (ev) { onError(ev.reason); });
 
   var timer = setTimeout(function () { panel(TX.slow); }, 25000);
-  /** Chiamata dal gioco quando la prima schermata è visibile. */
+  /** Ponte con il gioco (src/systems/bootGuard.ts). */
   window.__tradermonBoot = {
+    /** Il codice del gioco è arrivato e gira: il guardiano non aspetta più (la schermata di caricamento resta). */
+    alive: function () { clearTimeout(timer); timer = 0; },
+    /** La prima schermata del gioco è visibile: via la schermata di caricamento. */
     ready: function () {
-      if (ready) return;
-      ready = true;
-      clearTimeout(timer);
-      if (wait.parentNode) wait.parentNode.removeChild(wait);
-      if (box) { box.remove(); box = null; }
+      clearTimeout(timer); timer = 0;
+      if (!ready) { ready = true; if (box) { box.remove(); box = null; } }
+      hideWait();
     },
+    /** Avanzamento (0..1) con il testo del passo in corso; `to`/`ms`: dove arriva da sola la barra se il passo dura. */
+    step: function (p, text, to, ms) { if (text) label.textContent = text; if (typeof p === 'number') setProgress(p, to, ms); },
+    /**
+     * Rimette la schermata di caricamento (per esempio mentre si prepara il mondo dopo il titolo). Se non torna
+     * via entro `limitMs`, compare il pannello con il motivo e le uscite, come all'avvio.
+     */
+    show: function (text, limitMs) {
+      if (box) return;
+      setProgress(0, 0, 0);
+      showWait(text);
+      clearTimeout(timer);
+      timer = setTimeout(function () { ready = false; panel(TX.slow); }, limitMs || 90000);
+    },
+    /** La schermata di caricamento è visibile? */
+    visible: function () { return shown; },
     /** Il gioco ha rilevato un problema serio dopo l'avvio (es. la grafica non disegna): lo mostra nella striscia. */
     report: function (e) { onError(e); },
     /** Annota un problema già gestito dal gioco (compare solo nei dettagli del pannello, se poi l'avvio fallisce). */
     note: function (e) { if (errors.length < 5) errors.push(text(e)); },
     details: report,
   };
-  function mount() { if (!ready && !box) document.body.appendChild(wait); }
+  function mount() {
+    if (ready || box) return;
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+    showWait();
+  }
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount, { once: true });
 })();

@@ -7,6 +7,7 @@
 // Nessun modello esterno: forma, colori e rilievo vengono dalla stessa pixel art del gioco.
 import * as THREE from 'three';
 import { RS, CH, CHAR_PER_ROW, drawCharacters, characterPixels } from '../art/art';
+import { normalMapPixels, takeNormalPixels } from './normals';
 
 /** Misure dei personaggi nel mondo 3D (una casella = 1). */
 export const ACTOR_W = 1, ACTOR_H = 1.5;
@@ -16,22 +17,20 @@ export const ACTOR_DEPTH = 0.13;
 export const ACTOR_LEAN = 0.36;
 
 const FW = 16 * RS, FH = CH * RS; // un fotogramma nel foglio ingrandito
-const RADIUS = 3.2 * RS; // raggio del "cuscino" in pixel del foglio
-const DETAIL = 0.22; // quanto i chiari/scuri del disegno (contorni, pieghe) entrano nel rilievo
 
 function srgbToLin(c: number) { const v = c / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
 
-/**
- * Mappa delle normali per tutto il foglio dei personaggi. Per ogni fotogramma: distanza dal bordo della sagoma
- * (chamfer 3-4) → altezza a cupola, più un po' della luminosità del disegno (i contorni scuri diventano solchi
- * e separano testa, braccia e corpo). Le normali sono in spazio tangente (convenzione OpenGL, +Y in alto).
- */
 const normalMaps = new WeakMap<HTMLCanvasElement, HTMLCanvasElement>();
+/** Mappa delle normali del foglio (normals.ts) come canvas, calcolata una volta per foglio. */
 export function charNormalMap(sheet: HTMLCanvasElement): HTMLCanvasElement {
   // calcolata una volta per foglio: cambiare gli effetti ricrea la vista 2.5D, non serve rifare questo lavoro
   const done = normalMaps.get(sheet);
   if (done) return done;
-  const out = buildNormalMap(sheet);
+  const W = sheet.width, H = sheet.height;
+  // già pronta dal worker se è il foglio del gioco; altrimenti si calcola qui
+  const px = (sheet === drawCharacters() ? takeNormalPixels(W, H) : undefined) ?? normalMapPixels(sheetPixels(sheet), W, H);
+  const out = document.createElement('canvas'); out.width = W; out.height = H;
+  out.getContext('2d')!.putImageData(new ImageData(px as Uint8ClampedArray<ArrayBuffer>, W, H), 0, 0);
   normalMaps.set(sheet, out);
   return out;
 }
@@ -39,59 +38,6 @@ export function charNormalMap(sheet: HTMLCanvasElement): HTMLCanvasElement {
 /** Pixel del foglio: quelli già calcolati se è il foglio del gioco (rileggere un canvas grande su telefono è lento). */
 function sheetPixels(sheet: HTMLCanvasElement): Uint8ClampedArray {
   return sheet === drawCharacters() ? characterPixels() : sheet.getContext('2d')!.getImageData(0, 0, sheet.width, sheet.height).data;
-}
-
-const LE = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
-
-function buildNormalMap(sheet: HTMLCanvasElement): HTMLCanvasElement {
-  const W = sheet.width, H = sheet.height;
-  const src = sheetPixels(sheet);
-  const out = document.createElement('canvas'); out.width = W; out.height = H;
-  const oc = out.getContext('2d')!;
-  const img = oc.createImageData(W, H); const d = img.data;
-  new Uint32Array(d.buffer).fill(LE ? 0xffff8080 : 0x8080ffff); // normale piatta (128, 128, 255) ovunque
-  // distanze su una griglia con un bordo vuoto di una casella: niente controlli dei limiti nei cicli
-  const PW = FW + 2, PH = FH + 2;
-  const dist = new Float32Array(PW * PH), hgt = new Float32Array(FW * FH);
-  const BIG = 1e6;
-  for (let cy = 0; cy + FH <= H; cy += FH) for (let cx = 0; cx + FW <= W; cx += FW) {
-    let any = false;
-    for (let y = 0; y < FH; y++) {
-      const row = ((cy + y) * W + cx) * 4 + 3, o = (y + 1) * PW + 1;
-      for (let x = 0; x < FW; x++) { const on = src[row + x * 4] > 127; dist[o + x] = on ? BIG : 0; if (on) any = true; }
-    }
-    if (!any) continue;
-    for (let y = 1; y <= FH; y++) for (let x = 1; x <= FW; x++) {
-      const i = y * PW + x; const v = dist[i]; if (!v) continue;
-      dist[i] = Math.min(v, dist[i - 1] + 3, dist[i - PW] + 3, dist[i - PW - 1] + 4, dist[i - PW + 1] + 4);
-    }
-    for (let y = FH; y >= 1; y--) for (let x = FW; x >= 1; x--) {
-      const i = y * PW + x; const v = dist[i]; if (!v) continue;
-      dist[i] = Math.min(v, dist[i + 1] + 3, dist[i + PW] + 3, dist[i + PW + 1] + 4, dist[i + PW - 1] + 4);
-    }
-    for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x++) {
-      const i = y * FW + x, dv = dist[(y + 1) * PW + x + 1];
-      if (!dv) { hgt[i] = 0; continue; }
-      const t = Math.min(1, dv / 3 / RADIUS), dome = Math.sqrt(1 - (1 - t) * (1 - t));
-      const p = ((cy + y) * W + cx + x) * 4;
-      const lum = (0.3 * src[p] + 0.59 * src[p + 1] + 0.11 * src[p + 2]) / 255;
-      hgt[i] = dome * RADIUS + DETAIL * RADIUS * lum;
-    }
-    for (let y = 0; y < FH; y++) {
-      const yu = (y > 0 ? y - 1 : 0) * FW, yd = (y < FH - 1 ? y + 1 : FH - 1) * FW, ym = y * FW;
-      for (let x = 0; x < FW; x++) {
-        if (!dist[(y + 1) * PW + x + 1]) continue;
-        const gx = (hgt[ym + (x < FW - 1 ? x + 1 : x)] - hgt[ym + (x > 0 ? x - 1 : 0)]) / 2, gy = (hgt[yd + x] - hgt[yu + x]) / 2;
-        // gy cresce verso il basso del foglio; nello spazio tangente +Y è verso l'alto
-        let nx = -gx, ny = gy, nz = 1;
-        const l = Math.sqrt(nx * nx + ny * ny + nz * nz); nx /= l; ny /= l; nz /= l;
-        const p = ((cy + y) * W + cx + x) * 4;
-        d[p] = Math.round((nx * 0.5 + 0.5) * 255); d[p + 1] = Math.round((ny * 0.5 + 0.5) * 255); d[p + 2] = Math.round((nz * 0.5 + 0.5) * 255);
-      }
-    }
-  }
-  oc.putImageData(img, 0, 0);
-  return out;
 }
 
 /**

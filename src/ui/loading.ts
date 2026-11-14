@@ -5,6 +5,7 @@
 import { el, esc, getStage } from './core';
 import { pushHandler, popHandler } from './input';
 import { T } from '../i18n';
+import { bootReady, bootStep, bootVisible } from '../systems/bootGuard';
 
 /** Dopo quanto compare (ms): sotto questa soglia l'attesa non si nota. */
 export const SHOW_AFTER = 220;
@@ -55,6 +56,8 @@ function chart(): string {
 function mount(): void {
   const stage = getStage();
   if (!stage || wrap) return;
+  // all'avvio c'è ancora la schermata di caricamento del gioco: l'attesa si racconta lì, senza un secondo riquadro
+  if (bootVisible()) { const top = jobs[jobs.length - 1]; if (top) bootStep(undefined, top.label); return; }
   wrap = el('div', 'loading-wrap');
   wrap.setAttribute('role', 'status');
   wrap.setAttribute('aria-live', 'polite');
@@ -131,6 +134,8 @@ export async function busy<T>(label: string, work: Promise<T> | (() => Promise<T
  */
 export async function pauseBusy<T>(ask: () => Promise<T>): Promise<T> {
   const active = jobs.length > 0;
+  // la domanda deve vedersi: se all'avvio c'è ancora la schermata di caricamento, si toglie
+  bootReady();
   paused++;
   if (active) { clearTimeout(showTimer); unlock(); unmount(); }
   try { return await ask(); } finally {

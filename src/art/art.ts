@@ -1002,9 +1002,11 @@ class PixelPainter {
 const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
 let charSheet: HTMLCanvasElement | undefined;
-/** Foglio di tutti i personaggi alla scala di resa. Si disegna una volta sola: le palette non cambiano durante il gioco. */
-export function drawCharacters(): HTMLCanvasElement {
-  if (charSheet) return charSheet;
+/**
+ * Pixel del foglio di tutti i personaggi già alla scala di resa (RS = 3). Calcolo puro, senza canvas: può girare
+ * in un worker (systems/prewarm.ts) mentre il giocatore è sul titolo, così all'avvio del mondo il foglio è pronto.
+ */
+export function characterSheetPixels(): { px: Uint32Array; w: number; h: number } {
   const w = CW * 12 * CHAR_PER_ROW, h = CH * Math.ceil(CHAR_PALETTES.length / CHAR_PER_ROW);
   const pp = new PixelPainter(w, h);
   const c = pp as unknown as Ctx;
@@ -1012,8 +1014,25 @@ export function drawCharacters(): HTMLCanvasElement {
     const ox = (i % CHAR_PER_ROW) * 12 * CW, oy = Math.floor(i / CHAR_PER_ROW) * CH;
     for (let dir = 0; dir < 4; dir++) for (let f = 0; f < 3; f++) drawChar(c, ox + (dir * 3 + f) * CW, oy, p, dir, f);
   });
-  if (RS === 3) { charPixels = scale3xPixels(pp.px, w, h, CW, CH); charSheet = pixelsToCanvas(charPixels, w * 3, h * 3); }
-  else charSheet = upscale(pixelsToCanvas(pp.px, w, h), CW, CH);
+  return RS === 3 ? { px: scale3xPixels(pp.px, w, h, CW, CH), w: w * 3, h: h * 3 } : { px: pp.px, w, h };
+}
+/** Usa i pixel del foglio calcolati altrove (dal worker). Ignorati se il foglio c'è già o le misure non tornano. */
+export function adoptCharacterPixels(px: Uint32Array, w: number, h: number): boolean {
+  if (charSheet || RS !== 3) return false;
+  const W = CW * 12 * CHAR_PER_ROW * 3, H = CH * Math.ceil(CHAR_PALETTES.length / CHAR_PER_ROW) * 3;
+  if (w !== W || h !== H || px.length !== W * H) return false;
+  charPixels = px;
+  charSheet = pixelsToCanvas(px, w, h);
+  return true;
+}
+/** Il foglio dei personaggi è già pronto (non costa più niente chiederlo). */
+export function charactersReady(): boolean { return !!charSheet; }
+/** Foglio di tutti i personaggi alla scala di resa. Si disegna una volta sola: le palette non cambiano durante il gioco. */
+export function drawCharacters(): HTMLCanvasElement {
+  if (charSheet) return charSheet;
+  const s = characterSheetPixels();
+  if (RS === 3) { charPixels = s.px; charSheet = pixelsToCanvas(s.px, s.w, s.h); }
+  else charSheet = upscale(pixelsToCanvas(s.px, s.w, s.h), CW, CH);
   return charSheet;
 }
 let charPixels: Uint32Array | undefined;
