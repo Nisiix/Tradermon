@@ -17,6 +17,9 @@ import { assetManifest, externalModel, type AssetManifest } from './assets';
 import { ActorGeometries, charNormalMap, ACTOR_LEAN } from './actors';
 
 /** Le stesse chiamate di Phaser.GameObjects.Graphics usate dal meteo. */
+import { Boat3D, BOAT_FLOOR, BOAT_BOB } from './boat';
+import type { BoatDir } from '../art/boat';
+
 export interface Painter {
   clear(): void;
   fillStyle(color: number, alpha?: number): void;
@@ -26,11 +29,11 @@ export interface Painter {
 }
 
 export type MirrorItem =
-  | { kind: 'char'; frame: number; x: number; y: number; alpha: number; lift?: number }
+  | { kind: 'char'; frame: number; x: number; y: number; alpha: number; lift?: number; float?: number }
   | { kind: 'tile'; frame: number; x: number; y: number; alpha: number; lift?: number }
   | { kind: 'bubble'; x: number; y: number; scale: number }
   | { kind: 'leaf'; x: number; z: number; h: number; color: number; alpha: number }
-  | { kind: 'raft'; x: number; y: number };
+  | { kind: 'raft'; x: number; y: number; dir: BoatDir; moving: boolean; bob: number; roll: number; pitch: number };
 
 export interface MirrorFrame {
   cx: number; cy: number; // centro della vista in caselle
@@ -103,7 +106,7 @@ export class View3D {
   private bubblePool: THREE.Mesh[] = [];
   private leafPool: THREE.Mesh[] = [];
   private shadowPool: THREE.Mesh[] = [];
-  private raft: THREE.Mesh;
+  private boat: Boat3D;
   private rect = { w: 0, h: 0, l: 0, t: 0 };
   private dpr = 1;
   private avgCache = new Map<string, [number, number, number]>();
@@ -172,11 +175,8 @@ export class View3D {
     this.matBubble = new THREE.MeshBasicMaterial({ map: this.bubbleTexture(), alphaTest: 0.5, side: THREE.DoubleSide });
     this.matShadow = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false });
     this.matLeaf = new THREE.MeshLambertMaterial({ vertexColors: false, transparent: true });
-    // zattera del Flusso di Liquidità
-    const raftG = new THREE.BoxGeometry(0.95, 0.1, 0.7);
-    this.raft = new THREE.Mesh(raftG, new THREE.MeshLambertMaterial({ color: 0xb07838 }));
-    this.raft.castShadow = true; this.raft.visible = false;
-    this.dynGroup.add(this.raft);
+    // barchetta del Flusso di Liquidità
+    this.boat = new Boat3D(this.dynGroup);
     // luci
     this.hemi = new THREE.HemisphereLight(0xdfeaff, 0x5a7a40, 0.9);
     this.sun = new THREE.DirectionalLight(0xfff2d0, 1.4);
@@ -646,7 +646,7 @@ export class View3D {
     }
     // oggetti dinamici
     let ci = 0, ti = 0, bi = 0, li = 0, si = 0;
-    let raft = false;
+    let boat: Extract<MirrorItem, { kind: 'raft' }> | undefined;
     for (const it of f.items) {
       if (it.kind === 'char') {
         // sagoma spessa appoggiata ai piedi e inclinata un po' verso la camera (vedi actors.ts)
@@ -658,7 +658,9 @@ export class View3D {
         });
         m.geometry = this.actorGeo.get(it.frame);
         const lift = it.lift ?? 0;
-        m.position.set(it.x, lift * 2.6, it.y - 0.38 - lift * 0.3);
+        // in barchetta: i piedi sul fondo della barca, che sale e scende con le onde
+        const rise = it.float !== undefined ? BOAT_FLOOR + it.float * BOAT_BOB : 0;
+        m.position.set(it.x, lift * 2.6 + rise, it.y - 0.38 - lift * 0.3);
         m.rotation.y = this.yaw;
         m.rotation.x = -ACTOR_LEAN;
         // l'opacità vale anche per il ritaglio della sagoma: così un personaggio in penombra si intravede, invece di sparire sotto la soglia
@@ -666,7 +668,7 @@ export class View3D {
         const sh = this.pooled(this.shadowPool, si++, () => { const mm = new THREE.Mesh(new THREE.CircleGeometry(0.5, 20), this.matShadow); mm.rotation.x = -Math.PI / 2; mm.scale.set(0.42, 0.26, 1); return mm; });
         sh.position.set(it.x, 0.012, it.y - 0.45);
         sh.scale.set(0.42 * (1 - 0.5 * lift), 0.26 * (1 - 0.5 * lift), 1);
-        (sh.material as THREE.MeshBasicMaterial).opacity = 0.28 * it.alpha * (1 - 0.6 * lift);
+        (sh.material as THREE.MeshBasicMaterial).opacity = it.float !== undefined ? 0 : 0.28 * it.alpha * (1 - 0.6 * lift);
       } else if (it.kind === 'tile') {
         const m = this.pooled(this.tilePool, ti++, () => { const mat = this.matProps.clone(); mat.vertexColors = false; mat.transparent = true; /* il piano non ha colori per vertice: senza questo esce nero */ const mm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); mm.castShadow = true; mm.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: propAtlas(), alphaTest: 0.5 }); return mm; });
         const sp = propSprite(tileName(it.frame), null);
@@ -687,8 +689,7 @@ export class View3D {
         mat.color.setHex(it.color); mat.opacity = it.alpha;
         m.position.set(it.x, it.h, it.z);
       } else if (it.kind === 'raft') {
-        raft = true;
-        this.raft.position.set(it.x, 0.04, it.y - 0.45);
+        boat = it;
       }
     }
     for (let i = ci; i < this.charPool.length; i++) this.charPool[i].visible = false;
@@ -696,7 +697,7 @@ export class View3D {
     for (let i = ti; i < this.tilePool.length; i++) this.tilePool[i].visible = false;
     for (let i = bi; i < this.bubblePool.length; i++) this.bubblePool[i].visible = false;
     for (let i = li; i < this.leafPool.length; i++) this.leafPool[i].visible = false;
-    this.raft.visible = raft;
+    this.boat.update(boat, performance.now());
     this.composer.render();
     const lum = sample ? this.brightness() : -1;
     // livello 2D sopra la scena: tinta del clima, lampo e dissolvenza (il meteo è già stato disegnato dal painter)

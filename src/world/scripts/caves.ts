@@ -93,7 +93,7 @@ const GUIDE_INTRO: Record<CaveKey, string[]> = {
   ],
   pearl: [
     HERMIT_LINES.perle.intro[0],
-    T('Qui ci sono tre ostriche, e si aprono in ordine. La prima è sulla sporgenza oltre il laghetto: ti serve la zattera. Le altre due sono giù, sul Fondale: la scala è qui accanto.'),
+    T('Qui ci sono tre ostriche, e si aprono in ordine. La prima è sulla sporgenza oltre il laghetto: ti serve la barchetta. Le altre due sono giù, sul Fondale: la scala è qui accanto.'),
     T('Ogni ostrica si apre con una domanda sul valore nascosto. Te la faccio io: qui dentro l\'eco porta la voce ovunque.'),
     T('Quando avrai le tre perle torna da me per la sfida vera. Intanto leggi il mio quaderno: le domande vengono da lì.'),
   ],

@@ -272,7 +272,7 @@ async function winBadge(m: number, w: WorldApi) {
   const extra: string[] = [];
   if (m === 2) extra.push(T('Con l\'abbonamento al treno puoi viaggiare tra le città visitate dalle stazioni.'));
   if (m === 5) extra.push(T('L\'Archivio di Bilancia ora è aperto. E in Banca puoi sostenere l\'Esame della Leva: per ora vale solo nei replay.'));
-  if (m === SWIM_BADGE) extra.push(T`Nuova abilità: ${ABILITY.swim.name}. Cammina verso l'acqua e la attraverserai su una zattera. Sui Percorsi 3, 5 e 7 ci sono isole da raggiungere.`);
+  if (m === SWIM_BADGE) extra.push(T`Nuova abilità: ${ABILITY.swim.name}. Cammina verso l'acqua e la attraverserai in barchetta. Sui Percorsi 3, 5 e 7 ci sono isole da raggiungere.`);
   if (m === ABILITY.cut.badge) extra.push(T`Nuova abilità: ${ABILITY.cut.name}. Ora puoi frantumare i Massi delle Commissioni: il primo è sul Percorso 5, davanti al Cippo dei Costi. Più avanti ne troverai altri, anche in fondo alle grotte.`);
   if (m === ABILITY.dark.badge) extra.push(T`Nuova abilità: ${ABILITY.dark.name}. Le grotte buie non ti fermano più: la prima è la Miniera dei Lingotti, a metà del Percorso 6. All'ingresso di ogni grotta c'è una guida: fatti spiegare la grotta e leggi il suo taccuino prima di addentrarti.`);
   if (m === TRANSFER_BADGE) extra.push(T`Nuova abilità: ${ABILITY.transfer.name}. Apri il menu, scegli "Mappa della Regione" e trasferisciti in una città già visitata.`);

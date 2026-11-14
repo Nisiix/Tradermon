@@ -15,7 +15,7 @@ const CLIPS = {
   lab: ['lab', 6, 8, 'up', 'ArrowUp:22,none:44'], // Borgo Semina, Laboratorio delle Valigette
   r1: ['r1', 3, 7, 'right', 'ArrowRight:66'], // Percorso 1
   academy: ['academy_1', 6, 11, 'up', 'ArrowUp:40,none:26'], // Exchange di Ponte Cedola
-  sea: ['sea', 14, 10, 'right', 'ArrowRight:66'], // Mare della Liquidità, in zattera
+  sea: ['sea', 14, 10, 'right', 'ArrowRight:66'], // Mare della Liquidità, in barchetta
   simzone: ['simzone', 5, 7, 'up', 'ArrowUp:20,none:46'], // Diversia, Zona Simulazione
   casino: ['casino', 5, 7, 'up', 'ArrowUp:25,none:41'], // Interessa, Casinò dello Speculatore
   cave: ['cave_gold', 4, 8, 'right', 'ArrowRight:66'], // Miniera dei Lingotti, con la Lanterna

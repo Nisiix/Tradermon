@@ -4,7 +4,7 @@ import { T } from '../i18n';
 
 /**
  * Abilità di esplorazione legate alle Medaglie (non sono oggetti né aiuti nei duelli).
- * - Flusso di Liquidità: attraversare l'acqua su una zattera (Medaglia 3, Ribilanciamento: sposti il capitale dove serve).
+ * - Flusso di Liquidità: attraversare l'acqua in barchetta (Medaglia 3, Ribilanciamento: sposti il capitale dove serve).
  * - Trasferimento di Capitale: viaggio rapido dalla Mappa della Regione verso le città già visitate
  *   (Medaglia 4, la Whale di mezzo tra gli otto). Costa un giorno di mercato, come il regolamento T+1.
  * - Mente Fredda (tecnica della Whale 7): attraversa il Muro del Rumore (già presente in world.ts).
@@ -13,7 +13,7 @@ export const SWIM_BADGE = 3;
 export const TRANSFER_BADGE = 4;
 
 export const ABILITY = {
-  swim: { name: T('Flusso di Liquidità'), badge: SWIM_BADGE, desc: T('Attraversi l\'acqua su una zattera: la liquidità scorre dove serve. Apre le Isole della Liquidità sui Percorsi 3, 5 e 7 e, dal molo di Porto Ordini, il Mare della Liquidità.') },
+  swim: { name: T('Flusso di Liquidità'), badge: SWIM_BADGE, desc: T('Attraversi l\'acqua in barchetta: la liquidità scorre dove serve. Apre le Isole della Liquidità sui Percorsi 3, 5 e 7 e, dal molo di Porto Ordini, il Mare della Liquidità.') },
   transfer: { name: T('Trasferimento di Capitale'), badge: TRANSFER_BADGE, desc: T('Dalla Mappa della Regione sposti il tuo capitale (e te stess{o|a}) in una città già visitata. Il regolamento è T+1: passa un giorno di mercato.') },
   cut: { name: T('Taglio dei Costi'), badge: 4, desc: T('Frantumi i Massi delle Commissioni che bloccano sentieri e stanze: il Cippo dei Costi sul Percorso 5, la bocca della Galleria del Dark Pool sul Percorso 7 e le camere in fondo alle grotte.') },
   dark: { name: T('Lanterna della Due Diligence'), badge: 5, desc: T('Un cerchio di luce nelle grotte buie: la Miniera dei Lingotti (Percorso 6), la Galleria del Dark Pool (Percorso 7) e la Grotta delle Perle (Percorso 8). In ognuna ci sono tre reperti da trovare.') },
