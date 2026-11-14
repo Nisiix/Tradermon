@@ -14,7 +14,9 @@ export type QuizTopic =
   | 'stocks_base' | 'stocks_bilanci' | 'stocks_dividendi'
   | 'etf_base' | 'etf_replica' | 'etf_obbligazioni'
   | 'crypto_base' | 'crypto_custodia' | 'crypto_stable'
-  | 'mixed_base' | 'mixed_allocazione';
+  | 'mixed_base' | 'mixed_allocazione'
+  // domande riservate alle grotte (non entrano nei duelli del resto del mondo): vedi data/quiz/caves.ts
+  | 'grotte';
 
 export interface Question {
   id: string;

@@ -5,7 +5,7 @@ import { say, choose, toast } from '../ui/core';
 import { track } from '../systems/progress';
 import { jingle } from '../systems/music';
 import { runDuel } from '../ui/battle';
-import { pickQuestions, targetDiff, storyStage } from '../systems/quiz';
+import { pickQuestions, targetDiff, storyStage, studiedTopics } from '../systems/quiz';
 import { RESIDENT_BY_ID } from '../data/residents';
 import { LESSONS } from '../data/lessons';
 import type { GameEvent } from '../systems/progress';
@@ -157,7 +157,9 @@ export async function questTalk(rid: string, who: string): Promise<boolean> {
   if (st.kind === 'duel') {
     const ok = (await choose([T('Sono pront{o|a}'), T('Più tardi')], { prompt: st.say[0], who })) === 0;
     if (!ok) return true;
-    const qs = pickQuestions(st.topics ?? ['regole'], 3, { target: Math.min(2.5, targetDiff(storyStage())) });
+    // solo argomenti già spiegati: le regole entrano dopo il primo speculatore (o dopo averle lette in Biblioteca)
+    const studied = studiedTopics(), own = (st.topics ?? ['regole']).filter((t) => studied.includes(t));
+    const qs = pickQuestions(own.length ? own : studied, 3, { target: Math.min(2.5, targetDiff(storyStage())) });
     const prevFid = S.stats.fiducia;
     const r = await runDuel({ foeName: RESIDENT_BY_ID[rid]?.name ?? who, foeTitle: q.title, foePal: RESIDENT_BY_ID[rid]?.pal ?? 0, questions: qs, need: 2, damage: 1 });
     S.stats.fiducia = prevFid;

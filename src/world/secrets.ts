@@ -4,8 +4,7 @@
 import { S, save, card, clampStat } from '../systems/state';
 import { say, toast } from '../ui/core';
 import { runDuel } from '../ui/battle';
-import { pickQuestions } from '../systems/quiz';
-import { trackTopics } from '../data/quiz/build';
+import { pickQuestions, studiedTopics } from '../systems/quiz';
 import { track } from '../systems/progress';
 import { jingle } from '../systems/music';
 import type { NpcDef } from './maps';
@@ -104,7 +103,7 @@ async function tapeLady(n: NpcDef) {
     T('I vecchi operatori "leggevano il nastro": dal ritmo degli scambi capivano chi comprava e chi vendeva.'),
     T('Vediamo se tu sai leggere tra le righe. Cinque domande, ne voglio quattro giuste.'),
   ], who);
-  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, Math.max(5, S.badges)), 5, { minDiff: 2 });
+  const qs = pickQuestions(studiedTopics(), 5, { minDiff: 2 });
   const prevFid = S.stats.fiducia;
   const res = await runDuel({ foeName: who, foePal: n.pal, questions: qs, need: 4, damage: 0 });
   S.stats.fiducia = prevFid;

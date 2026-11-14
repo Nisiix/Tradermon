@@ -3,7 +3,7 @@
 // Le melodie sono composte per questo gioco. Con il mercato in ribasso i brani in maggiore
 // passano al minore e rallentano; con il rialzo accelerano un poco.
 
-export type TrackId = 'title' | 'town' | 'route' | 'interior' | 'academy' | 'battle' | 'league' | 'night';
+export type TrackId = 'title' | 'town' | 'route' | 'interior' | 'academy' | 'battle' | 'league' | 'night' | 'cave_gold' | 'cave_dp' | 'cave_pearl';
 export type Mood = 'toro' | 'orso' | 'laterale' | 'tempesta';
 
 interface Track {
@@ -108,6 +108,46 @@ const T: Record<TrackId, Track> = {
       'F5 . . . . . C5 . . . _ _ _ _ _ _',
       'G5 . . . . . E5 . . . C6 . . . . .',
       'B5 . . . A5 . G5 . . . _ _ _ _ _ _',
+    ],
+  },
+  // Grotte: tre brani lenti in minore, con molto silenzio. Miniera: passo di piccone e melodia che sale e ricade
+  // (come le promesse); Dark Pool: poche note basse e sospese; Perle: arpeggi d'acqua.
+  cave_gold: {
+    bpm: 88, key: 2, minor: true, bass: 'walk', drums: 'k_______h___k___', leadWave: 'triangle',
+    chords: ['Am', 'Am', 'F', 'E', 'Am', 'G', 'F', 'E'],
+    lead: [
+      'A4 . . . C5 . E5 . . . D5 . C5 . . .',
+      'E5 . . . . . C5 . A4 . . . _ _ _ _',
+      'F5 . . . A5 . C6 . . . A5 . F5 . . .',
+      'E5 . . . G#5 . B5 . . . . . _ _ _ _',
+      'A5 . . . E5 . C5 . A5 . G5 . E5 . . .',
+      'G5 . . . D5 . B4 . G5 . . . _ _ _ _',
+      'F5 . . . C5 . A4 . D5 . C5 . A4 . . .',
+      'E5 . . . . . G#4 . B4 . . . _ _ _ _',
+    ],
+  },
+  cave_dp: {
+    bpm: 72, key: 10, minor: true, bass: 'soft', drums: '________________', leadWave: 'triangle',
+    chords: ['Am', 'F', 'Dm', 'E'],
+    lead: [
+      'A4 . . . . . . . E5 . . . . . D#5 .',
+      'F5 . . . . . . . C5 . . . _ _ _ _',
+      'D5 . . . . . . . A4 . . . F5 . . .',
+      'E5 . . . . . G#4 . . . . . _ _ _ _',
+    ],
+  },
+  cave_pearl: {
+    bpm: 80, key: 5, minor: true, bass: 'soft', drums: '____________h___', leadWave: 'sine',
+    chords: ['Am', 'F', 'C', 'G', 'Am', 'F', 'Dm', 'E'],
+    lead: [
+      'A4 C5 E5 A5 . . E5 . C5 . E5 . A5 . . .',
+      'F4 A4 C5 F5 . . C5 . A4 . C5 . F5 . . .',
+      'C5 E5 G5 C6 . . G5 . E5 . G5 . C6 . . .',
+      'G4 B4 D5 G5 . . D5 . B4 . . . _ _ _ _',
+      'A5 . E5 . C5 . E5 . A5 . . . C6 . B5 .',
+      'A5 . F5 . C5 . F5 . A5 . . . G5 . F5 .',
+      'D5 F5 A5 D6 . . A5 . F5 . D5 . F5 . . .',
+      'E5 . . . G#5 . . . B5 . . . _ _ _ _',
     ],
   },
 };
@@ -303,7 +343,14 @@ export function jingle(id: keyof typeof JINGLES) {
 export function trackForMap(id: string, interior: boolean, night: boolean): TrackId {
   if (id === 'league' || id === 'tower') return 'league';
   if (id.startsWith('academy')) return 'academy';
+  // ogni grotta ha il suo brano, su entrambi i livelli
+  if (id.startsWith('cave_gold')) return 'cave_gold';
+  if (id.startsWith('cave_dp')) return 'cave_dp';
+  if (id.startsWith('cave_pearl')) return 'cave_pearl';
   if (interior) return 'interior';
   if (/^r\d/.test(id)) return night ? 'night' : 'route';
   return night ? 'night' : 'town';
 }
+
+/** Tutti i brani, per i test (ogni battuta deve avere 16 passi). */
+export { T as TRACKS };

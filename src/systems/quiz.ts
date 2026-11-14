@@ -1,5 +1,7 @@
 import type { Difficulty, Question, QuizTopic } from '../types';
-import { QUESTIONS, byTopic, trackTopics } from '../data/quiz/build';
+import { QUESTIONS, OPEN_QUESTIONS, byTopic, mentorTopics, caveQuestions } from '../data/quiz/build';
+import { LESSONS } from '../data/lessons';
+import { BOOKS } from '../data/books';
 import { generate, templatesFor, isGenerated } from '../data/quiz/generated';
 import { ASSET_BY_ID } from '../data/assets';
 import { S } from './state';
@@ -48,6 +50,29 @@ export function endgameDiff(): number {
 /** Nuova Partita+: ogni giro alza la difficoltà media di mezzo livello (le domande da esperto compaiono già dalle Whale). */
 export function ngBoost(): number {
   return 0.5 * Math.min(2, S?.ngPlus ?? 0);
+}
+
+/** Argomenti di Wall Street: non hanno una Whale, i loro libri stanno negli scaffali comuni di ogni Biblioteca. */
+export const WALL_STREET_TOPICS: QuizTopic[] = ['macro', 'analisi', 'regole'];
+
+/** Il giocatore ha già aperto l'argomento: ha letto almeno una sua lezione o un suo libro. */
+export function topicOpened(t: QuizTopic): boolean {
+  return LESSONS.some((l) => l.topic === t && S.lessonsRead.includes(l.id)) || BOOKS.some((b) => b.topic === t && S.booksRead.includes(b.id));
+}
+
+/**
+ * Argomenti su cui si viene interrogati fuori dagli Exchange (Percorsi, rivale, speculatori, eremiti, domanda del
+ * giorno): solo ciò che il gioco ha già spiegato. Quindi gli argomenti delle Whale già battute e, in più, quelli che il
+ * giocatore ha aperto da sé in Biblioteca (un libro o una lezione): della Whale successiva, delle regole e di Wall Street.
+ * Prima del primo Attestato valgono gli argomenti della prima Whale: li introduce la sfida di prova con il rivale.
+ */
+export function studiedTopics(): QuizTopic[] {
+  const out = new Set<QuizTopic>();
+  const b = Math.min(8, S.badges);
+  for (let i = 1; i <= Math.max(1, b); i++) mentorTopics(i, S.track, S.mixedClasses).forEach((t) => out.add(t));
+  if (b >= 1 && b < 8) mentorTopics(b + 1, S.track, S.mixedClasses).filter(topicOpened).forEach((t) => out.add(t));
+  WALL_STREET_TOPICS.filter((t) => (t === 'regole' || b >= 8) && topicOpened(t)).forEach((t) => out.add(t));
+  return [...out];
 }
 
 /** Tappa della storia raggiunta dal giocatore. */
@@ -129,7 +154,7 @@ export function pickQuestions(topics: QuizTopic[], n: number, opts: PickOpts = {
   let pool = topics.flatMap((t) => byTopic(t)).filter((q) => q.diff >= (opts.minDiff ?? 1) && q.diff <= (opts.maxDiff ?? 3));
   if (pool.length < n) pool = topics.flatMap((t) => byTopic(t));
   // se gli argomenti non bastano, completa con altre domande: il numero richiesto è sempre rispettato
-  if (pool.length < n) pool = [...pool, ...QUESTIONS.filter((q) => !pool.includes(q))];
+  if (pool.length < n) pool = [...pool, ...OPEN_QUESTIONS.filter((q) => !pool.includes(q))];
   const mid = ((opts.minDiff ?? 1) + (opts.maxDiff ?? 3)) / 2;
   if (opts.shared) return shuffle(withGenerated(prioritized(pool, rng, false, true).slice(0, n), topics, mid, rng, true), rng);
   const review = opts.preferReview ? shuffle(pool.filter((q) => isDue(q.id)), rng) : [];
@@ -151,8 +176,47 @@ function pickByTarget(topics: QuizTopic[], n: number, target: number, rng: () =>
   const closest = (list: Question[]) => prioritized(list.filter((q) => !out.includes(q)), rng, preferReview, shared)
     .sort((a, b) => Math.abs(a.diff - target) - Math.abs(b.diff - target) || a.diff - b.diff);
   if (out.length < n) out.push(...closest(pool).slice(0, n - out.length));
-  if (out.length < n) out.push(...closest(QUESTIONS).slice(0, n - out.length));
+  if (out.length < n) out.push(...closest(OPEN_QUESTIONS).slice(0, n - out.length));
   return shuffle(noGenerated ? out : withGenerated(out, topics, target, rng, shared), rng);
+}
+
+/**
+ * Domande di una grotta (sfidanti, ostriche, eremita): per ogni livello chiesto da `target` si prendono prima le
+ * domande della grotta che il giocatore non ha mai visto; finite quelle, domande mai viste degli argomenti del suo
+ * percorso (`fallback`); solo dopo si ripetono quelle viste meno spesso. Niente domande generate e niente ripasso:
+ * in grotta si trovano cose nuove, e ciò che si sbaglia torna poi nel Ripasso della Biblioteca.
+ * `duelsLeft`: quanti duelli della grotta restano da fare, questo compreso. Le domande mai viste di un livello vengono
+ * divise tra i duelli rimasti, così l'ultimo sfidante non resta con le sole domande più difficili.
+ */
+export function pickCaveQuestions(prefix: string, n: number, target: number, fallback: QuizTopic[] = [], rng: () => number = Math.random, duelsLeft = 1): Question[] {
+  const seen = (q: Question) => S.answered[q.id] ?? 0;
+  const own = caveQuestions(prefix);
+  const other = fallback.flatMap((t) => byTopic(t));
+  const out: Question[] = [];
+  const take = (list: Question[], k: number): number => { for (const q of list) { if (k <= 0) break; if (!out.includes(q)) { out.push(q); k--; } } return k; };
+  const fresh = (list: Question[]) => shuffle(list.filter((q) => !seen(q)), rng);
+  const least = (list: Question[]) => shuffle(list, rng).sort((a, b) => seen(a) - seen(b));
+  /** Dal livello più vicino a quello cercato; a parità, prima il più facile. */
+  const near = (list: Question[], level: number) => [...list].sort((a, b) => Math.abs(a.diff - level) - Math.abs(b.diff - level) || a.diff - b.diff);
+  const missing: number[] = [];
+  // 1) domande della grotta mai viste, del livello giusto
+  for (const [level, k] of diffMix(n, target)) {
+    const at = fresh(own.filter((q) => q.diff === level));
+    const share = Math.min(k, Math.ceil(at.length / Math.max(1, duelsLeft)));
+    const left = k - share + take(at, share);
+    for (let i = 0; i < left; i++) missing.push(level);
+  }
+  for (const level of missing) {
+    // 2) ancora della grotta e mai viste, del livello più vicino (poi la parte lasciata agli altri duelli);
+    // 3) mai viste degli argomenti del giocatore, del livello giusto;
+    // 4) della grotta già viste (prima le meno viste); 5) qualsiasi altra del giocatore
+    if (!take(near(fresh(own).filter((q) => q.diff !== level), level), 1)) continue;
+    if (!take(fresh(own), 1)) continue;
+    if (!take(fresh(other.filter((q) => q.diff === level)), 1)) continue;
+    if (!take(near(least(own), level).sort((a, b) => seen(a) - seen(b)), 1)) continue;
+    take(near(least(other), level), 1);
+  }
+  return shuffle(out, rng);
 }
 
 /**
@@ -206,7 +270,7 @@ export function todayKey(d = new Date()): string {
 }
 
 export function dailyQuestion(): Question {
-  const topics = trackTopics(S.track, S.mixedClasses, S.badges);
+  const topics = studiedTopics();
   const all = topics.flatMap((t) => byTopic(t));
   // la domanda del giorno non supera il livello raggiunto nella storia
   const cap = Math.ceil(targetDiff(storyStage()));

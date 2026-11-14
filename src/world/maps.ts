@@ -6,10 +6,13 @@ import { HOUSEHOLDS, type Household } from '../data/residents';
 import { ISLET_ROUTES } from './travel';
 import { TAPE_SHELF, TAPE_ROOM, HODL_STONE, WHALE } from './secretsData';
 import { T } from '../i18n';
+import { CAVES, RELIC_BY_ID, type CaveKey } from './caves';
 
 export type NpcKind =
   | 'talk' | 'trainer' | 'mentor' | 'student' | 'guard' | 'nurse' | 'prof' | 'aide' | 'case' | 'rival'
-  | 'librarian' | 'daily' | 'pc' | 'station' | 'simop' | 'croupier' | 'archivist' | 'league' | 'towerop' | 'speculator' | 'legend' | 'mom' | 'sage' | 'resident' | 'hermit' | 'secret';
+  | 'librarian' | 'daily' | 'pc' | 'station' | 'simop' | 'croupier' | 'archivist' | 'league' | 'towerop' | 'speculator' | 'legend' | 'mom' | 'sage' | 'resident' | 'hermit' | 'secret'
+  // grotte: chi le spiega all'ingresso, i reperti da raccogliere e le ostriche della Grotta delle Perle
+  | 'caveguide' | 'relic' | 'oyster';
 
 export interface NpcDef {
   id: string;
@@ -27,8 +30,10 @@ export interface NpcDef {
   hiddenSprite?: boolean;
 }
 
-export interface Warp { x: number; y: number; to: string; tx: number; ty: number; dir?: 0 | 1 | 2 | 3; lock?: 'archive' | 'tower' | 'badge' | 'swim' | 'dark' | 'secret' }
-export interface Sign { x: number; y: number; text: string[] }
+/** trap: galleria che gira su sé stessa (Miniera dei Lingotti): riporta all'ingresso da cui si è entrati, vedi world/caves.ts. */
+export interface Warp { x: number; y: number; to: string; tx: number; ty: number; dir?: 0 | 1 | 2 | 3; lock?: 'archive' | 'tower' | 'badge' | 'swim' | 'dark' | 'secret'; trap?: string }
+/** xp: la prima lettura dà un po' di Conoscenza (incisioni delle grotte, Cippo dei Costi). */
+export interface Sign { x: number; y: number; text: string[]; xp?: boolean }
 /** Scaffali "parlanti" della Biblioteca: il gruppo di celle (x..x+w-1, y) apre una sezione. */
 export interface Section { x: number; y: number; w: number; kind: 'mentor' | 'general' | 'review' | 'index'; label: string }
 /** Insegna sul muro frontale di un edificio pubblico: centrata sulla porta (x), appesa al bordo tra tetto e muro (y = riga del muro). */
@@ -52,6 +57,8 @@ export interface MapDef {
   route?: number;
   encounterRate: number;
   bg: string;
+  /** Grotta a cui appartiene la mappa (luce di Lanterna, cristalli, musica): vedi world/caves.ts. */
+  cave?: CaveKey;
 }
 
 function grid(w: number, h: number, fill: number): number[][] {
@@ -567,10 +574,10 @@ function caveMouth(t: number[][], x: number, y: number) {
 }
 
 /** Grotta: tutta roccia, poi si scavano i corridoi (rettangoli di pavimento). */
-function cave(id: string, name: string, w: number, h: number, halls: [number, number, number, number][]): MapDef {
+function cave(id: string, name: string, w: number, h: number, key: CaveKey, halls: [number, number, number, number][]): MapDef {
   const t = grid(w, h, TILE.ROCK);
   halls.forEach(([x, y, hw, hh]) => rect(t, x, y, hw, hh, TILE.CAVE));
-  return { id, name, w, h, tiles: t, npcs: [], warps: [], signs: [], interior: true, encounterRate: 0, bg: '#2a2018' };
+  return { id, name, w, h, tiles: t, npcs: [], warps: [], signs: [], interior: true, encounterRate: 0, bg: '#2a2018', cave: key };
 }
 
 function buildSeaAndCaves() {
@@ -618,11 +625,17 @@ function buildSeaAndCaves() {
       { x: 22, y: 21, text: [T('ISOLA LONTANA'), T('Qui un tempo si pescavano perle. I pescatori si sono trasferiti nella grotta del Percorso 8.')] },
     ] };
 
-  const pearl = cave('cave_pearl', T('Grotta delle Perle'), 13, 10, [[5, 7, 3, 3], [2, 2, 9, 5], [1, 4, 2, 2]]);
-  pearl.tiles[9][6] = TILE.CAVE;
-  pearl.warps.push({ x: 6, y: 9, to: 'r8', tx: PEARL_MOUTH.x, ty: PEARL_MOUTH.y + 1, dir: 0 });
-  // bocca sul Percorso 8: uno stagno del torrente, a nord del sentiero, la separa dalla strada. Ci si arriva in zattera
-  // (Flusso di Liquidità) e si entra con la Lanterna: a quel punto del viaggio le hai entrambe
+  // ================= Grotte =================
+  // Regola: ogni grotta è buia e si incontra solo dopo la Whale che dà la Lanterna (Attestato 5 → dal Percorso 6).
+  // Dentro: luce di Lanterna, cristalli, due livelli con una scala, tre reperti, un masso interno e un enigma a tema
+  // (vedi world/caves.ts). I test di tests/reach.test.ts e tests/caves.test.ts ne controllano la struttura.
+  const cy = TOWN_H - 3; // bocca delle grotte in città: al limite sud, collegata alla via delle case
+
+  // --- Grotta delle Perle: sul Percorso 8, oltre uno stagno (zattera + Lanterna). Tre ostriche da aprire in ordine ---
+  const pearl = cave('cave_pearl', CAVES.pearl.name, 15, 13, 'pearl', [[3, 6, 9, 5], [7, 11, 1, 2], [5, 2, 5, 1], [12, 8, 1, 1]]);
+  rect(pearl.tiles, 5, 3, 5, 3, TILE.WATER); // laghetto interno: l'ostrica più vicina alla luce sta oltre l'acqua
+  pearl.warps.push({ x: 7, y: 12, to: 'r8', tx: PEARL_MOUTH.x, ty: PEARL_MOUTH.y + 1, dir: 0 });
+  // bocca sul Percorso 8: uno stagno del torrente, a nord del sentiero, la separa dalla strada
   const r8 = MAPS.r8;
   rect(r8.tiles, 24, PEARL_MOUTH.y + 2, PEARL_MOUTH.x + 2 - 24, 3, TILE.WATER); // lo stagno si allarga dal torrente (x 22-23)
   caveMouth(r8.tiles, PEARL_MOUTH.x, PEARL_MOUTH.y);
@@ -630,61 +643,163 @@ function buildSeaAndCaves() {
   r8.tiles[PEARL_MOUTH.y + 1][PEARL_MOUTH.x - 1] = TILE.ROCK; r8.tiles[PEARL_MOUTH.y + 1][PEARL_MOUTH.x + 1] = TILE.ROCK;
   r8.tiles[5][PEARL_MOUTH.x + 2] = TILE.SIGN;
   r8.signs.push({ x: PEARL_MOUTH.x + 2, y: 5, text: [T('GROTTA DELLE PERLE'), T('Oltre lo stagno. Buia come un bilancio non letto: si entra con la Lanterna della Due Diligence.')] });
-  r8.warps.push({ x: PEARL_MOUTH.x, y: PEARL_MOUTH.y, to: 'cave_pearl', tx: 6, ty: 7, dir: 1, lock: 'dark' });
-  pearl.npcs.push({ id: 'cave_pearl_h', x: 6, y: 2, pal: HERMITS.perle.pal, dir: 0, name: HERMITS.perle.name, kind: 'hermit', data: { key: 'perle' } });
-  MAPS.cave_pearl = pearl;
+  r8.warps.push({ x: PEARL_MOUTH.x, y: PEARL_MOUTH.y, to: 'cave_pearl', tx: 7, ty: 10, dir: 1, lock: 'dark' });
+  crystals(pearl, TILE.CRYSTAL_SEA, [[3, 6], [11, 10], [5, 2]]);
+  tablet(pearl, 11, 6, [T('GROTTA DELLE PERLE'), T('Tre ostriche custodiscono tre perle. Si aprono in ordine, e solo a chi sa distinguere il prezzo dal valore.')]);
+  pearl.npcs.push(
+    { id: 'cave_pearl_h', x: 4, y: 8, pal: HERMITS.perle.pal, dir: 3, name: HERMITS.perle.name, kind: 'hermit', data: { key: 'perle' } },
+    oyster(1, 9, 2),
+  );
+  const pearlB = cave('cave_pearl_b1', T('Fondale delle Perle'), 15, 10, 'pearl', [[2, 3, 1, 1], [3, 2, 6, 5], [10, 3, 4, 4]]);
+  rect(pearlB.tiles, 5, 5, 2, 2, TILE.WATER);
+  pearlB.tiles[4][9] = TILE.BOULDER; // Masso delle Commissioni: chiude la Nicchia della Pazienza
+  ladder(pearl, 12, 8, 11, 8, 2, pearlB, 2, 3, 3, 3, 3);
+  crystals(pearlB, TILE.CRYSTAL_SEA, [[3, 6], [8, 6], [13, 6]]);
+  tablet(pearlB, 5, 2, [T('FONDALE DELLE PERLE'), T('Un guscio brutto può nascondere una perla, un guscio lucido può essere vuoto.'), T('Il prezzo è il guscio: lo vedono tutti. Il valore sta dentro, e per vederlo bisogna aprire i conti.')]);
+  tablet(pearlB, 10, 6, [T('NICCHIA DELLA PAZIENZA'), T('La perla cresce in anni, non in giorni. Chi compra valore deve saper aspettare che anche gli altri lo vedano.')]);
+  pearlB.npcs.push(oyster(2, 8, 2), oyster(3, 13, 3));
+  MAPS.cave_pearl = pearl; MAPS.cave_pearl_b1 = pearlB;
 
-  // --- Galleria del Dark Pool: Percorso 7 (a metà, lato nord) ↔ Mentelucida. Un Masso delle Commissioni davanti alla bocca,
-  // buia dentro: come ogni grotta si incontra solo dopo la Whale che dà la Lanterna ---
+  // --- Galleria del Dark Pool: Percorso 7 (a metà, lato nord) ↔ Mentelucida. Un Masso delle Commissioni davanti alla bocca.
+  // Dentro la Lanterna illumina meno e gli sfidanti restano invisibili finché non ti sono addosso ---
   const r7 = MAPS.r7;
   caveMouth(r7.tiles, 28, 1);
   rect(r7.tiles, 28, 2, 1, 4, TILE.PATH);
   r7.tiles[3][28] = TILE.BOULDER;
   // roccia ai lati: il masso non si aggira
   rect(r7.tiles, 27, 2, 1, 2, TILE.ROCK); rect(r7.tiles, 29, 2, 1, 2, TILE.ROCK);
-  r7.warps.push({ x: 28, y: 1, to: 'cave_dp', tx: 3, ty: 11, dir: 1, lock: 'dark' });
+  r7.warps.push({ x: 28, y: 1, to: 'cave_dp', tx: 3, ty: 15, dir: 1, lock: 'dark' });
   r7.signs.push({ x: 27, y: 4, text: [T('GALLERIA DEL DARK POOL'), T('Scorciatoia per Mentelucida. Chiusa da un Masso delle Commissioni e buia: servono il Taglio dei Costi e la Lanterna.')] });
   r7.tiles[4][27] = TILE.SIGN;
   const t7 = MAPS.t7;
-  const cy = TOWN_H - 3; // bocca della grotta al limite sud, collegata alla via delle case
   caveMouth(t7.tiles, 27, cy);
   rect(t7.tiles, 27, SOUTH_ST + 1, 1, cy - 1 - SOUTH_ST, TILE.PATH);
-  t7.warps.push({ x: 27, y: cy, to: 'cave_dp', tx: 22, ty: 11, dir: 1, lock: 'dark' });
-  const dp = cave('cave_dp', T('Galleria del Dark Pool'), 26, 14, [
-    [2, 9, 3, 4], [2, 2, 3, 7], [5, 2, 8, 3], [12, 5, 3, 5], [15, 7, 6, 3], [20, 3, 3, 5], [20, 9, 4, 4], [8, 7, 4, 4],
+  t7.warps.push({ x: 27, y: cy, to: 'cave_dp', tx: 26, ty: 15, dir: 1, lock: 'dark' });
+  const dp = cave('cave_dp', CAVES.dp.name, 30, 18, 'dp', [
+    [1, 12, 6, 4], [3, 16, 1, 2], // sala d'ingresso ovest (dal Percorso 7)
+    [2, 6, 2, 6], [2, 3, 8, 3], // corridoio nord e stanza di nord-ovest
+    [10, 3, 10, 9], // Sala delle Grida Spente: grande, con pilastri, dove la luce non arriva alle pareti
+    [14, 2, 2, 1], [11, 12, 1, 2], // nicchia del primo ordine nascosto e discesa al livello inferiore
+    [20, 7, 3, 1], [22, 7, 2, 6], [22, 12, 7, 4], [26, 16, 1, 2], // uscita est verso Mentelucida
   ]);
-  dp.tiles[13][3] = TILE.CAVE; dp.tiles[13][22] = TILE.CAVE;
-  dp.warps.push({ x: 3, y: 13, to: 'r7', tx: 28, ty: 2, dir: 0 }, { x: 22, y: 13, to: 't7', tx: 27, ty: cy - 1, dir: 0 });
+  [[12, 5], [13, 5], [16, 5], [17, 5], [12, 9], [13, 9], [16, 9], [17, 9]].forEach(([x, y]) => (dp.tiles[y][x] = TILE.ROCK));
+  dp.warps.push({ x: 3, y: 17, to: 'r7', tx: 28, ty: 2, dir: 0 }, { x: 26, y: 17, to: 't7', tx: 27, ty: cy - 1, dir: 0 });
+  crystals(dp, TILE.CRYSTAL_DARK, [[6, 15], [9, 3], [19, 3], [10, 11], [22, 15]]);
+  tablet(dp, 1, 12, [T('GALLERIA DEL DARK POOL'), T('Qui gli ordini non si mostrano prima di essere eseguiti. Nemmeno chi li piazza.'), T('La Lanterna illumina meno del solito: avanza piano, gli sfidanti compaiono solo quando ti sono addosso.')]);
+  tablet(dp, 10, 3, [T('SALA DELLE GRIDA SPENTE'), T('Nelle borse di una volta gli ordini si gridavano: tutti vedevano chi comprava e chi vendeva.'), T('Qui si scambia in silenzio. Il prezzo, però, arriva sempre da fuori: dai mercati dove gli ordini si vedono.')]);
+  tablet(dp, 28, 12, [T('GALLERIA DEL DARK POOL · LATO DI MENTELUCIDA'), T('Buio prima, luce dopo: l\'ordine resta nascosto, ma lo scambio concluso viene comunicato a tutti.')]);
   dp.npcs.push(
-    { id: 'cave_dp_t0', x: 9, y: 3, pal: 20, dir: 0, name: T('Operatore Ombra'), kind: 'trainer', sight: 3, lines: [T('Qui gli ordini non si vedono finché non sono eseguiti. Tu invece ti vedo benissimo!')], data: { r: 7 } },
-    { id: 'cave_dp_t1', x: 17, y: 8, pal: 15, dir: 2, name: T('Broker Notturna'), kind: 'trainer', sight: 3, lines: [T('Nel buio si fanno affari grossi. Ma servono regole chiare, sai?')], data: { r: 7 } },
+    { id: 'cave_dp_g', x: 5, y: 13, pal: 22, dir: 2, name: CAVES.dp.guide, kind: 'caveguide', data: { cave: 'dp' } },
+    { id: 'cave_dp_t0', x: 8, y: 4, pal: 20, dir: 2, name: T('Operatore Ombra'), kind: 'trainer', sight: 3, lines: [T('Qui gli ordini non si vedono finché non sono eseguiti. Tu invece ti vedo benissimo!')], data: { r: 7 } },
+    { id: 'cave_dp_t1', x: 18, y: 7, pal: 15, dir: 2, name: T('Broker Notturna'), kind: 'trainer', sight: 3, lines: [T('Nel buio si fanno affari grossi. Ma servono regole chiare, sai?')], data: { r: 7 } },
+    relic('dp_1', 15, 2),
   );
-  MAPS.cave_dp = dp;
+  const dpB = cave('cave_dp_b1', T('Sala degli Incroci'), 22, 13, 'dp', [[4, 2, 1, 1], [2, 3, 8, 5], [10, 5, 4, 2], [14, 3, 6, 6], [16, 9, 1, 1], [14, 10, 6, 2]]);
+  dpB.tiles[9][16] = TILE.BOULDER; // Masso delle Commissioni: chiude la Camera del Registro
+  ladder(dp, 11, 13, 11, 12, 1, dpB, 4, 2, 4, 3, 0);
+  crystals(dpB, TILE.CRYSTAL_DARK, [[2, 7], [9, 3], [19, 8], [14, 11]]);
+  tablet(dpB, 2, 3, [T('SALA DEGLI INCROCI'), T('Due grandi ordini opposti si incontrano qui, a metà strada tra il prezzo di chi compra e quello di chi vende.'), T('Chi muove quantità enormi si nasconde per non spostare il prezzo contro sé stesso: si chiama impatto di mercato.')]);
+  tablet(dpB, 14, 10, [T('CAMERA DEL REGISTRO'), T('Ogni scambio fatto al buio finisce scritto qui, e da qui viene reso pubblico.'), T('Senza questo registro nessuno saprebbe a che prezzo si scambia davvero: il buio è permesso solo perché dopo arriva la luce.')]);
+  dpB.npcs.push(
+    { id: 'cave_dp_t2', x: 13, y: 6, pal: 24, dir: 2, name: T('Market Maker Silenziosa'), kind: 'trainer', sight: 3, lines: [T('Compro e vendo senza farmi sentire. Vediamo se sai come si forma un prezzo!')], data: { r: 7 } },
+    relic('dp_2', 19, 3), relic('dp_3', 19, 11),
+  );
+  MAPS.cave_dp = dp; MAPS.cave_dp_b1 = dpB;
 
-  // --- Miniera dei Lingotti: Percorso 6 (oltre il ruscello) ↔ Valdividendo. Buia: serve la Lanterna.
-  // Regola: una grotta buia si apre dal percorso che viene dopo la Whale che dà la Lanterna (Attestato 5 → Percorso 6),
-  // così chi arriva alla bocca ha già la luce per entrare ---
+  // --- Miniera dei Lingotti: Percorso 6 (oltre il ruscello) ↔ Valdividendo. Tre bivi con le loro promesse:
+  // le gallerie "garantite" girano su sé stesse e riportano all'ingresso da cui sei entrat{o|a} ---
   const r6 = MAPS.r6;
   caveMouth(r6.tiles, 28, 1);
   rect(r6.tiles, 28, 2, 1, 4, TILE.PATH);
   r6.tiles[4][27] = TILE.SIGN;
   r6.signs.push({ x: 27, y: 4, text: [T('MINIERA DEI LINGOTTI'), T('Porta a Valdividendo. Dentro è buio pesto: si entra con la Lanterna della Due Diligence (Attestato 5).')] });
-  r6.warps.push({ x: 28, y: 1, to: 'cave_gold', tx: 2, ty: 12, dir: 1, lock: 'dark' });
+  r6.warps.push({ x: 28, y: 1, to: 'cave_gold', tx: GOLD_ENTRY.west.x, ty: GOLD_ENTRY.west.y, dir: 1, lock: 'dark' });
   const t6 = MAPS.t6;
   caveMouth(t6.tiles, 27, cy);
   rect(t6.tiles, 27, SOUTH_ST + 1, 1, cy - 1 - SOUTH_ST, TILE.PATH);
-  t6.warps.push({ x: 27, y: cy, to: 'cave_gold', tx: 25, ty: 12, dir: 1, lock: 'dark' });
-  const gold = cave('cave_gold', T('Miniera dei Lingotti'), 28, 15, [
-    [1, 10, 4, 3], [2, 4, 3, 6], [2, 2, 10, 2], [10, 4, 3, 5], [10, 9, 9, 3], [17, 3, 3, 6], [19, 3, 7, 2], [24, 5, 3, 8],
+  t6.warps.push({ x: 27, y: cy, to: 'cave_gold', tx: GOLD_ENTRY.east.x, ty: GOLD_ENTRY.east.y, dir: 1, lock: 'dark' });
+  const gold = cave('cave_gold', CAVES.gold.name, 32, 19, 'gold', [
+    [1, 13, 6, 4], [3, 17, 1, 2], // sala d'ingresso ovest (dal Percorso 6)
+    [3, 9, 1, 4], [2, 7, 3, 3], // corridoio e primo bivio
+    [3, 3, 1, 4], [3, 3, 8, 1], // «Vena garantita»: gira su sé stessa
+    [5, 8, 7, 2], // galleria ordinaria
+    [12, 6, 8, 5], [15, 5, 1, 1], // sala centrale e discesa al livello inferiore
+    [20, 8, 1, 1], [21, 7, 3, 3], // secondo bivio
+    [22, 3, 1, 4], [22, 3, 8, 1], // «Scorciatoia»: gira su sé stessa
+    [22, 10, 2, 3], [24, 12, 3, 1], [24, 13, 6, 4], [27, 17, 1, 2], // galleria lunga e sala d'ingresso est (da Valdividendo)
+    [15, 11, 1, 1], [14, 12, 3, 2], // terzo bivio, a sud della sala centrale
+    [9, 13, 5, 1], [9, 13, 1, 4], // «Vena ricca»: gira su sé stessa
+    [17, 13, 4, 1], [20, 13, 1, 4], // «Vena incerta»: porta al primo lingotto
   ]);
-  gold.tiles[14][2] = TILE.CAVE; gold.tiles[13][2] = TILE.CAVE; gold.tiles[14][25] = TILE.CAVE; gold.tiles[13][25] = TILE.CAVE;
-  gold.warps.push({ x: 2, y: 14, to: 'r6', tx: 28, ty: 2, dir: 0 }, { x: 25, y: 14, to: 't6', tx: 27, ty: cy - 1, dir: 0 });
-  gold.npcs.push(
-    { id: 'cave_gold_t0', x: 6, y: 2, pal: 21, dir: 3, name: T('Cercatrice d\'Oro'), kind: 'trainer', sight: 4, lines: [T('L\'oro non paga dividendi, ma nelle crisi molti lo cercano. Tu cosa cerchi?')], data: { r: 6 } },
-    { id: 'cave_gold_t1', x: 15, y: 10, pal: 19, dir: 2, name: T('Minatore Prudente'), kind: 'trainer', sight: 3, lines: [T('Scavo piano e diversifico le gallerie. Vediamo se scavi bene anche tu!')], data: { r: 6 } },
-    { id: 'cave_gold_s', x: 21, y: 3, pal: 18, dir: 0, name: T('Vecchio Minatore'), kind: 'talk', lines: [T('Una volta ho messo tutto in una sola vena d\'oro. Si è esaurita in un mese.'), T('Da allora scavo in tante gallerie diverse. Si chiama diversificare, ragazz{o|a}.')] },
+  gold.warps.push(
+    { x: 3, y: 18, to: 'r6', tx: 28, ty: 2, dir: 0 }, { x: 27, y: 18, to: 't6', tx: 27, ty: cy - 1, dir: 0 },
+    { x: 10, y: 3, to: 'cave_gold', tx: GOLD_ENTRY.west.x, ty: GOLD_ENTRY.west.y, dir: 1, trap: 'gold_1' },
+    { x: 29, y: 3, to: 'cave_gold', tx: GOLD_ENTRY.east.x, ty: GOLD_ENTRY.east.y, dir: 1, trap: 'gold_2' },
+    { x: 9, y: 16, to: 'cave_gold', tx: GOLD_ENTRY.west.x, ty: GOLD_ENTRY.west.y, dir: 1, trap: 'gold_3' },
   );
-  MAPS.cave_gold = gold;
+  crystals(gold, TILE.CRYSTAL_GOLD, [[1, 13], [6, 16], [12, 6], [19, 6], [12, 10], [19, 10], [24, 16], [29, 16]]);
+  tablet(gold, 6, 13, [T('MINIERA DEI LINGOTTI'), T('Tre bivi, tre promesse. Leggi le incisioni prima di scegliere la galleria: al buio le promesse brillano più dell\'oro.')]);
+  tablet(gold, 29, 13, [T('MINIERA DEI LINGOTTI · LATO DI VALDIVIDENDO'), T('Chi scava qui impara una cosa sola: nessuna vena è garantita. Le gallerie che promettono troppo girano su sé stesse.')]);
+  tablet(gold, 2, 7, [T('BIVIO DELLA PROMESSA'), T('Verso nord, in vernice fresca: «VENA GARANTITA! Oro sicuro, rendimento certo, nessun rischio».'), T('Verso est, inciso nella roccia: «Galleria ordinaria. Si scava, a volte si trova».')]);
+  tablet(gold, 23, 7, [T('BIVIO DELLA FRETTA'), T('Verso nord: «SCORCIATOIA! Rendimento doppio in metà tempo. Lo dice il Capo Minatore in persona».'), T('Verso sud: «Galleria lunga. Ci vuole pazienza».')]);
+  tablet(gold, 14, 12, [T('Verso ovest: «VENA RICCA: +30% al mese, GARANTITO. Posti limitati: entra adesso!»')]);
+  tablet(gold, 16, 12, [T('Verso est: «Vena incerta. Può rendere poco, molto o niente. Puntelli controllati ieri: il rischio è scritto qui sotto».')]);
+  gold.npcs.push(
+    { id: 'cave_gold_s', x: 1, y: 15, pal: 18, dir: 3, name: CAVES.gold.guide, kind: 'caveguide', data: { cave: 'gold' } },
+    { id: 'cave_gold_t0', x: 10, y: 9, pal: 21, dir: 2, name: T('Cercatrice d\'Oro'), kind: 'trainer', sight: 4, lines: [T('L\'oro non paga dividendi, ma nelle crisi molti lo cercano. Tu cosa cerchi?')], data: { r: 6 } },
+    { id: 'cave_gold_t1', x: 23, y: 11, pal: 19, dir: 2, name: T('Minatore Prudente'), kind: 'trainer', sight: 3, lines: [T('Scavo piano e diversifico le gallerie. Vediamo se scavi bene anche tu!')], data: { r: 6 } },
+    relic('gold_1', 20, 16),
+  );
+  const goldB = cave('cave_gold_b1', T('Miniera dei Lingotti · Livello inferiore'), 24, 14, 'gold', [[3, 2, 1, 1], [2, 3, 6, 4], [8, 4, 5, 2], [13, 2, 8, 7], [16, 9, 1, 2], [14, 11, 6, 2]]);
+  goldB.tiles[10][16] = TILE.BOULDER; // Masso delle Commissioni: chiude la Camera dei Costi Tagliati
+  ladder(gold, 15, 5, 15, 6, 0, goldB, 3, 2, 3, 3, 0);
+  crystals(goldB, TILE.CRYSTAL_GOLD, [[2, 6], [7, 3], [13, 8], [20, 8], [14, 12]]);
+  tablet(goldB, 13, 2, [T('QUADERNO DEI TURNI'), T('L\'oro non frutta mentre aspetti: niente cedole, niente dividendi. Chi lo tiene guadagna solo se il prezzo sale.'), T('Quando i titoli sicuri rendono più dell\'inflazione, tenere oro è una rinuncia più grande.')]);
+  tablet(goldB, 14, 11, [T('CAMERA DEI COSTI TAGLIATI'), T('Caveau, assicurazione, commissioni: custodire l\'oro costa ogni anno, che il prezzo salga o no.'), T('Tagliare i costi è l\'unico rendimento che dipende solo da te.')]);
+  goldB.npcs.push(
+    { id: 'cave_gold_t2', x: 12, y: 4, pal: 23, dir: 2, name: T('Geologa dei Rendimenti'), kind: 'trainer', sight: 3, lines: [T('Ogni vena promette. Io guardo i carotaggi, non le promesse. E tu?')], data: { r: 6 } },
+    relic('gold_2', 20, 2), relic('gold_3', 19, 12),
+  );
+  MAPS.cave_gold = gold; MAPS.cave_gold_b1 = goldB;
+
+  // --- Cippo dei Costi sul Percorso 5: il primo Masso delle Commissioni che si incontra dopo la Whale che insegna
+  // il Taglio dei Costi (Attestato 4). Dietro, una lezione incisa e un po' di Conoscenza ---
+  const r5 = MAPS.r5;
+  rect(r5.tiles, 38, 1, 5, 3, TILE.ROCK);
+  rect(r5.tiles, 39, 1, 3, 2, TILE.PATH);
+  r5.tiles[3][40] = TILE.BOULDER; r5.tiles[1][40] = TILE.SIGN; r5.tiles[4][40] = TILE.PATH; r5.tiles[5][40] = TILE.PATH;
+  r5.signs.push({ x: 40, y: 1, xp: true, text: [T('CIPPO DEI COSTI'), T('Un costo dell\'1% l\'anno sembra piccolo. In trent\'anni si porta via circa un quarto del capitale finale.'), T('Il rendimento lo decide il mercato; i costi li scegli tu. Hai appena tagliato il primo masso: continua così.')] });
+}
+
+/** Punti d'arrivo nella Miniera dei Lingotti dalle due bocche: le gallerie delle promesse riportano qui. */
+export const GOLD_ENTRY = { west: { x: 3, y: 16 }, east: { x: 27, y: 16 } } as const;
+
+/** Incisione su una lastra di pietra: il "cartello" delle grotte. La prima lettura dà un po' di Conoscenza. */
+function tablet(m: MapDef, x: number, y: number, text: string[]) {
+  m.tiles[y][x] = TILE.TABLET;
+  m.signs.push({ x, y, text, xp: true });
+}
+
+function crystals(m: MapDef, tile: number, at: [number, number][]) {
+  for (const [x, y] of at) m.tiles[y][x] = tile;
+}
+
+function relic(id: string, x: number, y: number): NpcDef {
+  return { id: `relic_${id}`, x, y, pal: 0, dir: 0, name: RELIC_BY_ID[id].name, kind: 'relic', data: { relic: id }, hiddenSprite: true };
+}
+
+function oyster(n: number, x: number, y: number): NpcDef {
+  return { id: `oyster_${n}`, x, y, pal: 0, dir: 0, name: T('Ostrica antica'), kind: 'oyster', data: { n }, hiddenSprite: true };
+}
+
+/**
+ * Scala tra due livelli di una grotta: la casella della scala in `a` porta accanto alla scala di `b` e viceversa.
+ * (ax, ay) e (bx, by) sono le caselle delle scale; (aox, aoy) e (box, boy) i punti d'arrivo, con la direzione dello sguardo.
+ */
+function ladder(a: MapDef, ax: number, ay: number, aox: number, aoy: number, adir: 0 | 1 | 2 | 3, b: MapDef, bx: number, by: number, box: number, boy: number, bdir: 0 | 1 | 2 | 3) {
+  a.tiles[ay][ax] = TILE.LADDER; b.tiles[by][bx] = TILE.LADDER;
+  a.warps.push({ x: ax, y: ay, to: b.id, tx: box, ty: boy, dir: bdir });
+  b.warps.push({ x: bx, y: by, to: a.id, tx: aox, ty: aoy, dir: adir });
 }
 
 // ---------------- Segreti della seconda parte (dalla Medaglia 4) ----------------

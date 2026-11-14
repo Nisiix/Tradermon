@@ -43,11 +43,12 @@ export function reward(o: { rep?: number; xp?: number; defeated?: string; event?
   if (o.save !== false) save();
 }
 
-export async function afterDuel(win: boolean, id: string, rep: number, w: WorldApi, who: string) {
+/** tip: la frase di chi perde; senza, un consiglio a caso tra quelli dei Percorsi. */
+export async function afterDuel(win: boolean, id: string, rep: number, w: WorldApi, who: string, tip?: string) {
   tick();
   if (win) {
     reward({ defeated: id, rep });
-    await say([T('Complimenti, sei preparat{o|a}!'), pick(TRAINER_TIPS)], who);
+    await say([T('Complimenti, sei preparat{o|a}!'), tip ?? pick(TRAINER_TIPS)], who);
   } else {
     await say(T('Ah! Ripassa e riprova.'), who);
     await defeatRespawn(w);

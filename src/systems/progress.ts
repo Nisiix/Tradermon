@@ -7,13 +7,14 @@ import { jingle } from './music';
 import { ALL_RESIDENTS } from '../data/residents';
 import type { AgendaTask } from '../types';
 import { LEDGER_PAGES, pageFlag, SECRET_FLAGS } from '../world/secretsData';
+import { RELICS, relicsFound, relicsOf, type CaveKey } from '../world/caves';
 import { T } from '../i18n';
 
 // ---------------- Contatori di eventi ----------------
 
 export type GameEvent =
   | 'lesson' | 'duel_win' | 'duel_loss' | 'duel_perfect' | 'checkup' | 'tip' | 'daily_q' | 'mission' | 'journal' | 'minigame'
-  | 'rematch' | 'steps' | 'trade' | 'rebalance' | 'quest' | 'house_unique' | 'review' | 'review_journal' | 'challenge' | 'badge' | 'legend' | 'islet' | 'secret';
+  | 'rematch' | 'steps' | 'trade' | 'rebalance' | 'quest' | 'house_unique' | 'review' | 'review_journal' | 'challenge' | 'badge' | 'legend' | 'islet' | 'secret' | 'relic';
 
 const listeners: ((ev: GameEvent, n: number) => void)[] = [];
 export function onEvent(fn: (ev: GameEvent, n: number) => void) { listeners.push(fn); }
@@ -162,6 +163,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'steps10000', name: T('Esploratore'), desc: T('Cammina 10.000 passi'), title: 'Esploratore', check: () => c('steps') >= 10000 },
   { id: 'bias_all', name: T('Conosco i miei limiti'), desc: T('Impara tutti e 4 i bias'), title: 'Consapevole', check: () => S.biasSeen.length >= 4 },
   { id: 'casino', name: T('Il banco vince sempre'), desc: T('Scopri la lezione del Casinò'), check: () => !!S.flags.casinoLesson },
+  // reperti delle grotte (dalla Lanterna, Attestato 5): tre per grotta, mai denaro
+  { id: 'relics_gold', name: T('Naso per l\'oro'), desc: T('Trova i tre lingotti della Miniera dei Lingotti'), title: 'Naso per l\'oro', decor: 'ingot', check: () => caveDone('gold') },
+  { id: 'relics_dp', name: T('Occhio nel buio'), desc: T('Trova i tre ordini nascosti della Galleria del Dark Pool'), title: 'Occhio nel buio', decor: 'order_frame', check: () => caveDone('dp') },
+  { id: 'relics_pearl', name: T('Occhio per il valore'), desc: T('Apri le tre ostriche della Grotta delle Perle'), title: 'Occhio per il valore', decor: 'pearl', check: () => caveDone('pearl') },
+  { id: 'caves_all', name: T('Lanterna d\'oro'), desc: T('Trova tutti e nove i reperti delle grotte'), title: 'Lanterna d\'oro', decor: 'lantern', check: () => relicsFound(S.flags) >= RELICS.length },
   // segreti della seconda parte (dalla Medaglia 4): restano "???" finché non li trovi
   { id: 'secret_ledger', name: T('Il Libro Mastro Perduto'), desc: T('Ritrova le sei pagine nascoste di Mastro Ventura'), title: 'Custode del Libro Mastro', decor: 'ledger', secret: true, check: () => ledgerDone() },
   { id: 'secret_tape', name: T('Lettore del Nastro'), desc: T('Trova la Sala del Nastro e batti la Vecchia del Nastro'), title: 'Lettore del Nastro', decor: 'tape', secret: true, check: () => !!S.flags[SECRET_FLAGS.tape] },
@@ -170,6 +176,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'secret_all', name: T('Cacciatore di Segreti'), desc: T('Scopri tutti i segreti della regione'), title: 'Cacciatore di Segreti', decor: 'lamp', secret: true, check: () => ledgerDone() && !!S.flags[SECRET_FLAGS.tape] && !!S.flags[SECRET_FLAGS.whale] && !!S.flags[SECRET_FLAGS.hodl] },
 ];
 
+function caveDone(k: CaveKey): boolean { return relicsFound(S.flags, k) >= relicsOf(k).length; }
 function ledgerDone(): boolean { return LEDGER_PAGES.every((p) => !!S.flags[pageFlag(p.id)]); }
 
 /** Controlla i traguardi e assegna quelli nuovi. */
@@ -218,4 +225,8 @@ export const DECOR_INFO: Record<string, { name: string; tile: string }> = {
   ledger: { name: T('Libro Mastro rilegato'), tile: 'shelf' },
   tape: { name: T('Nastro delle quotazioni incorniciato'), tile: 'frame' },
   lamp: { name: T('Mappamondo delle rotte segrete'), tile: 'globe' },
+  ingot: { name: T('Lingotto della Miniera'), tile: 'ingot' },
+  order_frame: { name: T('Ordine nascosto incorniciato'), tile: 'frame' },
+  pearl: { name: T('Perla della Grotta'), tile: 'pearl' },
+  lantern: { name: T('Lanterna della Due Diligence'), tile: 'lantern' },
 };
