@@ -13,6 +13,7 @@ import { beep } from '../systems/audio';
 import { markDuelDone } from './savebtn';
 import { FIDUCIA_PER_CORRECT, DIFFICULTY } from '../systems/balance';
 import { studyHint } from '../data/quiz/hint';
+import { TOPIC_LABEL } from '../data/books';
 import { errorsAllowed, errorsLeft, lifeAfterWrong, lifeShown, fiduciaAfterWin } from '../systems/duelLife';
 import { T } from '../i18n';
 
@@ -168,7 +169,9 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         const ok = i >= 0 && order[i] === q.answer;
         recordAnswer(q, ok);
         const btns = optsEl.querySelectorAll('button');
-        btns.forEach((b, j) => { if (order[j] === q.answer) b.classList.add('right'); else if (j === i) b.classList.add('wrong'); });
+        // dopo un errore la risposta giusta resta nascosta: per scoprirla si torna a rileggere il libro in Biblioteca
+        // (regola dell'utente, 15/11); solo quando si risponde bene si vede quale era e perché
+        btns.forEach((b, j) => { if (ok && order[j] === q.answer) b.classList.add('right'); else if (j === i) b.classList.add('wrong'); });
         if (ok) {
           correct++;
           foe = Math.max(0, foe - per);
@@ -188,9 +191,10 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         if (risky) S.stats.fiducia = lifeShown(life);
         drawMe();
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
-        const verdict = i < 0 ? T('<b class="bad">Tempo scaduto!</b>') : ok ? T('<b class="good">Giusto!</b>') : T`<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(gtext(q.options[q.answer]))}`;
-        const hint = ok ? '' : studyHint(q);
-        $('.exp').innerHTML = `<p>${verdict} ${esc(gtext(q.explain))}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
+        const hint = ok ? '' : studyHint(q) || T`📖 Rileggi i libri di «${TOPIC_LABEL[q.topic]}» in Biblioteca.`;
+        $('.exp').innerHTML = ok
+          ? `<p>${T('<b class="good">Giusto!</b>')}</p><p>${esc(gtext(q.explain))}</p>`
+          : `<p>${i < 0 ? T('<b class="bad">Tempo scaduto!</b>') : T('<b class="bad">Sbagliato.</b>')} ${T('La risposta giusta non te la dico: la trovi nel libro.')}</p><p class="hint">${esc(hint)}</p>`;
         const cont = el('button', 'btn primary', T('Continua ▶'));
         cont.style.marginTop = '6px';
         $('.exp').appendChild(cont);

@@ -8,7 +8,7 @@ import { townForTopic } from '../data/quiz/hint';
 import { isDue } from '../systems/quiz';
 import { repTier } from '../systems/character';
 import { mentorMission } from '../data/missions';
-import { mentor } from '../data/story';
+import { mentor, TOWNS } from '../data/story';
 import type { QuizTopic } from '../types';
 import { T } from '../i18n';
 
@@ -42,7 +42,8 @@ export function missionStars(): { id: string; title: string; stars: number; done
   const out = [];
   for (let m = 1; m <= 8; m++) {
     const ms = mentorMission(m, S.track, S.profile);
-    out.push({ id: ms.id, title: ms.title, stars: Number(S.flags[`${ms.id}_stars`] ?? 0), done: S.badges >= m, sim: ms.kind === 'sim' });
+    // le missioni sono facoltative (Zona Simulazione): «fatta» vuol dire riuscita, non «Attestato ottenuto»
+    out.push({ id: ms.id, title: ms.title, stars: Number(S.flags[`${ms.id}_stars`] ?? 0), done: !!S.flags[`m${m}_mission`], sim: ms.kind === 'sim' });
   }
   return out;
 }
@@ -58,7 +59,7 @@ export function nextStep(cards: TopicCard[]): string {
     return book ? T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: rileggi «${book.title}»${town ? T` nella Biblioteca di ${town}` : ''}, poi sfida gli allievi.` : T`L'argomento più debole è «${TOPIC_LABEL[w.topic]}»: le Lezioni in Biblioteca lo coprono.`;
   }
   const ms = missionStars().find((m) => m.sim && m.done && m.stars < 3);
-  if (ms) return T`La missione «${ms.title}» ha ${ms.stars}/3 stelle di processo: puoi ripeterla dalla Whale per migliorarle.`;
+  if (ms) return T`La missione «${ms.title}» ha ${ms.stars}/3 stelle di processo: puoi ripeterla nella Zona Simulazione di ${TOWNS[3].name} per migliorarle.`;
   if (S.badges < 8) return T`Prossima Whale: ${mentor(S.badges + 1, S.track).name}. Prima leggi i libri sui temi della sua città, in Biblioteca.`;
   return T('Percorso completo: Wall Street e la Torre delle Sfide ti aspettano. Rileggi il Diario per allenare il senno di poi.');
 }

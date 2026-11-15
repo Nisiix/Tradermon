@@ -85,3 +85,9 @@ export function switchLang(l: Lang) {
 export function markDocument() {
   if (typeof document !== 'undefined') document.documentElement.lang = LANG;
 }
+
+/** Elenco leggibile nella lingua scelta: «a», «a e b», «a, b e c» (in inglese «a, b and c»). */
+export function listJoin(items: readonly (string | number)[]): string {
+  if (items.length < 2) return items.join('');
+  return items.slice(0, -1).join(', ') + T(' e ') + items[items.length - 1];
+}

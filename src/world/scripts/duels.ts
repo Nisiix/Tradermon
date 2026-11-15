@@ -37,7 +37,7 @@ import { tick } from '../../systems/account';
 import { CAVES, CAVE_TIPS, caveOf } from '../caves';
 import type { Arena } from '../../ui/arena';
 import type { Question, QuizTopic } from '../../types';
-import { T } from '../../i18n';
+import { T, listJoin } from '../../i18n';
 import { playMinigame } from '../../ui/minigames';
 
 export async function trainer(n: NpcDef, w: WorldApi) {
@@ -144,7 +144,7 @@ export async function mentorBattle(m: number, w: WorldApi) {
   await say([md.intro, ...(m > 1 || S.flags.medalRule ? [] : [T('Da me si guadagnano due cose. L\'Attestato si vince qui, con un duello di conoscenza, e ti apre la strada verso la città successiva.'), T('Il Sigillo pratico si guadagna dopo, con la Prova sul conto: ordini veri sul mercato di oggi, dal tuo conto di gioco, usando ciò che ti ho appena insegnato. Puoi viaggiare con i soli Attestati, ma entri a Wall Street solo se hai tutti e otto i Sigilli.')])], md.name);
   S.flags.medalRule = true;
   const unread = mentorBooks(m, S.track, S.mixedClasses).filter((b) => !S.booksRead.includes(b.id)).length;
-  if (unread) await say([T`Un consiglio da Whale: nella Biblioteca di ${TOWNS[m]?.name ?? T('questa città')} ci sono i libri su ${mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`).join(T(' e '))}, un piccolo argomento per libro.`, T('Chi li ha letti sa di che cosa parliamo qui dentro.')], md.name);
+  if (unread) await say([T`Un consiglio da Whale: nella Biblioteca di ${TOWNS[m]?.name ?? T('questa città')} ci sono i libri su ${listJoin(mentorTopics(m, S.track, S.mixedClasses).map((t) => `«${TOPIC_LABEL[t]}»`))}, un piccolo argomento per libro.`, T('Chi li ha letti sa di che cosa parliamo qui dentro.')], md.name);
   // dopo una sconfitta si torna solo dopo aver studiato: un libro o una lezione, oppure un ripasso alla Banca
   if (!retryUnlocked(`m${m}`)) return say([T('Sei tornat{o|a} presto. Prima di riprovare, studia.'), T`Leggi un libro sui temi di ${TOWNS[m]?.name ?? T('questa città')} nella sua Biblioteca, oppure fai il Ripasso con la Professoressa del giorno, alla Banca: le domande che hai sbagliato sono lì ad aspettarti.`], md.name);
   {
@@ -449,7 +449,7 @@ export function placeTalk(who: string, lead: string): Promise<void> {
   if (cave) return say([lead, T('Qui sotto si impara una cosa alla volta. Questa te la ripeto volentieri:'), pick(BOOK_BY_ID[CAVES[cave].book].pages)], who);
   const topics = placeTopics();
   const pages = booksFor(topics).filter((b) => !b.id.endsWith('_ctx')).flatMap((b) => b.pages);
-  const labels = topics.map((t) => `«${TOPIC_LABEL[t]}»`).join(T(' e '));
+  const labels = listJoin(topics.map((t) => `«${TOPIC_LABEL[t]}»`));
   return say(pages.length ? [lead, T`Da queste parti si parla di ${labels}. Te lo ripeto volentieri:`, pick(pages)] : [lead, pick(TRAINER_TIPS)], who);
 }
 
