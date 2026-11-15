@@ -177,7 +177,7 @@ async function startTrack(track: Track, w: WorldApi) {
   await say([T`Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu${keysOf('menu')[0] ? T` (tasto ${keysOf('menu')[0]})` : ''}, insieme all'Album dell'investitore e al tuo Profilo.`], T('Prof. Saldi'));
   await say([T('Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.'), T('Ogni libro spiega un piccolo argomento. In alto a sinistra trovi i temi della città, a destra quelli delle città che hai già attraversato.'), T('Leggili prima di entrare nell\'Exchange: in questo gioco si vince studiando, non indovinando.')], T('Prof. Saldi'));
   save();
-  w.refresh();
+  await w.refresh();
   await wait(200);
   await rivalIntro(w);
 }
@@ -226,6 +226,8 @@ export async function leoTour(w: WorldApi) {
   await say([T('Io vado avanti. Studia bene e non metterci troppo!')], S.rival);
   S.flags[LEO_TOUR_FLAG] = true;
   save();
+  // Leo non sparisce: se ne va a piedi verso l'uscita della città, e il gioco riparte quando è fuori dalla vista
+  await w.refresh();
 }
 
 export async function rival(n: NpcDef, w: WorldApi) {
@@ -252,7 +254,7 @@ async function rivalDuel(k: number, w: WorldApi) {
   beep('win');
   await say([T('Uff, sai il fatto tuo...'), T('Ma vediamo i portafogli!')], S.rival);
   await comparePortfolios();
-  w.refresh();
+  await w.refresh();
   save();
 }
 
@@ -274,7 +276,7 @@ async function rivalTutorial(w: WorldApi) {
   await say(good
     ? [T`${r.correct} su ${r.total}: uff, sai il fatto tuo...`, T('Ma il mercato vero è un\'altra cosa. Ci vediamo a Ponte Cedola!')]
     : [T`${r.correct} su ${r.total}: per essere la prima volta non è male.`, T('Le spiegazioni le hai lette: la prossima volta che ci sfidiamo non sarà una prova. Ci vediamo a Ponte Cedola!')], S.rival);
-  w.refresh();
+  await w.refresh();
   save();
 }
 

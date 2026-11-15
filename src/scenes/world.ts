@@ -460,13 +460,17 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** Crea o rimuove gli sprite dei personaggi. Chi compare o sparisce a mappa già caricata lo fa con una dissolvenza. */
-  refreshNpcs(animate = true) {
+  /** Restituisce una promessa che si chiude quando chi se ne va è uscito di scena (vedi walkAway). */
+  refreshNpcs(animate = true): Promise<void> {
+    const leaving: Promise<void>[] = [];
     for (const n of this.npcs) {
       const vis = npcVisible(n.def);
       if (!vis) {
         const spr = n.spr, sh = n.shadow;
         n.spr = undefined; n.shadow = undefined;
-        if (spr && animate) this.tweens.add({ targets: [spr, sh].filter(Boolean), alpha: 0, duration: 300, onComplete: () => { spr.destroy(); sh?.destroy(); } });
+        // i personaggi non spariscono: si girano e se ne vanno a piedi, fino alla porta o fuori dalla vista
+        if (spr && animate && spr.texture.key === 'chars' && !this.map.cave) leaving.push(this.walkAway(n, spr, sh));
+        else if (spr && animate) this.tweens.add({ targets: [spr, sh].filter(Boolean), alpha: 0, duration: 300, onComplete: () => { spr.destroy(); sh?.destroy(); } });
         else { spr?.destroy(); sh?.destroy(); }
         continue;
       }
@@ -489,6 +493,67 @@ export class WorldScene extends Phaser.Scene {
         else if (animate) { n.spr.setAlpha(0); n.shadow.setAlpha(0); this.tweens.add({ targets: [n.spr, n.shadow], alpha: 1, duration: 300 }); }
       }
     }
+    return Promise.all(leaving).then(() => undefined);
+  }
+
+  /**
+   * Uscita a piedi di un personaggio che non deve più stare lì (Leo dopo il giro di Ponte Cedola o un duello, chi si
+   * fa da parte...): cammina per il percorso più breve fino a una porta o a un'uscita della mappa, oppure finché esce
+   * dalla vista della telecamera, poi scompare. La casella che lascia è già libera: non blocca il giocatore.
+   */
+  walkAway(n: NpcSprite, spr: Phaser.GameObjects.Sprite, sh?: Phaser.GameObjects.Image): Promise<void> {
+    // Leo "va avanti": fuori dagli edifici esce verso est, la strada del prossimo Percorso
+    const path = this.exitPath(n.x, n.y, n.def.kind === 'rival' && !this.map.interior ? 1 : 0);
+    const done = () => new Promise<void>((r) => this.tweens.add({ targets: [spr, sh].filter(Boolean), alpha: 0, duration: 220, onComplete: () => { spr.destroy(); sh?.destroy(); r(); } }));
+    if (!path.length) return done();
+    const pal = this.palFor(n.def);
+    let foot = n.foot, x = n.x, y = n.y;
+    const step = (i: number): Promise<void> => {
+      if (i >= path.length) return done();
+      const [nx, ny] = path[i];
+      const di = ny > y ? 0 : ny < y ? 1 : nx < x ? 2 : 3;
+      x = nx; y = ny; foot = 1 - foot;
+      const base = pal * 12 + di * 3;
+      spr.setFrame(base + 1 + foot).setDepth(10 + ny);
+      return new Promise<void>((r) => this.tweens.add({ targets: spr, x: nx * P + P / 2, y: ny * P + P, duration: STEP_MS + 40,
+        onUpdate: (tw) => { if (tw.progress > 0.5) spr.setFrame(base); sh?.setPosition(spr.x, spr.y - RS); },
+        onComplete: () => r() })).then(() => step(i + 1));
+    };
+    return step(0);
+  }
+
+  /**
+   * Percorso più breve (al massimo 40 passi) da (x, y) a un'uscita verso l'esterno o a una casella fuori dalla vista
+   * della telecamera (con east, solo a destra del punto di partenza). Evita muri, acqua e il giocatore. Vuoto se non c'è strada.
+   */
+  exitPath(x0: number, y0: number, east = 0): [number, number][] {
+    const view = this.cameras.main.worldView;
+    const out = (x: number, y: number) => view.width > 0 && ((x + 1) * P < view.x || x * P > view.right || y * P + P < view.y || (y - 1) * P > view.bottom);
+    // si esce da una porta solo se porta fuori (dall'interno alla strada, o al Percorso): nessuno sparisce in una casa a caso
+    const exit = (x: number, y: number) => this.map.warps.some((w) => w.x === x && w.y === y && !getMap(w.to)?.interior);
+    // con east conta solo uscire dal lato destro: dallo schermo o dal bordo della mappa
+    const goal = (x: number, y: number) => (east ? x * P > view.right || (exit(x, y) && x === this.map.w - 1) : exit(x, y) || out(x, y));
+    const key = (x: number, y: number) => y * this.map.w + x;
+    const prev = new Map<number, number>([[key(x0, y0), -1]]);
+    let frontier: [number, number][] = [[x0, y0]];
+    for (let d = 0; d < 40 && frontier.length; d++) {
+      const next: [number, number][] = [];
+      for (const [x, y] of frontier) for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+        const nx = x + dx, ny = y + dy, k = key(nx, ny);
+        if (nx < 0 || ny < 0 || nx >= this.map.w || ny >= this.map.h || prev.has(k)) continue;
+        const t = this.map.tiles[ny][nx];
+        if ((SOLID.has(t) && t !== TILE.DOOR) || t === TILE.WATER || (nx === S.x && ny === S.y) || this.npcAt(nx, ny)) continue;
+        prev.set(k, key(x, y));
+        if (goal(nx, ny)) {
+          const path: [number, number][] = [];
+          for (let c = k; c !== key(x0, y0); c = prev.get(c)!) path.unshift([c % this.map.w, Math.floor(c / this.map.w)]);
+          return path;
+        }
+        next.push([nx, ny]);
+      }
+      frontier = next;
+    }
+    return [];
   }
 
   /** Comportamento a riposo: chi abita il mondo si guarda intorno e fa qualche passo vicino a casa. */

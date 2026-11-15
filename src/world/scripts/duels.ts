@@ -87,7 +87,7 @@ export async function speculator(n: NpcDef, w: WorldApi) {
       reward({ defeated: n.id, rep: REWARD.rep.boss }); clampStat('disciplina', 10);
       await say([T('Impossibile... Le scorciatoie non funzionano con te.'), T('Ci ritiriamo. Per ora.')], ant.boss);
     } else await defeatRespawn(w);
-    w.refresh();
+    await w.refresh();
     return;
   }
   const t = pick(TEMPTATIONS);
@@ -186,7 +186,7 @@ async function sealChallenge(m: number, w: WorldApi) {
     if (got.includes(m)) {
       beep('badge'); jingle('badge');
       await say([T`Prova sul conto superata: ecco il Sigillo pratico. La ${md.badge} adesso è completa!`, m === 8 ? T('Con tutti e otto i Sigilli la Guardia di Wall Street ti lascerà passare.') : T`Sigilli pratici: ${S.seals}/8.`], md.name);
-      w.refresh(); save();
+      await w.refresh(); save();
       return;
     }
     if (S.seals >= m) return;
@@ -281,7 +281,7 @@ async function winBadge(m: number, w: WorldApi) {
   if (m === TRANSFER_BADGE) extra.push(T`Nuova abilità: ${ABILITY.transfer.name}. Apri il menu, scegli "Mappa della Regione" e trasferisciti in una città già visitata.`);
   if (m === 8) extra.push(T('Wall Street è oltre il Percorso 9. La Guardia ti fa passare solo se hai tutti e otto i Sigilli pratici. Con l\'ottavo Attestato, se hai superato l\'Esame della Leva, la leva si apre anche sul conto di gioco.'), T('I Superiori di Wall Street interrogano su macroeconomia, analisi e regole: da oggi in ogni Biblioteca trovi la Sezione di Wall Street, con i libri su cui prepararti.'));
   if (extra.length) await say(extra, T('Prof. Saldi (messaggio)'));
-  w.refresh();
+  await w.refresh();
   save();
 }
 
@@ -417,7 +417,7 @@ export async function league(i: number, w: WorldApi) {
     await say(mirror ? [...epilogue(), mirror] : epilogue(), T('Epilogo'));
     await credits();
   }
-  w.refresh();
+  await w.refresh();
   save();
 }
 
@@ -442,7 +442,7 @@ async function leagueRematch(i: number, w: WorldApi) {
   reward({ rep: REWARD.rep.rematch, xp: REWARD.xp.rematch, event: 'rematch', save: false });
   beep('win');
   await say(i === 4 ? [T('Hai difeso il titolo. Wall Street riparte da capo quando vuoi.')] : [T('Rivincita vinta. Prosegui!')], L.name);
-  w.refresh();
+  await w.refresh();
   save();
 }
 

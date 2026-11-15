@@ -46,7 +46,7 @@ export async function tutor(n: NpcDef, w: WorldApi) {
   if (!r.win) {
     lockRetry(key, r.wrong);
     await say([T('Non ancora. Non ti dico le risposte: le trovi nei libri.'), T`Rileggi «${label}» sullo scaffale e torna quando vuoi.`], who);
-    w.refresh();
+    await w.refresh();
     return;
   }
   clearRetry(key);
@@ -59,7 +59,7 @@ export async function tutor(n: NpcDef, w: WorldApi) {
     toast(T('Accademia di Wall Street completata!'));
     await say([T('Hai superato tutti e tre i Tutor dell\'Accademia.'), T('Da oggi puoi fregiarti del titolo di Accademico: lo trovi tra i titoli della tua scheda.')], T('Rettrice dell\'Accademia'));
   }
-  w.refresh();
+  await w.refresh();
   save();
 }
 

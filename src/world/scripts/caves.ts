@@ -32,7 +32,7 @@ async function gainRelic(id: string, w: WorldApi) {
   jingle('quest');
   // l'evento controlla i traguardi: il flag va messo prima
   reward({ xp: CAVE_XP.relic, event: 'relic', save: false });
-  w.refresh();
+  await w.refresh();
   const n = relicsFound(S.flags, r.cave), tot = relicsOf(r.cave).length;
   await say([T`Hai trovato: ${r.name}!`, ...r.text], cave.name);
   if (n < tot) await say(T`Reperti della grotta: ${n} su ${tot}. +${CAVE_XP.relic} punti Conoscenza.`, cave.name);
