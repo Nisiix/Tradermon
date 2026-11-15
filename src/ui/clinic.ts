@@ -355,7 +355,7 @@ async function reflect() {
   if (opts[k] === right) {
     learnBias(b);
     beep('heal');
-    await say([T('Esatto. Riconoscere un bias è il primo passo per non farsi guidare da lui.'), T('L\'ho annotato nel tuo Investidex.')], NURSE);
+    await say([T('Esatto. Riconoscere un bias è il primo passo per non farsi guidare da lui.'), T('L\'ho annotato nel tuo Album dell\'investitore.')], NURSE);
   } else {
     await say(T`Non proprio. La risposta migliore era: "${right}". Riprova quando vuoi.`, NURSE);
   }

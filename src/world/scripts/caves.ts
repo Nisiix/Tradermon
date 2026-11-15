@@ -13,6 +13,7 @@ import { CAVES, RELICS, RELIC_BY_ID, relicFlag, relicsOf, relicsFound, TRAPS, tr
 import { reward, type WorldApi } from './common';
 import { hermitDuel, HERMIT_LINES } from './duels';
 import { secretHint } from '../secrets';
+import { showBook } from '../../ui/book';
 import { T } from '../../i18n';
 
 export function relicTaken(id: string): boolean { return !!S.flags[relicFlag(id)]; }
@@ -113,8 +114,9 @@ export async function caveGuide(n: NpcDef) {
   const who = key === 'pearl' ? HERMITS.perle.name : n.name;
   const book = BOOK_BY_ID[cave.book];
   const readBook = async () => {
-    await say(book.pages, book.title);
-    if (!S.booksRead.includes(book.id)) { S.booksRead.push(book.id); reward({ xp: REWARD.xp.book, event: 'lesson', save: false }); }
+    // il taccuino si sfoglia come i libri della Biblioteca; le domande della grotta restano agli sfidanti
+    const finished = await showBook(book);
+    if (finished && !S.booksRead.includes(book.id)) { S.booksRead.push(book.id); reward({ xp: REWARD.xp.book, event: 'lesson', save: false }); }
   };
   const introFlag = `caveGuide_${key}`;
   if (!S.flags[introFlag]) {

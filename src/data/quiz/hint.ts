@@ -1,8 +1,9 @@
 // Suggerimento di studio dopo un errore: il libro della Biblioteca che spiega l'argomento (e in quale città),
 // altrimenti la fonte esterna. Così ogni errore dice dove andare a rileggere, non solo "sbagliato".
 import type { Question, QuizTopic } from '../../types';
-import { bookForText, TOPIC_LABEL } from '../books';
-import { mentorTopics } from './build';
+import { TOPIC_LABEL } from '../books';
+import { bookPageFor } from '../bookmap';
+import { mentorTopics, ACADEMY_TOPICS } from './build';
 import { TOWNS } from '../story';
 import { sourceLabel } from '../sources';
 import { S } from '../../systems/state';
@@ -23,11 +24,14 @@ export function studyHint(q: Question): string {
     const book = cave && BOOK_BY_ID[cave.book];
     return book && cave ? T`📖 Rileggi «${book.title}»: te lo presta la guida all'ingresso della ${cave.name}.` : '';
   }
-  // il piccolo argomento che spiega proprio questa domanda, non un libro qualunque del tema
-  const book = bookForText(q.topic, [q.q, q.options[q.answer] ?? '', q.explain].join(' '));
-  if (book) {
+  // il piccolo argomento, e la pagina, che spiegano proprio questa domanda: dopo un errore la risposta non si vede,
+  // quindi il rimando deve portare dritto al punto da rileggere
+  const bp = bookPageFor(q);
+  if (bp) {
     const town = townForTopic(q.topic);
-    return T`📖 Rileggi «${book.title}»${town ? T` nella Biblioteca di ${town}` : T(' in Biblioteca')} (scaffale ${TOPIC_LABEL[q.topic]}).`;
+    const page = bp.book.pages.length > 1 ? T`, pagina ${bp.page + 1}` : '';
+    if (ACADEMY_TOPICS.includes(q.topic)) return T`📖 Rileggi «${bp.book.title}»${page}, all'Accademia di Wall Street (scaffale ${TOPIC_LABEL[q.topic]}).`;
+    return T`📖 Rileggi «${bp.book.title}»${page}${town ? T` nella Biblioteca di ${town}` : T(' in Biblioteca')} (scaffale ${TOPIC_LABEL[q.topic]}).`;
   }
   const src = sourceLabel(q.source);
   return src ? T`📚 Per approfondire: ${src} (Archivio delle Fonti).` : '';

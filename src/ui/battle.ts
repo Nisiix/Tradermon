@@ -11,7 +11,7 @@ import { portrait, playerPal } from '../art/art';
 import { arenaTransition, mountArena, ARENA_ACCENT, ARENA_TAPE, type Arena } from './arena';
 import { beep } from '../systems/audio';
 import { markDuelDone } from './savebtn';
-import { FIDUCIA_PER_CORRECT, DIFFICULTY } from '../systems/balance';
+import { FIDUCIA_PER_CORRECT, DIFFICULTY, readGrace } from '../systems/balance';
 import { studyHint } from '../data/quiz/hint';
 import { TOPIC_LABEL } from '../data/books';
 import { errorsAllowed, errorsLeft, lifeAfterWrong, lifeShown, fiduciaAfterWin } from '../systems/duelLife';
@@ -152,12 +152,15 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
       render();
       const limit = profileTimer();
       let left = limit;
+      // qualche secondo per leggere prima che il timer parta (più lungo il testo, più tempo: vedi READ_GRACE)
+      let grace = limit ? readGrace(gtext(q.q).length + q.options.reduce((n, x) => n + x.length, 0)) : 0;
       let answered = false;
       const timerEl = $('.timer');
-      timerEl.textContent = limit ? `⏱ ${left}s` : T('Modalità Studio');
+      const showTime = () => { timerEl.textContent = grace > 0 ? T`📖 lettura ${grace}s · poi ⏱ ${left}s` : `⏱ ${left}s`; };
+      if (limit) showTime(); else timerEl.textContent = T('Modalità Studio');
       const iv = limit ? window.setInterval(() => {
-        left--;
-        timerEl.textContent = `⏱ ${left}s`;
+        if (grace > 0) grace--; else left--;
+        showTime();
         if (left <= 0) answer(-1);
       }, 1000) : 0;
 

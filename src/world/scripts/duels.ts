@@ -32,6 +32,7 @@ import { requireAccount, nextSealLine, chooseDifficulty, applyDifficulty } from 
 import { leagueTrial, runTrial, type Trial } from '../../systems/trials';
 import { bossMenu } from '../../ui/boss';
 import { trade } from '../../ui/clinic';
+import { openLabs } from '../../ui/labs';
 import { STAGE_TOOL } from '../../systems/balance';
 import { tick } from '../../systems/account';
 import { CAVES, CAVE_TIPS, caveOf } from '../caves';
@@ -64,7 +65,7 @@ async function scamLesson() {
   const ls = LESSONS.filter((l) => l.topic === 'regole' && !S.lessonsRead.includes(l.id));
   if (!ls.length || S.flags.scamLesson) return;
   S.flags.scamLesson = true;
-  await say([T('Da questo incontro impari qualcosa che vale più di un guadagno facile: come si riconosce una truffa.'), ...ls.flatMap((l) => l.body), T('Le ritrovi tra le Lezioni di ogni Biblioteca, e nello scaffale «Regole e truffe» ci sono i libri per approfondire.')], T('Narratore'));
+  await say([T('Da questo incontro impari qualcosa che vale più di un guadagno facile: come si riconosce una truffa.'), ...ls.flatMap((l) => l.body), T('Le ritrovi tra le Lezioni di ogni Biblioteca, e nello scaffale «Regole e finanza personale» ci sono i libri per approfondire.')], T('Narratore'));
   for (const l of ls) { S.lessonsRead.push(l.id); S.stats.xp += 5; }
   track('lesson');
 }
@@ -310,10 +311,11 @@ export async function reviewDuel() {
 
 /** La Professoressa del giorno, alla Banca del Portafoglio: gli allenamenti fuori dagli Exchange (in Biblioteca si studia e basta). */
 export async function dailyDesk() {
-  const c = await choose([T('Domanda del giorno'), T('Ripasso (domande in scadenza)'), T('Minigiochi didattici'), T('Niente, grazie')], { cancel: true, prompt: T('Qui ci si allena: la domanda del giorno, il ripasso delle domande in scadenza e i minigiochi. Che cosa scegli?'), who: T('Professoressa del giorno') });
+  const c = await choose([T('Domanda del giorno'), T('Ripasso (domande in scadenza)'), T('Laboratori con i cursori'), T('Minigiochi didattici'), T('Niente, grazie')], { cancel: true, prompt: T('Qui ci si allena: la domanda del giorno, il ripasso delle domande in scadenza, i laboratori e i minigiochi. Che cosa scegli?'), who: T('Professoressa del giorno') });
   if (c === 0) return daily();
   if (c === 1) return reviewDuel();
-  if (c === 2) return playMinigame(T('Professoressa del giorno'));
+  if (c === 2) return openLabs(T('Professoressa del giorno'));
+  if (c === 3) return playMinigame(T('Professoressa del giorno'));
 }
 
 export async function daily() {
@@ -472,7 +474,7 @@ export async function tower() {
     for (;;) {
       // la Torre parte dal livello del fine gioco e sale di un quarto di livello ogni tre piani
       const target = Math.min(MAX_DIFF, endgameDiff() + 0.25 * Math.floor(floor / 3));
-      const pool = trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole']);
+      const pool = trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'tassi', 'analisi', 'regole', 'personale']);
       const qs = pickQuestions(pool, 3, { target });
       const r = await runDuel({ foeName: T`Piano ${floor + 1}`, foeTitle: T('Torre delle Sfide'), foePal: 13, questions: qs, ...DUEL.tower, arena: 'torre' });
       if (!r.win) break;

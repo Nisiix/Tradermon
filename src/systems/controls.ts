@@ -2,13 +2,13 @@
 // Restano valide anche nella schermata iniziale, prima di caricare una partita.
 
 import { T } from '../i18n';
-export type Action = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'menu' | 'map' | 'settings';
+export type Action = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'menu' | 'map' | 'glossary' | 'settings';
 export type TouchMode = 'auto' | 'on' | 'off';
 
 export interface ActionInfo { id: Action; name: string; use: string }
 
 /** Cosa contengono il menu di gioco e le Opzioni: le stesse parole nella guida dei comandi e nella personalizzazione dei tasti. */
-export const MENU_USE = T('Apre il menu di gioco: Investidex, Portafoglio, Agenda, Diario, Profilo, Mappa, Chiavi API, Opzioni, Salva ed Esci dal gioco.');
+export const MENU_USE = T('Apre il menu di gioco: Studio (Cartella dello studente, Glossario, Album dell\'investitore, Giornale), Conto (Portafoglio, Tappe, Attestati, Diario, Chiavi API), Gioco (Profilo, Agenda, Mappa, Opzioni), Salva ed Esci dal gioco.');
 export const OPTIONS_USE = T('Apre e chiude le Opzioni ⚙, anche nel mondo: lingua, audio, schermo e testo, comandi, partita e giocatore.');
 
 /** Ogni comando con il suo uso, nell'ordine in cui compare nella guida e nelle impostazioni. */
@@ -21,6 +21,7 @@ export const ACTIONS: ActionInfo[] = [
   { id: 'b', name: T('Indietro (B)'), use: T('Chiude la finestra aperta, annulla una scelta e torna al passo precedente.') },
   { id: 'menu', name: T('Menu'), use: MENU_USE },
   { id: 'map', name: T('Mappa'), use: T('Apre la Mappa della Regione senza passare dal menu.') },
+  { id: 'glossary', name: T('Glossario'), use: T('Apre il Glossario: le parole dei libri che hai letto, tema per tema.') },
   { id: 'settings', name: T('Opzioni'), use: OPTIONS_USE },
 ];
 
@@ -35,6 +36,7 @@ export const DEFAULT_BINDINGS: Record<Action, string[]> = {
   b: ['KeyX', 'Backspace'],
   menu: ['KeyM'],
   map: ['KeyN'],
+  glossary: ['KeyG'],
   settings: ['Escape'],
 };
 

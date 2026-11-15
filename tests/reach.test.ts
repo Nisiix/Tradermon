@@ -13,7 +13,8 @@ describe('struttura del mondo', () => {
   });
   it('con tutte le Medaglie ogni luogo del mondo è raggiungibile', () => {
     const maps = mapsOf(explore(8).seen);
-    const missing = allMapIds().filter((id) => id !== 'tower' && !maps.has(id));
+    // la Torre e l'Accademia che sta sopra aprono solo al Campione (lucchetto 'tower')
+    const missing = allMapIds().filter((id) => id !== 'tower' && id !== 'ws_academy' && !maps.has(id));
     expect(missing).toEqual([]);
   });
   it('da ogni casella raggiungibile si torna sempre a casa (nessun vicolo senza uscita)', () => {

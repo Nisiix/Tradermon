@@ -13,6 +13,8 @@ import { S, save, hasTech, TECH } from '../systems/state';
 import { heldDir, takeDirTap, hasWorldPress, takeWorldPress, uiActive, clearWorld, type Key } from '../ui/input';
 import { say, toast, getStage, el, esc, choose } from '../ui/core';
 import { pauseMenu } from '../ui/menu';
+import { openGlossary } from '../ui/glossary';
+import { renderFlight, updateWeather, applyTint, FLIGHT_PX } from './worldFx';
 import { openRegionMap } from '../ui/regionmap';
 import { takeDuelDone } from '../ui/savebtn';
 import { canSwim, canCut, canSeeDark, boulderFlag, ABILITY } from '../world/travel';
@@ -36,8 +38,6 @@ interface NpcSprite { def: NpcDef; spr?: Phaser.GameObjects.Sprite; shadow?: Pha
 /** Personaggi che passeggiano o si guardano intorno quando il giocatore non interagisce. */
 const WANDER_KINDS = new Set(['talk', 'resident', 'student', 'daily']);
 const STEP_MS = 180;
-/** Altezza (in pixel di scena) a cui sale il personaggio durante il Trasferimento di Capitale. */
-const FLIGHT_PX = 56 * 3;
 /** Tocco breve da fermi: il personaggio si gira sul posto; tenendo premuto oltre questo tempo cammina. */
 const TURN_MS = 85;
 /** Appena fermati, un cambio di direzione riparte subito senza la pausa di rotazione. */
@@ -588,6 +588,7 @@ export class WorldScene extends Phaser.Scene {
     if (p) this.idleMs = 0;
     if (p === 'menu') return void this.runScript(async () => pauseMenu((id) => this.flyTo(id)));
     if (p === 'map') return void this.runScript(async () => { const dest = await openRegionMap(); if (dest) await this.flyTo(dest); });
+    if (p === 'glossary') return void this.runScript(() => openGlossary());
     if (p === 'a') return void this.interactFront();
     const dir = this.nextDir();
     if (dir) { this.idleMs = 0; this.tryMove(dir, !!this.route || this.time.now - this.lastStepEnd < MOMENTUM_MS); return; }
@@ -1054,79 +1055,11 @@ export class WorldScene extends Phaser.Scene {
     this.playerShadow?.setScale(1).setAlpha(1);
   }
 
-  /** Posizione del personaggio e dell'ombra durante il volo; le nuvole scorrono verso il basso sopra la scena. */
-  renderFlight() {
-    const k = this.flightLift;
-    if (!this.walk) this.player.setPosition(S.x * P + P / 2, S.y * P + P - k * FLIGHT_PX);
-    this.playerShadow?.setScale(1 - 0.55 * k).setAlpha(1 - 0.6 * k);
-    const cam = this.cameras.main;
-    const g: Painter = this.view3d ? this.view3d.painter : this.weather;
-    for (const c of this.flightClouds) {
-      c.y += (2 + 9 * k) * c.s;
-      if (c.y > cam.height + 30 * RS) { c.y = -30 * RS - Math.random() * 60 * RS; c.x = Math.random() * cam.width; }
-      const a = 0.25 + 0.6 * k;
-      g.fillStyle(0xffffff, a);
-      g.fillRect(c.x, c.y, c.w, 6 * RS);
-      g.fillRect(c.x + c.w * 0.2, c.y - 4 * RS, c.w * 0.55, 4 * RS);
-      g.fillRect(c.x + c.w * 0.1, c.y + 6 * RS, c.w * 0.8, 3 * RS);
-      g.fillStyle(0xffffff, a * 0.5);
-      g.fillRect(c.x - 3 * RS, c.y + 2 * RS, c.w + 6 * RS, 3 * RS);
-    }
-  }
+  /** Posizione del personaggio e dell'ombra durante il volo (scenes/worldFx.ts). */
+  renderFlight() { renderFlight(this); }
 
-  updateWeather(delta: number) {
-    const clk = marketClock();
-    const kind = this.map.interior ? '' : S.market.climate + (clk.night ? '_n' : '');
-    const cam = this.cameras.main;
-    const W = cam.width, H = cam.height;
-    if (kind !== this.weatherKind) {
-      this.weatherKind = kind;
-      this.drops = [];
-      if (clk.night !== this.night) { this.night = clk.night; this.refreshNpcs(); this.animateTiles(); this.syncMood(); }
-      const n = kind.startsWith('orso') ? 90 : kind.startsWith('tempesta') ? 160 : kind.startsWith('toro') ? 28 : kind ? 10 : 0;
-      for (let i = 0; i < n; i++) this.drops.push({ x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, s: 1 + Math.random(), a: Math.random(), k: Math.random() });
-      if (clk.night && kind) for (let i = 0; i < 14; i++) this.drops.push({ x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, s: 0.4 + Math.random() * 0.5, a: Math.random(), k: 2 + Math.random() });
-    }
-    const g: Painter = this.view3d ? this.view3d.painter : this.weather;
-    g.clear();
-    if (!this.view3d) this.paintCaveDark(g);
-    if (!kind) return;
-    const dt = Math.min(50, delta) / 16.7;
-    const climate = S.market.climate;
-    for (const d of this.drops) {
-      if (d.k >= 2) {
-        // lucciole: vagano lente e pulsano
-        d.a += 0.03 * dt; d.x += Math.sin(d.a * 1.7 + d.k) * 0.6 * dt; d.y += Math.cos(d.a * 1.3 + d.k) * 0.4 * dt;
-        const al = 0.35 + 0.65 * Math.abs(Math.sin(d.a));
-        g.fillStyle(0xe8ff90, al); g.fillRect(d.x, d.y, RS, RS);
-        g.fillStyle(0xe8ff90, al * 0.25); g.fillRect(d.x - RS, d.y - RS, RS * 3, RS * 3);
-      } else if (climate === 'orso' || climate === 'tempesta') {
-        const storm = climate === 'tempesta';
-        d.x -= (storm ? 3 : 1) * d.s * dt; d.y += (storm ? 11 : 8) * d.s * dt;
-        g.lineStyle(RS * 0.6, storm ? 0xb8c8e8 : 0xa8c0f0, 0.35 + 0.3 * d.s);
-        g.lineBetween(d.x, d.y, d.x - (storm ? 3 : 1) * RS * 0.5, d.y + 4 * RS * 0.7);
-      } else if (climate === 'toro') {
-        // scintille dorate che salgono piano e brillano
-        d.a += 0.05 * dt; d.y -= 0.35 * d.s * dt; d.x += Math.sin(d.a) * 0.3 * dt;
-        const al = 0.2 + 0.6 * Math.abs(Math.sin(d.a));
-        g.fillStyle(0xfff0a0, al); g.fillRect(d.x, d.y, RS, RS);
-        g.fillStyle(0xfff0a0, al * 0.5); g.fillRect(d.x - RS, d.y, RS * 3, RS); g.fillRect(d.x, d.y - RS, RS, RS * 3);
-      } else {
-        // foglie che scendono dondolando
-        d.a += 0.04 * dt; d.y += 0.8 * d.s * dt; d.x += (0.5 + Math.sin(d.a) * 1.2) * dt;
-        g.fillStyle(d.k > 0.5 ? 0x8cc850 : 0xd8a040, 0.8); g.fillRect(d.x, d.y, RS * 1.5, RS);
-      }
-      if (d.y > H + 8) { d.y = -8; d.x = Math.random() * W; }
-      if (d.y < -8) { d.y = H + 8; d.x = Math.random() * W; }
-      if (d.x < -8) d.x = W + 8; else if (d.x > W + 8) d.x = -8;
-    }
-    if (climate === 'tempesta') {
-      if (this.time.now > this.nextBolt) {
-        this.nextBolt = this.time.now + 4000 + Math.random() * 6000;
-        cam.flash(140, 230, 235, 255);
-      }
-    }
-  }
+  /** Meteo legato al clima di mercato (scenes/worldFx.ts). */
+  updateWeather(delta: number) { updateWeather(this, delta); }
 
   animateTiles() {
     if (!this.layer || !this.animCells.length) return;
@@ -1136,19 +1069,7 @@ export class WorldScene extends Phaser.Scene {
     this.view3d?.animate(this.animFrame, this.night);
   }
 
-  applyTint() {
-    const clk = marketClock();
-    const cam = this.cameras.main;
-    this.overlay.setSize(cam.width, cam.height);
-    let color = 0x000000, alpha = 0;
-    if (!this.map.interior) {
-      if (clk.night) { color = 0x0a1240; alpha = 0.32; }
-      if (S.market.climate === 'orso') { color = clk.night ? 0x0a1240 : 0x34405a; alpha = Math.max(alpha, 0.18); }
-      if (S.market.climate === 'tempesta') { color = 0x2a1a40; alpha = Math.max(alpha, 0.25); }
-      if (S.market.climate === 'toro' && !clk.night) { color = 0xffe9a0; alpha = 0.08; }
-    }
-    this.overlay.setFillStyle(color, alpha);
-  }
+  applyTint() { applyTint(this); }
 
   updateHud(force = false) {
     if (!this.hud) return;

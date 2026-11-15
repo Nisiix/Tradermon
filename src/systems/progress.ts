@@ -131,6 +131,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'badge4', name: T('Metà strada'), desc: T('Quattro Attestati'), title: 'Investitore in erba', check: () => S.badges >= 4 },
   { id: 'badge8', name: T('Tutti gli Attestati'), desc: T('Otto Attestati'), title: 'Maestro delle Whale', decor: 'poster_badges', check: () => S.badges >= 8 },
   { id: 'champion', name: T('Campione'), desc: T('Vinci Wall Street'), title: 'Campione', decor: 'trophy_league', check: () => !!S.flags.champion },
+  { id: 'academy', name: T('Accademico'), desc: T('Supera i tre Tutor dell\'Accademia di Wall Street'), title: 'Accademico', check: () => !!S.flags.academyAll },
   { id: 'tips10', name: T('Buon vicino'), desc: T('Ascolta 10 abitanti'), check: () => S.tipsHeard.length >= 10 },
   { id: 'tips_all', name: T('Orecchio della regione'), desc: T('Ascolta tutti gli abitanti'), title: 'Amico di tutti', decor: 'plant_big', check: () => S.tipsHeard.length >= ALL_RESIDENTS.length },
   { id: 'lessons10', name: T('Topo di biblioteca'), desc: T('Leggi 10 lezioni'), title: 'Lettore', decor: 'bookshelf_full', check: () => S.lessonsRead.length >= 10 },

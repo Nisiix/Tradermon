@@ -37,6 +37,11 @@ const VOCAB: Record<QuizTopic, string[]> = {
   crypto_stable: ['stablecoin', 'algoritmic', 'defi', 'rug pull', 'staking', 'smart contract', 'riserve', 'ponzi', 'piattaforma centralizzata', 'garanzia sui depositi'],
   mixed_base: ['classi', 'alternativi', 'oro', 'liquidità', 'rischio di cambio', 'profilo di rischio', 'correlazione', 'inflazione'],
   mixed_allocazione: ['asset allocation', 'strategica', 'tattica', 'target date', 'core-satellite', 'deriva', 'soglia', 'bilanciato', '80/20', 'piano di accumulo'],
+  personale: ['budget', 'fondo di emergenza', 'paga prima te stesso', 'bisogno', 'desiderio', 'taeg', 'revolving', 'debito', 'smart', 'inflazione dello stile di vita', 'fonti di reddito', 'interesse composto', 'durata'],
+  tassi: ['obbligazione', 'cedole', 'scadenza', 'valore nominale', 'titolo di stato', 'banca centrale', 'duration', 'rating', 'rendimento a scadenza', 'high yield', 'tasso reale', 'curva dei rendimenti', 'invertita', 'zero coupon', 'correlazione', 'rischio di credito', 'rischio di tasso'],
+  derivati: ['derivato', 'sottostante', 'call', 'put', 'premio', 'strike', 'future', 'copertura', 'hedging', 'prodotti complessi', 'scoperta', 'volatilità implicita', 'decadimento', 'nel denaro', 'fuori dal denaro', 'cfd', 'grano'],
+  mercato: ['libro degli ordini', 'market maker', 'spread', 'pre-market', 'after-hours', 'asta di apertura', 'allo scoperto', 'short squeeze', 'volume', 'circuit breaker', 'liquidità', 'slippage', 'paniere', 'costo di impatto', 'presta'],
+  trading: ['1%', 'rischio/rendimento', 'win rate', 'stop', 'mentale', 'overtrading', 'diario di trading', 'revenge trading', 'drawdown', 'martingala', 'aspettativa positiva', 'backtest', 'stessa piccola parte'],
   grotte: ['bene rifugio', 'tasso reale', 'dark pool', 'iceberg', 'front running', 'best execution', 'valore intrinseco', 'margine di sicurezza', 'trappola del valore', 'valore contabile'],
 };
 

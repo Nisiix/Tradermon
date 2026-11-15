@@ -15,6 +15,8 @@ export type QuizTopic =
   | 'etf_base' | 'etf_replica' | 'etf_obbligazioni'
   | 'crypto_base' | 'crypto_custodia' | 'crypto_stable'
   | 'mixed_base' | 'mixed_allocazione'
+  // temi comuni a tutti i percorsi (scaffali comuni) e temi dell'Accademia di Wall Street (dopo il titolo di Campione)
+  | 'personale' | 'tassi' | 'derivati' | 'mercato' | 'trading'
   // domande riservate alle grotte (non entrano nei duelli del resto del mondo): vedi data/quiz/caves.ts
   | 'grotte';
 

@@ -12,7 +12,7 @@ import { checkupHtml } from './clinic';
 import { apiKeysMenu, stageScreen } from './broker';
 import { asOfLabel } from '../systems/realdata';
 import { DIFFICULTY } from '../systems/balance';
-import { mastery } from '../systems/quiz';
+import { mastery, COMMON_TOPICS, ACADEMY_TOPICS } from '../systems/quiz';
 import { marketClock, CLIMATE_LABEL } from '../systems/market';
 import { openSettings, exitGame, applyOptions } from './settings';
 import { availableTitles, track } from '../systems/progress';
@@ -23,61 +23,91 @@ import { headlines, weekSummary } from '../systems/gazette';
 import type { QuizTopic, BiasId } from '../types';
 import { ALL_RESIDENTS, HOUSEHOLDS } from '../data/residents';
 import { openRegionMap } from './regionmap';
+import { openGlossary } from './glossary';
 import { ABILITY, canSwim, canTransfer } from '../world/travel';
 import { T } from '../i18n';
 
-/** Voci del menu di gioco, nell'ordine in cui compaiono. Un solo elenco: menu, guida e comandi ne parlano allo stesso modo. */
+/** Voci del menu di gioco, nell'ordine in cui compaiono. Un solo elenco: menu, guida e comandi ne parlano allo stesso modo.
+ *  Le voci sono raccolte in tre gruppi (Studio, Conto, Gioco) più Salva ed Esci: meno righe da scorrere. */
 type Entry = { id: string; label: () => string };
-const ENTRIES: Entry[] = [
-  { id: 'dex', label: () => 'Investidex' },
-  { id: 'portfolio', label: () => T('Portafoglio') },
-  { id: 'agenda', label: () => { const n = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length; return T`Agenda e traguardi${n ? ` (${n})` : ''}`; } },
-  { id: 'journal', label: () => T('Diario') },
-  { id: 'gazette', label: () => T('Giornale dei Mercati') },
-  { id: 'student', label: () => T('Cartella dello studente') },
-  { id: 'profile', label: () => T('Profilo') },
-  { id: 'badges', label: () => T('Attestati e Tecniche') },
-  { id: 'stages', label: () => T('Tappe, Prove e Sigilli') },
-  { id: 'keys', label: () => T('Chiavi API') },
-  { id: 'map', label: () => T('Mappa della Regione') },
-  { id: 'options', label: () => T('Opzioni') },
-  { id: 'save', label: () => T('Salva') },
-  { id: 'exit', label: () => T('Esci dal gioco') },
+type Group = { id: string; label: () => string; entries: Entry[] };
+const agendaLabel = () => { const n = S.agenda.daily.filter((t) => !t.done).length + S.agenda.weekly.filter((t) => !t.done).length; return T`Agenda e traguardi${n ? ` (${n})` : ''}`; };
+export const GROUPS: Group[] = [
+  { id: 'study', label: () => T('Studio'), entries: [
+    { id: 'student', label: () => T('Cartella dello studente') },
+    { id: 'glossary', label: () => T('Glossario') },
+    { id: 'dex', label: () => T('Album dell\'investitore') },
+    { id: 'gazette', label: () => T('Giornale dei Mercati') },
+  ] },
+  { id: 'account', label: () => T('Conto'), entries: [
+    { id: 'portfolio', label: () => T('Portafoglio') },
+    { id: 'stages', label: () => T('Tappe, Prove e Sigilli') },
+    { id: 'badges', label: () => T('Attestati e Tecniche') },
+    { id: 'journal', label: () => T('Diario') },
+    { id: 'keys', label: () => T('Chiavi API') },
+  ] },
+  { id: 'game', label: () => T('Gioco'), entries: [
+    { id: 'profile', label: () => T('Profilo') },
+    { id: 'agenda', label: agendaLabel },
+    { id: 'map', label: () => T('Mappa della Regione') },
+    { id: 'options', label: () => T('Opzioni') },
+  ] },
 ];
+const TOP: Entry[] = [{ id: 'save', label: () => T('Salva') }, { id: 'exit', label: () => T('Esci dal gioco') }];
+/** Tutte le voci, gruppo per gruppo (per la guida e per i test). */
+export const ENTRIES: Entry[] = [...GROUPS.flatMap((g) => g.entries), ...TOP];
 
 export async function pauseMenu(onTravel: (id: string) => void | Promise<void>) {
   let sel = 0;
   for (;;) {
-    const c = await choose(ENTRIES.map((e) => e.label()), { cancel: true, title: 'MENU', start: sel });
+    const c = await choose([...GROUPS.map((g) => `${g.label()} ▸`), ...TOP.map((e) => e.label())], { cancel: true, title: 'MENU', start: sel });
     if (c < 0) return;
     sel = c;
-    switch (ENTRIES[c].id) {
-      case 'dex': await openInvestidex(); break;
-      case 'portfolio': await modal(T('Portafoglio'), ({ body, button, close }) => { body.innerHTML = checkupHtml(); button(T('Chiudi'), () => close(), 'primary'); }, { wide: true }); break;
-      case 'agenda': await openAgenda(); break;
-      case 'journal': await openJournal(); break;
-      case 'gazette': await openGazette(); break;
-      case 'student': await openStudentFolder(); break;
-      case 'profile': await profile(); break;
-      case 'badges': await badges(); break;
-      case 'stages': await stageScreen(); break;
-      case 'keys': await apiKeysMenu(); break;
-      case 'map': { const dest = await openRegionMap(); if (dest) { await onTravel(dest); return; } break; }
-      case 'options': await openSettings(); break;
-      case 'save': toast(save() ? T('Partita salvata.') : T('Salvataggio non riuscito.')); break;
-      case 'exit': if (await exitGame()) return; break;
+    if (c >= GROUPS.length) {
+      const id = TOP[c - GROUPS.length].id;
+      if (id === 'save') toast(save() ? T('Partita salvata.') : T('Salvataggio non riuscito.'));
+      else if (await exitGame()) return;
+      continue;
+    }
+    const g = GROUPS[c];
+    let sub = 0;
+    for (;;) {
+      const k = await choose([...g.entries.map((e) => e.label()), T('◀ Indietro')], { cancel: true, title: g.label().toUpperCase(), start: sub });
+      if (k < 0 || k >= g.entries.length) break;
+      sub = k;
+      if (await openEntry(g.entries[k].id, onTravel)) return;
     }
   }
 }
 
+/** Apre una voce del menu. Restituisce true se il menu va chiuso (viaggio con la Mappa). */
+async function openEntry(id: string, onTravel: (id: string) => void | Promise<void>): Promise<boolean> {
+  switch (id) {
+    case 'dex': await openInvestidex(); break;
+    case 'glossary': await openGlossary(); break;
+    case 'portfolio': await modal(T('Portafoglio'), ({ body, button, close }) => { body.innerHTML = checkupHtml(); button(T('Chiudi'), () => close(), 'primary'); }, { wide: true }); break;
+    case 'agenda': await openAgenda(); break;
+    case 'journal': await openJournal(); break;
+    case 'gazette': await openGazette(); break;
+    case 'student': await openStudentFolder(); break;
+    case 'profile': await profile(); break;
+    case 'badges': await badges(); break;
+    case 'stages': await stageScreen(); break;
+    case 'keys': await apiKeysMenu(); break;
+    case 'map': { const dest = await openRegionMap(); if (dest) { await onTravel(dest); return true; } break; }
+    case 'options': await openSettings(); break;
+  }
+  return false;
+}
+
 export async function openInvestidex() {
-  await modal('Investidex', ({ body, button, close }) => {
+  await modal(T('Album dell\'investitore'), ({ body, button, close }) => {
     const cls = classesOf(S.track, S.mixedClasses);
     const assets = ASSETS.filter((a) => cls.includes(a.cls));
     const unlocked = assets.filter((a) => S.cards[a.id]).length;
     const concepts = LESSONS.filter((l) => S.lessonsRead.includes(l.id)).length;
     // i libri delle Biblioteche sono il materiale di studio principale: si contano insieme alle lezioni
-    const studyTopics = trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole'] as QuizTopic[]);
+    const studyTopics = [...new Set([...trackTopics(S.track, S.mixedClasses, 8), ...COMMON_TOPICS, ...(S.flags.champion ? ACADEMY_TOPICS : [])])];
     const books = booksFor(studyTopics);
     const booksDone = books.filter((b) => S.booksRead.includes(b.id)).length;
     body.innerHTML = T`<p>Asset: <b>${unlocked}/${assets.length}</b> · Lezioni: <b>${concepts}/${lessonsFor(studyTopics).length}</b> · Libri letti: <b>${booksDone}/${books.length}</b> · Bias incontrati: <b>${S.biasSeen.length}/4</b> · Lezioni degli abitanti: <b>${S.tipsHeard.length}/${ALL_RESIDENTS.length}</b> · Padronanza quiz: <b>${Math.round(mastery() * 100)}%</b></p>`;

@@ -163,9 +163,9 @@ export const HOUSEHOLDS: Household[][] = [
       ['giorgio', 'Giorgio Marino', 'operaio', 17, 'pac-quote', 'ip_dca', [
         T('Investo la stessa cifra ogni mese, che il mercato salga o scenda.'),
         T('Quando i prezzi sono bassi la stessa cifra compra più quote: non devo indovinare il momento giusto.')]],
-      ['laura', 'Laura Marino', 'avvocata', 24, 'tasse-italia', 'bdi', [
-        T('In Italia le plusvalenze finanziarie sono tassate di norma al 26%, i titoli di Stato al 12,5%.'),
-        T('Con il regime amministrato ci pensa l\'intermediario; con il dichiarativo devi indicarle tu nella dichiarazione dei redditi.')]],
+      ['laura', 'Laura Marino', 'avvocata', 24, 'tasse-paesi', 'ip_cgt', [
+        T('In molti Paesi i guadagni da investimento sono tassati, spesso con aliquote diverse per azioni, obbligazioni e conti di risparmio.'),
+        T('In alcuni Paesi le trattiene l\'intermediario, in altri le dichiari tu: le regole cambiano da Paese a Paese, quindi informati su quelle del tuo.')]],
       ['leo', T('Tobia Marino'), 'bambino', 22, 'cominciare-presto', 'bdi', [
         T('Ho messo da parte 1 euro al giorno per un anno: 365 euro!'),
         T('Il papà dice che il segreto non è la cifra, ma cominciare presto e non smettere.')]],

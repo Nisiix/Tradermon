@@ -124,13 +124,13 @@ export async function confirm(prompt: string, who?: string): Promise<boolean> {
 
 // ---------------- Finestre modali ----------------
 
-export interface ModalOpts { serious?: boolean; closable?: boolean; wide?: boolean }
+export interface ModalOpts { serious?: boolean; closable?: boolean; wide?: boolean; /** tasti gestiti prima di quelli della finestra (true = gestito) */ onKey?: (k: Key) => boolean; /** classe in più sulla finestra */ cls?: string }
 export interface ModalCtl<T> { body: HTMLElement; foot: HTMLElement; head: HTMLElement; close: (v?: T) => void; button: (label: string, fn: () => void, cls?: string) => HTMLButtonElement }
 
 export function modal<T = unknown>(title: string, build: (ctl: ModalCtl<T>) => void, opts: ModalOpts = {}): Promise<T | undefined> {
   return new Promise((resolve) => {
     const wrap = el('div', 'modal-wrap');
-    const m = el('div', 'box modal' + (opts.serious ? ' serious' : ''));
+    const m = el('div', 'box modal' + (opts.serious ? ' serious' : '') + (opts.cls ? ' ' + opts.cls : ''));
     if (opts.wide) m.style.width = 'min(980px, 100%)';
     const head = el('div', 'head');
     head.appendChild(el('span', '', esc(title)));
@@ -144,6 +144,7 @@ export function modal<T = unknown>(title: string, build: (ctl: ModalCtl<T>) => v
     // Tastiera e pulsanti A/B anche nelle finestre: A conferma il pulsante evidenziato (o il principale),
     // le frecce spostano l'evidenziazione tra i pulsanti in basso, B chiude.
     const h = (k: Key) => {
+      if (opts.onKey?.(k)) return true;
       if (k === 'b' && opts.closable !== false) { close(undefined); return true; }
       const visible = (e: HTMLElement) => !(e as HTMLButtonElement).disabled && e.offsetParent !== null;
       const btns = ([...foot.querySelectorAll('button')] as HTMLButtonElement[]).filter(visible);

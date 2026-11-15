@@ -186,14 +186,14 @@ async function startTrack(track: Track, w: WorldApi) {
   S.flags.starter = true;
   S.flags.starterAsset = starter;
   card(starter);
-  await say([T`La scheda di ${ASSET_BY_ID[starter].name} è entrata nel tuo Investidex.`], T('Prof. Saldi'));
+  await say([T`La scheda di ${ASSET_BY_ID[starter].name} è entrata nel tuo Album dell'investitore.`], T('Prof. Saldi'));
   if (linked) {
     const D = DIFFICULTY[S.difficulty];
     await say([T('Apriamo la Valigetta con il primo acquisto, così vedi come funziona un ordine vero.'), T`Il minimo per aprirla è ${fmtMoney(capital() * RATE * (1 - D.tolerance))}. Se la Borsa è chiusa l'ordine parte lo stesso e si esegue all'apertura.`], T('Dott.ssa Ratio'));
     if (await trade(true)) { await say(T('Valigetta aperta: il tuo primo titolo vero è nel conto, o in coda per l\'apertura dei mercati.'), T('Dott.ssa Ratio')); }
     else await say(T('Nessun acquisto per ora: la Valigetta resta sigillata. La apri quando vuoi, da una Banca.'), T('Dott.ssa Ratio'));
   }
-  await say([T`Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu${keysOf('menu')[0] ? T` (tasto ${keysOf('menu')[0]})` : ''}, insieme all'Investidex e al tuo Profilo.`], T('Prof. Saldi'));
+  await say([T`Ah, e prendi questa: la tessera da Apprendista. La trovi nel menu${keysOf('menu')[0] ? T` (tasto ${keysOf('menu')[0]})` : ''}, insieme all'Album dell'investitore e al tuo Profilo.`], T('Prof. Saldi'));
   await say([T('Un\'ultima cosa, la più importante: da Ponte Cedola in poi ogni città ha una Biblioteca.'), T('Ogni libro spiega un piccolo argomento. In alto a sinistra trovi i temi della città, a destra quelli delle città che hai già attraversato.'), T('Leggili prima di entrare nell\'Exchange: in questo gioco si vince studiando, non indovinando.')], T('Prof. Saldi'));
   save();
   w.refresh();

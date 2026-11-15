@@ -19,9 +19,11 @@
 
 ```
 src/
-  main.ts             avvio: giocatore (Supabase), titolo, onboarding o caricamento, poi la scena del mondo
+  main.ts             ingresso minimo: carica il dizionario inglese solo se serve, poi app.ts
+  app.ts              avvio: giocatore (Supabase), titolo, onboarding o caricamento, poi la scena del mondo
   config/supabase.ts  indirizzo e chiave pubblica del progetto Supabase
   art/art.ts          tileset in stile DS con bordi automatici e ombre portate, sprite 16×24 con contorni colorati, ritratti Scale2x, fondale del titolo
+  scenes/worldFx.ts   effetti della scena: volo del Trasferimento di Capitale, meteo, tinta dell'ora
   scenes/world.ts     scena Phaser: mappa, movimento a griglia (passo alternato, giro sul posto, urto), passaggi con dissolvenza, NPC che passeggiano, erba alta, fumetto "$" (drawSpotBubble in art.ts), HUD
   world/maps.ts       costruzione delle mappe (città, percorsi, interni, Wall Street, Torre)
   world/scripts.ts    storia ed eventi: Prof, Valigette, rivale, Whale, Wall Street, Torre
@@ -33,11 +35,17 @@ src/
   ui/clinic.ts        Banca del Portafoglio
   ui/alpaca.ts        collegamento al conto Alpaca Paper, Osservatorio, grafici reali; avviso sulle chiavi, salvataggio sul dispositivo
   ui/account.ts       nuovo giocatore / accedi / sblocca chiavi / partita del browser senza giocatore
+  systems/exercises.ts Prove sul conto, tappe, «ignora la Prova», Sigilli (separati da account.ts, che li riesporta)
+  systems/flags.ts    registro di tutti i nomi dei flag della storia (controllato da tests/flags.test.ts)
+  world/scripts/academy.ts Accademia di Wall Street: Tutor e Rettrice (solo da Campione)
   systems/cloud.ts    Supabase: account, salvataggio, cassaforte (chiave dati); vecchie copie delle chiavi solo da migrare
   systems/keystore.ts chiavi Alpaca cifrate SOLO sul dispositivo (sito pubblico)
   systems/sync.ts     copia di lavoro del dispositivo e invio a Supabase
   systems/vault.ts    cifratura delle chiavi (PBKDF2 + AES-GCM, chiave non estraibile in IndexedDB)
-  ui/menu.ts          menu di pausa, Investidex, opzioni
+  ui/menu.ts          menu di pausa a gruppi (Studio, Conto, Gioco), Album dell'investitore
+  ui/glossary.ts      Glossario (tasto G): termini sbloccati dai libri letti
+  ui/book.ts          lettore dei libri: pagine, figure, verifica a fine libro (senza mostrare la risposta giusta)
+  ui/labs.ts          Laboratori con i cursori della Banca (interesse composto, diversificazione, drawdown)
   ui/setup.ts         avvertenze, questionario, conto di prova, esame, titolo
   ui/tutorial.ts      mini tutorial dei comandi (tastiera o touch)
   ui/agenda.ts        Agenda del giorno e della settimana, storie in corso, rivincite di Wall Street, traguardi e oggetti

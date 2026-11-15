@@ -38,13 +38,15 @@ export const DUEL = {
   hermit: { n: 5, need: 4, damage: 0 },
   legend: { n: 5, need: 4, damage: 0 },
   review: { n: 5, need: 5, damage: 0 },
+  /** Tutor dell'Accademia di Wall Street: livello del fine gioco, senza Fiducia in gioco. */
+  tutor: { n: 8, need: 6, damage: 0 },
 } satisfies Record<string, DuelPreset>;
 
 export const REWARD = {
   /** Reputazione per vittoria. */
-  rep: { trainer: 20, rematch: 15, student: 25, rival: 40, speculator: 30, boss: 150, badge: 200, league: 300, legend: 250, bookSection: 10, temptation: 20 },
+  rep: { trainer: 20, rematch: 15, student: 25, rival: 40, speculator: 30, boss: 150, badge: 200, league: 300, legend: 250, bookSection: 10, temptation: 20, academy: 150 },
   /** Punti Conoscenza. */
-  xp: { badge: 100, rematch: 20, book: 5, tip: 5, hermit: 120, legend: 200, processStar: 15, daily: 10, dailyStreak: 5, dailyStreakMax: 50, casinoLesson: 30, archive: 50 },
+  xp: { badge: 100, rematch: 20, book: 5, tip: 5, hermit: 120, legend: 200, processStar: 15, daily: 10, dailyStreak: 5, dailyStreakMax: 50, casinoLesson: 30, archive: 50, academy: 150 },
 } as const;
 
 /** Gradi della Reputazione: ogni grado apre qualcosa (vedi systems/character.ts). */
@@ -128,3 +130,12 @@ export const LEVERAGE = { max: 2, fromBadge: 8, examBadge: 5, interest: 0.065, m
  * Wall Street con capitale in tasca. Quanti errori sono concessi lo decide la difficoltà, con il capitale e la quota minima.
  */
 export const ZERO = 1;
+
+/**
+ * Tempo di lettura prima che parta il timer di un duello: da 2 a 6 secondi secondo la lunghezza di domanda e risposte
+ * (circa 60 caratteri al secondo). Si può rispondere anche durante la lettura: serve a non punire chi legge con calma.
+ */
+export const READ_GRACE = { min: 2, max: 6, charsPerSec: 60 } as const;
+export function readGrace(chars: number): number {
+  return Math.max(READ_GRACE.min, Math.min(READ_GRACE.max, Math.round(chars / READ_GRACE.charsPerSec)));
+}

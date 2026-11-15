@@ -6,8 +6,15 @@
 import type { AssetClass, QuizTopic, Track } from '../types';
 import { mentorTopics } from './quiz/build';
 import { T } from '../i18n';
+import { LEARNING_BOOKS, STORY_BOOKS } from './books_learning';
 
-export interface Book { id: string; topic: QuizTopic; title: string; pages: string[] }
+export interface Book {
+  id: string; topic: QuizTopic; title: string; pages: string[];
+  /** Livello fisso (storie, libri delle grotte); altrimenti si ricava dalle domande che il libro spiega (data/bookmap.ts). */
+  level?: 1 | 2 | 3;
+  /** Figure da mostrare sotto una pagina (indice di pagina → id della figura in ui/figures.ts). */
+  figs?: Record<number, string>;
+}
 
 export const TOPIC_LABEL: Record<QuizTopic, string> = {
   rischio: T('Rischio e rendimento'), ordini: T('Ordini di borsa'), diversificazione: T('Diversificazione'), costi: T('Costi e interesse composto'),
@@ -16,6 +23,8 @@ export const TOPIC_LABEL: Record<QuizTopic, string> = {
   etf_base: T('Gli ETF'), etf_replica: T('Replica e tracking'), etf_obbligazioni: T('Le obbligazioni'),
   crypto_base: T('Le cripto'), crypto_custodia: T('La custodia'), crypto_stable: T('Stablecoin e DeFi'),
   mixed_base: T('Le classi di attivo'), mixed_allocazione: T("L'asset allocation"),
+  personale: T('Finanza personale'), tassi: T('Obbligazioni e tassi'),
+  derivati: T('Derivati e opzioni'), mercato: T('Come funziona il mercato'), trading: T('Il mestiere del trader'),
   grotte: T('I segreti delle grotte'),
 };
 
@@ -374,7 +383,7 @@ export const BOOKS: Book[] = [
     T("Best execution: l'intermediario deve eseguire gli ordini alle condizioni migliori per te (prezzo, costi, rapidità). Separazione patrimoniale: i titoli dei clienti sono tenuti separati dal patrimonio dell'intermediario; se fallisce, non servono a pagare i suoi debiti.")),
   B('b_rg_kid', 'regole', T("KID e KYC"),
     T("KID: poche pagine standard con rischi, costi e scenari di un prodotto, da leggere prima di comprare. Un «capitale garantito» va letto lì: spesso la garanzia è condizionata, vale solo a scadenza e solo se l'emittente è solvibile; prima, il valore può scendere."),
-    T("KYC (Know Your Customer): le procedure con cui un intermediario identifica il cliente. Chi investe dall'Italia tramite un broker estero deve, in generale, indicare conto e redditi nella propria dichiarazione dei redditi.")),
+    T("KYC (Know Your Customer): le procedure con cui un intermediario identifica il cliente. Chi investe tramite un broker con sede in un altro Paese spesso deve indicare da sé conto e redditi nella dichiarazione dei redditi, secondo le regole fiscali del proprio Paese.")),
   B('b_rg_abusi', 'regole', T("Gli abusi di mercato"),
     T("Abusi di mercato, tutti vietati. Insider trading: operare con informazioni rilevanti non ancora pubbliche. Manipolazione del mercato: diffondere notizie false o fare operazioni fittizie per alterare un prezzo. Front running: un intermediario che opera per sé prima dell'ordine di un cliente, sfruttandone l'effetto.")),
   B('b_rg_cripto', 'regole', T("Cripto: avvertenze e MiCA"),
@@ -409,7 +418,31 @@ export const BOOKS: Book[] = [
     T("Il mercato può ignorare a lungo un valore che a te sembra evidente. Servono pazienza e denaro che non ti servirà a breve: possono passare anni.")),
 ];
 
-export const BOOK_BY_ID: Record<string, Book> = Object.fromEntries(BOOKS.map((b) => [b.id, b]));
+/** Figure sotto le pagine (ui/figures.ts): si vedono nel lettore dei libri. */
+const FIGS: Record<string, Record<number, string>> = {
+  b_r_volatilita: { 1: 'drawdown', 2: 'asimmetria' },
+  b_g_aspettativa: { 1: 'asimmetria' },
+  b_d_rischi: { 0: 'diversificazione' },
+  b_sb_rischio: { 0: 'diversificazione' },
+  b_d_corr: { 0: 'correlazione' },
+  b_d_ribil: { 0: 'allocazione' },
+  b_ma_deriva: { 1: 'allocazione' },
+  b_c_composto: { 1: 'composto' },
+  b_o_tipi: { 4: 'ordini' },
+  b_o_spread: { 0: 'spread' },
+  b_eb_cose: { 2: 'paniere' },
+  b_eo_tassi: { 0: 'tassi' },
+  b_m_obb: { 0: 'tassi', 1: 'curva' },
+  b_cc_chiavi: { 1: 'chiavi' },
+  b_g_quanto: { 2: 'rr' },
+  b_a_tecnica: { 0: 'candela' },
+};
+for (const b of BOOKS) if (FIGS[b.id]) b.figs = FIGS[b.id];
+BOOKS.push(...LEARNING_BOOKS);
+
+export { STORY_BOOKS };
+/** Tutti i libri, storie comprese (le storie stanno fuori da BOOKS: non hanno domande e non aprono temi). */
+export const BOOK_BY_ID: Record<string, Book> = Object.fromEntries([...BOOKS, ...STORY_BOOKS].map((b) => [b.id, b]));
 
 export function booksFor(topics: QuizTopic[]): Book[] {
   return BOOKS.filter((b) => topics.includes(b.topic));
