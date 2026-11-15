@@ -243,7 +243,10 @@ function buildHomeTown() {
   MAPS.t0 = m;
 
   const hm = interior('home', T('Casa'), 10, 8, 't0', home.dx, home.dy);
-  hm.tiles[2][1] = TILE.BED; hm.tiles[3][1] = TILE.BED; hm.tiles[2][8] = TILE.PLANT; hm.tiles[2][5] = TILE.TABLE; hm.tiles[2][3] = TILE.SHELF;
+  // camera di casa: i due letti affiancati contro la parete di fondo (come nelle altre case), libreria e scrivania,
+  // pianta nell'angolo e un tappeto al centro della stanza
+  hm.tiles[2][1] = TILE.BED; hm.tiles[2][2] = TILE.BED; hm.tiles[2][4] = TILE.SHELF; hm.tiles[2][5] = TILE.TABLE; hm.tiles[2][8] = TILE.PLANT;
+  rect(hm.tiles, 3, 4, 4, 2, TILE.RUG);
   hm.npcs.push({ id: 'mom', x: 6, y: 4, pal: 26, dir: 2, name: T('Mamma'), kind: 'mom' });
   MAPS.home = hm;
 
