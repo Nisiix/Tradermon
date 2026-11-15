@@ -4,6 +4,13 @@ Testo della sezione Guida della landing (`index.html`, schede `g-...`). Sulla la
 
 Regola dei testi: nelle pagine e nel gioco non si nominano gli strumenti dietro le quinte (servizio dei salvataggi, hosting, Node e simili). L'unico servizio esterno nominato è Alpaca, perché il giocatore deve crearsi il conto Paper. Fa eccezione l'informativa sulla privacy, che per legge deve dire chi tratta i dati.
 
+### Legenda delle parole (sezione `#legenda`, subito sotto l'apertura)
+
+Si raggiunge dal pulsante dorato «📖 Legenda delle parole» nella finestra iniziale e dalla voce «Legenda» del menu. Spiega le parole che la landing usa, in due colonne. Se nella landing compare una parola nuova di finanza o di gioco, aggiungila qui e in `index.html`.
+
+- **Finanza e mercati:** Investire, Trading, Azione, ETF, Cripto (crypto), Titolo, Portafoglio, Ordine, Leva, Capitale e rendimento.
+- **Il mondo del gioco:** Conto Alpaca Paper, Capitale di gioco, Whale, Attestato, Sigillo, Prova sul conto e Tecnica, Valigetta e Sentiero, Tappa, Bancarotta, Wall Street e Nuova Partita+.
+
 ### Un gioco per imparare (sezione `#imparare`, tre colonne)
 
 - **Dai primi passi al portafoglio.** Lezioni, quiz e Whale ti portano nel mondo degli investimenti e del trading, un concetto alla volta.
