@@ -1,4 +1,4 @@
-import { pushHandler, popHandler, type Key } from './input';
+import { pushHandler, popHandler, markClosable, type Key } from './input';
 import { beep } from '../systems/audio';
 import { S } from '../systems/state';
 import { gtext } from '../systems/gender';
@@ -113,6 +113,7 @@ export async function choose(options: string[], opts: ChooseOpts = {}): Promise<
       // un menu che si può annullare si chiude con Indietro e anche ripremendo il tasto Menu
       else if ((k === 'b' || k === 'menu') && opts.cancel) done(-1);
     };
+    if (opts.cancel) markClosable(h);
     pushHandler(h);
     render();
   });
@@ -184,6 +185,7 @@ export function modal<T = unknown>(title: string, build: (ctl: ModalCtl<T>) => v
       x.addEventListener('click', () => close(undefined));
       head.appendChild(x);
     }
+    if (opts.closable !== false) markClosable(h);
     pushHandler(h);
     build({ body, foot, head, close, button });
     const first = foot.querySelector('button.primary') as HTMLButtonElement | null;

@@ -9,7 +9,7 @@ export interface ActionInfo { id: Action; name: string; use: string }
 
 /** Cosa contengono il menu di gioco e le Opzioni: le stesse parole nella guida dei comandi e nella personalizzazione dei tasti. */
 export const MENU_USE = T('Apre il menu di gioco: Studio (Cartella dello studente, Glossario, Album dell\'investitore, Giornale), Conto (Portafoglio, Tappe, Attestati, Diario, Chiavi API), Gioco (Profilo, Agenda, Mappa, Opzioni), Salva ed Esci dal gioco.');
-export const OPTIONS_USE = T('Apre e chiude le Opzioni ⚙, anche nel mondo: lingua, audio, schermo e testo, comandi, partita e giocatore.');
+export const OPTIONS_USE = T('Apre e chiude le Opzioni ⚙, anche nel mondo: lingua, audio, schermo e testo, comandi, partita e giocatore. Se è aperta una finestra o un menu, prima chiude quello.');
 
 /** Ogni comando con il suo uso, nell'ordine in cui compare nella guida e nelle impostazioni. */
 export const ACTIONS: ActionInfo[] = [

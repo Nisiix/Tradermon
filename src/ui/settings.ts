@@ -4,7 +4,7 @@
 // finché una partita non è caricata. Ogni regolazione vale subito: niente pulsante "Applica".
 import { fullscreenSupported, isFullscreen, enterFullscreen, exitFullscreen } from './mobile';
 import { modal, el, esc, getStage, toast, say, choose } from './core';
-import { captureNextKey, onSettingsKey, press } from './input';
+import { captureNextKey, onSettingsKey, press, topClosable } from './input';
 import { controlsTutorial } from './tutorial';
 import {
   ACTIONS, MAX_KEYS, keysOf, bindKey, unbindKey, resetBindings, keyName, prefs, setMasterVolume, setTouchMode,
@@ -57,8 +57,9 @@ export function initSettings() {
   b.setAttribute('aria-label', T('Opzioni'));
   b.addEventListener('click', () => { void openSettings(); });
   getStage().appendChild(b);
-  // il tasto Opzioni (Esc di default) apre il pannello e, se è già aperto, chiude la finestra in cima
-  onSettingsKey(() => { if (open) press('b'); else void openSettings(); });
+  // il tasto Opzioni (Esc di default) chiude la finestra o il menu in cima, se si può chiudere;
+  // altrimenti (mondo, dialoghi, duelli) apre il pannello delle Opzioni
+  onSettingsKey(() => { if (open || topClosable()) press('b'); else void openSettings(); });
   onPrefsChange(applyAudio);
   applyAudio();
 }

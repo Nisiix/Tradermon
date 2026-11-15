@@ -41,6 +41,10 @@ export function takeDirTap(): Key | undefined { const d = dirTap; dirTap = undef
 export function hasWorldPress(): boolean { return worldPressed.length > 0; }
 
 export function pushHandler(h: Handler) { stack.push(h); releaseAll(); }
+/** Finestre e menu che si chiudono con Indietro: il tasto Opzioni (Esc) li chiude invece di aprire le Opzioni sopra. */
+const closable = new WeakSet<Handler>();
+export function markClosable(h: Handler) { closable.add(h); }
+export function topClosable(): boolean { const h = stack[stack.length - 1]; return !!h && closable.has(h); }
 export function popHandler(h: Handler) { const i = stack.lastIndexOf(h); if (i >= 0) stack.splice(i, 1); }
 export function uiActive(): boolean { return stack.length > 0; }
 export function takeWorldPress(): Key | undefined { return worldPressed.shift(); }
