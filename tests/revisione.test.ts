@@ -70,7 +70,7 @@ describe('Nuova Partita+, profilo e strumenti di studio', () => {
     expect(targetDiff(12)).toBe(STORY_MAX);
     expect(endgameDiff()).toBe(4);
     expect(generatedCount(8)).toBe(4);
-    const qs = pickQuestions(mentorTopics(2, 'listed', []), 8, { target: targetDiff(0), rng: mulberry32(5) });
+    const qs = pickQuestions(mentorTopics(2, 'listed', []), 8, { target: targetDiff(0), rng: mulberry32(5), city: 2 });
     expect(qs.filter((q) => isGenerated(q.id)).length).toBeGreaterThanOrEqual(1);
     expect(qs.some((q) => q.diff === 2)).toBe(true);
   });

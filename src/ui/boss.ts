@@ -5,6 +5,7 @@ import { S, save } from '../systems/state';
 import { BOSSES, BOSS_RULES, type BossDef, planError, planScore, outcome, quizPoints, bossWon, sellOut, planPool, endRun } from '../systems/boss';
 import { ASSET_BY_ID, unlockedAssets } from '../data/assets';
 import { pickQuestions, endgameDiff } from '../systems/quiz';
+import { CITY_ENDGAME } from '../data/quiz/progress';
 import { fmtPx, fmtPct, fmtMoney, fmtQty } from '../systems/portfolio';
 import * as Acc from '../systems/account';
 import * as M from '../systems/mandate';
@@ -77,7 +78,7 @@ async function bossFight(def: BossDef): Promise<void> {
     await say(def.intro, def.name);
     if ((await choose([T('Accetto la sfida'), T('Non ora')], { cancel: true, who: def.name })) !== 0) return;
     // fine gioco: sopra l'ultimo duello di Wall Street della stessa difficoltà, fino al livello esperto
-    const qs = pickQuestions(def.topics, BOSS_RULES.quizN, { target: endgameDiff() });
+    const qs = pickQuestions(def.topics, BOSS_RULES.quizN, { target: endgameDiff(), city: CITY_ENDGAME });
     const fid = S.stats.fiducia;
     S.stats.fiducia = 100;
     const r = await runDuel({ foeName: def.name, foeTitle: def.title, foePal: def.pal, questions: qs, need: BOSS_RULES.quizMin, damage: 0, fixed: true, arena: 'borsa' });

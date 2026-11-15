@@ -88,9 +88,10 @@ describe('domande generate con numeri nuovi', () => {
 
   it('un duello ha al massimo una domanda generata ogni tre, senza cambiare il mix di difficoltà', () => {
     for (const [track, mixed] of [['listed', []], ['crypto', []], ['mixed', []]] as const) for (let m = 1; m <= 8; m++) {
+      S.track = track; S.mixedClasses = [...mixed];
       const topics = mentorTopics(m, track, [...mixed]);
       const target = targetDiff(m - 1);
-      const qs = pickQuestions(topics, 8, { target, rng: mulberry32(m) });
+      const qs = pickQuestions(topics, 8, { target, rng: mulberry32(m), city: m });
       const gen = qs.filter((q) => isGenerated(q.id));
       expect(gen.length, `${track} Mentore ${m}`).toBeLessThanOrEqual(generatedCount(8));
       expect(qs.reduce((s, q) => s + q.diff, 0) / 8).toBeCloseTo(target, 1);

@@ -7,6 +7,7 @@ import { S, save } from '../../systems/state';
 import { say, choose, toast } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { pickQuestions, endgameDiff, topicOpened, ACADEMY_TOPICS } from '../../systems/quiz';
+import { CITY_ENDGAME } from '../../data/quiz/progress';
 import { booksFor, TOPIC_LABEL } from '../../data/books';
 import { DUEL, REWARD } from '../../systems/balance';
 import { beep } from '../../systems/audio';
@@ -41,7 +42,7 @@ export async function tutor(n: NpcDef, w: WorldApi) {
   const c = await choose([T('Accetto la prova'), T('Non ancora')], { cancel: true, prompt: T`${LINES[topic] ?? ''} Otto domande su «${label}», al livello del fine gioco. Qui non perdi Fiducia: se sbagli, rileggi e torni.`, who });
   if (c !== 0) return;
   const P = DUEL.tutor;
-  const qs = withPreviousMistakes(key, pickQuestions([topic], P.n, { target: endgameDiff() }));
+  const qs = withPreviousMistakes(key, pickQuestions([topic], P.n, { target: endgameDiff(), city: CITY_ENDGAME }));
   const r = await runDuel({ foeName: who, foeTitle: T('Tutor dell\'Accademia'), foePal: n.pal, questions: qs, ...P, arena: 'biblioteca' });
   if (!r.win) {
     lockRetry(key, r.wrong);

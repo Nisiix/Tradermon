@@ -5,17 +5,19 @@ import { BOSSES } from '../src/systems/boss';
 import { DIFFICULTIES } from '../src/systems/balance';
 import { mentorTopics, LEAGUE_TOPICS, byTopic, trackTopics } from '../src/data/quiz/build';
 import type { AssetClass, QuizTopic, Track } from '../src/types';
+import { questionCity } from '../src/data/quiz/progress';
 
 const TRACKS: [Track, AssetClass[]][] = [['listed', []], ['crypto', []], ['mixed', []]];
 const avg = (xs: { diff: number }[]) => xs.reduce((s, q) => s + q.diff, 0) / xs.length;
-const count = (topics: QuizTopic[], d: number) => topics.flatMap((t) => byTopic(t)).filter((q) => q.diff === d).length;
+// solo le domande già alla portata in quella città (data/quiz/progress.ts)
+const count = (topics: QuizTopic[], d: number, city = 10, track: Track = 'listed', mixed: AssetClass[] = []) => topics.flatMap((t) => byTopic(t)).filter((q) => q.diff === d && questionCity(q, track, mixed) <= city).length;
 
 /** Gli 8 duelli dei Mentori + i 4 Superiori + il Campione, in ordine di storia. */
 function storyDuels(track: Track, mixed: AssetClass[]) {
-  const out: { name: string; topics: QuizTopic[]; n: number; target: number }[] = [];
-  for (let m = 1; m <= 8; m++) out.push({ name: `Mentore ${m}`, topics: mentorTopics(m, track, mixed), n: 8, target: targetDiff(m - 1) });
-  LEAGUE_TOPICS.forEach((topics, i) => out.push({ name: `Superiore ${i + 1}`, topics, n: 10, target: targetDiff(STAGE_LEAGUE + i) }));
-  out.push({ name: 'Campione', topics: trackTopics(track, mixed, 8), n: 12, target: targetDiff(STAGE_LEAGUE + 3) });
+  const out: { name: string; topics: QuizTopic[]; n: number; target: number; city: number }[] = [];
+  for (let m = 1; m <= 8; m++) out.push({ name: `Mentore ${m}`, topics: mentorTopics(m, track, mixed), n: 8, target: targetDiff(m - 1), city: m });
+  LEAGUE_TOPICS.forEach((topics, i) => out.push({ name: `Superiore ${i + 1}`, topics, n: 10, target: targetDiff(STAGE_LEAGUE + i), city: 9 }));
+  out.push({ name: 'Campione', topics: trackTopics(track, mixed, 8), n: 12, target: targetDiff(STAGE_LEAGUE + 3), city: 9 });
   return out;
 }
 
@@ -59,8 +61,9 @@ describe('difficoltà progressiva delle domande', () => {
     for (const diff of DIFFICULTIES) {
       S.difficulty = diff;
       for (const [t, mixed] of TRACKS) {
-        const duels = [...storyDuels(t, mixed), ...BOSSES.map((b) => ({ name: b.name, topics: b.topics, n: 8, target: endgameDiff() }))];
-        for (const d of duels) for (const [level, k] of diffMix(d.n, d.target)) expect(count(d.topics, level), `${diff} ${t}/${mixed.join('+')} ${d.name}: livello ${level}`).toBeGreaterThanOrEqual(k);
+        S.track = t; S.mixedClasses = [...mixed];
+        const duels = [...storyDuels(t, mixed), ...BOSSES.map((b) => ({ name: b.name, topics: b.topics, n: 8, target: endgameDiff(), city: 10 }))];
+        for (const d of duels) for (const [level, k] of diffMix(d.n, d.target)) expect(count(d.topics, level, d.city, t, mixed), `${diff} ${t}/${mixed.join('+')} ${d.name}: livello ${level}`).toBeGreaterThanOrEqual(k);
       }
     }
   });
@@ -69,9 +72,10 @@ describe('difficoltà progressiva delle domande', () => {
     for (const diff of DIFFICULTIES) {
       S.difficulty = diff;
       for (const [t, mixed] of TRACKS) {
+        S.track = t; S.mixedClasses = [...mixed];
         let prev = 0;
         for (const d of storyDuels(t, mixed)) {
-          const qs = pickQuestions(d.topics, d.n, { target: d.target });
+          const qs = pickQuestions(d.topics, d.n, { target: d.target, city: d.city });
           expect(qs.length, d.name).toBe(d.n);
           expect(new Set(qs.map((q) => q.id)).size, d.name).toBe(d.n);
           expect(avg(qs), `${diff} ${t} ${d.name}`).toBeCloseTo(d.target, 1);
@@ -83,15 +87,16 @@ describe('difficoltà progressiva delle domande', () => {
   });
 
   it('la prima Whale fa solo domande base; il quiz dei Boss ha una media più alta del Campione', () => {
-    const first = pickQuestions(mentorTopics(1, 'listed', []), 8, { target: targetDiff(0) });
+    const first = pickQuestions(mentorTopics(1, 'listed', []), 8, { target: targetDiff(0), city: 1 });
     expect(first.every((q) => q.diff === 1)).toBe(true);
     for (const diff of DIFFICULTIES) {
       S.difficulty = diff;
-      const champ = avg(pickQuestions(trackTopics('crypto', [], 8), 12, { target: targetDiff(STAGE_LEAGUE + 3) }));
-      for (const b of BOSSES) expect(avg(pickQuestions(b.topics, 8, { target: endgameDiff() })), `${diff} ${b.id}`).toBeGreaterThan(champ);
+      S.track = 'crypto';
+      const champ = avg(pickQuestions(trackTopics('crypto', [], 8), 12, { target: targetDiff(STAGE_LEAGUE + 3), city: 9 }));
+      for (const b of BOSSES) expect(avg(pickQuestions(b.topics, 8, { target: endgameDiff(), city: 10 })), `${diff} ${b.id}`).toBeGreaterThan(champ);
     }
     S.difficulty = 'stratega';
-    for (const b of BOSSES) expect(pickQuestions(b.topics, 8, { target: endgameDiff() }).every((q) => q.diff === 4)).toBe(true);
+    for (const b of BOSSES) expect(pickQuestions(b.topics, 8, { target: endgameDiff(), city: 10 }).every((q) => q.diff === 4)).toBe(true);
   });
 
   it('le domande da esperto (livello 4) non compaiono nei duelli delle Whale', () => {

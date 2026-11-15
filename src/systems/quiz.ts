@@ -7,6 +7,7 @@ import { ASSET_BY_ID } from '../data/assets';
 import { S } from './state';
 import { hashString, mulberry32, shuffle } from './rng';
 import { MOM_QUESTIONS, twinOf } from '../data/quiz/mom';
+import { questionCity, CITY_WALL_STREET, CITY_ENDGAME } from '../data/quiz/progress';
 
 /**
  * Difficoltà delle domande lungo la storia.
@@ -109,6 +110,22 @@ export interface PickOpts {
   shared?: boolean;
   /** Senza domande generate (es. ripasso e domanda del giorno, che devono restare nelle scatole di Leitner). */
   noGenerated?: boolean;
+  /** Città raggiunta per questo duello (vedi progressCity): nessuna domanda di una città successiva. */
+  city?: number;
+}
+
+/**
+ * Città raggiunta nel viaggio: quella della prossima Whale (1..8), poi Wall Street (9) e, da Campione, il fine
+ * gioco (10). Le domande di una città successiva non si chiedono (data/quiz/progress.ts).
+ */
+export function progressCity(): number {
+  if (S.flags?.champion) return CITY_ENDGAME;
+  return S.badges >= 8 ? CITY_WALL_STREET : S.badges + 1;
+}
+
+/** La domanda è già alla portata del giocatore in questa città? Le sfide condivise valgono uguali per tutti. */
+function reachable(q: Question, city: number, shared: boolean): boolean {
+  return shared || questionCity(q, S.track, S.mixedClasses) <= city;
 }
 
 /** Modelli di domande generate già usati in questa sessione: il prossimo sfidante ne sceglie un altro. */
@@ -122,7 +139,7 @@ export function generatedCount(n: number): number { return Math.floor(n / ((S?.n
  * chi ha imparato le risposte a memoria deve comunque rileggere lo scenario (nessun calcolo: vedi generated.ts). Le sfide condivise usano il seme,
  * quindi tutti i partecipanti ricevono gli stessi numeri.
  */
-function withGenerated(out: Question[], topics: QuizTopic[], target: number, rng: () => number, shared: boolean): Question[] {
+function withGenerated(out: Question[], topics: QuizTopic[], target: number, rng: () => number, shared: boolean, city = CITY_ENDGAME): Question[] {
   const k = Math.min(generatedCount(out.length), out.length);
   if (k === 0) return out;
   const ctx = shared ? {} : { portfolio: S.portfolio, prices: S.market.prices, names: Object.fromEntries(Object.values(ASSET_BY_ID).map((a) => [a.id, a.name])) };
@@ -140,7 +157,8 @@ function withGenerated(out: Question[], topics: QuizTopic[], target: number, rng
     const i = keep.findIndex((q) => q.diff === c.t.diff);
     if (i < 0) continue;
     const q = generate(c.t, c.topic, rng, ctx);
-    if (!q) continue;
+    // anche le generate seguono il viaggio: niente concetti di una città successiva
+    if (!q || !reachable(q, city, shared)) continue;
     keep.splice(i, 1);
     gen.push(q);
   }
@@ -177,10 +195,13 @@ function prioritized(pool: Question[], rng: () => number, preferReview: boolean,
 
 export function pickQuestions(topics: QuizTopic[], n: number, opts: PickOpts = {}): Question[] {
   const rng = opts.rng ?? Math.random;
-  if (opts.target !== undefined) return pickByTarget(topics, n, opts.target, rng, !!opts.preferReview, !!opts.shared, !!opts.noGenerated);
-  let pool = topics.flatMap((t) => byTopic(t)).filter((q) => q.diff >= (opts.minDiff ?? 1) && q.diff <= (opts.maxDiff ?? 3));
-  if (pool.length < n) pool = topics.flatMap((t) => byTopic(t));
+  const city = opts.city ?? progressCity();
+  if (opts.target !== undefined) return pickByTarget(topics, n, opts.target, rng, !!opts.preferReview, !!opts.shared, !!opts.noGenerated, city);
+  const ok = (q: Question) => reachable(q, city, !!opts.shared);
+  let pool = topics.flatMap((t) => byTopic(t)).filter((q) => ok(q) && q.diff >= (opts.minDiff ?? 1) && q.diff <= (opts.maxDiff ?? 3));
+  if (pool.length < n) pool = topics.flatMap((t) => byTopic(t)).filter(ok);
   // se gli argomenti non bastano, completa con altre domande: il numero richiesto è sempre rispettato
+  if (pool.length < n) pool = [...pool, ...OPEN_QUESTIONS.filter((q) => ok(q) && !pool.includes(q))];
   if (pool.length < n) pool = [...pool, ...OPEN_QUESTIONS.filter((q) => !pool.includes(q))];
   const mid = ((opts.minDiff ?? 1) + (opts.maxDiff ?? 3)) / 2;
   if (opts.shared) return shuffle(withGenerated(prioritized(pool, rng, false, true).slice(0, n), topics, mid, rng, true), rng);
@@ -188,7 +209,7 @@ export function pickQuestions(topics: QuizTopic[], n: number, opts: PickOpts = {
   // preferisci le domande mai viste o viste meno spesso
   const rest = shuffle(pool.filter((q) => !review.includes(q)), rng).sort((a, b) => timesSeen(a.id) - timesSeen(b.id));
   const out = distinct([...review.slice(0, Math.ceil(n / 2)), ...rest]).slice(0, n);
-  return shuffle(opts.noGenerated ? out : withGenerated(out, topics, mid, rng, false), rng);
+  return shuffle(opts.noGenerated ? out : withGenerated(out, topics, mid, rng, false, city), rng);
 }
 
 /**
@@ -196,8 +217,12 @@ export function pickQuestions(topics: QuizTopic[], n: number, opts: PickOpts = {
  * Se un livello non ha abbastanza domande, completa con quelle del livello più vicino (a parità, la più facile),
  * e solo se gli argomenti non bastano prende domande di altri argomenti.
  */
-function pickByTarget(topics: QuizTopic[], n: number, target: number, rng: () => number, preferReview: boolean, shared = false, noGenerated = false): Question[] {
-  const pool = distinct(topics.flatMap((t) => byTopic(t)));
+function pickByTarget(topics: QuizTopic[], n: number, target: number, rng: () => number, preferReview: boolean, shared = false, noGenerated = false, city = CITY_ENDGAME): Question[] {
+  // mai domande di una città successiva, e mai più di un livello sopra la media chiesta (all'inizio solo il livello base)
+  const top = Math.ceil(target);
+  const fits = (q: Question) => reachable(q, city, shared) && q.diff <= top;
+  const all = distinct(topics.flatMap((t) => byTopic(t)));
+  const pool = all.filter(fits);
   const out: Question[] = [];
   const free = (q: Question) => !out.includes(q) && !out.some((o) => twinOf(o.id) === q.id);
   // ogni sfidante fa domande nuove: finché ce ne sono mai viste, si prendono quelle (anche di un livello vicino)
@@ -208,9 +233,14 @@ function pickByTarget(topics: QuizTopic[], n: number, target: number, rng: () =>
   const closest = (list: Question[]) => prioritized(list.filter(free), rng, preferReview, shared)
     .sort((a, b) => (fresh ? timesSeen(a.id) - timesSeen(b.id) : 0) || Math.abs(a.diff - target) - Math.abs(b.diff - target) || a.diff - b.diff);
   const fill = (list: Question[]) => { for (const q of closest(list)) { if (out.length >= n) break; if (free(q)) out.push(q); } };
+  // finite le domande mai viste del livello giusto, prima di ripeterne una si passa al livello intermedio
+  // (mai oltre: le domande avanzate restano per le città successive)
+  if (fresh && out.length < n && top < 2) out.push(...prioritized(all.filter((q) => q.diff === 2 && reachable(q, city, shared) && !timesSeen(q.id) && free(q)), rng, false).slice(0, n - out.length));
   if (out.length < n) fill(pool);
-  if (out.length < n) fill(OPEN_QUESTIONS);
-  return shuffle(noGenerated ? out : withGenerated(out, topics, target, rng, shared), rng);
+  if (out.length < n) fill(OPEN_QUESTIONS.filter(fits));
+  // ultima riserva, solo se il viaggio non ha ancora abbastanza domande: le stesse regole senza il tetto di livello
+  if (out.length < n) fill(all.filter((q) => reachable(q, city, shared)));
+  return shuffle(noGenerated ? out : withGenerated(out, topics, target, rng, shared, city), rng);
 }
 
 /**
@@ -317,7 +347,7 @@ export function dailyQuestion(): Question {
   const all = topics.flatMap((t) => byTopic(t));
   // la domanda del giorno non supera il livello raggiunto nella storia
   const cap = Math.ceil(targetDiff(storyStage()));
-  const pool = all.filter((q) => q.diff <= cap);
+  const pool = all.filter((q) => q.diff <= cap && reachable(q, progressCity(), false));
   const base = pool.length ? pool : all;
   // se ci sono domande in scadenza nel ripasso, la domanda del giorno è una di quelle
   const due = base.filter((q) => isDue(q.id));

@@ -40,7 +40,7 @@ import type { Arena } from '../../ui/arena';
 import type { Question, QuizTopic } from '../../types';
 import { T, listJoin } from '../../i18n';
 import { playMinigame } from '../../ui/minigames';
-import { localTopics, momPlace } from '../studyplace';
+import { localTopics, localCity, momPlace } from '../studyplace';
 
 export async function trainer(n: NpcDef, w: WorldApi) {
   // una sfida sola: battuto, l'investitore non ti viene più incontro e ti parla solo del posto in cui siete
@@ -54,7 +54,7 @@ export async function trainer(n: NpcDef, w: WorldApi) {
   const cave = caveOf(S.map);
   // sfidanti della grotta ancora da battere (questo compreso): le domande mai viste si dividono tra loro
   const left = cave ? CAVES[cave].maps.flatMap((m) => getMap(m).npcs).filter((x) => x.kind === 'trainer' && !S.defeated.includes(x.id)).length : 1;
-  const qs = cave ? pickCaveQuestions(CAVES[cave].quiz, DUEL.trainer.n, target, topics, Math.random, left) : momPlace() ? pickMomQuestions(DUEL.trainer.n) : pickQuestions(topics, DUEL.trainer.n, { target });
+  const qs = cave ? pickCaveQuestions(CAVES[cave].quiz, DUEL.trainer.n, target, topics, Math.random, left) : momPlace() ? pickMomQuestions(DUEL.trainer.n) : pickQuestions(topics, DUEL.trainer.n, { target, city: localCity() });
   const r = await runDuel({ foeName: n.name, foeTitle: cave ? CAVES[cave].name : undefined, foePal: n.pal, questions: qs, ...DUEL.trainer, ...(cave ? { arena: 'grotta' as const } : {}) });
   await afterDuel(r.win, n.id, REWARD.rep.trainer, w, n.name, cave ? pick(CAVE_TIPS[cave]) : undefined);
 }
@@ -108,7 +108,7 @@ export async function speculator(n: NpcDef, w: WorldApi) {
   }
   await scamLesson();
   if (c !== 2) await say(T('Grr! Allora vediamo se sai anche rispondere!'), T('Speculatore'));
-  const qs = momPlace() ? pickMomQuestions(DUEL.speculator.n) : pickQuestions(localTopics(studiedTopics()), DUEL.speculator.n, { target: targetDiff(routeStage(n)) });
+  const qs = momPlace() ? pickMomQuestions(DUEL.speculator.n) : pickQuestions(localTopics(studiedTopics()), DUEL.speculator.n, { target: targetDiff(routeStage(n)), city: localCity() });
   const r = await runDuel({ foeName: T('Speculatore'), foeTitle: ant.name, foePal: PAL.SPEC, questions: qs, ...DUEL.speculator, arena: 'fossa' });
   await afterDuel(r.win, n.id, REWARD.rep.speculator, w, T('Speculatore'));
 }
@@ -123,7 +123,7 @@ export async function student(n: NpcDef, w: WorldApi) {
   if (S.defeated.includes(n.id)) return placeTalk(n.name, S.badges >= m ? T('La nostra sfida l\'abbiamo già fatta.') : T('La nostra sfida l\'abbiamo già fatta. La Whale è là in fondo: buona fortuna!'));
   await say(T('Prima di arrivare alla Whale devi superare me!'), n.name);
   // gli allievi sono un gradino sotto la loro Whale
-  const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.student.n, { target: targetDiff(m - 1) - 0.25 });
+  const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.student.n, { target: targetDiff(m - 1) - 0.25, city: m });
   const r = await runDuel({ foeName: n.name, foeTitle: T('Allievo dell\'Exchange'), foePal: n.pal, questions: qs, ...DUEL.student, arena: 'aula' });
   tick();
   if (r.win) { reward({ defeated: n.id, rep: REWARD.rep.student }); await say(T('Brav{o|a}! Sei pront{o|a} per la Whale.'), n.name); }
@@ -157,7 +157,7 @@ export async function mentorBattle(m: number, w: WorldApi) {
   const ok = (await choose([T('Sono pront{o|a}!'), T('Non ancora')], { prompt: T('Iniziamo?') })) === 0;
   if (!ok) return;
   // la Whale m si affronta con m − 1 Attestati: dal livello 1 (Whale 1) a quasi 3 (Whale 8)
-  const qs = withPreviousMistakes(`m${m}`, pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentor.n, { target: targetDiff(m - 1) }));
+  const qs = withPreviousMistakes(`m${m}`, pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentor.n, { target: targetDiff(m - 1), city: m }));
   const r = await runDuel({ foeName: md.name, foeTitle: T`Whale ${m}`, foePal: md.palette, questions: qs, ...DUEL.mentor, intro: md.intro, arena: 'sala' });
   tick();
   if (!r.win) { lockRetry(`m${m}`, r.wrong); await say([T('Non ancora. Ripassa e torna: ti aspetto.'), T('Le domande che hai sbagliato torneranno nel prossimo duello.')], md.name); return defeatRespawn(w); }
@@ -536,7 +536,7 @@ export async function hermit(n: NpcDef) {
   if (!h) return say('...', who);
   if (S.flags[`islet_${key}`]) return say(h.again, who);
   await say(h.intro, who);
-  const qs = pickQuestions(localTopics(studiedTopics()), 5, { target: targetDiff(Math.max(3, storyStage()) + 2) });
+  const qs = pickQuestions(localTopics(studiedTopics()), 5, { target: targetDiff(Math.max(3, storyStage()) + 2), city: localCity() });
   return hermitDuel(key, who, n.pal, qs);
 }
 

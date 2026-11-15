@@ -7,6 +7,7 @@ import { getMap } from './maps';
 import { mentorTopics } from '../data/quiz/build';
 import { TOWNS } from '../data/story';
 import { T } from '../i18n';
+import { progressCity } from '../systems/quiz';
 
 /** Scaffali comuni a tutte le Biblioteche: gli stessi temi per ogni percorso. */
 export const RULES_SHELF: QuizTopic[] = ['regole', 'personale'];
@@ -65,4 +66,14 @@ export function localTopics(studied: QuizTopic[], mapId: string = S.map): QuizTo
 /** Vero dove non c'è ancora una Biblioteca: a Borgo Semina e sul Percorso 1 prima di Ponte Cedola. */
 export function momPlace(mapId: string = S.map): boolean {
   return studyTown(mapId) === 0;
+}
+
+/**
+ * Città raggiunta valida per un duello qui: quella del viaggio, ma se torni in una città già attraversata valgono i
+ * concetti della sua Biblioteca (vedi data/quiz/progress.ts).
+ */
+export function localCity(mapId: string = S.map): number {
+  const n = studyTown(mapId);
+  const p = progressCity();
+  return n !== undefined && n >= 1 ? Math.min(n, p) : p;
 }

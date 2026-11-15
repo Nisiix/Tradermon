@@ -12,7 +12,7 @@ import { caseOpen, releasedFrac } from '../../systems/account';
 import { fmtMoney } from '../../systems/portfolio';
 import { DIFFICULTY, RATE } from '../../systems/balance';
 import { pickQuestions, pickMomQuestions, targetDiff, storyStage, studiedTopics } from '../../systems/quiz';
-import { localTopics, momPlace } from '../studyplace';
+import { localTopics, localCity, momPlace } from '../studyplace';
 import { antagonist, mentor } from '../../data/story';
 import { DUEL, REWARD } from '../../systems/balance';
 import { ASSETS, ASSET_BY_ID, starterOptions, classesOf, SECTOR_LABEL, CLASS_LABEL } from '../../data/assets';
@@ -247,7 +247,7 @@ async function rivalDuel(k: number, w: WorldApi) {
   if (k === 1) return rivalTutorial(w);
   // il rivale chiede ciò che la Biblioteca della città in cui vi sfidate spiega, e mai le domande di un altro sfidante
   const P = DUEL.rival;
-  const qs = momPlace() ? pickMomQuestions(P.n) : pickQuestions(localTopics(studiedTopics()), P.n, { target: targetDiff(storyStage()) });
+  const qs = momPlace() ? pickMomQuestions(P.n) : pickQuestions(localTopics(studiedTopics()), P.n, { target: targetDiff(storyStage()), city: localCity() });
   const r = await runDuel({ foeName: S.rival, foeTitle: T('Rivale'), foePal: PAL.RIVAL, questions: qs, ...P, arena: 'tetto' });
   if (!r.win) { await say([T('Ah! Te l\'avevo detto.'), T('Ripassa un po\' e riprova.')], S.rival); return defeatRespawn(w); }
   reward({ defeated: `rival_${k}`, rep: REWARD.rep.rival, save: false });

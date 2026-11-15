@@ -2247,7 +2247,7 @@
  "Il fondo di garanzia che rimborsa chi perde soldi usando i servizi DeFi": "The guarantee fund that refunds people who lose money using DeFi services",
  "Il conto dove un exchange centralizzato tiene insieme i depositi di tutti i clienti": "The account where a centralized exchange keeps the deposits of all its customers together",
  "Chi scambia su un DEX non incontra un altro trader: versa un token nel pool e ne preleva un altro. Il pool lo riempiono i fornitori di liquidità.": "A trader on a DEX does not meet another trader: they put one token into the pool and take out another. Liquidity providers fill the pool.",
- "Cos'è un AMM (market maker automatico)?": "What is an AMM (automated market maker)?",
+ "Cos'è un AMM in un exchange decentralizzato?": "What is an AMM in a decentralized exchange?",
  "Uno smart contract che fissa il prezzo in base alle quantità di token nel pool": "A smart contract that sets the price from the quantities of tokens in the pool",
  "Un trader professionista pagato dall'exchange per tenere stabile il prezzo durante il giorno": "A professional trader paid by the exchange to keep the price stable during the day",
  "Un robot che compra cripto in automatico a ogni ribasso del mercato": "A robot that buys crypto automatically at every market dip",
