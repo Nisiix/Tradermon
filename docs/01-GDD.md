@@ -156,7 +156,7 @@ Ogni Percorso (P1-P9) ha: 2-4 investitori sfidanti con linea di vista, erba alta
 - **Professoressa del giorno** (alla Banca del Portafoglio di ogni città): domanda del giorno (streak), ripasso delle domande in scadenza e minigiochi didattici. Gli allenamenti stanno qui, fuori dalla Biblioteca.
 - **Insegne**: gli edifici pubblici hanno un'insegna sul muro sopra la porta (CLINICA, EXCHANGE per l'Exchange, BIBLIOTECA, LABORATORIO, SIMULAZIONE, CASINÒ, ARCHIVIO, LEGA, TORRE). Le case non ne hanno.
 - **Exchange**: 2 allievi (duelli da 4 domande) e la Whale. Gli allievi non si saltano: se provi a superarne uno senza averlo battuto (anche alle sue spalle), si gira, compare il fumetto con il "$", ti raggiunge e ti sfida a quiz; se perdi rinasci nella Banca dello stesso villaggio (Fiducia ricaricata). Il duello con la Whale (e quelli di Wall Street) ha sempre lo stesso numero di domande, anche nei tentativi successivi a una sconfitta: si risponde a tutte finché la barra della Fiducia non va a zero (troppi errori o tilt), e si vince con il numero minimo di risposte giuste. La Whale accetta la sfida solo dopo che hai battuto tutti i suoi allievi.
-- **Case abitate**: ogni città ha 3-4 case visitabili (Borgo Semina una), 30 in tutto. Ogni casa ospita un nucleo: una persona sola, una coppia o una famiglia di tre persone. Gli interni sono arredati in modo diverso secondo il nucleo. Ogni abitante insegna un concetto diverso, per un totale di 62 argomenti, mai ripetuti tra un abitante e l'altro. Ogni consiglio ha una fonte (registrata nei dati, non mostrata in gioco). I temi seguono la città: basi a Borgo Semina e Ponte Cedola, ordini a Porto Ordini, diversificazione a Diversia, costi e interesse composto a Interessa, analisi a Bilancia, dividendi, obbligazioni e tassi a Valdividendo, bias a Mentelucida, gestione del rischio a Rocca Rischio. Si aggiungono temi di macroeconomia, fiscalità italiana e sicurezza. La prima volta che parli con un abitante ottieni +5 XP e il consiglio viene annotato nell'Investidex, dove puoi rileggerlo. Le fonti non compaiono durante il gioco: sono tutte elencate in Opzioni → Crediti e fonti.
+- **Case abitate**: ogni città ha 3-4 case visitabili (Borgo Semina una), 30 in tutto. Ogni casa ospita un nucleo: una persona sola, una coppia o una famiglia di tre persone. Gli interni sono arredati in modo diverso secondo il nucleo. Ogni abitante insegna un concetto diverso, per un totale di 62 argomenti, mai ripetuti tra un abitante e l'altro. Ogni consiglio ha una fonte (registrata nei dati, non mostrata in gioco). I temi seguono la città: basi a Borgo Semina e Ponte Cedola, ordini a Porto Ordini, diversificazione a Diversia, costi e interesse composto a Interessa, analisi a Bilancia, dividendi, obbligazioni e tassi a Valdividendo, bias a Mentelucida, gestione del rischio a Rocca Rischio. Si aggiungono temi di macroeconomia, fiscalità in generale (senza regole di un singolo Paese) e sicurezza. La prima volta che parli con un abitante ottieni +5 XP e il consiglio viene annotato nell'Album dell'investitore, dove puoi rileggerlo. Le fonti non compaiono durante il gioco: sono tutte elencate in Opzioni → Crediti e fonti.
 
 ### 3.3 Mercato, orologio e clima
 
@@ -223,7 +223,7 @@ Schermata a due lati, avversario in alto a destra, giocatore in basso a sinistra
 
 **Investitori sul percorso.** Linea di vista di 4 tessere: quando il giocatore entra nella linea, il personaggio mostra il fumetto con il "$", si avvicina e sfida. Una volta battuto non sfida più (ma si può riparlarci per un consiglio).
 
-### 5.3 Asset Card e Investidex
+### 5.3 Asset Card e Album dell'investitore (ex Investidex)
 
 Ogni asset del mercato simulato è una Asset Card con: nome, ticker, classe (azione, ETF, cripto), **tipo/settore**, rischio (1-5), descrizione, livello (1-4), flag dorata.
 
@@ -238,7 +238,7 @@ Livelli ("evoluzione"): la carta guadagna XP quando si risponde a domande o si c
 
 **Carta dorata ("shiny").** Si ottiene superando tutte le sfide in cui compare la carta senza errori: solo cosmetica.
 
-**Investidex** ha tre sezioni: Asset, Concetti (sbloccati leggendo lezioni), Bias (sbloccati incontrandoli). Mostra percentuale di completamento.
+**Album dell'investitore** ha tre sezioni: Asset, Concetti (sbloccati leggendo lezioni), Bias (sbloccati incontrandoli). Mostra percentuale di completamento.
 
 ### 5.4 Tipi e debolezze: settori ed eventi
 
@@ -265,7 +265,7 @@ Numero massimo di posizioni diverse nel portafoglio simulato: 3 all'inizio, poi 
 
 | Tecnica | Whale | Effetto in gioco | Effetto sulla mappa |
 |---|---|---|---|
-| Lettura del Ticker | 1 | Investidex mostra il livello 2 delle carte | — |
+| Lettura del Ticker | 1 | Album dell'investitore mostra il livello 2 delle carte | — |
 | Ordine Limite | 2 | Ordini limite nella Banca e nella Macchina del Tempo | — |
 | Ribilanciamento | 3 | La Banca calcola lo scostamento dall'allocazione obiettivo; gli ordini li sceglie il giocatore | — |
 | Piano di Accumulo | 4 | Acquisti ricorrenti automatici nel simulatore | — |
@@ -287,7 +287,7 @@ I bias si imparano, non si "subiscono". Non esistono stati alterati che cambiano
 | **Eccesso di fiducia** | Lezione sui bias in Banca | Qualche successo non è una prova di abilità |
 | **Effetto gregge** | Proposte degli Speculatori, Lezione sui bias in Banca | Seguire la folla non è un'analisi |
 
-Un bias riconosciuto (rispondendo bene alla domanda in Banca, o rifiutando/accettando una proposta) viene annotato nella sezione Bias dell'Investidex.
+Un bias riconosciuto (rispondendo bene alla domanda in Banca, o rifiutando/accettando una proposta) viene annotato nella sezione Bias dell'Album dell'investitore.
 
 ### 5.8 Erba alta
 
@@ -307,7 +307,7 @@ Edificio di Diversia: Macchina del Tempo libera, senza punteggio, con tutti gli 
 
 ### 5.12 Casinò dello Speculatore
 
-Edificio di Interessa. Una roulette con 37 caselle e fiches finte. Le probabilità e il margine del banco (2,7%) sono scritti sul tavolo. Il "Sistema Martingala" proposto dallo Speculatore porta prima o poi a perdere tutto in una simulazione accelerata di 200 giri. Nessun premio utile: solo una voce dell'Investidex ("Azzardo vs investimento").
+Edificio di Interessa. Una roulette con 37 caselle e fiches finte. Le probabilità e il margine del banco (2,7%) sono scritti sul tavolo. Il "Sistema Martingala" proposto dallo Speculatore porta prima o poi a perdere tutto in una simulazione accelerata di 200 giri. Nessun premio utile: solo una voce dell'Album dell'investitore ("Azzardo vs investimento").
 
 ### 5.13 Duelli con codice (cavo link)
 
@@ -540,7 +540,7 @@ Vedi `docs/02-CONTENUTI-E-FONTI.md`. In sintesi: 9 moduli comuni e 3 moduli per 
 - Introduzione: il Prof parla dietro il suo banco, davanti alla lavagna dell'aula.
 - Tastiera: frecce o WASD per muoversi, Z / Invio / Spazio = conferma, X / Esc = indietro, M = menu.
 - Touch: croce direzionale e pulsanti A, B, Menu sullo schermo.
-- Menu di pausa: Investidex, Portafoglio, Agenda e traguardi, Diario, Profilo (con scelta del titolo), Attestati e Tecniche, Tappe, Chiavi API (una sola voce: collega o scollega il conto Alpaca Paper), Mappa della Regione (con Trasferimento di Capitale; ha anche un tasto dedicato, N di default), Opzioni (effetti, musica, velocità del testo, scala dei caratteri, effetti grafici, contrasto alto, Comandi), Salva, Esci dal gioco (salva e torna alla pagina principale). Le lezioni si leggono in Biblioteca; il mondo si vede sempre in 2.5D.
+- Menu di pausa: Album dell'investitore, Portafoglio, Agenda e traguardi, Diario, Profilo (con scelta del titolo), Attestati e Tecniche, Tappe, Chiavi API (una sola voce: collega o scollega il conto Alpaca Paper), Mappa della Regione (con Trasferimento di Capitale; ha anche un tasto dedicato, N di default), Opzioni (effetti, musica, velocità del testo, scala dei caratteri, effetti grafici, contrasto alto, Comandi), Salva, Esci dal gioco (salva e torna alla pagina principale). Le lezioni si leggono in Biblioteca; il mondo si vede sempre in 2.5D.
 - Resa: la griglia 240×160 è disegnata a risoluzione interna 720×480 (Scale3x per tile e sprite) e adattata allo schermo con filtro lineare; la camera aggiunge vignettatura e una leggera saturazione. Niente sfocatura né scalini.
 - Musica: chiptune originale generata in codice, un brano per tipo di luogo, uno per i duelli e uno per la notte; con il clima orso o tempesta i brani maggiori passano in minore e rallentano, con il toro accelerano. Brevi motivi per vittorie, Attestati e missioni completate. Volume separato dagli effetti nelle Opzioni.
 - Accessibilità: testo ingrandibile, nessuna informazione solo a colori, timer disattivabile in modalità "Studio" (in cambio dimezza la Reputazione dei duelli).

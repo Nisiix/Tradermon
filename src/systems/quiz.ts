@@ -1,5 +1,5 @@
 import type { Difficulty, Question, QuizTopic } from '../types';
-import { QUESTIONS, OPEN_QUESTIONS, byTopic, mentorTopics, caveQuestions } from '../data/quiz/build';
+import { QUESTIONS, OPEN_QUESTIONS, byTopic, mentorTopics, caveQuestions, ACADEMY_TOPICS } from '../data/quiz/build';
 import { LESSONS } from '../data/lessons';
 import { BOOKS } from '../data/books';
 import { generate, templatesFor, isGenerated } from '../data/quiz/generated';
@@ -52,8 +52,13 @@ export function ngBoost(): number {
   return 0.5 * Math.min(2, S?.ngPlus ?? 0);
 }
 
-/** Argomenti di Wall Street: non hanno una Whale, i loro libri stanno negli scaffali comuni di ogni Biblioteca (Regole e truffe, Economia e analisi). */
-export const WALL_STREET_TOPICS: QuizTopic[] = ['macro', 'analisi', 'regole'];
+/** Argomenti di Wall Street: non hanno una Whale, i loro libri stanno negli scaffali comuni di ogni Biblioteca (Regole e finanza personale, Economia e mercati). */
+export const WALL_STREET_TOPICS: QuizTopic[] = ['macro', 'tassi', 'analisi', 'regole'];
+/** Temi che si possono studiare in ogni Biblioteca fin dall'inizio, uguali per tutti i percorsi. */
+export const COMMON_TOPICS: QuizTopic[] = ['regole', 'personale', 'tassi', 'macro', 'analisi'];
+/** Temi che entrano nelle domande appena li hai aperti, a qualsiasi tappa: regole, finanza personale, obbligazioni e tassi. */
+export const OPEN_ANYTIME: QuizTopic[] = ['regole', 'personale', 'tassi'];
+export { ACADEMY_TOPICS };
 
 /** Il giocatore ha già aperto l'argomento: ha letto almeno una sua lezione o un suo libro. */
 export function topicOpened(t: QuizTopic): boolean {
@@ -71,7 +76,7 @@ export function studiedTopics(): QuizTopic[] {
   const b = Math.min(8, S.badges);
   for (let i = 1; i <= Math.max(1, b); i++) mentorTopics(i, S.track, S.mixedClasses).forEach((t) => out.add(t));
   if (b >= 1 && b < 8) mentorTopics(b + 1, S.track, S.mixedClasses).filter(topicOpened).forEach((t) => out.add(t));
-  WALL_STREET_TOPICS.filter((t) => (t === 'regole' || b >= 8) && topicOpened(t)).forEach((t) => out.add(t));
+  [...new Set([...WALL_STREET_TOPICS, ...OPEN_ANYTIME])].filter((t) => (OPEN_ANYTIME.includes(t) || b >= 8) && topicOpened(t)).forEach((t) => out.add(t));
   return [...out];
 }
 

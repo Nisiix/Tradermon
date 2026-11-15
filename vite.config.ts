@@ -74,8 +74,16 @@ function i18nPlugin(): Plugin {
       for (const c of Object.values(bundle)) {
         // hd2d è la pagina di prova della resa 2.5D: non registra un dizionario suo
         if (c.type !== 'chunk' || !c.isEntry || c.name === 'hd2d') continue;
-        const dictAt = c.imports.findIndex((f) => /(^|\/)i18n-(en|landing)-/.test(f));
-        if (dictAt < 0) continue;
+        const isDict = (f: string) => /(^|\/)i18n-(en|landing)-/.test(f);
+        const dictAt = c.imports.findIndex(isDict);
+        if (dictAt < 0) {
+          // il gioco carica il dizionario a richiesta (src/main.ts): l'ingresso non deve eseguire altro codice prima
+          if (c.dynamicImports.some(isDict)) {
+            const extra = c.imports.filter((f) => !onlyI18n(f));
+            if (extra.length) this.error(`${c.fileName}: l'ingresso esegue ${extra.join(', ')} prima del dizionario inglese caricato a richiesta`);
+          }
+          continue;
+        }
         const before = c.imports.slice(0, dictAt).filter((f) => !onlyI18n(f));
         if (before.length) this.error(`${c.fileName}: il dizionario inglese viene caricato dopo ${before.join(', ')}; i testi calcolati all'avvio resterebbero in italiano`);
       }
@@ -83,9 +91,38 @@ function i18nPlugin(): Plugin {
   };
 }
 
+/**
+ * Il gioco si carica in due tempi (src/main.ts: prima il dizionario inglese, se serve, poi app.ts). Perché il secondo
+ * tempo non aspetti il primo per scaricare, la pagina chiede subito al browser i pezzi del gioco con
+ * <link rel="modulepreload">: li scarica e li prepara senza eseguirli. Il dizionario resta a richiesta (in italiano non si scarica).
+ */
+function preloadGame(): Plugin {
+  return {
+    name: 'tradermon-preload-game',
+    apply: 'build',
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const entry = ctx.chunk, bundle = ctx.bundle;
+        if (!entry || !bundle || !entry.dynamicImports.length) return;
+        const seen = new Set<string>();
+        const visit = (f: string) => {
+          const c = bundle[f];
+          if (seen.has(f) || entry.imports.includes(f) || !c || c.type !== 'chunk' || /(^|\/)i18n-(en|landing)-/.test(f)) return;
+          seen.add(f);
+          c.imports.forEach(visit);
+        };
+        entry.dynamicImports.forEach(visit);
+        const rel = (f: string) => '../' + f; // la pagina del gioco sta in gioca/
+        return [...seen].map((f) => ({ tag: 'link', attrs: { rel: 'modulepreload', crossorigin: '', href: rel(f) }, injectTo: 'head' as const }));
+      },
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [i18nPlugin(), pagePolicy()],
+  plugins: [i18nPlugin(), pagePolicy(), preloadGame()],
   server: {
     port: 5173,
     proxy: { '/api': `http://127.0.0.1:${API_PORT}` },

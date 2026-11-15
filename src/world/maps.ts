@@ -12,7 +12,9 @@ export type NpcKind =
   | 'talk' | 'trainer' | 'mentor' | 'student' | 'guard' | 'nurse' | 'prof' | 'aide' | 'case' | 'rival'
   | 'librarian' | 'daily' | 'pc' | 'station' | 'simop' | 'croupier' | 'archivist' | 'league' | 'towerop' | 'speculator' | 'legend' | 'mom' | 'sage' | 'resident' | 'hermit' | 'secret'
   // grotte: chi le spiega all'ingresso, i reperti da raccogliere e le ostriche della Grotta delle Perle
-  | 'caveguide' | 'relic' | 'oyster';
+  | 'caveguide' | 'relic' | 'oyster'
+  // Accademia di Wall Street: i tre Tutor e la Rettrice
+  | 'tutor' | 'rector';
 
 export interface NpcDef {
   id: string;
@@ -35,7 +37,7 @@ export interface Warp { x: number; y: number; to: string; tx: number; ty: number
 /** xp: la prima lettura dà un po' di Conoscenza (incisioni delle grotte, Cippo dei Costi). */
 export interface Sign { x: number; y: number; text: string[]; xp?: boolean }
 /** Scaffali "parlanti" della Biblioteca: il gruppo di celle (x..x+w-1, y) apre una sezione. */
-export interface Section { x: number; y: number; w: number; kind: 'city' | 'past' | 'rules' | 'economy'; label: string }
+export interface Section { x: number; y: number; w: number; kind: 'city' | 'past' | 'rules' | 'economy' | 'derivati' | 'mercato' | 'trading'; label: string }
 /** Insegna sul muro frontale di un edificio pubblico: centrata sulla porta (x), appesa al bordo tra tetto e muro (y = riga del muro). */
 export interface Plaque { x: number; y: number; text: string; kind: 'clinic' | 'gym' | 'public' }
 
@@ -112,6 +114,9 @@ function interior(id: string, name: string, w: number, h: number, back: string, 
 }
 
 const MAPS: Record<string, MapDef> = {};
+
+/** Mappa dell'Accademia di Wall Street (sopra la Torre delle Sfide, quindi solo per il Campione). */
+export const ACADEMY_MAP = 'ws_academy';
 
 /** Interno di una casa abitata: arredo e posti in base al tipo di nucleo (single, coppia, famiglia). */
 function houseInterior(h: Household, back: string, bx: number, by: number): MapDef {
@@ -339,14 +344,14 @@ function buildTown(n: number) {
   rect(lb.tiles, 1, 2, 4, 1, TILE.SHELF); rect(lb.tiles, 6, 2, 4, 1, TILE.SHELF); rect(lb.tiles, 1, 4, 3, 1, TILE.SHELF); rect(lb.tiles, 7, 4, 3, 1, TILE.SHELF);
   // solo libri, un piccolo argomento per libro: in alto a sinistra i temi della città (Exchange, Whale e sfidanti fin
   // qui), a destra quelli delle città già attraversate, che tornano lungo i Percorsi; in basso le regole contro le
-  // truffe e, a destra, macroeconomia e analisi. Niente sfide qui dentro: il ripasso e la domanda del giorno stanno
+  // truffe e la finanza personale e, a destra, economia, tassi, analisi e storie dei mercati. Niente sfide qui dentro: il ripasso e la domanda del giorno stanno
   // alla Banca del Portafoglio.
   lb.tiles[1][2] = TILE.POSTER; lb.tiles[1][7] = TILE.FRAME;
   lb.sections = [
     { x: 1, y: 2, w: 4, kind: 'city', label: T`Temi di ${def.name}` },
     { x: 6, y: 2, w: 4, kind: 'past', label: T('Città già attraversate') },
-    { x: 1, y: 4, w: 3, kind: 'rules', label: T('Regole e truffe') },
-    { x: 7, y: 4, w: 3, kind: 'economy', label: T('Economia e analisi') },
+    { x: 1, y: 4, w: 3, kind: 'rules', label: T('Regole e finanza personale') },
+    { x: 7, y: 4, w: 3, kind: 'economy', label: T('Economia e mercati') },
   ];
   lb.npcs.push({ id: `lib_${n}`, x: 5, y: 3, pal: 23, dir: 0, name: T('Bibliotecaria'), kind: 'librarian', data: { town: n } });
   MAPS[lb.id] = lb;
@@ -453,6 +458,25 @@ function buildLeagueTown() {
   rect(tw.tiles, 1, 2, 9, 1, TILE.SHELF);
   tw.npcs.push({ id: 'towerop', x: 5, y: 3, pal: 13, dir: 0, name: T('Custode della Torre'), kind: 'towerop' });
   MAPS.tower = tw;
+  // Accademia di Wall Street: sopra la Torre (che apre solo al Campione), si sale e si scende dalla scala
+  const ad = interior(ACADEMY_MAP, T('Accademia di Wall Street'), 13, 10, 'tower', 9, 6);
+  ad.warps = [];
+  ad.tiles[ad.h - 1][Math.floor(ad.w / 2)] = TILE.FLOOR;
+  rect(ad.tiles, 1, 2, 3, 1, TILE.SHELF); rect(ad.tiles, 5, 2, 3, 1, TILE.SHELF); rect(ad.tiles, 9, 2, 3, 1, TILE.SHELF);
+  rect(ad.tiles, 4, 6, 5, 1, TILE.RUG); ad.tiles[2][4] = TILE.PLANT; ad.tiles[2][8] = TILE.PLANT;
+  ad.sections = [
+    { x: 1, y: 2, w: 3, kind: 'derivati', label: T('Derivati e opzioni') },
+    { x: 5, y: 2, w: 3, kind: 'mercato', label: T('Come funziona il mercato') },
+    { x: 9, y: 2, w: 3, kind: 'trading', label: T('Il mestiere del trader') },
+  ];
+  ad.npcs.push(
+    { id: 'academy_tutor_derivati', x: 2, y: 4, pal: 14, dir: 0, name: T('Tutor dei Derivati'), kind: 'tutor', data: { topic: 'derivati' } },
+    { id: 'academy_tutor_mercato', x: 6, y: 4, pal: 19, dir: 0, name: T('Tutor del Mercato'), kind: 'tutor', data: { topic: 'mercato' } },
+    { id: 'academy_tutor_trading', x: 10, y: 4, pal: 22, dir: 0, name: T('Tutor del Trading'), kind: 'tutor', data: { topic: 'trading' } },
+    { id: 'academy_rector', x: 6, y: 7, pal: 3, dir: 0, name: T('Rettrice dell\'Accademia'), kind: 'rector' },
+  );
+  MAPS[ACADEMY_MAP] = ad;
+  ladder(tw, 9, 6, 8, 6, 2, ad, 11, 8, 10, 8, 2);
 }
 
 // ---------------- Percorsi ----------------

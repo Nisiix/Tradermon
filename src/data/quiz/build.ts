@@ -2,6 +2,7 @@ import type { Question, QuizTopic, Track, AssetClass } from '../../types';
 import * as C from './core';
 import * as TR from './tracks';
 import { GROTTE } from './caves';
+import * as LR from './learning';
 import { T } from '../../i18n';
 import { classesOf } from '../assets';
 
@@ -44,6 +45,11 @@ const TABLE: Record<QuizTopic, QRow[]> = {
   crypto_stable: TR.CRYPTO_STABLE,
   mixed_base: TR.MIXED_BASE,
   mixed_allocazione: TR.MIXED_ALLOCAZIONE,
+  personale: LR.PERSONALE,
+  tassi: LR.TASSI,
+  derivati: LR.DERIVATI,
+  mercato: LR.MERCATO,
+  trading: LR.TRADING,
   grotte: GROTTE,
 };
 
@@ -61,8 +67,10 @@ export function byTopic(topic: QuizTopic): Question[] {
 
 /** Argomento riservato alle grotte: non entra mai nei duelli del resto del mondo, nemmeno come riempitivo. */
 export const CAVE_TOPIC: QuizTopic = 'grotte';
-/** Domande che qualsiasi duello può usare come riempitivo quando i suoi argomenti non bastano. */
-export const OPEN_QUESTIONS: Question[] = QUESTIONS.filter((q) => q.topic !== CAVE_TOPIC);
+/** Temi dell'Accademia di Wall Street (dopo il titolo di Campione): si studiano e si chiedono solo lì. */
+export const ACADEMY_TOPICS: QuizTopic[] = ['derivati', 'mercato', 'trading'];
+/** Domande che qualsiasi duello può usare come riempitivo quando i suoi argomenti non bastano (né grotte né Accademia). */
+export const OPEN_QUESTIONS: Question[] = QUESTIONS.filter((q) => q.topic !== CAVE_TOPIC && !ACADEMY_TOPICS.includes(q.topic));
 /** Domande di una grotta: prefisso 'oro', 'ombra' o 'perle' (vedi CAVES in world/caves.ts). */
 export function caveQuestions(prefix: string): Question[] {
   return QUESTIONS.filter((q) => q.topic === CAVE_TOPIC && q.id.startsWith(`grotte_${prefix}_`));
@@ -96,4 +104,4 @@ export function trackTopics(track: Track, mixed: AssetClass[], badges: number): 
   return [...out];
 }
 
-export const LEAGUE_TOPICS: QuizTopic[][] = [['macro'], ['analisi'], ['regole'], ['bias', 'gestione']];
+export const LEAGUE_TOPICS: QuizTopic[][] = [['macro', 'tassi'], ['analisi'], ['regole'], ['bias', 'gestione']];

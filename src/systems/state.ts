@@ -104,7 +104,7 @@ const MIGRATIONS: Record<number, (s: SaveData) => void> = {
     s.market = emptyMarket();
     s.seals = 0; s.exDone = 0; s.exTools = { limit: false, stop: false }; s.levExam = false;
     s.lastSeen = { t: 0, value: 0 }; s.boss = { run: null, beaten: [], tries: {} };
-    // le carte dei titoli inventati escono dall'Investidex; le leggende simulate non valgono più come replay reali
+    // le carte dei titoli inventati escono dall'Album dell'investitore; le leggende simulate non valgono più come replay reali
     for (const id of Object.keys(s.cards ?? {})) if (!ASSET_BY_ID[id]) delete s.cards[id];
     s.legends = [];
     if (s.flags.starter) s.flags.migratedV3 = true;
@@ -117,7 +117,7 @@ const MIGRATIONS: Record<number, (s: SaveData) => void> = {
     else if (old === 'mixed' && (mixed.length === 0 || mixed.includes('crypto'))) s.track = 'mixed';
     else s.track = 'listed';
     s.mixedClasses = [];
-    // le classi aggiunte dal nuovo percorso entrano subito nell'Investidex, come dopo un Attestato (prima si comprano solo in Banca)
+    // le classi aggiunte dal nuovo percorso entrano subito nell'Album dell'investitore, come dopo un Attestato (prima si comprano solo in Banca)
     const had: string[] = old === 'mixed' ? mixed : old === 'stocks' || old === 'etf' || old === 'crypto' ? [old] : classesOf(s.track);
     if (s.flags?.starter && s.badges >= 1) for (const a of unlockedAssets(s.track, [], s.badges)) if (!had.includes(a.cls) && !s.cards[a.id]) s.cards[a.id] = { xp: 0, gold: false, flawless: true, seen: 0 };
     // chi arriva ad Azioni + ETF da Indici o da un vecchio misto: la tecnica della quinta Whale prende il nome di quella del nuovo percorso
@@ -241,7 +241,7 @@ export function cardLevel(id: string): number {
 
 export function unlockCard(id: string) { card(id); }
 
-/** Segna un bias come conosciuto (Investidex). Non esistono più "stati alterati":
+/** Segna un bias come conosciuto (Album dell'investitore). Non esistono più "stati alterati":
  *  nulla nel gioco cambia il patrimonio o le regole fuori dalle scelte del giocatore. */
 export function learnBias(b: BiasId): void {
   if (!S.biasSeen.includes(b)) S.biasSeen.push(b);

@@ -42,7 +42,7 @@ const STEPS: Step[] = [
 ];
 
 /** Le voci del menu di gioco, come in MENU_USE (systems/controls.ts). */
-const menuUse = () => T('Apri il menu di gioco: Investidex, Portafoglio, Agenda, Diario, Profilo, Mappa, Chiavi API, Opzioni, Salva ed Esci dal gioco.');
+const menuUse = () => T('Apri il menu di gioco: Studio (Cartella dello studente, Glossario, Album dell\'investitore, Giornale), Conto (Portafoglio, Tappe, Attestati, Diario, Chiavi API), Gioco (Profilo, Agenda, Mappa, Opzioni), Salva ed Esci dal gioco.');
 
 /** Legenda: a cosa serve ciascun tasto (tastiera) o pulsante (touch). */
 function legend(touch: boolean, hint: Action | null): string {
@@ -60,6 +60,7 @@ function legend(touch: boolean, hint: Action | null): string {
       [['b'], kbd('b'), T('Chiudi la finestra aperta, annulli una scelta, torni indietro.')],
       [['menu'], kbd('menu'), menuUse()],
       [['map'], kbd('map'), T('Apri subito la Mappa della Regione.')],
+      [['glossary'], kbd('glossary'), T('Apri il Glossario: le parole dei libri che hai letto.')],
       [['settings'], kbd('settings'), T('Apri e chiudi le Opzioni ⚙, anche nel mondo (o clicca l\'icona in alto a destra): lingua, audio, schermo e testo, comandi, partita e giocatore.')],
     ];
   return `<div class="tut-legend"><div class="lg-title">${touch ? T('Cosa fa ogni pulsante') : T('Cosa fa ogni tasto')}</div>${rows.map(([ks, keys, use]) =>

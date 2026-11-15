@@ -19,6 +19,7 @@ import { prof, chooseCase, rival, mom, LEO_TOUR_NPC, LEO_TOUR_FLAG } from './sto
 import { trainer, speculator, student, mentorBattle, guard, league, tower, hermit, legend, dailyDesk } from './duels';
 import { librarian, station, simzone, casino, archivist } from './places';
 import { caveGuide, relic, oyster, relicTaken } from './caves';
+import { tutor, rector } from './academy';
 import { T } from '../../i18n';
 
 /** NPC visibile? (es. guardie sparite dopo la Medaglia, avversari già battuti) */
@@ -84,6 +85,8 @@ export async function interact(n: NpcDef, w: WorldApi): Promise<void> {
     case 'relic': return relic(n, w);
     case 'oyster': return oyster(n, w);
     case 'secret': return secretTalk(n);
+    case 'tutor': return tutor(n, w);
+    case 'rector': return rector(n);
     case 'sage': return say([pick(TRAINER_TIPS), T`Il tuo livello di Conoscenza è ${level()}. Continua così!`], n.name);
   }
 }
@@ -101,7 +104,7 @@ async function resident(n: NpcDef) {
     await say(r.lines, who);
     S.tipsHeard.push(r.id);
     S.stats.xp += 5;
-    toast(T`Lezione annotata nell'Investidex (${S.tipsHeard.length}/${ALL_RESIDENTS.length})`);
+    toast(T`Lezione annotata nell'Album dell'investitore (${S.tipsHeard.length}/${ALL_RESIDENTS.length})`);
     track('tip');
     return;
   }

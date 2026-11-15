@@ -7,7 +7,9 @@ import { runSim } from '../../ui/timemachine';
 import { openLessons } from '../../ui/menu';
 import { mentorTopics } from '../../data/quiz/build';
 import { TOWNS } from '../../data/story';
-import { booksFor, TOPIC_LABEL, type Book } from '../../data/books';
+import { booksFor, TOPIC_LABEL, STORY_BOOKS, type Book } from '../../data/books';
+import { booksByLevel, bookLevel, LEVEL_LABEL } from '../../data/bookmap';
+import { readBook } from '../../ui/book';
 import { REP_TIERS, REWARD } from '../../systems/balance';
 import { repTier, TIER_ARCHIVE } from '../../systems/character';
 import type { Section } from '../maps';
@@ -16,7 +18,7 @@ import { weeklyChallenge } from '../../ui/challenge';
 import { beep } from '../../systems/audio';
 import * as A from '../../systems/alpaca';
 import { track } from '../../systems/progress';
-import { topicOpened } from '../../systems/quiz';
+import { topicOpened, ACADEMY_TOPICS } from '../../systems/quiz';
 import { playMinigame } from '../../ui/minigames';
 import { reward, type WorldApi } from './common';
 import { linkDuel, missionDesk } from './duels';
@@ -30,7 +32,7 @@ export async function librarian(n: NpcDef) {
     await say([
       T('Benvenut{o|a} in Biblioteca! Qui si studia: ogni libro spiega un piccolo argomento, in poche pagine.'),
       T`In alto a sinistra ci sono i temi di ${TOWNS[town]?.name ?? T('questa città')}: ${listJoin(cityTopics(town).map((t) => `«${TOPIC_LABEL[t]}»`))}. Sono gli argomenti di cui si discute qui, dentro e fuori dall'Exchange.`,
-      T('A destra i temi delle città che hai già attraversato: lungo i Percorsi tornano spesso. In basso le regole contro le truffe e, a destra, macroeconomia e analisi.'),
+      T('A destra i temi delle città che hai già attraversato: lungo i Percorsi tornano spesso. In basso a sinistra le regole contro le truffe e la finanza personale; a destra economia, tassi, analisi e le storie delle grandi crisi.'),
       T('Avvicinati a uno scaffale e premi il tasto di conferma.'),
     ], T('Bibliotecaria'));
   }
@@ -60,33 +62,52 @@ function librarySections(n: number): { kind: Section['kind']; label: string; ope
   return [
     { kind: 'city', label: T`Temi di ${TOWNS[n]?.name ?? T('questa città')}`, open: () => cityShelf(n) },
     { kind: 'past', label: T('Città già attraversate'), open: () => pastShelf(n) },
-    { kind: 'rules', label: T('Regole e truffe'), open: () => topicShelf('regole') },
-    { kind: 'economy', label: T('Economia e analisi'), open: () => pickTopic(T('ECONOMIA E ANALISI'), ['macro', 'analisi'].map((t) => ({ topic: t as QuizTopic }))) },
+    { kind: 'rules', label: T('Regole e finanza personale'), open: () => pickTopic(T('REGOLE E FINANZA PERSONALE'), RULES_SHELF.map((topic) => ({ topic }))) },
+    { kind: 'economy', label: T('Economia e mercati'), open: () => pickTopic(T('ECONOMIA E MERCATI'), ECONOMY_SHELF.map((topic) => ({ topic })), undefined, [{ label: T`Storie dei mercati (${storiesRead()}/${STORY_BOOKS.length})`, open: storyShelf }]) },
   ];
 }
 
+/** Scaffali comuni a tutte le Biblioteche: gli stessi temi per ogni percorso. */
+const RULES_SHELF: QuizTopic[] = ['regole', 'personale'];
+const ECONOMY_SHELF: QuizTopic[] = ['macro', 'tassi', 'analisi'];
+
+const storiesRead = () => STORY_BOOKS.filter((b) => S.booksRead.includes(b.id)).length;
+
+/** Storie dei mercati: le crisi vere raccontate come libri, senza domande (le stesse dell'Archivio della Zona Simulazione). */
+async function storyShelf() {
+  for (;;) {
+    const c = await choose([...STORY_BOOKS.map((b) => `${S.booksRead.includes(b.id) ? '✓ ' : '• '}${b.title}`), T('Rimetto a posto')], { cancel: true, title: T('STORIE DEI MERCATI'), prompt: T('Che cosa successe davvero, e quale lezione ne resta.') });
+    if (c < 0 || c >= STORY_BOOKS.length) return;
+    const b = STORY_BOOKS[c];
+    const r = await readBook(b, { check: false });
+    if (r.finished && !S.booksRead.includes(b.id)) { S.booksRead.push(b.id); S.flags[`hist_${b.id.slice(5)}`] = true; reward({ xp: REWARD.xp.book, event: 'lesson', save: false }); }
+  }
+}
+
 /** Se lo scaffale ha più temi si sceglie il tema, poi il piccolo argomento. */
-async function pickTopic(title: string, topics: { topic: QuizTopic; town?: number }[], allRead?: () => Promise<void>) {
-  if (topics.length === 1) return topicShelf(topics[0].topic, allRead);
+async function pickTopic(title: string, topics: { topic: QuizTopic; town?: number }[], allRead?: () => Promise<void>, extra: { label: string; open: () => Promise<void> }[] = []) {
+  if (topics.length === 1 && !extra.length) return topicShelf(topics[0].topic, allRead);
   for (;;) {
     const label = (x: { topic: QuizTopic; town?: number }) => `${TOPIC_LABEL[x.topic]}${x.town ? ` · ${TOWNS[x.town]?.name ?? ''}` : ''} (${readCount(x.topic)})`;
-    const c = await choose([...topics.map(label), T('Rimetto a posto')], { cancel: true, title });
-    if (c < 0 || c === topics.length) return;
+    const c = await choose([...topics.map(label), ...extra.map((x) => x.label), T('Rimetto a posto')], { cancel: true, title });
+    if (c < 0 || c === topics.length + extra.length) return;
+    if (c >= topics.length) { await extra[c - topics.length].open(); continue; }
     await topicShelf(topics[c].topic, allRead);
   }
 }
 
 /** Un ripiano: i piccoli argomenti di un tema. Si sceglie un libro, lo si legge, la prima lettura dà Conoscenza. In fondo, le lezioni sullo stesso tema. */
 async function topicShelf(topic: QuizTopic, allRead?: () => Promise<void>) {
-  const books = booksFor([topic]);
+  // dal più semplice al più avanzato: ogni libro dice il suo livello (Base, Intermedio, Avanzato)
+  const books = booksByLevel(topic);
   for (;;) {
     const read = (b: Book) => S.booksRead.includes(b.id);
-    const c = await choose([...books.map((b) => `${read(b) ? '✓ ' : '• '}${b.title}`), T('Lezioni su questo tema'), T('Rimetto a posto')], { cancel: true, title: TOPIC_LABEL[topic].toUpperCase() });
+    const c = await choose([...books.map((b) => `${read(b) ? '✓ ' : '• '}${b.title} · ${LEVEL_LABEL[bookLevel(b)]}`), T('Lezioni su questo tema'), T('Rimetto a posto')], { cancel: true, title: TOPIC_LABEL[topic].toUpperCase() });
     if (c < 0 || c === books.length + 1) return;
     if (c === books.length) { await openLessons([topic]); continue; }
     const b = books[c];
-    await say(b.pages, b.title);
-    if (!read(b)) {
+    const r = await readBook(b);
+    if (r.finished && !read(b)) {
       S.booksRead.push(b.id); reward({ xp: REWARD.xp.book, event: 'lesson', save: false });
       await allRead?.();
     }
@@ -129,11 +150,11 @@ export function doorNotice(to: string): string[] | null {
     ];
   }
   if (to === 'league') {
-    if (S.badges < 8 || S.flags.doorNotice_league || topicOpened('macro') || topicOpened('analisi')) return null;
+    if (S.badges < 8 || S.flags.doorNotice_league || topicOpened('macro') || topicOpened('analisi') || topicOpened('tassi')) return null;
     S.flags.doorNotice_league = true;
     return [
-      T`Sulla porta di Wall Street c'è un avviso: «Qui si discute di ${TOPIC_LABEL.macro}, ${TOPIC_LABEL.analisi} e ${TOPIC_LABEL.regole}, poi di tutto ciò che hai studiato finora.»`,
-      T('«I libri su questi temi sono negli scaffali Economia e analisi e Regole e truffe, in ogni Biblioteca.»'),
+      T`Sulla porta di Wall Street c'è un avviso: «Qui si discute di ${listJoin([TOPIC_LABEL.macro, TOPIC_LABEL.tassi, TOPIC_LABEL.analisi, TOPIC_LABEL.regole])}, poi di tutto ciò che hai studiato finora.»`,
+      T('«I libri su questi temi sono negli scaffali Economia e mercati e Regole e finanza personale, in ogni Biblioteca.»'),
       T('Quei libri non li hai ancora aperti. La porta non è chiusa: decidi tu quando entrare.'),
     ];
   }
@@ -142,6 +163,8 @@ export function doorNotice(to: string): string[] | null {
 
 /** Interazione con uno scaffale della Biblioteca (vedi Section in maps.ts). */
 export async function librarySection(sec: Section, town: number) {
+  // Accademia di Wall Street: ogni scaffale è un solo tema
+  if (ACADEMY_TOPICS.includes(sec.kind as QuizTopic)) return topicShelf(sec.kind as QuizTopic);
   return librarySections(town).find((x) => x.kind === sec.kind)?.open();
 }
 
@@ -237,7 +260,7 @@ export async function casino() {
     }
     const ruin = bank < bet;
     await say([T`Partenza: 1.000 fiches, puntata base 10, raddoppio dopo ogni perdita.`, T`Giri giocati: ${rounds}. Massimo raggiunto: ${maxBank}. Finale: ${bank} fiches.`, ruin ? T`Una serie di sconfitte ha richiesto una puntata di ${bet} fiches: non potevi più coprirla. Rovina!` : T('Sei sopravvissut{o|a} questa volta, ma il rischio di rovina cresce a ogni giro: basta una serie di 7 sconfitte per perdere 1.270 fiches.'), T('Lezione: piccoli guadagni frequenti e perdite rare ma enormi. È la martingala, ed è la stessa logica di molte strategie a leva.')], T('Croupier Speculatore'));
-    if (!S.flags.casinoLesson) { reward({ flag: 'casinoLesson', xp: REWARD.xp.casinoLesson, save: false }); toast(T('Investidex: nuova voce "Azzardo vs investimento"')); }
+    if (!S.flags.casinoLesson) { reward({ flag: 'casinoLesson', xp: REWARD.xp.casinoLesson, save: false }); toast(T('Album dell\'investitore: nuova voce «Azzardo vs investimento»')); }
   }
 }
 
@@ -256,7 +279,7 @@ export async function archivist() {
     if (c === 0) {
       const ids = Object.keys(S.cards).filter((id) => card(id).xp < 150);
       ids.forEach((id) => { card(id).xp = 150; });
-      await say(ids.length ? [T('Ecco i fascicoli completi: bilanci storici, rischi e curiosità di ogni carta.'), T`${ids.length} carte mostrano ora tutte le informazioni (livello 4) nell'Investidex, se hai la Tecnica per leggerle.`] : T('I fascicoli delle tue carte sono già completi. Torna quando ne sblocchi di nuove.'), T('Archivista'));
+      await say(ids.length ? [T('Ecco i fascicoli completi: bilanci storici, rischi e curiosità di ogni carta.'), T`${ids.length} carte mostrano ora tutte le informazioni (livello 4) nell'Album dell'investitore, se hai la Tecnica per leggerle.`] : T('I fascicoli delle tue carte sono già completi. Torna quando ne sblocchi di nuove.'), T('Archivista'));
       return;
     }
     if (c !== 1) return;

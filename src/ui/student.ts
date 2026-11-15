@@ -5,24 +5,32 @@ import { S } from '../systems/state';
 import { byTopic, trackTopics } from '../data/quiz/build';
 import { TOPIC_LABEL, booksFor } from '../data/books';
 import { townForTopic } from '../data/quiz/hint';
-import { isDue } from '../systems/quiz';
+import { isDue, COMMON_TOPICS, ACADEMY_TOPICS } from '../systems/quiz';
+import { bookLevel, LEVEL_LABEL, type BookLevel } from '../data/bookmap';
+import { openGlossary } from './glossary';
 import { repTier } from '../systems/character';
 import { mentorMission } from '../data/missions';
 import { mentor, TOWNS } from '../data/story';
 import type { QuizTopic } from '../types';
 import { T } from '../i18n';
 
-export interface TopicCard { topic: QuizTopic; known: number; total: number; due: number; wrong: number }
+export interface TopicCard { topic: QuizTopic; known: number; total: number; due: number; wrong: number; booksRead: number; books: number; level: BookLevel | 0 }
 
 /** Stato di ogni argomento del percorso: domande padroneggiate (scatola ≥ 3), in scadenza, sbagliate di recente. */
 export function topicCards(): TopicCard[] {
-  const topics = [...trackTopics(S.track, S.mixedClasses, 8), 'macro', 'analisi', 'regole'] as QuizTopic[];
+  const topics: QuizTopic[] = [...trackTopics(S.track, S.mixedClasses, 8), ...COMMON_TOPICS, ...(S.flags.champion ? ACADEMY_TOPICS : [])];
   // le domande delle grotte entrano nella Cartella solo dopo che ne hai incontrata una
   if (byTopic('grotte').some((q) => S.answered[q.id])) topics.push('grotte');
   return [...new Set(topics)].map((topic) => {
     const qs = byTopic(topic);
+    const bs = topic === 'grotte' ? [] : booksFor([topic]);
+    const read = bs.filter((b) => S.booksRead.includes(b.id));
     return {
       topic,
+      booksRead: read.length,
+      books: bs.length,
+      // livello raggiunto nello studio: il più alto tra i libri letti (Base, Intermedio, Avanzato)
+      level: read.reduce<BookLevel | 0>((m, b) => Math.max(m, bookLevel(b)) as BookLevel, 0),
       total: qs.length,
       known: qs.filter((q) => (S.review[q.id] ?? 0) >= 3).length,
       due: qs.filter((q) => isDue(q.id)).length,
@@ -73,13 +81,14 @@ export async function openStudentFolder() {
   const coherent = reviewed.filter((e) => e.note.includes('Rilettura: coerente')).length;
   const emotional = reviewed.filter((e) => e.note.includes('Rilettura: emotiva')).length;
   const tier = repTier();
-  await modal(T('Cartella dello studente'), ({ body, button, close }) => {
+  const r = await modal<string>(T('Cartella dello studente'), ({ body, button, close }) => {
     body.innerHTML = T`
       <p><b>Prossimo passo:</b> ${esc(nextStep(cards))}</p>
       <div class="grid2">
         <div>
-          <h4 style="margin:4px 0">Argomenti</h4>
-          ${cards.map((k) => `<div class="small">${esc(TOPIC_LABEL[k.topic])} <span class="muted">${k.known}/${k.total}</span>${k.due ? T` <span class="bad">· ${k.due} da ripassare</span>` : ''}${bar((k.known / k.total) * 100)}</div>`).join('')}
+          <h4 style="margin:4px 0">Mappa delle competenze</h4>
+          <p class="small muted" style="margin:0 0 4px">Per ogni tema: libri letti, livello di studio raggiunto e domande padroneggiate.</p>
+          ${cards.map((k) => `<div class="small comp-row"><b>${esc(TOPIC_LABEL[k.topic])}</b> <span class="muted">${k.books ? `📖 ${k.booksRead}/${k.books} · ` : ''}${k.level ? esc(LEVEL_LABEL[k.level]) : T('da iniziare')} · ✓ ${k.known}/${k.total}</span>${k.due ? T` <span class="bad">· ${k.due} da ripassare</span>` : ''}${bar((k.known / k.total) * 100)}</div>`).join('')}
         </div>
         <div>
           <h4 style="margin:4px 0">Da rafforzare</h4>
@@ -93,7 +102,9 @@ export async function openStudentFolder() {
           <div class="small">Disciplina ${S.stats.disciplina} · Pazienza ${S.stats.pazienza} · Reputazione ${S.stats.reputazione} (${esc(tier.name)}${tier.next ? T`, prossimo grado a ${tier.next}` : ''})</div>
         </div>
       </div>
-      <p class="small muted">Le stelle di processo premiano come hai investito (diversificazione, niente vendite nel panico, poche operazioni), non quanto hai guadagnato.</p>`;
+      <p class="small muted">Le stelle di processo premiano come hai investito (diversificazione, niente vendite nel panico, poche operazioni), non quanto hai guadagnato. Le domande sbagliate tornano nel Ripasso, alla Banca.</p>`;
+    button(T('Glossario'), () => close('glossary'));
     button(T('Chiudi'), () => close(), 'primary');
   }, { wide: true });
+  if (r === 'glossary') await openGlossary();
 }
