@@ -1,7 +1,12 @@
 // Musica originale di Tradermon, generata in codice con Web Audio (nessun file audio).
-// Tre voci in stile chiptune: melodia (onda quadra), basso (triangolo) e percussioni (rumore).
-// Le melodie sono composte per questo gioco. Con il mercato in ribasso i brani in maggiore
-// passano al minore e rallentano; con il rialzo accelerano un poco.
+// Tre voci: melodia, basso (triangolo) e percussioni (rumore). Le melodie sono composte per questo gioco.
+// Due famiglie di brani, perché si senta subito dove sei:
+// - esplorazione (città, percorsi, interni, notte, grotte, titolo): melodia morbida (triangolo o sinusoide)
+//   un'ottava più in basso, tempi calmi, quasi niente charleston;
+// - sfida (duelli, Exchange, Wall Street): minore, più veloce, melodia "di ottoni" (dente di sega filtrato)
+//   con un basso che spinge. Calda, non stridente: il filtro taglia gli acuti.
+// Tutta la musica passa da un filtro passa-basso, così niente fischia. Con il mercato in ribasso i brani
+// in maggiore passano al minore e rallentano; con il rialzo accelerano un poco.
 
 export type TrackId = 'title' | 'town' | 'route' | 'interior' | 'academy' | 'battle' | 'league' | 'night' | 'cave_gold' | 'cave_dp' | 'cave_pearl';
 export type Mood = 'toro' | 'orso' | 'laterale' | 'tempesta';
@@ -15,11 +20,17 @@ interface Track {
   bass: 'walk' | 'drive' | 'soft';
   drums: string; // 16 passi: k cassa, s rullante, h charleston, _ niente
   leadWave?: OscillatorType;
+  /** Spostamento della melodia in semitoni (−12 = un'ottava sotto, come è scritta). */
+  shift?: number;
+  /** Taglio degli acuti della melodia, in Hz. */
+  lp?: number;
+  /** Brano di sfida: melodia di ottoni filtrata e attacco più deciso. */
+  challenge?: boolean;
 }
 
 const T: Record<TrackId, Track> = {
   town: {
-    bpm: 112, key: 0, bass: 'walk', drums: 'k_h_s_h_k_h_s_hh',
+    bpm: 96, key: 0, bass: 'walk', drums: 'k_______s_______', leadWave: 'triangle', shift: -12, lp: 2200,
     chords: ['C', 'Am', 'F', 'G', 'C', 'Am', 'F', 'G'],
     lead: [
       'E5 . G5 . C6 . B5 A5 G5 . . . E5 . D5 .',
@@ -33,7 +44,7 @@ const T: Record<TrackId, Track> = {
     ],
   },
   title: {
-    bpm: 100, key: 5, bass: 'soft', drums: 'k_______s_______',
+    bpm: 90, key: 5, bass: 'soft', drums: 'k_______s_______', leadWave: 'triangle', shift: -12, lp: 2200,
     chords: ['C', 'G', 'Am', 'F'],
     lead: [
       'G5 . . . E5 . . . C6 . . . B5 . G5 .',
@@ -43,7 +54,7 @@ const T: Record<TrackId, Track> = {
     ],
   },
   route: {
-    bpm: 132, key: 7, bass: 'drive', drums: 'k_hhs_hhk_hhs_hk',
+    bpm: 108, key: 7, bass: 'walk', drums: 'k___s___k___s__h', leadWave: 'triangle', shift: -12, lp: 2400,
     chords: ['C', 'G', 'Am', 'F', 'C', 'G', 'F', 'G'],
     lead: [
       'C5 . . E5 G5 . E5 . C6 . . . B5 . G5 .',
@@ -57,7 +68,7 @@ const T: Record<TrackId, Track> = {
     ],
   },
   interior: {
-    bpm: 92, key: 5, bass: 'soft', drums: '____h_______h___', leadWave: 'triangle',
+    bpm: 84, key: 5, bass: 'soft', drums: '________________', leadWave: 'sine', shift: -12, lp: 1800,
     chords: ['C', 'Am', 'Dm', 'G'],
     lead: [
       'G5 . . . E5 . . . C5 . D5 . E5 . . .',
@@ -67,7 +78,7 @@ const T: Record<TrackId, Track> = {
     ],
   },
   academy: {
-    bpm: 120, key: 2, minor: true, bass: 'drive', drums: 'k_h_s_h_k_k_s_h_',
+    bpm: 120, key: 2, minor: true, bass: 'drive', drums: 'k___s___k_k_s___', challenge: true, shift: -12, lp: 1500,
     chords: ['Am', 'G', 'F', 'E'],
     lead: [
       'E5 . A5 . C6 . B5 . A5 . . . E5 . . .',
@@ -77,7 +88,7 @@ const T: Record<TrackId, Track> = {
     ],
   },
   battle: {
-    bpm: 152, key: 0, minor: true, bass: 'drive', drums: 'k_hhs_hhk_hhs_hk',
+    bpm: 138, key: 0, minor: true, bass: 'drive', drums: 'k_h_s_h_k_k_s_h_', challenge: true, shift: -12, lp: 1600,
     chords: ['Am', 'Am', 'F', 'G', 'Am', 'Am', 'F', 'E'],
     lead: [
       'A5 . A5 _ C6 . A5 _ E6 . D6 . C6 . B5 .',
@@ -91,7 +102,7 @@ const T: Record<TrackId, Track> = {
     ],
   },
   league: {
-    bpm: 120, key: 5, minor: true, bass: 'walk', drums: 'k___s___k_k_s_hh',
+    bpm: 116, key: 5, minor: true, bass: 'drive', drums: 'k___s___k_k_s___', challenge: true, shift: -12, lp: 1500,
     chords: ['Am', 'F', 'C', 'E'],
     lead: [
       'A4 . . . E5 . . . A5 . . . G5 . E5 .',
@@ -101,7 +112,7 @@ const T: Record<TrackId, Track> = {
     ],
   },
   night: {
-    bpm: 84, key: 3, bass: 'soft', drums: '________h_______', leadWave: 'triangle',
+    bpm: 76, key: 3, bass: 'soft', drums: '________________', leadWave: 'sine', shift: -12, lp: 1600,
     chords: ['Am', 'F', 'C', 'G'],
     lead: [
       'E5 . . . . . A5 . . . G5 . E5 . . .',
@@ -113,7 +124,7 @@ const T: Record<TrackId, Track> = {
   // Grotte: tre brani lenti in minore, con molto silenzio. Miniera: passo di piccone e melodia che sale e ricade
   // (come le promesse); Dark Pool: poche note basse e sospese; Perle: arpeggi d'acqua.
   cave_gold: {
-    bpm: 88, key: 2, minor: true, bass: 'walk', drums: 'k_______h___k___', leadWave: 'triangle',
+    bpm: 84, key: 2, minor: true, bass: 'walk', drums: 'k___________k___', leadWave: 'triangle', shift: -12, lp: 2000,
     chords: ['Am', 'Am', 'F', 'E', 'Am', 'G', 'F', 'E'],
     lead: [
       'A4 . . . C5 . E5 . . . D5 . C5 . . .',
@@ -127,7 +138,7 @@ const T: Record<TrackId, Track> = {
     ],
   },
   cave_dp: {
-    bpm: 72, key: 10, minor: true, bass: 'soft', drums: '________________', leadWave: 'triangle',
+    bpm: 72, key: 10, minor: true, bass: 'soft', drums: '________________', leadWave: 'triangle', shift: -12, lp: 1800,
     chords: ['Am', 'F', 'Dm', 'E'],
     lead: [
       'A4 . . . . . . . E5 . . . . . D#5 .',
@@ -137,7 +148,7 @@ const T: Record<TrackId, Track> = {
     ],
   },
   cave_pearl: {
-    bpm: 80, key: 5, minor: true, bass: 'soft', drums: '____________h___', leadWave: 'sine',
+    bpm: 80, key: 5, minor: true, bass: 'soft', drums: '________________', leadWave: 'sine', shift: -12, lp: 2000,
     chords: ['Am', 'F', 'C', 'G', 'Am', 'F', 'Dm', 'E'],
     lead: [
       'A4 C5 E5 A5 . . E5 . C5 . E5 . A5 . . .',
@@ -192,7 +203,10 @@ function audio(): AudioContext | null {
     if (!ctx) {
       ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       master = ctx.createGain();
-      master.connect(ctx.destination);
+      // filtro generale: toglie gli acuti più fastidiosi a tutta la musica
+      const soft = ctx.createBiquadFilter();
+      soft.type = 'lowpass'; soft.frequency.value = 4200; soft.Q.value = 0.5;
+      master.connect(soft).connect(ctx.destination);
       noise = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
       const d = noise.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -217,16 +231,20 @@ export function duck(on: boolean) { ducked = on; applyGain(); }
 
 export function setMood(m: Mood) { mood = m; }
 
-function voice(c: AudioContext, f: number, t: number, dur: number, type: OscillatorType, gain: number) {
+/** Una nota: attacco morbido (o deciso), leggero calo e coda breve; con `lp` passa da un filtro passa-basso. */
+function voice(c: AudioContext, f: number, t: number, dur: number, type: OscillatorType, gain: number, lp?: number, attack = 0.01) {
   const o = c.createOscillator();
   const g = c.createGain();
   o.type = type;
   o.frequency.setValueAtTime(f, t);
+  const a = Math.min(attack, dur / 3);
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(gain, t + 0.01);
-  g.gain.setValueAtTime(gain * 0.8, t + Math.max(0.02, dur - 0.04));
+  g.gain.linearRampToValueAtTime(gain, t + a);
+  g.gain.linearRampToValueAtTime(gain * 0.7, t + Math.max(a + 0.01, dur * 0.6));
   g.gain.linearRampToValueAtTime(0.0001, t + dur);
-  o.connect(g).connect(master!);
+  let out: AudioNode = o;
+  if (lp) { const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = lp; fl.Q.value = 0.7; out = o.connect(fl); }
+  out.connect(g).connect(master!);
   o.start(t);
   o.stop(t + dur + 0.02);
 }
@@ -234,16 +252,17 @@ function voice(c: AudioContext, f: number, t: number, dur: number, type: Oscilla
 function drum(c: AudioContext, kind: string, t: number) {
   if (kind === 'k') {
     const o = c.createOscillator(); const g = c.createGain();
-    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
-    g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
+    g.gain.setValueAtTime(0.38, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
     o.connect(g).connect(master!); o.start(t); o.stop(t + 0.16);
     return;
   }
   if (!noise) return;
   const s = c.createBufferSource(); s.buffer = noise;
-  const f = c.createBiquadFilter(); f.type = kind === 'h' ? 'highpass' : 'bandpass'; f.frequency.value = kind === 'h' ? 7000 : 1800;
-  const g = c.createGain(); const len = kind === 'h' ? 0.04 : 0.12;
-  g.gain.setValueAtTime(kind === 'h' ? 0.12 : 0.3, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
+  // charleston e rullante piano e scuri: niente fruscio acuto
+  const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = kind === 'h' ? 4500 : 1200; f.Q.value = kind === 'h' ? 1 : 0.8;
+  const g = c.createGain(); const len = kind === 'h' ? 0.03 : 0.1;
+  g.gain.setValueAtTime(kind === 'h' ? 0.05 : 0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
   s.connect(f).connect(g).connect(master!); s.start(t); s.stop(t + len + 0.02);
 }
 
@@ -262,12 +281,16 @@ function schedule() {
     const tokens = tr.lead[bar].trim().split(/\s+/);
     const tok = tokens[pos] ?? '_';
     const tf = (m: number) => freq((minor ? minorize(m) : m) + tr.key);
-    // melodia
+    // melodia: morbida nell'esplorazione, di ottoni filtrati nelle sfide (con un'eco un'ottava sotto)
     const m = midi(tok);
     if (m > 0) {
       let len = 1;
       while (pos + len < 16 && tokens[pos + len] === '.') len++;
-      voice(c, tf(m), nextTime, sec * len * 0.92, tr.leadWave ?? 'square', 0.09);
+      const n = m + (tr.shift ?? 0), dur = sec * len * 0.92;
+      if (tr.challenge) {
+        voice(c, tf(n), nextTime, dur, 'sawtooth', 0.07, tr.lp ?? 1500, 0.015);
+        voice(c, tf(n - 12), nextTime, dur, 'triangle', 0.06, undefined, 0.015);
+      } else voice(c, tf(n), nextTime, dur, tr.leadWave ?? 'triangle', tr.leadWave === 'sine' ? 0.13 : 0.11, tr.lp, 0.04);
     }
     // basso dagli accordi
     const ch = tr.chords[bar % tr.chords.length];
@@ -331,8 +354,8 @@ export function jingle(id: keyof typeof JINGLES) {
     if (m > 0) {
       let len = 1;
       while (tokens[i + len] === '.') len++;
-      voice(c, freq(m), t, sec * len, 'square', 0.12);
-      voice(c, freq(m - 12), t, sec * len, 'triangle', 0.12);
+      voice(c, freq(m - 12), t, sec * len, 'triangle', 0.13, 2400, 0.02);
+      voice(c, freq(m - 24), t, sec * len, 'sine', 0.1, undefined, 0.02);
     }
     t += sec;
   });
