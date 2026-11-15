@@ -937,7 +937,7 @@
  "Apri e chiudi le Opzioni ⚙, anche nel mondo (o clicca l'icona in alto a destra): lingua, audio, schermo e testo, comandi, partita e giocatore.": "Open and close the Options ⚙, also in the world (or click the icon at the top right): language, audio, screen and text, controls, game and player.",
  "Le voci in grigio si regolano dopo aver caricato o iniziato una partita.": "Greyed-out items can be set once a game is loaded or started.",
  "Le voci in grigio si regolano durante la partita.": "Greyed-out items can be set during the game.",
- "Risposta corretta: {0}.": "Correct answer: {0}.",
- "<b class=\"bad\">Tempo scaduto!</b> {0}": "<b class=\"bad\">Time is up!</b> {0}",
- "<b class=\"bad\">Sbagliato.</b> {0}": "<b class=\"bad\">Wrong.</b> {0}"
+ "<b class=\"bad\">Sbagliato.</b>": "<b class=\"bad\">Wrong.</b>",
+ "La risposta giusta non te la dico: la trovi nel libro.": "I won't tell you the right answer: you'll find it in the book.",
+ "📖 Rileggi i libri di «{0}» in Biblioteca.": "📖 Reread the books on «{0}» in the Library."
 }

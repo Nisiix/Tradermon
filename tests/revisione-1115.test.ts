@@ -41,9 +41,10 @@ describe('revisione 15/11', () => {
     expect(txt).not.toContain('Whale');
   });
 
-  it('nel duello la spiegazione sta su una riga sua e il tempo scaduto mostra la risposta giusta', () => {
+  it('dopo un errore il duello non svela la risposta giusta: rimanda al libro', () => {
     const src = readFileSync('src/ui/battle.ts', 'utf8');
-    expect(src).toContain('<b class="bad">Tempo scaduto!</b> ${right}');
-    expect(src).toContain('<p>${verdict}</p><p>${esc(gtext(q.explain))}</p>');
+    expect(src).not.toContain('Risposta corretta');
+    expect(src).toContain("if (ok && order[j] === q.answer) b.classList.add('right')");
+    expect(src).toContain('La risposta giusta non te la dico: la trovi nel libro.');
   });
 });
