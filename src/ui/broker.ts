@@ -34,8 +34,11 @@ export const GUIDE_LINES = [
   T('Le regole del viaggio (Prove sul conto, Sigilli, leva, Boss) te le spiegano i personaggi quando servono. Il riepilogo delle tappe è nel menu, alla voce "Tappe, Prove e Sigilli".'),
 ];
 
-/** Voce "Chiavi API" del menu: stato del collegamento al conto Alpaca Paper, chiavi, guida. */
-export async function apiKeysMenu(): Promise<void> {
+/**
+ * Voce "Chiavi API" del menu: stato del collegamento al conto Alpaca Paper, chiavi, guida.
+ * Con onboarding (apertura del conto dalla Dott.ssa Ratio) l'uscita dice che si può collegare più tardi.
+ */
+export async function apiKeysMenu(onboarding = false): Promise<void> {
   let askedUnlock = false, askedRelay = false;
   for (;;) {
     const link = await Acc.checkLink(true);
@@ -52,11 +55,11 @@ export async function apiKeysMenu(): Promise<void> {
       on ? T('Scollega il conto Alpaca Paper') : T('Collega il conto Alpaca Paper'),
       ...(on && st!.cloud ? [T('Torna al collegamento diretto')] : []),
       T('Guida: come ottenere le chiavi'),
-      T('Indietro'),
+      !onboarding ? T('Indietro') : on ? T('Continua') : T('Non voglio collegare il conto o lo farò più tardi'),
     ];
     const c = await choose(opts, { cancel: true, title: T('CHIAVI API'), prompt: on ? T`Conto Alpaca Paper collegato (${st!.paper.keyHint}): è il tuo conto di gioco, con denaro finto. ${how}` : PAPER_ONLY });
-    const pick = c < 0 ? T('Indietro') : opts[c];
-    if (pick === T('Indietro')) return;
+    if (c < 0 || c === opts.length - 1) return;
+    const pick = opts[c];
     if (c === 0) {
       if (on) await unlinkPaper(st!);
       else if (await keysForm()) { await Acc.checkLink(true); (await Acc.sync(true)).forEach((n) => toast(n)); toast(T('Conto Paper collegato: prezzi reali scaricati.')); }
@@ -124,10 +127,10 @@ export async function openGameAccount(): Promise<boolean> {
   const link = await Acc.checkLink(true);
   if (link.paper) { await Acc.sync(true); await say([T('Il tuo conto Alpaca Paper è già collegato: la Valigetta si può aprire subito.')], NURSE); return true; }
   await say([T('Per aprire la Valigetta serve il conto Alpaca Paper: è gratuito e basta registrarsi sulla piattaforma di Alpaca.'), ...(link.server ? [T('Ti apro "Chiavi API": se non hai ancora le chiavi, la Guida spiega tutto in tre passi.')] : [link.reason])], NURSE);
-  if (link.server) await apiKeysMenu();
+  if (link.server) await apiKeysMenu(true);
   const ok = (await Acc.checkLink(true)).paper;
   if (ok) await Acc.sync(true);
-  else await say([T('Nessun problema: la Valigetta resta sigillata e il tuo viaggio di studio comincia lo stesso.'), T('Quando vorrai aprirla, collega il conto dal menu (voce "Chiavi API") e passa in una Banca.')], NURSE);
+  else await say([T('Nessun problema: la Valigetta resta sigillata e il tuo viaggio di studio comincia lo stesso.'), T('Per ora non devi scegliere nessun titolo: senza conto non c\'è niente da comprare. Quando vorrai, collega il conto dal menu (voce "Chiavi API") e passa in una Banca: lì sceglierai il titolo e aprirai la Valigetta.')], NURSE);
   return ok;
 }
 

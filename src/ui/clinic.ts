@@ -17,6 +17,7 @@ import { marketClock } from '../systems/market';
 import { DIFFICULTY } from '../systems/balance';
 import { requireAccount, apiKeysMenu, stageScreen, leverageDesk, accountAlerts, nextSealLine } from './broker';
 import { journalPrompt } from './journal';
+import { ensureStarter } from './vetrina';
 import { questionnaire } from './setup';
 import { mirrorReport, profileName } from '../systems/mirror';
 import { shuffle } from '../systems/rng';
@@ -150,6 +151,8 @@ async function practiceClosed(): Promise<boolean> {
 export async function trade(guided = false): Promise<boolean> {
   if (await practiceClosed()) return false;
   if (!(await requireAccount(T('comprare e vendere')))) return false;
+  // chi ha rimandato il collegamento sceglie qui il titolo della Valigetta, prima del primo acquisto
+  await ensureStarter(NURSE);
   let bought = false;
   await modal(T('Compra / Vendi · conto di gioco (Alpaca Paper)'), ({ body, button, close }) => {
     let busy = false;

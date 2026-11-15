@@ -2,19 +2,20 @@
 import { type NpcDef } from '../maps';
 import type { AssetClass, Track } from '../../types';
 import { S, save, addRep, card, classes, capital } from '../../systems/state';
-import { say, choose, modal, esc, wait, el } from '../../ui/core';
+import { say, choose, modal, esc, wait } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { trade } from '../../ui/clinic';
+import { chooseStarter, takeStarter } from '../../ui/vetrina';
 import { openGameAccount } from '../../ui/broker';
 import { hasPrices } from '../../systems/realdata';
 import { caseOpen, releasedFrac } from '../../systems/account';
-import { fmtMoney, fmtPx, withUsd } from '../../systems/portfolio';
+import { fmtMoney } from '../../systems/portfolio';
 import { DIFFICULTY, RATE } from '../../systems/balance';
 import { pickQuestions, targetDiff, storyStage, studiedTopics } from '../../systems/quiz';
 import { trackTopics } from '../../data/quiz/build';
 import { antagonist, mentor } from '../../data/story';
 import { DUEL, REWARD } from '../../systems/balance';
-import { ASSETS, ASSET_BY_ID, starterFor, starterOptions, classesOf, SECTOR_LABEL, CLASS_LABEL } from '../../data/assets';
+import { ASSETS, ASSET_BY_ID, starterOptions, classesOf, SECTOR_LABEL, CLASS_LABEL } from '../../data/assets';
 import { metrics, tradingDaysBetween } from '../../systems/market';
 import { PAL } from '../../art/art';
 import { beep } from '../../systems/audio';
@@ -29,6 +30,17 @@ import { T } from '../../i18n';
  * classi di attivo, le stesse su cui ti interrogano Leo e gli allenatori fino a Ponte Cedola (il percorso si sceglie dopo).
  */
 const BASICS = (): { label: string; lines: string[] }[] => [
+  // le parole che senti dal risveglio fino alla scelta della Valigetta (in alto sullo schermo, dal Professore, nelle schede)
+  { label: T('Le parole del viaggio'), lines: [
+    T('Comincio dalle parole che sentirai subito. Un titolo è qualunque cosa si compra e si vende sul mercato: un\'azione, un ETF, una cripto.'),
+    T('Ogni titolo ha un ticker, una sigla breve con cui lo trovi in borsa: per esempio AAPL è Apple.'),
+    T('La borsa è il mercato dove si scambiano i titoli. In alto sullo schermo vedi se la Borsa USA è aperta o chiusa, e com\'è il clima: Toro se sale, Orso se scende, Laterale se va di lato, Tempesta se si agita molto.'),
+    T('Il portafoglio è l\'insieme di tutto ciò in cui investi. Il paper trading è un allenamento: ordini con prezzi veri, ma con denaro finto.'),
+    T('La Fiducia, in alto a destra, è la tua sicurezza nei duelli di conoscenza: cala quando sbagli e torna piena se riposi qui a casa o in una Banca.'),
+    T('In gergo una Whale, una balena, è un grande investitore. Nel viaggio ogni città ne ha una che ti mette alla prova.'),
+    T('Il Professore ti mostrerà tre Valigette: ognuna apre un percorso, chiamato Sentiero, e contiene i titoli tra cui scegliere il primo.'),
+    T('Nelle loro schede troverai anche la caduta storica: quanto è sceso un titolo, dal suo massimo, nella crisi peggiore.'),
+  ] },
   { label: T('Rischio'), lines: [
     T('Primo, il rischio. Rischio e rendimento vanno insieme: se qualcosa promette di rendere di più, di solito oscilla di più.'),
     T('Quanto si muove su e giù un prezzo si chiama volatilità. Quanto calo riesci a reggere, con i nervi e con il portafoglio, è la tua tolleranza al rischio.'),
@@ -51,7 +63,7 @@ const BASICS = (): { label: string; lines: string[] }[] => [
 
 /** Il primo dialogo della partita: la mamma ti saluta in casa e ti lascia le nozioni per arrivare a Ponte Cedola. */
 export async function momIntro() {
-  await say([T`${S.name}, finalmente sei svegli{o|a}! Oggi parti per il tuo viaggio tra investimenti e trading.`, T('Sono così fiera di te. Prima che tu vada, ti lascio qualche nozione: ti servirà con chi ti sfiderà fino a Ponte Cedola.')], T('Mamma'));
+  await say([T`${S.name}, finalmente sei svegli{o|a}! Oggi parti per il tuo viaggio tra investimenti e trading.`, T('Sono così fiera di te. Prima che tu vada, ti lascio qualche nozione: ti servirà dal Professore e con chi ti sfiderà fino a Ponte Cedola.')], T('Mamma'));
   const c = await choose([T('Sì, ti ascolto'), T('Le conosco già')], { prompt: T('Ti va di sentirle?'), who: T('Mamma') });
   if (c === 0) for (const b of BASICS()) await say(b.lines, T('Mamma'));
   else await say(T('Va bene. Se cambi idea, prima di uscire chiedimele pure.'), T('Mamma'));
@@ -86,7 +98,7 @@ export async function prof(w: WorldApi) {
     if (c === 1) return moneyTalk();
     return;
   }
-  if (!caseOpen()) await say([T('La tua Valigetta è ancora sigillata: si apre con il primo acquisto sul conto Alpaca Paper.'), T('Collega il conto dal menu, voce "Chiavi API", e passa in una Banca. Nel frattempo studia: Attestati e storia non aspettano il conto.')], T('Prof. Saldi'));
+  if (!caseOpen()) await say([T('La tua Valigetta è ancora sigillata: si apre con il primo acquisto sul conto Alpaca Paper.'), S.flags.starterAsset ? T('Collega il conto dal menu, voce "Chiavi API", e passa in una Banca. Nel frattempo studia: Attestati e storia non aspettano il conto.') : T('Quando colleghi il conto dal menu, voce "Chiavi API", passa in una Banca: lì sceglierai il titolo con cui aprirla. Nel frattempo studia: Attestati e storia non aspettano il conto.')], T('Prof. Saldi'));
   if (S.badges >= 8 && S.defeated.includes('league_4')) return say([T('{Campione|Campionessa}! Sono fiero di te.'), T('Alla Torre delle Sfide trovi le crisi leggendarie e i Boss. E se vuoi, dalla Torre puoi iniziare una Nuova Partita+: da zero, con i tuoi trofei e la difficoltà Leggenda.')], T('Prof. Saldi'));
   return say([T`Il tuo percorso: ${TRACK_LABEL[S.track]}. Attestati: ${S.badges}/8${S.badges ? T` · Sigilli pratici: ${S.seals}/8` : ''}.`, S.badges === 0 ? T('La prima Whale, Gaia Primo, è a Ponte Cedola, oltre il Percorso 1.') : T('Continua così, e ricorda di passare dalle Banche.'), T('E non fidarti di chi ti promette guadagni garantiti!')], T('Prof. Saldi'));
 }
@@ -101,6 +113,12 @@ async function moneyTalk() {
 }
 
 const CLASS_NAME = (c: AssetClass) => CLASS_LABEL[c];
+/** Che cosa c'è in ogni classe, in una riga: accanto al nome della classe nella scheda della Valigetta. */
+const CLASS_HINT: Record<AssetClass, string> = {
+  get stocks() { return T('pezzi di singole aziende, quotate in borsa'); },
+  get etf() { return T('panieri di tanti titoli, comprati con un solo acquisto'); },
+  get crypto() { return T('monete digitali su una blockchain, scambiate giorno e notte'); },
+};
 
 export async function chooseCase(n: NpcDef, w: WorldApi) {
   const track = n.data?.track as Track;
@@ -119,7 +137,8 @@ export async function chooseCase(n: NpcDef, w: WorldApi) {
   const effort = track === 'mixed' ? T('<tr><td>Impegno</td><td>È il percorso più impegnativo: seguire tre classi insieme richiede più studio.</td></tr>') : '';
   const ok = await modal<boolean>(n.name, ({ body, button, close }) => {
     body.innerHTML = T`<p><b>${TRACK_LABEL[track]}</b> · ${cls.map(CLASS_NAME).join(' + ')}</p>
-      <p>Nella Valigetta c'è una vetrina di titoli veri tra cui scegliere il primo: ${starterOptions(cls).map((a) => `<b>${esc(a.ticker)}</b>`).join(', ')}.</p>
+      <p>Nella Valigetta c'è una vetrina di titoli veri: tra questi sceglierai il primo. Il codice in grassetto è il <b>ticker</b>, la sigla con cui il titolo si trova in borsa.</p>
+      ${cls.map((c) => `<h4 class="case-cls">${CLASS_NAME(c)}: ${CLASS_HINT[c]}</h4><dl class="gloss case-list">${starterOptions(c).map((a) => `<dt><b>${esc(a.ticker)}</b> · ${esc(a.name)}<br><span class="small muted">${SECTOR_LABEL[a.sector]} · ${T('rischio')} ${'★'.repeat(a.risk)}${'☆'.repeat(5 - a.risk)}</span></dt><dd>${esc(a.desc)}</dd>`).join('')}</dl>`).join('')}
       <table class="t"><tr><th>Classe</th><th>Rischio</th><th>Volatilità tipica</th><th>Esempio di caduta storica</th></tr>
       ${cls.map((c) => `<tr><td><b>${CLASS_NAME(c)}</b></td><td>${'★'.repeat(info[c].stars)}${'☆'.repeat(5 - info[c].stars)}</td><td>${info[c].vol}</td><td>${info[c].dd}</td></tr>`).join('')}</table>
       <table class="t"><tr><td>Antagonisti</td><td>${antagonist(track).team}</td></tr><tr><td>Tono della storia</td><td>${tone[track]}</td></tr>${effort}</table>
@@ -131,50 +150,6 @@ export async function chooseCase(n: NpcDef, w: WorldApi) {
   await startTrack(track, w);
 }
 
-/** Vetrina della Valigetta: il primo titolo vero, scelto dal giocatore tra pochi nomi curati. Non è un consiglio. */
-export async function chooseStarter(cls: AssetClass | AssetClass[]): Promise<string> {
-  const groups = (Array.isArray(cls) ? cls : [cls]).map((c) => ({ cls: c, opts: starterOptions(c) }));
-  const px = S.market.prices;
-  for (;;) {
-    const id = await modal<string>(T('La vetrina della Valigetta'), ({ body, button, close }) => {
-      // si sceglie toccando la card, poi si conferma con l'unico pulsante OK (come nel Carrello diversificato)
-      let pick = '';
-      body.innerHTML = T`<p class="small">Scegli il tuo primo titolo: tocca la sua scheda, poi premi OK. Sono titoli veri, messi in vetrina perché si prestano a imparare: non è un consiglio, e gli altri li ritroverai tutti dopo il primo Attestato.</p>`;
-      const cards: HTMLButtonElement[] = [];
-      // con più classi le schede sono compatte, così si vedono tutte insieme: la descrizione compare sotto, per il titolo scelto
-      const compact = groups.length > 1;
-      const detail = el('p', 'small', compact ? T('Tocca una scheda per leggere la descrizione del titolo.') : '');
-      // una griglia per classe, con il nome della classe sopra quando la Valigetta ne contiene più di una
-      for (const g of groups) {
-        if (groups.length > 1) body.appendChild(el('p', 'small', `<b>${CLASS_NAME(g.cls)}</b>`));
-        const grid = el('div', compact ? 'cards compact' : 'cards');
-        for (const a of g.opts) {
-          const c = el('button', 'card pick', T`<span><b>${esc(a.name)}</b> (${esc(a.ticker)})<br><span class="small">${SECTOR_LABEL[a.sector]} · rischio indicativo ${'★'.repeat(a.risk)}${hasPrices() && px[a.id] ? ` · ${withUsd(fmtPx(px[a.id]))}` : ''}</span><br><span class="small">${compact ? '' : esc(a.desc)}</span></span>`.replace('<br><span class="small"></span>', ''));
-          c.type = 'button';
-          c.dataset.id = a.id;
-          c.setAttribute('aria-pressed', 'false');
-          c.addEventListener('click', (ev) => {
-            pick = a.id;
-            if (compact) detail.innerHTML = `<b>${esc(a.name)}</b>: ${esc(a.desc)}`;
-            for (const o of cards) { const on = o.dataset.id === pick; o.classList.toggle('gold', on); o.setAttribute('aria-pressed', String(on)); }
-            ok.disabled = false;
-            // da tastiera o pulsante A (clic senza puntatore) si passa subito a OK: un altro A conferma
-            if (ev.detail === 0) ok.focus();
-          });
-          grid.appendChild(c);
-          cards.push(c);
-        }
-        body.appendChild(grid);
-      }
-      if (compact) body.appendChild(detail);
-      const ok = button('OK', () => { if (pick) close(pick); }, 'primary');
-      ok.disabled = true;
-      setTimeout(() => cards[0]?.focus(), 40);
-    }, { closable: false, wide: true });
-    if (id) return id;
-  }
-}
-
 async function startTrack(track: Track, w: WorldApi) {
   S.track = track;
   S.mixedClasses = [];
@@ -182,12 +157,10 @@ async function startTrack(track: Track, w: WorldApi) {
   await say([T`Hai scelto il ${TRACK_LABEL[track]}!`], T('Prof. Saldi'));
   await say([T('Ah, eccola. La Dott.ssa Ratio è passata per aprirti il conto.')], T('Prof. Saldi'));
   const linked = await openGameAccount();
-  const starter = await chooseStarter(classesOf(track));
   S.flags.starter = true;
-  S.flags.starterAsset = starter;
-  card(starter);
-  await say([T`La scheda di ${ASSET_BY_ID[starter].name} è entrata nel tuo Album dell'investitore.`], T('Prof. Saldi'));
+  // senza conto non c'è niente da comprare: la vetrina si apre più tardi, in Banca, dopo il collegamento (ensureStarter)
   if (linked) {
+    await takeStarter(await chooseStarter(classesOf(track)), T('Prof. Saldi'));
     const D = DIFFICULTY[S.difficulty];
     await say([T('Apriamo la Valigetta con il primo acquisto, così vedi come funziona un ordine vero.'), T`Il minimo per aprirla è ${fmtMoney(capital() * RATE * (1 - D.tolerance))}. Se la Borsa è chiusa l'ordine parte lo stesso e si esegue all'apertura.`], T('Dott.ssa Ratio'));
     if (await trade(true)) { await say(T('Valigetta aperta: il tuo primo titolo vero è nel conto, o in coda per l\'apertura dei mercati.'), T('Dott.ssa Ratio')); }
