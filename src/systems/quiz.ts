@@ -2,10 +2,11 @@ import type { Difficulty, Question, QuizTopic } from '../types';
 import { QUESTIONS, OPEN_QUESTIONS, byTopic, mentorTopics, caveQuestions, ACADEMY_TOPICS } from '../data/quiz/build';
 import { LESSONS } from '../data/lessons';
 import { BOOKS } from '../data/books';
-import { generate, templatesFor, isGenerated } from '../data/quiz/generated';
+import { generate, templatesFor, isGenerated, GEN_PREFIX } from '../data/quiz/generated';
 import { ASSET_BY_ID } from '../data/assets';
 import { S } from './state';
 import { hashString, mulberry32, shuffle } from './rng';
+import { MOM_QUESTIONS, twinOf } from '../data/quiz/mom';
 
 /**
  * Difficoltà delle domande lungo la storia.
@@ -110,6 +111,9 @@ export interface PickOpts {
   noGenerated?: boolean;
 }
 
+/** Modelli di domande generate già usati in questa sessione: il prossimo sfidante ne sceglie un altro. */
+const genUsed: Record<string, number> = {};
+
 /** Quante domande del duello sono generate con numeri nuovi: una ogni tre (3 → 1, 8 → 2, 12 → 4). */
 export function generatedCount(n: number): number { return Math.floor(n / ((S?.ngPlus ?? 0) > 0 ? 2 : 3)); }
 
@@ -125,8 +129,10 @@ function withGenerated(out: Question[], topics: QuizTopic[], target: number, rng
   // solo modelli dello stesso livello delle domande scelte: ogni generata sostituisce una statica di pari livello,
   // così la media di difficoltà del duello non cambia
   const levels = new Set(out.map((q) => q.diff));
+  // i modelli già usati da altri sfidanti vanno in fondo: la stessa situazione con numeri diversi resta la stessa domanda
+  const used = (id: string) => (shared ? 0 : genUsed[`${GEN_PREFIX}${id}`] ?? 0);
   const cands = shuffle(templatesFor(topics, target).filter((c) => levels.has(c.t.diff)), rng)
-    .sort((a, b) => Math.abs(a.t.diff - target) - Math.abs(b.t.diff - target));
+    .sort((a, b) => used(a.t.id) - used(b.t.id) || Math.abs(a.t.diff - target) - Math.abs(b.t.diff - target));
   const keep = [...out];
   const gen: Question[] = [];
   for (const c of cands) {
@@ -145,9 +151,25 @@ function withGenerated(out: Question[], topics: QuizTopic[], target: number, rng
 export const SHARED_TOPICS: QuizTopic[] = ['rischio', 'ordini', 'diversificazione', 'costi', 'bias', 'gestione', 'macro', 'regole'];
 
 /** Ordina per priorità: prima le domande da ripassare (se richiesto), poi quelle viste meno spesso. */
+/** Quante volte il giocatore ha già incontrato la domanda (o la sua gemella, che chiede la stessa cosa). */
+export function timesSeen(id: string): number {
+  const tw = twinOf(id);
+  return Math.max(S.answered[id] ?? 0, tw ? S.answered[tw] ?? 0 : 0);
+}
+
+/** Toglie le domande che ripetono (anche come gemelle) una già presente: ogni duello ha domande e risposte diverse. */
+function distinct(list: Question[]): Question[] {
+  const ids = new Set<string>();
+  return list.filter((q) => {
+    if (ids.has(q.id) || ids.has(twinOf(q.id) ?? '')) return false;
+    ids.add(q.id);
+    return true;
+  });
+}
+
 function prioritized(pool: Question[], rng: () => number, preferReview: boolean, shared = false): Question[] {
   if (shared) return shuffle([...pool].sort((a, b) => (a.id < b.id ? -1 : 1)), rng);
-  const seen = (q: Question) => S.answered[q.id] ?? 0;
+  const seen = (q: Question) => timesSeen(q.id);
   const review = preferReview ? shuffle(pool.filter((q) => isDue(q.id)), rng) : [];
   const rest = shuffle(pool.filter((q) => !review.includes(q)), rng).sort((a, b) => seen(a) - seen(b));
   return [...review, ...rest];
@@ -164,8 +186,8 @@ export function pickQuestions(topics: QuizTopic[], n: number, opts: PickOpts = {
   if (opts.shared) return shuffle(withGenerated(prioritized(pool, rng, false, true).slice(0, n), topics, mid, rng, true), rng);
   const review = opts.preferReview ? shuffle(pool.filter((q) => isDue(q.id)), rng) : [];
   // preferisci le domande mai viste o viste meno spesso
-  const rest = shuffle(pool.filter((q) => !review.includes(q)), rng).sort((a, b) => (S.answered[a.id] ?? 0) - (S.answered[b.id] ?? 0));
-  const out = [...review.slice(0, Math.ceil(n / 2)), ...rest].slice(0, n);
+  const rest = shuffle(pool.filter((q) => !review.includes(q)), rng).sort((a, b) => timesSeen(a.id) - timesSeen(b.id));
+  const out = distinct([...review.slice(0, Math.ceil(n / 2)), ...rest]).slice(0, n);
   return shuffle(opts.noGenerated ? out : withGenerated(out, topics, mid, rng, false), rng);
 }
 
@@ -175,14 +197,29 @@ export function pickQuestions(topics: QuizTopic[], n: number, opts: PickOpts = {
  * e solo se gli argomenti non bastano prende domande di altri argomenti.
  */
 function pickByTarget(topics: QuizTopic[], n: number, target: number, rng: () => number, preferReview: boolean, shared = false, noGenerated = false): Question[] {
-  const pool = topics.flatMap((t) => byTopic(t));
+  const pool = distinct(topics.flatMap((t) => byTopic(t)));
   const out: Question[] = [];
-  for (const [level, k] of diffMix(n, target)) out.push(...prioritized(pool.filter((q) => q.diff === level), rng, preferReview, shared).slice(0, k));
-  const closest = (list: Question[]) => prioritized(list.filter((q) => !out.includes(q)), rng, preferReview, shared)
-    .sort((a, b) => Math.abs(a.diff - target) - Math.abs(b.diff - target) || a.diff - b.diff);
-  if (out.length < n) out.push(...closest(pool).slice(0, n - out.length));
-  if (out.length < n) out.push(...closest(OPEN_QUESTIONS).slice(0, n - out.length));
+  const free = (q: Question) => !out.includes(q) && !out.some((o) => twinOf(o.id) === q.id);
+  // ogni sfidante fa domande nuove: finché ce ne sono mai viste, si prendono quelle (anche di un livello vicino)
+  // prima di ripeterne una già fatta da un altro sfidante. Il ripasso degli errori resta alla Banca.
+  const fresh = !preferReview && !shared;
+  const unseen = (q: Question) => !fresh || timesSeen(q.id) === 0;
+  for (const [level, k] of diffMix(n, target)) out.push(...prioritized(pool.filter((q) => q.diff === level && unseen(q) && free(q)), rng, preferReview, shared).slice(0, k));
+  const closest = (list: Question[]) => prioritized(list.filter(free), rng, preferReview, shared)
+    .sort((a, b) => (fresh ? timesSeen(a.id) - timesSeen(b.id) : 0) || Math.abs(a.diff - target) - Math.abs(b.diff - target) || a.diff - b.diff);
+  const fill = (list: Question[]) => { for (const q of closest(list)) { if (out.length >= n) break; if (free(q)) out.push(q); } };
+  if (out.length < n) fill(pool);
+  if (out.length < n) fill(OPEN_QUESTIONS);
   return shuffle(noGenerated ? out : withGenerated(out, topics, target, rng, shared), rng);
+}
+
+/**
+ * Domande sulle nozioni della Mamma, per i posti senza Biblioteca (Laboratorio, Percorso 1 prima di Ponte Cedola):
+ * prima quelle mai viste, niente domande generate.
+ */
+export function pickMomQuestions(n: number, rng: () => number = Math.random): Question[] {
+  const pool = QUESTIONS.filter((q) => q.id in MOM_QUESTIONS);
+  return shuffle(shuffle(pool, rng).sort((a, b) => timesSeen(a.id) - timesSeen(b.id)).slice(0, n), rng);
 }
 
 /**
@@ -247,7 +284,8 @@ export function isDue(id: string, today = todayKey()): boolean {
 /** Registra la risposta e fissa la prossima scadenza del ripasso. */
 export function recordAnswer(q: Question, correct: boolean) {
   // le domande generate cambiano numeri ogni volta: danno Conoscenza ma non entrano nel ripasso
-  if (isGenerated(q.id)) { if (correct) S.stats.xp += q.diff * 5; return; }
+  // si conta solo quante volte è uscito il modello, così il prossimo sfidante ne sceglie un altro
+  if (isGenerated(q.id)) { genUsed[q.id] = (genUsed[q.id] ?? 0) + 1; if (correct) S.stats.xp += q.diff * 5; return; }
   S.answered[q.id] = (S.answered[q.id] ?? 0) + 1;
   const box = S.review[q.id] ?? 0;
   const today = todayKey();

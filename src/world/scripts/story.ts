@@ -11,8 +11,8 @@ import { hasPrices } from '../../systems/realdata';
 import { caseOpen, releasedFrac } from '../../systems/account';
 import { fmtMoney } from '../../systems/portfolio';
 import { DIFFICULTY, RATE } from '../../systems/balance';
-import { pickQuestions, targetDiff, storyStage, studiedTopics } from '../../systems/quiz';
-import { trackTopics } from '../../data/quiz/build';
+import { pickQuestions, pickMomQuestions, targetDiff, storyStage, studiedTopics } from '../../systems/quiz';
+import { localTopics, momPlace } from '../studyplace';
 import { antagonist, mentor } from '../../data/story';
 import { DUEL, REWARD } from '../../systems/balance';
 import { ASSETS, ASSET_BY_ID, starterOptions, classesOf, SECTOR_LABEL, CLASS_LABEL } from '../../data/assets';
@@ -51,8 +51,9 @@ const BASICS = (): { label: string; lines: string[] }[] => [
   ] },
   { label: T('Azioni ed ETF'), lines: [
     T('Un\'azione è un pezzetto di proprietà di un\'azienda, e il suo prezzo lo fanno domanda e offerta.'),
-    T('Il valore in borsa dell\'azienda intera è la capitalizzazione. Le aziende "growth" reinvestono gli utili per crescere in fretta.'),
+    T('Il valore in borsa dell\'azienda intera è la capitalizzazione: il prezzo di un\'azione moltiplicato per il numero di azioni. Le aziende "growth" reinvestono gli utili per crescere in fretta.'),
     T('Un indice è un paniere di titoli che racconta come va un mercato. Un ETF è un fondo quotato che di solito lo replica, e si scambia in orario di borsa.'),
+    T('Con un solo acquisto un ETF ti dà tanti titoli insieme: diversificazione immediata, di solito a costi bassi. Per esempio un ETF sull\'S&P 500 investe nelle circa 500 grandi aziende di quell\'indice americano.'),
     T('In Europa la sigla UCITS su un fondo vuol dire che segue le regole europee di tutela per chi investe.'),
   ] },
   { label: T('Cripto'), lines: [
@@ -82,7 +83,14 @@ export async function mom() {
   }
   S.stats.fiducia = 100;
   beep('heal');
-  return say([T('Riposati un po\'. Ecco, la tua Fiducia è tornata al massimo.'), T('Tuo nonno diceva sempre: "Il mercato può restare irrazionale più a lungo di quanto tu resti solvibile".')], T('Mamma'));
+  await say([T('Riposati un po\'. Ecco, la tua Fiducia è tornata al massimo.'), T('Tuo nonno diceva sempre: "Il mercato può restare irrazionale più a lungo di quanto tu resti solvibile".')], T('Mamma'));
+  // le nozioni di casa restano da ripassare anche dopo la partenza: è qui che rimandano gli errori fatti con Leo e sul Percorso 1
+  const basics = BASICS();
+  for (;;) {
+    const c = await choose([...basics.map((b) => b.label), T('Grazie, mamma')], { cancel: true, prompt: T('Vuoi ripassare qualcosa di quello che ti ho spiegato?'), who: T('Mamma') });
+    if (c < 0 || c >= basics.length) return;
+    await say(basics[c].lines, T('Mamma'));
+  }
 }
 
 // ---------------- Prologo ----------------
@@ -235,9 +243,9 @@ export async function rival(n: NpcDef, w: WorldApi) {
 
 async function rivalDuel(k: number, w: WorldApi) {
   if (k === 1) return rivalTutorial(w);
-  const topics = studiedTopics();
+  // il rivale chiede ciò che la Biblioteca della città in cui vi sfidate spiega, e mai le domande di un altro sfidante
   const P = DUEL.rival;
-  const qs = pickQuestions(topics, P.n, { target: targetDiff(storyStage()), preferReview: true });
+  const qs = momPlace() ? pickMomQuestions(P.n) : pickQuestions(localTopics(studiedTopics()), P.n, { target: targetDiff(storyStage()) });
   const r = await runDuel({ foeName: S.rival, foeTitle: T('Rivale'), foePal: PAL.RIVAL, questions: qs, ...P, arena: 'tetto' });
   if (!r.win) { await say([T('Ah! Te l\'avevo detto.'), T('Ripassa un po\' e riprova.')], S.rival); return defeatRespawn(w); }
   reward({ defeated: `rival_${k}`, rep: REWARD.rep.rival, save: false });
@@ -255,7 +263,8 @@ async function rivalDuel(k: number, w: WorldApi) {
 async function rivalTutorial(w: WorldApi) {
   await say([T('Questa è una sfida di prova: serve a vedere come funzionano i duelli.'), T('Scegli una risposta e conferma. Giusta o sbagliata, dopo ogni risposta leggi la spiegazione: qui non perdi niente e alla fine prosegui comunque.')], T('Prof. Saldi'));
   const P = DUEL.rivalFirst;
-  const qs = pickQuestions(trackTopics(S.track, S.mixedClasses, S.badges), P.n, { target: targetDiff(0) });
+  // nel Laboratorio non c'è una Biblioteca: Leo chiede solo ciò che ti ha spiegato la Mamma prima di partire
+  const qs = pickMomQuestions(P.n);
   const prevFid = S.stats.fiducia;
   const r = await runDuel({ foeName: S.rival, foeTitle: T('Rivale · sfida di prova'), foePal: PAL.RIVAL, questions: qs, ...P, tutorial: true, arena: 'tetto' });
   S.stats.fiducia = prevFid;

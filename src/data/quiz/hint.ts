@@ -10,6 +10,8 @@ import { S } from '../../systems/state';
 import { CAVES } from '../../world/caves';
 import { BOOK_BY_ID } from '../books';
 import { T } from '../../i18n';
+import { studyTown, libraryTopics, shelfLabel } from '../../world/studyplace';
+import { MOM_QUESTIONS, MOM_GROUPS } from './mom';
 
 /** Città la cui Biblioteca ha l'argomento tra i suoi temi (1..8), oppure undefined per gli argomenti di Wall Street. */
 export function townForTopic(topic: QuizTopic): string | undefined {
@@ -26,11 +28,17 @@ export function studyHint(q: Question): string {
   }
   // il piccolo argomento, e la pagina, che spiegano proprio questa domanda: dopo un errore la risposta non si vede,
   // quindi il rimando deve portare dritto al punto da rileggere
+  // dove non c'è ancora una Biblioteca (Borgo Semina, Percorso 1 prima di Ponte Cedola) la spiegazione è della Mamma
+  const here = studyTown();
+  const mom = MOM_QUESTIONS[q.id];
+  if (here === 0 && mom !== undefined) return T`📖 Te l'ha spiegato la Mamma prima di partire, nelle nozioni «${MOM_GROUPS()[mom]}»: a casa chiedile di ripassarle.`;
   const bp = bookPageFor(q);
   if (bp) {
-    const town = townForTopic(q.topic);
     const page = bp.book.pages.length > 1 ? T`, pagina ${bp.page + 1}` : '';
     if (ACADEMY_TOPICS.includes(q.topic)) return T`📖 Rileggi «${bp.book.title}»${page}, all'Accademia di Wall Street (scaffale ${TOPIC_LABEL[q.topic]}).`;
+    // la Biblioteca della città in cui ti trovi, con lo scaffale giusto; altrimenti quella della città del tema
+    if (here && libraryTopics(here).includes(q.topic)) return T`📖 Rileggi «${bp.book.title}»${page} nella Biblioteca di ${TOWNS[here].name}, scaffale «${shelfLabel(here, q.topic)}» (${TOPIC_LABEL[q.topic]}).`;
+    const town = townForTopic(q.topic);
     return T`📖 Rileggi «${bp.book.title}»${page}${town ? T` nella Biblioteca di ${town}` : T(' in Biblioteca')} (scaffale ${TOPIC_LABEL[q.topic]}).`;
   }
   const src = sourceLabel(q.source);

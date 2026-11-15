@@ -1019,5 +1019,7 @@
  "Avere più operazioni vincenti di quelle perdenti": "Have more winning trades than losing ones",
  "Con un rischio fisso e piccolo per operazione anche una lunga serie negativa lascia il conto in piedi, e le decisioni restano lucide.": "With a small, fixed risk per trade, even a long losing streak leaves the account standing, and decisions stay clear-headed.",
  "senza costi: {0}": "without costs: {0}",
- "con i costi: {0}": "with costs: {0}"
+ "con i costi: {0}": "with costs: {0}",
+ "📖 Te l'ha spiegato la Mamma prima di partire, nelle nozioni «{0}»: a casa chiedile di ripassarle.": "📖 Mom explained it before you left, in the notions «{0}»: at home, ask her to go over them again.",
+ "📖 Rileggi «{0}»{1} nella Biblioteca di {2}, scaffale «{3}» ({4}).": "📖 Reread «{0}»{1} in the {2} Library, shelf «{3}» ({4})."
 }

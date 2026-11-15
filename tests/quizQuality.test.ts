@@ -120,6 +120,8 @@ describe('domande generate con numeri nuovi', () => {
 
   it('dopo un errore il suggerimento rimanda a un libro della Biblioteca o a una fonte', () => {
     const withBook = QUESTIONS.find((q) => q.topic === 'rischio')!;
+    // dentro Ponte Cedola: nel Laboratorio e a casa il rimando è alle nozioni della Mamma (tests/domande-citta.test.ts)
+    S.map = 'library_1';
     expect(studyHint(withBook)).toContain('Rileggi');
     expect(studyHint(withBook)).toContain('Ponte Cedola');
     const league = QUESTIONS.find((q) => q.topic === 'macro')!;

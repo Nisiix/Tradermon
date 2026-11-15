@@ -6,7 +6,7 @@ import { say, choose, modal } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { runSim } from '../../ui/timemachine';
 import { runPick } from '../../ui/pick';
-import { pickQuestions, pickCaveQuestions, studiedTopics, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE, endgameDiff, MAX_DIFF } from '../../systems/quiz';
+import { pickMomQuestions, pickQuestions, pickCaveQuestions, studiedTopics, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE, endgameDiff, MAX_DIFF } from '../../systems/quiz';
 import { mentorTopics, trackTopics, LEAGUE_TOPICS } from '../../data/quiz/build';
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../../data/story';
 import { mentorBooks, booksFor, TOPIC_LABEL, BOOK_BY_ID } from '../../data/books';
@@ -40,19 +40,21 @@ import type { Arena } from '../../ui/arena';
 import type { Question, QuizTopic } from '../../types';
 import { T, listJoin } from '../../i18n';
 import { playMinigame } from '../../ui/minigames';
+import { localTopics, momPlace } from '../studyplace';
 
 export async function trainer(n: NpcDef, w: WorldApi) {
   // una sfida sola: battuto, l'investitore non ti viene più incontro e ti parla solo del posto in cui siete
   if (S.defeated.includes(n.id)) return placeTalk(n.name, T('La nostra sfida l\'abbiamo già fatta.'));
   await say(n.lines ?? [T('Sfida!')], n.name);
-  // lungo la strada si chiede solo ciò che è già stato spiegato: Whale battute e argomenti già aperti in Biblioteca
-  const topics = studiedTopics();
+  // lungo la strada si chiede solo ciò che è già stato spiegato: Whale battute e argomenti già aperti in Biblioteca,
+  // e solo tra quelli che la Biblioteca di questa città spiega (prima di Ponte Cedola, le nozioni della Mamma)
+  const topics = localTopics(studiedTopics());
   const target = targetDiff(routeStage(n));
   // in grotta gli sfidanti chiedono le cose della grotta, e prima di tutto quelle che non hai ancora visto
   const cave = caveOf(S.map);
   // sfidanti della grotta ancora da battere (questo compreso): le domande mai viste si dividono tra loro
   const left = cave ? CAVES[cave].maps.flatMap((m) => getMap(m).npcs).filter((x) => x.kind === 'trainer' && !S.defeated.includes(x.id)).length : 1;
-  const qs = cave ? pickCaveQuestions(CAVES[cave].quiz, DUEL.trainer.n, target, topics, Math.random, left) : pickQuestions(topics, DUEL.trainer.n, { preferReview: true, target });
+  const qs = cave ? pickCaveQuestions(CAVES[cave].quiz, DUEL.trainer.n, target, topics, Math.random, left) : momPlace() ? pickMomQuestions(DUEL.trainer.n) : pickQuestions(topics, DUEL.trainer.n, { target });
   const r = await runDuel({ foeName: n.name, foeTitle: cave ? CAVES[cave].name : undefined, foePal: n.pal, questions: qs, ...DUEL.trainer, ...(cave ? { arena: 'grotta' as const } : {}) });
   await afterDuel(r.win, n.id, REWARD.rep.trainer, w, n.name, cave ? pick(CAVE_TIPS[cave]) : undefined);
 }
@@ -106,7 +108,7 @@ export async function speculator(n: NpcDef, w: WorldApi) {
   }
   await scamLesson();
   if (c !== 2) await say(T('Grr! Allora vediamo se sai anche rispondere!'), T('Speculatore'));
-  const qs = pickQuestions(studiedTopics(), DUEL.speculator.n, { target: targetDiff(routeStage(n)) });
+  const qs = momPlace() ? pickMomQuestions(DUEL.speculator.n) : pickQuestions(localTopics(studiedTopics()), DUEL.speculator.n, { target: targetDiff(routeStage(n)) });
   const r = await runDuel({ foeName: T('Speculatore'), foeTitle: ant.name, foePal: PAL.SPEC, questions: qs, ...DUEL.speculator, arena: 'fossa' });
   await afterDuel(r.win, n.id, REWARD.rep.speculator, w, T('Speculatore'));
 }
@@ -534,7 +536,7 @@ export async function hermit(n: NpcDef) {
   if (!h) return say('...', who);
   if (S.flags[`islet_${key}`]) return say(h.again, who);
   await say(h.intro, who);
-  const qs = pickQuestions(studiedTopics(), 5, { target: targetDiff(Math.max(3, storyStage()) + 2) });
+  const qs = pickQuestions(localTopics(studiedTopics()), 5, { target: targetDiff(Math.max(3, storyStage()) + 2) });
   return hermitDuel(key, who, n.pal, qs);
 }
 
