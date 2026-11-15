@@ -16,7 +16,7 @@ import { say, choose, modal, toast, esc } from './core';
 import { ASSET_BY_ID } from '../data/assets';
 import { runDuel } from './battle';
 import { keysForm, offerRelay, unlinkPaper, backToDirect, restoreKeys, PAPER_ONLY } from './alpaca';
-import { T } from '../i18n';
+import { T, listJoin } from '../i18n';
 
 const NURSE = T('Dott.ssa Ratio');
 const pctTxt = (x: number) => (x * 100).toFixed(2).replace('.', ',').replace(/,?0+$/, '') + '%';
@@ -140,7 +140,7 @@ export function nextSealLine(): string {
   const miss: string[] = [];
   if (S.badges < m) miss.push(T`l'Attestato della Whale ${m}`);
   if (S.exDone < m + 1) miss.push(S.exDone < m ? T`le Prove sul conto fino alla tappa ${m}` : T`la Prova sul conto della tappa ${m}`);
-  return miss.length ? T`Per il Sigillo ${m} ${miss.length > 1 ? T('mancano') : T('manca')}: ${miss.join(T(' e '))}.` : T`Il Sigillo ${m} è pronto.`;
+  return miss.length ? T`Per il Sigillo ${m} ${miss.length > 1 ? T('mancano') : T('manca')}: ${listJoin(miss)}.` : T`Il Sigillo ${m} è pronto.`;
 }
 
 export function stageHtml(): string {

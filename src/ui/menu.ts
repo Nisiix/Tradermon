@@ -5,6 +5,7 @@ import { choose, modal, esc, say, el, toast, bar } from './core';
 import { ASSETS, SECTOR_LABEL, SECTOR_COLOR, classesOf } from '../data/assets';
 import { LESSONS, lessonsFor } from '../data/lessons';
 import { trackTopics } from '../data/quiz/build';
+import { booksFor } from '../data/books';
 import { BIAS_INFO } from '../data/events';
 import { mentor, TOWNS } from '../data/story';
 import { checkupHtml } from './clinic';
@@ -75,7 +76,11 @@ export async function openInvestidex() {
     const assets = ASSETS.filter((a) => cls.includes(a.cls));
     const unlocked = assets.filter((a) => S.cards[a.id]).length;
     const concepts = LESSONS.filter((l) => S.lessonsRead.includes(l.id)).length;
-    body.innerHTML = T`<p>Asset: <b>${unlocked}/${assets.length}</b> · Concetti: <b>${concepts}/${lessonsFor(trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole'])).length}</b> · Bias incontrati: <b>${S.biasSeen.length}/4</b> · Lezioni degli abitanti: <b>${S.tipsHeard.length}/${ALL_RESIDENTS.length}</b> · Padronanza quiz: <b>${Math.round(mastery() * 100)}%</b></p>`;
+    // i libri delle Biblioteche sono il materiale di studio principale: si contano insieme alle lezioni
+    const studyTopics = trackTopics(S.track, S.mixedClasses, 8).concat(['macro', 'analisi', 'regole'] as QuizTopic[]);
+    const books = booksFor(studyTopics);
+    const booksDone = books.filter((b) => S.booksRead.includes(b.id)).length;
+    body.innerHTML = T`<p>Asset: <b>${unlocked}/${assets.length}</b> · Lezioni: <b>${concepts}/${lessonsFor(studyTopics).length}</b> · Libri letti: <b>${booksDone}/${books.length}</b> · Bias incontrati: <b>${S.biasSeen.length}/4</b> · Lezioni degli abitanti: <b>${S.tipsHeard.length}/${ALL_RESIDENTS.length}</b> · Padronanza quiz: <b>${Math.round(mastery() * 100)}%</b></p>`;
     const grid = el('div', 'cards');
     for (const a of assets) {
       const c = S.cards[a.id];

@@ -15,7 +15,7 @@ export async function disclaimer(): Promise<void> {
   await modal(T('Prima di iniziare'), ({ body, button, close }) => {
     body.innerHTML = T`
       <p><b>Tradermon è un gioco educativo.</b> Non fornisce consulenza finanziaria né raccomandazioni personalizzate.</p>
-      <p>Il mondo e i personaggi di Capitalia sono di fantasia. <b>Titoli, prezzi e grafici sono reali</b>: arrivano da Alpaca, un broker, attraverso un conto Paper gratuito (denaro finto) che colleghi tu. I titoli in vetrina sono scelti per insegnare, non per consigliarti. I quiz citano fonti pubbliche di educazione finanziaria (SEC Investor.gov, Investopedia, Consob, Banca d'Italia, CFA Institute, ESMA).</p>
+      <p>Il mondo e i personaggi di Capitalia sono di fantasia. <b>Titoli, prezzi e grafici sono reali</b>: arrivano da Alpaca, un broker, attraverso un conto Paper gratuito (denaro finto) che colleghi tu. I titoli in vetrina sono scelti per insegnare, non per consigliarti. Domande e libri si basano su fonti pubbliche di educazione finanziaria (SEC Investor.gov, Investopedia, Consob, Banca d'Italia, CFA Institute, ESMA), elencate in Opzioni, «Crediti e fonti».</p>
       <p><b>È un gioco per imparare:</b> usa esclusivamente il conto Paper di Alpaca e non usa mai soldi reali. Senza conto collegato resta il percorso di studio. Fuori dal gioco, investire denaro vero comporta il rischio di perderlo.</p>
       <label><input type="checkbox" class="ck"> <span>Ho capito: è un gioco educativo, con denaro finto, e non è consulenza.</span></label>`;
     const b = button(T('Inizia'), () => close(), 'primary');

@@ -188,9 +188,11 @@ export async function runDuel(o: DuelOpts): Promise<DuelResult> {
         if (risky) S.stats.fiducia = lifeShown(life);
         drawMe();
         setTimeout(() => { root.querySelectorAll('.shake').forEach((e) => e.classList.remove('shake')); }, 350);
-        const verdict = i < 0 ? T('<b class="bad">Tempo scaduto!</b>') : ok ? T('<b class="good">Giusto!</b>') : T`<b class="bad">Sbagliato.</b> Risposta corretta: ${esc(gtext(q.options[q.answer]))}`;
+        // anche a tempo scaduto si mostra la risposta giusta; la spiegazione va a capo, così non si attacca alla risposta
+        const right = T`Risposta corretta: ${esc(gtext(q.options[q.answer]))}.`;
+        const verdict = i < 0 ? T`<b class="bad">Tempo scaduto!</b> ${right}` : ok ? T('<b class="good">Giusto!</b>') : T`<b class="bad">Sbagliato.</b> ${right}`;
         const hint = ok ? '' : studyHint(q);
-        $('.exp').innerHTML = `<p>${verdict} ${esc(gtext(q.explain))}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
+        $('.exp').innerHTML = `<p>${verdict}</p><p>${esc(gtext(q.explain))}</p>${hint ? `<p class="hint">${esc(hint)}</p>` : ''}`;
         const cont = el('button', 'btn primary', T('Continua ▶'));
         cont.style.marginTop = '6px';
         $('.exp').appendChild(cont);

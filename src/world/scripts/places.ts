@@ -21,7 +21,7 @@ import { playMinigame } from '../../ui/minigames';
 import { reward, type WorldApi } from './common';
 import { linkDuel, missionDesk } from './duels';
 import { tick } from '../../systems/account';
-import { T } from '../../i18n';
+import { T, listJoin } from '../../i18n';
 
 export async function librarian(n: NpcDef) {
   const town = Number(n.data?.town ?? 0);
@@ -29,7 +29,7 @@ export async function librarian(n: NpcDef) {
     S.flags[`lib_intro_${town}`] = true;
     await say([
       T('Benvenut{o|a} in Biblioteca! Qui si studia: ogni libro spiega un piccolo argomento, in poche pagine.'),
-      T`In alto a sinistra ci sono i temi di ${TOWNS[town]?.name ?? T('questa città')}: ${cityTopics(town).map((t) => `«${TOPIC_LABEL[t]}»`).join(T(' e '))}. Sono gli argomenti di cui si discute qui, dentro e fuori dall'Exchange.`,
+      T`In alto a sinistra ci sono i temi di ${TOWNS[town]?.name ?? T('questa città')}: ${listJoin(cityTopics(town).map((t) => `«${TOPIC_LABEL[t]}»`))}. Sono gli argomenti di cui si discute qui, dentro e fuori dall'Exchange.`,
       T('A destra i temi delle città che hai già attraversato: lungo i Percorsi tornano spesso. In basso le regole contro le truffe e, a destra, macroeconomia e analisi.'),
       T('Avvicinati a uno scaffale e premi il tasto di conferma.'),
     ], T('Bibliotecaria'));

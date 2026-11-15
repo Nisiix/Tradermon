@@ -25,7 +25,7 @@ import { tradingDaysBetween } from './market';
 import { hashString } from './rng';
 import { toast } from '../ui/core';
 import { clampStat } from './state';
-import { T } from '../i18n';
+import { T, listJoin } from '../i18n';
 
 const ENV: A.Env = 'paper';
 
@@ -240,7 +240,7 @@ function passIgnored(k: number): string {
   S.exTools = { limit: false, stop: false };
   finishStage();
   const seals = grantSeals();
-  return T`Hai attivato "Prosegui anche se la Prova va male": l'esito negativo viene ignorato, la Prova ${stageName(k)} conta come superata e puoi proseguire.${seals.length ? T` Sigillo pratico ${seals.join(T(' e '))} ottenuto.` : ''} ${IGNORE_WARNING}`;
+  return T`Hai attivato "Prosegui anche se la Prova va male": l'esito negativo viene ignorato, la Prova ${stageName(k)} conta come superata e puoi proseguire.${seals.length ? T` Sigillo pratico ${listJoin(seals)} ottenuto.` : ''} ${IGNORE_WARNING}`;
 }
 
 /**
@@ -287,7 +287,7 @@ function closeExercises(): string {
   }
   if (msg) finishStage();
   const seals = grantSeals();
-  if (seals.length) msg += T` Sigillo pratico ${seals.join(T(' e '))} ottenuto: l'Attestato è completo!`;
+  if (seals.length) msg += T` Sigillo pratico ${listJoin(seals)} ottenuto: l'Attestato è completo!`;
   return msg;
 }
 
@@ -308,7 +308,7 @@ export function grantSeals(): number[] {
     if (S.badges < m || S.exDone < m + 1 || S.flags.bankrupt) break;
     S.seals = m;
     got.push(m);
-    // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (missione dalla Whale o esercizio in Banca),
+    // il premio è lo stesso qualunque sia l'ultimo pezzo arrivato (Prova sul conto, da qualsiasi Banca),
     // e si riceve una volta sola anche se il Sigillo viene sospeso e poi ripreso
     if (m > Number(S.flags.sealPaid ?? 0)) {
       S.flags.sealPaid = m;

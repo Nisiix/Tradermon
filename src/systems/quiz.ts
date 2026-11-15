@@ -110,7 +110,7 @@ export function generatedCount(n: number): number { return Math.floor(n / ((S?.n
 
 /**
  * Sostituisce una domanda ogni tre con una generata sugli stessi argomenti e alla stessa difficoltà:
- * chi ha imparato le risposte a memoria deve comunque rifare il calcolo. Le sfide condivise usano il seme,
+ * chi ha imparato le risposte a memoria deve comunque rileggere lo scenario (nessun calcolo: vedi generated.ts). Le sfide condivise usano il seme,
  * quindi tutti i partecipanti ricevono gli stessi numeri.
  */
 function withGenerated(out: Question[], topics: QuizTopic[], target: number, rng: () => number, shared: boolean): Question[] {
