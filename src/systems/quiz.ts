@@ -129,10 +129,10 @@ function withGenerated(out: Question[], topics: QuizTopic[], target: number, rng
   // solo modelli dello stesso livello delle domande scelte: ogni generata sostituisce una statica di pari livello,
   // così la media di difficoltà del duello non cambia
   const levels = new Set(out.map((q) => q.diff));
-  // i modelli già usati da altri sfidanti vanno in fondo: la stessa situazione con numeri diversi resta la stessa domanda
+  // un modello già usato da un altro sfidante non torna: la stessa situazione con numeri diversi resta la stessa domanda
   const used = (id: string) => (shared ? 0 : genUsed[`${GEN_PREFIX}${id}`] ?? 0);
-  const cands = shuffle(templatesFor(topics, target).filter((c) => levels.has(c.t.diff)), rng)
-    .sort((a, b) => used(a.t.id) - used(b.t.id) || Math.abs(a.t.diff - target) - Math.abs(b.t.diff - target));
+  const cands = shuffle(templatesFor(topics, target).filter((c) => levels.has(c.t.diff) && (shared || !used(c.t.id))), rng)
+    .sort((a, b) => Math.abs(a.t.diff - target) - Math.abs(b.t.diff - target));
   const keep = [...out];
   const gen: Question[] = [];
   for (const c of cands) {

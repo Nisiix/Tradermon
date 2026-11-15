@@ -126,4 +126,16 @@ describe('domande coerenti con il posto e uniche per sfidante', () => {
     const texts = QUESTIONS.map((q) => norm(q.q));
     expect(new Set(texts).size).toBe(texts.length);
   });
+
+  it('Sentiero Cripto: Leo, Percorso 1, allievi e Whale di Ponte Cedola senza una domanda ripetuta', () => {
+    S.track = 'crypto';
+    const seen = new Set<string>();
+    const ask = (qs: { id: string }[]) => { for (const q of qs) { expect(seen.has(q.id), q.id).toBe(false); seen.add(q.id); recordAnswer(q as never, true); } };
+    S.map = 'lab'; ask(pickMomQuestions(5, mulberry32(1)));
+    S.map = 'r1'; ask(pickMomQuestions(3, mulberry32(2))); ask(pickMomQuestions(3, mulberry32(3)));
+    S.visited.push('t1'); S.map = 'academy_1';
+    for (const [i, n] of [4, 4, 8].entries()) ask(pickQuestions(mentorTopics(1, 'crypto', []), n, { target: targetDiff(0), rng: mulberry32(10 + i), noGenerated: true }));
+    // le cripto della prima città spiegano anche exchange centralizzati e decentralizzati, nodi, hash, layer 2 e fork
+    expect(QUESTIONS.filter((q) => q.topic === 'crypto_base' && q.diff === 1).length).toBeGreaterThanOrEqual(12);
+  });
 });
