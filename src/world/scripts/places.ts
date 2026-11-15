@@ -1,4 +1,5 @@
 // Luoghi: Biblioteche, stazioni, Zona Simulazione, Archivio, casinò, titoli di coda.
+import { cityTopics, RULES_SHELF, ECONOMY_SHELF } from '../studyplace';
 import { type NpcDef } from '../maps';
 import type { AssetClass, AssetDef, QuizTopic, Sector } from '../../types';
 import { S, addRep, card, level } from '../../systems/state';
@@ -43,10 +44,6 @@ export async function librarian(n: NpcDef) {
   if (c === shelves.length) return openLessons();
 }
 
-/** Temi della città n: quelli dell'Exchange e della sua Whale, gli stessi degli sfidanti incontrati fin lì. */
-function cityTopics(n: number): QuizTopic[] {
-  return n ? mentorTopics(n, S.track, S.mixedClasses) : [];
-}
 
 /** Temi delle città prima della n, senza ripetere quelli della città: lungo i Percorsi si ripassa anche questo. */
 function pastTopics(n: number): { topic: QuizTopic; town: number }[] {
@@ -67,9 +64,6 @@ function librarySections(n: number): { kind: Section['kind']; label: string; ope
   ];
 }
 
-/** Scaffali comuni a tutte le Biblioteche: gli stessi temi per ogni percorso. */
-const RULES_SHELF: QuizTopic[] = ['regole', 'personale'];
-const ECONOMY_SHELF: QuizTopic[] = ['macro', 'tassi', 'analisi'];
 
 const storiesRead = () => STORY_BOOKS.filter((b) => S.booksRead.includes(b.id)).length;
 

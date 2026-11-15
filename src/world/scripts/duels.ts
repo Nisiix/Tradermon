@@ -6,7 +6,7 @@ import { say, choose, modal } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { runSim } from '../../ui/timemachine';
 import { runPick } from '../../ui/pick';
-import { pickQuestions, pickCaveQuestions, studiedTopics, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE, endgameDiff, MAX_DIFF } from '../../systems/quiz';
+import { pickMomQuestions, pickQuestions, pickCaveQuestions, studiedTopics, SHARED_TOPICS, dailyQuestion, todayKey, reviewQueue, targetDiff, storyStage, STAGE_LEAGUE, endgameDiff, MAX_DIFF } from '../../systems/quiz';
 import { mentorTopics, trackTopics, LEAGUE_TOPICS } from '../../data/quiz/build';
 import { mentor, LEAGUE, antagonist, TOWNS, TRAINER_TIPS } from '../../data/story';
 import { mentorBooks, booksFor, TOPIC_LABEL, BOOK_BY_ID } from '../../data/books';
@@ -40,19 +40,21 @@ import type { Arena } from '../../ui/arena';
 import type { Question, QuizTopic } from '../../types';
 import { T, listJoin } from '../../i18n';
 import { playMinigame } from '../../ui/minigames';
+import { localTopics, localCity, momPlace } from '../studyplace';
 
 export async function trainer(n: NpcDef, w: WorldApi) {
   // una sfida sola: battuto, l'investitore non ti viene più incontro e ti parla solo del posto in cui siete
   if (S.defeated.includes(n.id)) return placeTalk(n.name, T('La nostra sfida l\'abbiamo già fatta.'));
   await say(n.lines ?? [T('Sfida!')], n.name);
-  // lungo la strada si chiede solo ciò che è già stato spiegato: Whale battute e argomenti già aperti in Biblioteca
-  const topics = studiedTopics();
+  // lungo la strada si chiede solo ciò che è già stato spiegato: Whale battute e argomenti già aperti in Biblioteca,
+  // e solo tra quelli che la Biblioteca di questa città spiega (prima di Ponte Cedola, le nozioni della Mamma)
+  const topics = localTopics(studiedTopics());
   const target = targetDiff(routeStage(n));
   // in grotta gli sfidanti chiedono le cose della grotta, e prima di tutto quelle che non hai ancora visto
   const cave = caveOf(S.map);
   // sfidanti della grotta ancora da battere (questo compreso): le domande mai viste si dividono tra loro
   const left = cave ? CAVES[cave].maps.flatMap((m) => getMap(m).npcs).filter((x) => x.kind === 'trainer' && !S.defeated.includes(x.id)).length : 1;
-  const qs = cave ? pickCaveQuestions(CAVES[cave].quiz, DUEL.trainer.n, target, topics, Math.random, left) : pickQuestions(topics, DUEL.trainer.n, { preferReview: true, target });
+  const qs = cave ? pickCaveQuestions(CAVES[cave].quiz, DUEL.trainer.n, target, topics, Math.random, left) : momPlace() ? pickMomQuestions(DUEL.trainer.n) : pickQuestions(topics, DUEL.trainer.n, { target, city: localCity() });
   const r = await runDuel({ foeName: n.name, foeTitle: cave ? CAVES[cave].name : undefined, foePal: n.pal, questions: qs, ...DUEL.trainer, ...(cave ? { arena: 'grotta' as const } : {}) });
   await afterDuel(r.win, n.id, REWARD.rep.trainer, w, n.name, cave ? pick(CAVE_TIPS[cave]) : undefined);
 }
@@ -85,7 +87,7 @@ export async function speculator(n: NpcDef, w: WorldApi) {
       reward({ defeated: n.id, rep: REWARD.rep.boss }); clampStat('disciplina', 10);
       await say([T('Impossibile... Le scorciatoie non funzionano con te.'), T('Ci ritiriamo. Per ora.')], ant.boss);
     } else await defeatRespawn(w);
-    w.refresh();
+    await w.refresh();
     return;
   }
   const t = pick(TEMPTATIONS);
@@ -106,7 +108,7 @@ export async function speculator(n: NpcDef, w: WorldApi) {
   }
   await scamLesson();
   if (c !== 2) await say(T('Grr! Allora vediamo se sai anche rispondere!'), T('Speculatore'));
-  const qs = pickQuestions(studiedTopics(), DUEL.speculator.n, { target: targetDiff(routeStage(n)) });
+  const qs = momPlace() ? pickMomQuestions(DUEL.speculator.n) : pickQuestions(localTopics(studiedTopics()), DUEL.speculator.n, { target: targetDiff(routeStage(n)), city: localCity() });
   const r = await runDuel({ foeName: T('Speculatore'), foeTitle: ant.name, foePal: PAL.SPEC, questions: qs, ...DUEL.speculator, arena: 'fossa' });
   await afterDuel(r.win, n.id, REWARD.rep.speculator, w, T('Speculatore'));
 }
@@ -121,7 +123,7 @@ export async function student(n: NpcDef, w: WorldApi) {
   if (S.defeated.includes(n.id)) return placeTalk(n.name, S.badges >= m ? T('La nostra sfida l\'abbiamo già fatta.') : T('La nostra sfida l\'abbiamo già fatta. La Whale è là in fondo: buona fortuna!'));
   await say(T('Prima di arrivare alla Whale devi superare me!'), n.name);
   // gli allievi sono un gradino sotto la loro Whale
-  const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.student.n, { target: targetDiff(m - 1) - 0.25 });
+  const qs = pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.student.n, { target: targetDiff(m - 1) - 0.25, city: m });
   const r = await runDuel({ foeName: n.name, foeTitle: T('Allievo dell\'Exchange'), foePal: n.pal, questions: qs, ...DUEL.student, arena: 'aula' });
   tick();
   if (r.win) { reward({ defeated: n.id, rep: REWARD.rep.student }); await say(T('Brav{o|a}! Sei pront{o|a} per la Whale.'), n.name); }
@@ -155,7 +157,7 @@ export async function mentorBattle(m: number, w: WorldApi) {
   const ok = (await choose([T('Sono pront{o|a}!'), T('Non ancora')], { prompt: T('Iniziamo?') })) === 0;
   if (!ok) return;
   // la Whale m si affronta con m − 1 Attestati: dal livello 1 (Whale 1) a quasi 3 (Whale 8)
-  const qs = withPreviousMistakes(`m${m}`, pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentor.n, { target: targetDiff(m - 1) }));
+  const qs = withPreviousMistakes(`m${m}`, pickQuestions(mentorTopics(m, S.track, S.mixedClasses), DUEL.mentor.n, { target: targetDiff(m - 1), city: m }));
   const r = await runDuel({ foeName: md.name, foeTitle: T`Whale ${m}`, foePal: md.palette, questions: qs, ...DUEL.mentor, intro: md.intro, arena: 'sala' });
   tick();
   if (!r.win) { lockRetry(`m${m}`, r.wrong); await say([T('Non ancora. Ripassa e torna: ti aspetto.'), T('Le domande che hai sbagliato torneranno nel prossimo duello.')], md.name); return defeatRespawn(w); }
@@ -184,7 +186,7 @@ async function sealChallenge(m: number, w: WorldApi) {
     if (got.includes(m)) {
       beep('badge'); jingle('badge');
       await say([T`Prova sul conto superata: ecco il Sigillo pratico. La ${md.badge} adesso è completa!`, m === 8 ? T('Con tutti e otto i Sigilli la Guardia di Wall Street ti lascerà passare.') : T`Sigilli pratici: ${S.seals}/8.`], md.name);
-      w.refresh(); save();
+      await w.refresh(); save();
       return;
     }
     if (S.seals >= m) return;
@@ -279,7 +281,7 @@ async function winBadge(m: number, w: WorldApi) {
   if (m === TRANSFER_BADGE) extra.push(T`Nuova abilità: ${ABILITY.transfer.name}. Apri il menu, scegli "Mappa della Regione" e trasferisciti in una città già visitata.`);
   if (m === 8) extra.push(T('Wall Street è oltre il Percorso 9. La Guardia ti fa passare solo se hai tutti e otto i Sigilli pratici. Con l\'ottavo Attestato, se hai superato l\'Esame della Leva, la leva si apre anche sul conto di gioco.'), T('I Superiori di Wall Street interrogano su macroeconomia, analisi e regole: da oggi in ogni Biblioteca trovi la Sezione di Wall Street, con i libri su cui prepararti.'));
   if (extra.length) await say(extra, T('Prof. Saldi (messaggio)'));
-  w.refresh();
+  await w.refresh();
   save();
 }
 
@@ -415,7 +417,7 @@ export async function league(i: number, w: WorldApi) {
     await say(mirror ? [...epilogue(), mirror] : epilogue(), T('Epilogo'));
     await credits();
   }
-  w.refresh();
+  await w.refresh();
   save();
 }
 
@@ -440,7 +442,7 @@ async function leagueRematch(i: number, w: WorldApi) {
   reward({ rep: REWARD.rep.rematch, xp: REWARD.xp.rematch, event: 'rematch', save: false });
   beep('win');
   await say(i === 4 ? [T('Hai difeso il titolo. Wall Street riparte da capo quando vuoi.')] : [T('Rivincita vinta. Prosegui!')], L.name);
-  w.refresh();
+  await w.refresh();
   save();
 }
 
@@ -534,7 +536,7 @@ export async function hermit(n: NpcDef) {
   if (!h) return say('...', who);
   if (S.flags[`islet_${key}`]) return say(h.again, who);
   await say(h.intro, who);
-  const qs = pickQuestions(studiedTopics(), 5, { target: targetDiff(Math.max(3, storyStage()) + 2) });
+  const qs = pickQuestions(localTopics(studiedTopics()), 5, { target: targetDiff(Math.max(3, storyStage()) + 2), city: localCity() });
   return hermitDuel(key, who, n.pal, qs);
 }
 

@@ -512,6 +512,10 @@ figure.fig figcaption { margin-top: 4px; }
 dl.gloss { margin: 0; display: grid; grid-template-columns: minmax(8em, 30%) 1fr; gap: 6px 12px; }
 dl.gloss dt { font-weight: bold; }
 dl.gloss dd { margin: 0; }
+/* scheda della Valigetta: i titoli della vetrina con la loro descrizione */
+.case-cls { margin: 10px 0 4px; }
+dl.case-list { margin-bottom: 8px; }
+dl.case-list dt { font-weight: normal; }
 .lab-row { display: grid; grid-template-columns: minmax(8em, 38%) 1fr 4.5em; align-items: center; gap: 8px; margin: 6px 0; }
 .lab-row input[type=range] { width: 100%; accent-color: var(--accent); }
 .lab-row input[type=range]:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

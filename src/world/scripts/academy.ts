@@ -7,6 +7,7 @@ import { S, save } from '../../systems/state';
 import { say, choose, toast } from '../../ui/core';
 import { runDuel } from '../../ui/battle';
 import { pickQuestions, endgameDiff, topicOpened, ACADEMY_TOPICS } from '../../systems/quiz';
+import { CITY_ENDGAME } from '../../data/quiz/progress';
 import { booksFor, TOPIC_LABEL } from '../../data/books';
 import { DUEL, REWARD } from '../../systems/balance';
 import { beep } from '../../systems/audio';
@@ -41,12 +42,12 @@ export async function tutor(n: NpcDef, w: WorldApi) {
   const c = await choose([T('Accetto la prova'), T('Non ancora')], { cancel: true, prompt: T`${LINES[topic] ?? ''} Otto domande su «${label}», al livello del fine gioco. Qui non perdi Fiducia: se sbagli, rileggi e torni.`, who });
   if (c !== 0) return;
   const P = DUEL.tutor;
-  const qs = withPreviousMistakes(key, pickQuestions([topic], P.n, { target: endgameDiff() }));
+  const qs = withPreviousMistakes(key, pickQuestions([topic], P.n, { target: endgameDiff(), city: CITY_ENDGAME }));
   const r = await runDuel({ foeName: who, foeTitle: T('Tutor dell\'Accademia'), foePal: n.pal, questions: qs, ...P, arena: 'biblioteca' });
   if (!r.win) {
     lockRetry(key, r.wrong);
     await say([T('Non ancora. Non ti dico le risposte: le trovi nei libri.'), T`Rileggi «${label}» sullo scaffale e torna quando vuoi.`], who);
-    w.refresh();
+    await w.refresh();
     return;
   }
   clearRetry(key);
@@ -59,7 +60,7 @@ export async function tutor(n: NpcDef, w: WorldApi) {
     toast(T('Accademia di Wall Street completata!'));
     await say([T('Hai superato tutti e tre i Tutor dell\'Accademia.'), T('Da oggi puoi fregiarti del titolo di Accademico: lo trovi tra i titoli della tua scheda.')], T('Rettrice dell\'Accademia'));
   }
-  w.refresh();
+  await w.refresh();
   save();
 }
 

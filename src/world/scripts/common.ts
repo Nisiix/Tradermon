@@ -15,7 +15,8 @@ import { T } from '../../i18n';
 
 export interface WorldApi {
   warp(map: string, x: number, y: number, dir?: 0 | 1 | 2 | 3): void;
-  refresh(): void;
+  /** Aggiorna chi è in scena; chi se ne va esce a piedi: la promessa si chiude quando è uscito. */
+  refresh(): Promise<void>;
   player(): { x: number; y: number };
   approach(npcId: string): Promise<void>;
   exclaim(npcId: string): Promise<void>;
@@ -53,7 +54,7 @@ export async function afterDuel(win: boolean, id: string, rep: number, w: WorldA
     await say(T('Ah! Ripassa e riprova.'), who);
     await defeatRespawn(w);
   }
-  w.refresh();
+  await w.refresh();
 }
 
 /**

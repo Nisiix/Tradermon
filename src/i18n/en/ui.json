@@ -283,7 +283,7 @@
  "Per aprire la Valigetta serve il conto Alpaca Paper: è gratuito e basta registrarsi sulla piattaforma di Alpaca.": "To open the Briefcase you need the Alpaca Paper account: it's free and you just need to sign up on the Alpaca platform.",
  "Ti apro \"Chiavi API\": se non hai ancora le chiavi, la Guida spiega tutto in tre passi.": "I'll open \"API keys\" for you: if you don't have the keys yet, the Guide explains everything in three steps.",
  "Nessun problema: la Valigetta resta sigillata e il tuo viaggio di studio comincia lo stesso.": "No problem: the Briefcase stays sealed and your study journey starts anyway.",
- "Quando vorrai aprirla, collega il conto dal menu (voce \"Chiavi API\") e passa in una Banca.": "When you want to open it, link the account from the menu (\"API keys\" entry) and stop by a Bank.",
+ "Per ora non devi scegliere nessun titolo: senza conto non c'è niente da comprare. Quando vorrai, collega il conto dal menu (voce \"Chiavi API\") e passa in una Banca: lì sceglierai il titolo e aprirai la Valigetta.": "You don't need to pick any stock for now: without an account there's nothing to buy. Whenever you like, link the account from the menu (\"API keys\" entry) and stop by a Bank: there you'll pick the stock and open the Briefcase.",
  "Hai tutti e otto i Sigilli pratici.": "You have all eight practical Seals.",
  "l'Attestato della Whale {0}": "the Certificate of Whale {0}",
  "le Prove sul conto fino alla tappa {0}": "the Account Trials up to milestone {0}",
@@ -939,5 +939,7 @@
  "Le voci in grigio si regolano durante la partita.": "Greyed-out items can be set during the game.",
  "<b class=\"bad\">Sbagliato.</b>": "<b class=\"bad\">Wrong.</b>",
  "La risposta giusta non te la dico: la trovi nel libro.": "I won't tell you the right answer: you'll find it in the book.",
- "📖 Rileggi i libri di «{0}» in Biblioteca.": "📖 Reread the books on «{0}» in the Library."
+ "📖 Rileggi i libri di «{0}» in Biblioteca.": "📖 Reread the books on «{0}» in the Library.",
+ "Non voglio collegare il conto o lo farò più tardi": "I don't want to link the account, or I'll do it later",
+ "Prima di aprire la Valigetta scegli il titolo con cui aprirla: ecco la vetrina.": "Before opening the Briefcase, pick the stock to open it with: here is the showcase."
 }
